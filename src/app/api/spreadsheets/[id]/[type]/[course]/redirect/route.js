@@ -70,11 +70,7 @@ async function fetchLinkFromKimvan(id, type, course) {
         'upgrade-insecure-requests': '1',
         'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36',
         'cookie': REQUEST_COOKIES,
-        ':authority': 'kimvan.id.vn',
-        ':method': 'GET',
-        ':path': `/api/spreadsheets/${id}/${type}/${encodedCourse}/redirect`,
-        ':scheme': 'https',
-        'priority': 'u=0, i'
+        'host': 'kimvan.id.vn'
       },
       redirect: 'manual' // Quan trọng: Không tự động follow redirect
     });
