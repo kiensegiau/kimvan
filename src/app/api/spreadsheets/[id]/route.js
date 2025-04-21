@@ -1,16 +1,15 @@
 import { NextResponse } from 'next/server';
 
-export async function GET(request) {
-  // Lấy đường dẫn từ URL
-  const url = new URL(request.url);
-  const path = url.pathname;
-  const id = path.split('/api/spreadsheets/')[1];
-  
-  if (!id) {
-    return NextResponse.json({ error: 'ID không được cung cấp' }, { status: 400 });
-  }
-  
+export async function GET(request, { params }) {
   try {
+    // Await params trước khi sử dụng - FIX lỗi
+    const paramsData = await params;
+    const id = paramsData.id;
+    
+    if (!id) {
+      return NextResponse.json({ error: 'ID không được cung cấp' }, { status: 400 });
+    }
+    
     console.log('Đang gọi API kimvan với ID:', id);
     
     // Sử dụng biến môi trường cho URL API và cookie
