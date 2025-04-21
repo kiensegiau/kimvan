@@ -39,18 +39,16 @@ function saveLinksData(data) {
   }
 }
 
-// Mẫu cookie từ request
-const REQUEST_COOKIES = '__Host-authjs.csrf-token=b34ccc15c9f6ccc7d384f8fae5d3108080eda357da2d5c05025351e8e28f880a%7C65395ed922567d218434d85e82567304a9a013824836c9d72ddf8f0f65e18854; __Secure-authjs.callback-url=https%3A%2F%2Fkimvan.id.vn%2F; __Secure-authjs.session-token=eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2Q0JDLUhTNTEyIiwia2lkIjoibjBVdUpXSWdOZmZYbXU3enliYjFaTHdOWHJNNDQ2bEdTSWNBSDZUSVJZNkktVWdybWd1WGtLczdmTXlPU09xUVhEc2lZSzI3bW5yZmJURGRlUW9ud2cifQ..cB4foHev7uulrSuJAGunsw.jMWS5g6E0ZW3p-XYSeDWWRkBR9OCkZhOJ2YRjcvByym9LblMNqLBxGy_lBk6Bh7-U6QZplVsU46YR58EaHCXTRcLzL76168iR9bblHRgF6PyHC0MJ3Qq05e27rtYkxJMwuRw_gIlUtx1UiCAPftHWj3wHNR_rAPjvz-XSlfIp7gAuUwS8Tnx4_vFyuKJHccZtfkyRrVaCP1e-jFqybdYxkNYhK8B6m-vXU9jSG_8rSAUULr9-Ur2hllcg1DLtMjTwkunpCj38PgLNf73PYwjEG1-j7GUVujR7zPb-ciWBlNSs6jyT1f-vHh4WpeOnN_PYhhMTGrwOiPZ_ZA8VPnBvpScS4vUhEUgs2qSjsykkdTlK4VWDGLOgdv6hCLv87q6.a7Ejf0inXPjHgLQjaUE3SXMV5QQ2FyunxS__4f16glk';
-
-// Mẫu set-cookie từ response
-const RESPONSE_COOKIES = '__Secure-authjs.session-token=eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2Q0JDLUhTNTEyIiwia2lkIjoibjBVdUpXSWdOZmZYbXU3enliYjFaTHdOWHJNNDQ2bEdTSWNBSDZUSVJZNkktVWdybWd1WGtLczdmTXlPU09xUVhEc2lZSzI3bW5yZmJURGRlUW9ud2cifQ..7guq5IPcmy9HfrYJ8JaeIg.EDsoncG2SqznqRJNRc8B9pVDF2gbcrYErVX9mQrPPqqKNX4gtRrxmoLFeoMAogokMbDcYj9af0PH5gAsh9JCIx1xkBPolgZXN0xebZlJmlTnXVU5FWOsZXRV2LEKZZXj3iEpfgT3NE_vX4rvlZng41ZjgWf9ziENt20AhhXoZzXXSl9dY8Q0yRZecy23agB5vu1htBwOyrUb7pKnr7IJBQzFk6BVGnh3ag_-l42LRJ2Sg1Wkh8DoBJTTZTJ-HgPVnbzAMJQ7a838U-9vumr1AKHlAhZiaYuXEuGIbrPVxnk7CPWBSdoPmBb-EQ_KZjVn5toGwouFHR3r_fE9f5o-fV2_ffefqOOmo4cHm8HJSeyqti9mnWSLcDimy8L3kphr.qL9Pc-n_qjwFVie2OhUYWAgHdj4UGhvC2yhEJitEduc; Path=/; Expires=Thu, 15 May 2025 16:01:28 GMT; HttpOnly; Secure; SameSite=Lax';
-
 // Hàm kết nối đến server kimvan.id.vn để lấy link
 async function fetchLinkFromKimvan(id, type, course) {
   try {
     console.log('Đang kết nối đến server kimvan.id.vn...');
     const encodedCourse = encodeURIComponent(course);
     const kimvanUrl = `https://kimvan.id.vn/api/spreadsheets/${id}/${type}/${encodedCourse}/redirect`;
+    
+    // Sử dụng cookie từ biến môi trường
+    const kimvanCookie = process.env.KIMVAN_COOKIE || '';
+    
     console.log('URL API:', kimvanUrl);
     
     const response = await fetch(kimvanUrl, {
@@ -69,7 +67,7 @@ async function fetchLinkFromKimvan(id, type, course) {
         'sec-fetch-user': '?1',
         'upgrade-insecure-requests': '1',
         'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36',
-        'cookie': REQUEST_COOKIES,
+        'cookie': kimvanCookie,
         'host': 'kimvan.id.vn'
       },
       redirect: 'manual' // Quan trọng: Không tự động follow redirect
@@ -133,17 +131,15 @@ export async function GET(request, { params }) {
     
     console.log('URL đích cuối cùng:', targetUrl || '/');
     
-    // Chuẩn bị các header cơ bản giống mẫu
+    // Chuẩn bị các header cơ bản
     const responseHeaders = {
       'Location': targetUrl || '/',
       'Cache-Control': 'public, max-age=0, must-revalidate',
-      'Set-Cookie': RESPONSE_COOKIES,
       'Strict-Transport-Security': 'max-age=63072000',
       'Server': 'Vercel',
       'Age': '0',
-      'Date': 'Tue, 15 Apr 2025 16:01:29 GMT',
-      'X-Vercel-Cache': 'MISS',
-      'X-Vercel-Id': 'hkg1::hkg1::879bc-1744732887199-05d695829dae'
+      'Date': new Date().toUTCString(),
+      'X-Vercel-Cache': 'MISS'
     };
     
     // Trả về response với các header
