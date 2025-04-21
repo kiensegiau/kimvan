@@ -21,6 +21,19 @@ export default function Home() {
         </a>
         
         <a 
+          href="/courses" 
+          style={{ 
+            padding: '10px 15px', 
+            backgroundColor: '#6366f1', 
+            color: 'white', 
+            borderRadius: '5px',
+            textDecoration: 'none'
+          }}
+        >
+          Xem Full Combo Khóa 2K8
+        </a>
+        
+        <a 
           href="/api/cache" 
           style={{ 
             padding: '10px 15px', 
