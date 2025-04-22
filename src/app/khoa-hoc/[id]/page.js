@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import React from 'react';
 
 export default function CourseDetailPage() {
   const { id } = useParams();
@@ -24,32 +25,46 @@ export default function CourseDetailPage() {
         const apiUrl = `/api/spreadsheets/${decodedId}`;
         console.log('Đang kết nối qua API của chúng ta:', apiUrl);
         
-        const detailResponse = await fetch(apiUrl);
+        const response = await fetch(apiUrl);
         
-        if (!detailResponse.ok) {
-          throw new Error(`Lỗi khi lấy chi tiết khóa học: ${detailResponse.status}`);
+        if (!response.ok) {
+          throw new Error(`Error ${response.status}: ${response.statusText}`);
         }
         
-        const detailData = await detailResponse.json();
+        const data = await response.json();
+        
+        // Log toàn bộ dữ liệu để kiểm tra
+        console.log('Dữ liệu khóa học đầy đủ:', data);
+        
+        // Thêm log chi tiết định dạng gốc
+        console.log('Dữ liệu chi tiết với định dạng:', JSON.stringify(data, null, 2));
+        
+        // Xử lý metadata của khóa học (nếu có)
+        let courseMetadata = {};
+        if (data.metadata) {
+          courseMetadata = data.metadata;
+          console.log('Metadata khóa học:', courseMetadata);
+        }
         
         // Tạo thông tin cơ bản cho khóa học từ ID
         let courseName = "Khóa học Full Combo 2K8";
         
         // Nếu có dữ liệu sheets và có thông tin về tên
-        if (detailData.sheets && detailData.sheets[0] && detailData.sheets[0].properties) {
-          courseName = detailData.sheets[0].properties.title || courseName;
+        if (data.sheets && data.sheets[0] && data.sheets[0].properties) {
+          courseName = data.sheets[0].properties.title || courseName;
         }
         
         // Tạo đối tượng khóa học
         setCourse({
           id: decodedId,
           name: courseName,
-          details: detailData
+          details: data,
+          metadata: courseMetadata,
         });
         
         // Xử lý các phần (sections) trong khóa học
-        if (detailData.sheets && detailData.sheets.length > 0) {
-          const sectionsData = detailData.sheets.map((sheet, index) => {
+        if (data.sheets && data.sheets.length > 0) {
+          const sectionsData = data.sheets.map((sheet, index) => {
             return {
               id: index,
               title: sheet.properties?.title || `Phần ${index + 1}`,
@@ -60,7 +75,7 @@ export default function CourseDetailPage() {
           setSections(sectionsData);
           
           // Xử lý dữ liệu bài học từ sheet đầu tiên
-          processSheetData(detailData.sheets[0], 0, decodedId);
+          processSheetData(data.sheets[0], 0, decodedId);
         }
         
         console.log('Đã tải dữ liệu khóa học thành công:', decodedId);
@@ -81,88 +96,365 @@ export default function CourseDetailPage() {
   // Hàm xử lý dữ liệu từ một sheet cụ thể
   const processSheetData = (sheet, sectionIndex, decodedId) => {
     if (!sheet || !sheet.data || !sheet.data[0] || !sheet.data[0].rowData) {
+      console.error('Dữ liệu sheet không hợp lệ', sheet);
       return [];
     }
     
-    const rowData = sheet.data[0].rowData;
-    // Bỏ qua dòng tiêu đề (dòng đầu tiên)
-    const processedLessons = [];
+    // Log toàn bộ dữ liệu sheet
+    console.log(`Xử lý sheet ${sectionIndex} với tên:`, sheet.properties?.title);
+    console.log('Toàn bộ dữ liệu sheet:', sheet);
     
-    for (let i = 1; i < rowData.length; i++) {
+    const rowData = sheet.data[0].rowData;
+    
+    // Tìm hàng tiêu đề 
+    let headerRowIndex = -1;
+    
+    // Lưu lại mọi thông tin về sheet
+    const sheetMetadata = {
+      title: sheet.properties?.title || `Phần ${sectionIndex + 1}`,
+      sheetId: sheet.properties?.sheetId,
+      gridProperties: sheet.properties?.gridProperties,
+      hidden: sheet.properties?.hidden,
+      tabColor: sheet.properties?.tabColor,
+      additionalProperties: {} // Lưu các thuộc tính khác
+    };
+    
+    // Thu thập mọi thuộc tính khác có thể có
+    for (const key in sheet.properties) {
+      if (!['title', 'sheetId', 'gridProperties', 'hidden', 'tabColor'].includes(key)) {
+        sheetMetadata.additionalProperties[key] = sheet.properties[key];
+      }
+    }
+    
+    // Tìm hàng tiêu đề bằng nhiều cách khác nhau
+    for (let i = 0; i < Math.min(20, rowData.length); i++) {
       const row = rowData[i];
-      if (row.values) {
-        // Lấy giá trị cơ bản
-        const lessonData = {
-          stt: row.values[0]?.formattedValue || '',
-          date: row.values[1]?.formattedValue || '',
-          title: row.values[2]?.formattedValue || '',
-          liveLink: '',
-          documentLink: '',
-          homeworkLink: '',
-          hasContent: false,
-          section: sectionIndex
-        };
-        
-        // Trích xuất liên kết YouTube (LIVE) nếu có
-        if (row.values[3]) {
-          if (row.values[3].userEnteredFormat?.textFormat?.link?.uri) {
-            lessonData.liveLink = row.values[3].userEnteredFormat.textFormat.link.uri;
-            lessonData.hasContent = true;
-          } else if (row.values[3].formattedValue && row.values[3].formattedValue !== '-') {
-            lessonData.liveLink = `/api/spreadsheets/${decodedId}/LIVE/${encodeURIComponent(lessonData.title)}/redirect`;
-            lessonData.hasContent = true;
-          }
+      if (!row || !row.values) continue;
+      
+      const headerCells = row.values.map(cell => cell?.formattedValue?.toString().toUpperCase() || '');
+      const headerText = headerCells.join('|');
+      
+      // Log để kiểm tra
+      console.log(`Hàng ${i}:`, headerText);
+      
+      // Kiểm tra nhiều mẫu tiêu đề có thể có
+      const possibleHeaderPatterns = [
+        // Mẫu chuẩn
+        ['STT', 'NGÀY', 'TÊN', 'LIVE', 'TÀI LIỆU', 'BTVN'],
+        // Mẫu khác có thể có
+        ['STT', 'THỜI GIAN', 'NỘI DUNG', 'VIDEO', 'TÀI LIỆU', 'BÀI TẬP'],
+        ['STT', 'NGÀY', 'BÀI', 'LINK', 'DOCUMENT', 'HOMEWORK'],
+        ['#', 'DATE', 'LESSON', 'VIDEO', 'MATERIAL', 'HOMEWORK']
+      ];
+      
+      for (const pattern of possibleHeaderPatterns) {
+        if (pattern.every(keyword => 
+          headerCells.some(cell => cell.includes(keyword))
+        )) {
+          headerRowIndex = i;
+          console.log(`Tìm thấy hàng tiêu đề tại ${i}:`, headerCells);
+          break;
         }
+      }
+      
+      // Nếu đã tìm thấy hàng tiêu đề thì thoát vòng lặp
+      if (headerRowIndex !== -1) break;
+    }
+    
+    // Nếu không tìm thấy hàng tiêu đề rõ ràng, thử tìm hàng có định dạng đặc biệt
+    if (headerRowIndex === -1) {
+      for (let i = 0; i < Math.min(20, rowData.length); i++) {
+        const row = rowData[i];
+        if (!row || !row.values) continue;
         
-        // Trích xuất liên kết Google Drive (TÀI LIỆU) nếu có
-        if (row.values[4]) {
-          if (row.values[4].userEnteredFormat?.textFormat?.link?.uri) {
-            lessonData.documentLink = row.values[4].userEnteredFormat.textFormat.link.uri;
-            lessonData.hasContent = true;
-          } else if (row.values[4].hyperlink) {
-            // Nếu là ID Drive, chuyển thành URL Drive
-            if (!row.values[4].hyperlink.startsWith('http')) {
-              lessonData.documentLink = `https://drive.google.com/open?id=${row.values[4].hyperlink}`;
-            } else {
-              lessonData.documentLink = row.values[4].hyperlink;
-            }
-            lessonData.hasContent = true;
-          } else if (row.values[4].formattedValue && row.values[4].formattedValue !== '-') {
-            lessonData.documentLink = `/api/spreadsheets/${decodedId}/TÀI LIỆU/${encodeURIComponent(lessonData.title)}/redirect`;
-            lessonData.hasContent = true;
-          }
-        }
+        // Kiểm tra xem hàng này có vẻ như là hàng tiêu đề không (ví dụ: định dạng đặc biệt)
+        const hasSpecialFormatting = row.values.some(cell => 
+          cell?.userEnteredFormat?.textFormat?.bold ||
+          cell?.userEnteredFormat?.backgroundColor ||
+          cell?.userEnteredFormat?.borders?.top?.style === 'SOLID'
+        );
         
-        // Trích xuất liên kết BTVN nếu có
-        if (row.values[5]) {
-          if (row.values[5].userEnteredFormat?.textFormat?.link?.uri) {
-            lessonData.homeworkLink = row.values[5].userEnteredFormat.textFormat.link.uri;
-            lessonData.hasContent = true;
-          } else if (row.values[5].hyperlink) {
-            if (!row.values[5].hyperlink.startsWith('http')) {
-              lessonData.homeworkLink = `https://drive.google.com/open?id=${row.values[5].hyperlink}`;
-            } else {
-              lessonData.homeworkLink = row.values[5].hyperlink;
-            }
-            lessonData.hasContent = true;
-          } else if (row.values[5].formattedValue && row.values[5].formattedValue !== '-') {
-            lessonData.homeworkLink = `/api/spreadsheets/${decodedId}/BTVN/${encodeURIComponent(lessonData.title)}/redirect`;
-            lessonData.hasContent = true;
-          }
-        }
+        const hasMultipleNonEmptyCells = row.values.filter(cell => 
+          cell?.formattedValue?.toString().trim() !== ''
+        ).length >= 3;
         
-        // Chỉ thêm vào mảng nếu có dữ liệu ý nghĩa
-        if (lessonData.title || lessonData.hasContent) {
-          processedLessons.push(lessonData);
+        if (hasSpecialFormatting && hasMultipleNonEmptyCells) {
+          headerRowIndex = i;
+          console.log(`Tìm thấy hàng tiêu đề bằng định dạng tại ${i}`);
+          break;
         }
       }
     }
     
-    // Cập nhật state
+    // Nếu vẫn không tìm thấy, sử dụng hàng đầu tiên
+    if (headerRowIndex === -1 && rowData.length > 0) {
+      headerRowIndex = 0;
+      console.log('Không tìm thấy hàng tiêu đề rõ ràng, sử dụng hàng đầu tiên');
+    }
+    
+    // Nếu không có dữ liệu
+    if (headerRowIndex === -1 || !rowData[headerRowIndex]?.values) {
+      console.log('Không tìm thấy dữ liệu hợp lệ trong sheet');
+      return [];
+    }
+    
+    const headerRow = rowData[headerRowIndex].values || [];
+    
+    // Thu thập tất cả các tiêu đề cột có thể có
+    const allColumnHeaders = headerRow.map((cell, idx) => ({
+      index: idx,
+      title: cell?.formattedValue || `Cột ${idx + 1}`,
+      originalValue: cell?.formattedValue
+    }));
+    
+    console.log('Tất cả tiêu đề cột:', allColumnHeaders);
+    
+    // Xác định các cột quan trọng, nhưng cũng thu thập tất cả các cột khác
+    const sttIdx = findColumnIndex(headerRow, ['STT', 'TT', '#', 'NUMBER']);
+    const dateIdx = findColumnIndex(headerRow, ['NGÀY', 'NGÀY HỌC', 'THỜI GIAN', 'DATE', 'TIME']);
+    const titleIdx = findColumnIndex(headerRow, ['TÊN BÀI', 'NỘI DUNG', 'BÀI', 'LESSON', 'TITLE']);
+    const liveIdx = findColumnIndex(headerRow, ['LIVE', 'VIDEO', 'STREAM', 'LINK VIDEO', 'VIDEO BÀI GIẢNG']);
+    const docIdx = findColumnIndex(headerRow, ['TÀI LIỆU', 'DOCUMENT', 'DOC', 'MATERIAL', 'SLIDE']);
+    const homeworkIdx = findColumnIndex(headerRow, ['BTVN', 'BÀI TẬP', 'HOMEWORK', 'EXERCISE', 'BÀI TẬP VỀ NHÀ']);
+    
+    // Tạo bản đồ tất cả các cột
+    let columnMap = {
+      STT: sttIdx,
+      Date: dateIdx,
+      Title: titleIdx,
+      Live: liveIdx,
+      TàiLiệu: docIdx,
+      BTVN: homeworkIdx
+    };
+    
+    // Thêm tất cả các cột khác vào bản đồ
+    for (let i = 0; i < headerRow.length; i++) {
+      const cell = headerRow[i];
+      if (!cell) continue;
+      
+      const headerName = cell.formattedValue?.toString().trim() || `Column_${i}`;
+      
+      // Chỉ thêm nếu chưa có trong các cột chính
+      if (![sttIdx, dateIdx, titleIdx, liveIdx, docIdx, homeworkIdx].includes(i)) {
+        columnMap[headerName] = i;
+        console.log(`Phát hiện cột bổ sung: ${headerName} tại vị trí ${i}`);
+      }
+    }
+    
+    console.log('Bản đồ tất cả các cột:', columnMap);
+    
+    // In ra tất cả các tiêu đề cột để kiểm tra
+    if (headerRow.length > 0) {
+      console.log('Tất cả các tiêu đề cột:', headerRow.map((cell, idx) => `${idx}: ${cell?.formattedValue || ''}`));
+    }
+    
+    // Xử lý formattedValue để tìm các bài học
+    const processedLessons = [];
+    let validRowCount = 0;
+    
+    // Thêm phân tích hàng phụ đề
+    let subHeaderRowIndex = -1;
+    let hasSubHeader = false;
+    let subHeaders = [];
+    
+    // Nếu đã tìm thấy hàng tiêu đề chính và có hàng tiếp theo
+    if (headerRowIndex !== -1 && headerRowIndex + 1 < rowData.length) {
+      const nextRow = rowData[headerRowIndex + 1];
+      if (nextRow && nextRow.values) {
+        // Kiểm tra xem có đủ ô trống để coi là hàng phụ đề không
+        const emptyCellsCount = nextRow.values.filter(cell => 
+          !cell || !cell.formattedValue || cell.formattedValue.toString().trim() === ''
+        ).length;
+        
+        // Nếu có ít nhất một ô có dữ liệu
+        if (emptyCellsCount < nextRow.values.length) {
+          hasSubHeader = true;
+          subHeaderRowIndex = headerRowIndex + 1;
+          subHeaders = nextRow.values.map(cell => cell?.formattedValue || '');
+          headerRowIndex = subHeaderRowIndex; // Cập nhật hàng tiêu đề để bỏ qua hàng phụ đề khi xử lý dữ liệu
+          console.log('Phát hiện hàng phụ đề:', subHeaders);
+        }
+      }
+    }
+    
+    for (let i = headerRowIndex + 1; i < rowData.length; i++) {
+      const row = rowData[i];
+      if (!row || !row.values) continue;
+      
+      // Kiểm tra xem hàng này có dữ liệu thực sự không
+      const hasFormattedValues = row.values.some(cell => cell && typeof cell.formattedValue !== 'undefined');
+      const hasLinks = row.values.some(cell => 
+        cell && (cell.userEnteredFormat?.textFormat?.link?.uri || cell.hyperlink)
+      );
+      
+      // Thu thập tất cả các giá trị và thuộc tính hữu ích của hàng
+      const rowProperties = {
+        hasFormattedValues,
+        hasLinks,
+        formattingInfo: {}
+      };
+      
+      // Thu thập thông tin về định dạng của hàng
+      for (let j = 0; j < row.values.length; j++) {
+        const cell = row.values[j];
+        if (!cell) continue;
+        
+        if (cell.userEnteredFormat) {
+          rowProperties.formattingInfo[j] = {
+            bold: cell.userEnteredFormat?.textFormat?.bold,
+            italic: cell.userEnteredFormat?.textFormat?.italic,
+            backgroundColor: cell.userEnteredFormat?.backgroundColor,
+            borders: cell.userEnteredFormat?.borders,
+            alignment: cell.userEnteredFormat?.horizontalAlignment
+          };
+        }
+      }
+      
+      if (!hasFormattedValues && !hasLinks) continue;
+      
+      validRowCount++;
+      
+      // Lấy giá trị cơ bản từ các cột đã xác định
+      const lessonData = {
+        stt: sttIdx >= 0 && row.values[sttIdx] ? (row.values[sttIdx].formattedValue || '') : `${validRowCount}`,
+        date: dateIdx >= 0 && row.values[dateIdx] ? (row.values[dateIdx].formattedValue || '') : '',
+        title: titleIdx >= 0 && row.values[titleIdx] ? (row.values[titleIdx].formattedValue || '') : '',
+        liveLink: '',
+        documentLink: '',
+        homeworkLink: '',
+        hasContent: false,
+        section: sectionIndex,
+        rowIndex: i,
+        // Lưu trữ tất cả dữ liệu bổ sung
+        additionalData: {}
+      };
+      
+      // Thu thập tất cả các giá trị khác trong hàng
+      for (let j = 0; j < row.values.length; j++) {
+        const cell = row.values[j];
+        if (!cell) continue;
+        
+        // Bỏ qua các cột chính đã xử lý
+        if (j === sttIdx || j === dateIdx || j === titleIdx || j === liveIdx || j === docIdx || j === homeworkIdx) {
+          continue;
+        }
+        
+        // Lưu mọi giá trị và thuộc tính vào dữ liệu bổ sung
+        const columnName = (headerRow[j]?.formattedValue || `Column_${j}`).toString().trim();
+        
+        lessonData.additionalData[columnName] = {
+          value: cell.formattedValue || '',
+          link: cell.userEnteredFormat?.textFormat?.link?.uri || cell.hyperlink || '',
+          formattingInfo: cell.userEnteredFormat,
+          effectiveValue: cell.effectiveValue,
+          userEnteredValue: cell.userEnteredValue
+        };
+        
+        // Nếu ô này có liên kết, trích xuất và lưu dưới dạng trường riêng biệt
+        if (cell.userEnteredFormat?.textFormat?.link?.uri || cell.hyperlink) {
+          lessonData.additionalData[columnName].extractedLink = cell.userEnteredFormat?.textFormat?.link?.uri || cell.hyperlink;
+        }
+      }
+      
+      // Nếu không có title nhưng có STT, sử dụng STT làm phần của title
+      if (!lessonData.title && lessonData.stt) {
+        lessonData.title = `Bài ${lessonData.stt}`;
+      }
+      
+      // Nếu vẫn không có title, tìm bất kỳ ô nào có text dài nhất
+      if (!lessonData.title) {
+        // Tìm ô có nhiều văn bản nhất trong hàng
+        let maxTextLength = 0;
+        let maxTextColIndex = -1;
+        
+        for (let j = 0; j < row.values.length; j++) {
+          const cell = row.values[j];
+          if (cell && cell.formattedValue && typeof cell.formattedValue === 'string') {
+            // Ưu tiên các cột có vị trí gần với cột tiêu đề đã biết
+            if (j > 0 && j < 4) { // Thường các cột đầu chứa thông tin quan trọng
+              if (cell.formattedValue.length > maxTextLength) {
+                maxTextLength = cell.formattedValue.length;
+                maxTextColIndex = j;
+              }
+            }
+          }
+        }
+        
+        if (maxTextColIndex >= 0) {
+          lessonData.title = row.values[maxTextColIndex].formattedValue;
+        } else {
+          lessonData.title = `Bài học ${validRowCount}`;
+        }
+      }
+      
+      // Xử lý các liên kết
+      if (liveIdx >= 0 && row.values[liveIdx]) {
+        extractLink(row.values[liveIdx], 'live', lessonData, decodedId);
+      }
+      
+      if (docIdx >= 0 && row.values[docIdx]) {
+        extractLink(row.values[docIdx], 'doc', lessonData, decodedId);
+      }
+      
+      if (homeworkIdx >= 0 && row.values[homeworkIdx]) {
+        extractLink(row.values[homeworkIdx], 'homework', lessonData, decodedId);
+      }
+      
+      // Nếu không tìm thấy liên kết từ các cột tiêu chuẩn, quét tất cả các cột khác
+      if (!lessonData.hasContent) {
+        for (let j = 0; j < row.values.length; j++) {
+          // Bỏ qua các cột đã xử lý hoặc không quan trọng
+          if (j === sttIdx || j === dateIdx || j === titleIdx) continue;
+          
+          const cell = row.values[j];
+          if (!cell) continue;
+          
+          // Nếu ô này có liên kết
+          if (cell.userEnteredFormat?.textFormat?.link?.uri || cell.hyperlink) {
+            // Xác định loại liên kết dựa trên vị trí cột và nội dung
+            if (j === liveIdx || (j > titleIdx && !lessonData.liveLink)) {
+              extractLink(cell, 'live', lessonData, decodedId);
+            } else if (j === docIdx || (j > liveIdx && !lessonData.documentLink)) {
+              extractLink(cell, 'doc', lessonData, decodedId);
+            } else if (j === homeworkIdx || (j > docIdx && !lessonData.homeworkLink)) {
+              extractLink(cell, 'homework', lessonData, decodedId);
+            }
+          }
+          // Nếu ô chỉ có văn bản (không phải -)
+          else if (cell.formattedValue && cell.formattedValue !== '-') {
+            const text = cell.formattedValue.toString().toLowerCase();
+            
+            // Dựa vào nội dung để xác định loại
+            if ((text.includes('video') || text.includes('live')) && !lessonData.liveLink) {
+              extractLink(cell, 'live', lessonData, decodedId);
+            } else if ((text.includes('tài liệu') || text.includes('doc')) && !lessonData.documentLink) {
+              extractLink(cell, 'doc', lessonData, decodedId);
+            } else if ((text.includes('btvn') || text.includes('bài tập')) && !lessonData.homeworkLink) {
+              extractLink(cell, 'homework', lessonData, decodedId);
+            }
+          }
+        }
+      }
+      
+      // Chỉ thêm vào mảng nếu có dữ liệu ý nghĩa
+      if ((lessonData.title && lessonData.title.trim() !== '') || lessonData.hasContent || Object.keys(lessonData.additionalData).length > 0) {
+        processedLessons.push(lessonData);
+      }
+    }
+    
+    console.log(`Đã tìm thấy ${validRowCount} hàng dữ liệu, xử lý được ${processedLessons.length} bài học`);
+    console.log('Chi tiết 3 bài học đầu tiên:', processedLessons.slice(0, 3));
+    
+    // Sau khi xử lý xong, cập nhật state với thông tin phụ đề và chapter
     setSections(prevSections => {
       const newSections = [...prevSections];
       if (newSections[sectionIndex]) {
         newSections[sectionIndex].lessons = processedLessons;
+        newSections[sectionIndex].metadata = sheetMetadata;
+        newSections[sectionIndex].columnMap = columnMap;
+        newSections[sectionIndex].allColumnHeaders = allColumnHeaders;
+        newSections[sectionIndex].hasSubHeader = hasSubHeader;
+        newSections[sectionIndex].subHeaders = subHeaders;
       }
       return newSections;
     });
@@ -171,9 +463,101 @@ export default function CourseDetailPage() {
       setLessons(processedLessons);
     }
     
-    console.log(`Đã xử lý ${processedLessons.length} bài học từ phần ${sectionIndex + 1}`);
-    
     return processedLessons;
+  };
+  
+  // Hàm tìm vị trí cột dựa trên tiêu đề
+  const findColumnIndex = (headerRow, possibleNames) => {
+    // Log để debug tìm cột
+    console.log('Tìm cột với từ khóa:', possibleNames);
+    
+    for (let i = 0; i < headerRow.length; i++) {
+      const headerCell = headerRow[i];
+      if (!headerCell) continue;
+      
+      const headerText = (headerCell.formattedValue || '').toString().toUpperCase();
+      console.log(`Kiểm tra cột ${i}:`, headerText);
+      
+      // Tìm chính xác
+      if (possibleNames.some(name => headerText === name.toUpperCase())) {
+        console.log(`Tìm thấy cột ${possibleNames[0]} tại vị trí ${i} (khớp chính xác)`);
+        return i;
+      }
+      
+      // Tìm một phần
+      if (possibleNames.some(name => headerText.includes(name.toUpperCase()))) {
+        console.log(`Tìm thấy cột ${possibleNames[0]} tại vị trí ${i} (khớp một phần)`);
+        return i;
+      }
+    }
+    
+    console.log(`Không tìm thấy cột ${possibleNames[0]}`);
+    return -1; // Không tìm thấy
+  };
+  
+  // Hàm trích xuất liên kết từ một ô
+  const extractLink = (cell, type, lessonData, decodedId) => {
+    if (!cell) return;
+    
+    // Log chi tiết về ô đang xử lý
+    console.log(`Đang trích xuất liên kết ${type} từ ô:`, {
+      formattedValue: cell.formattedValue,
+      hasLink: !!cell.userEnteredFormat?.textFormat?.link?.uri,
+      hasHyperlink: !!cell.hyperlink
+    });
+    
+    // Trường hợp 1: Đã có URI trong textFormat
+    if (cell.userEnteredFormat?.textFormat?.link?.uri) {
+      const uri = cell.userEnteredFormat.textFormat.link.uri;
+      console.log(`Tìm thấy URI trong textFormat: ${uri}`);
+      
+      if (type === 'live') lessonData.liveLink = uri;
+      else if (type === 'doc') lessonData.documentLink = uri;
+      else if (type === 'homework') lessonData.homeworkLink = uri;
+      lessonData.hasContent = true;
+      return;
+    }
+    
+    // Trường hợp 2: Có hyperlink
+    if (cell.hyperlink) {
+      let url = cell.hyperlink;
+      console.log(`Tìm thấy hyperlink: ${url}`);
+      
+      // Nếu là ID Drive, chuyển thành URL Drive đầy đủ
+      if (!url.startsWith('http')) {
+        url = `https://drive.google.com/open?id=${url}`;
+      }
+      
+      if (type === 'live') lessonData.liveLink = url;
+      else if (type === 'doc') lessonData.documentLink = url;
+      else if (type === 'homework') lessonData.homeworkLink = url;
+      lessonData.hasContent = true;
+      return;
+    }
+    
+    // Trường hợp 3: Chỉ có formattedValue (không phải dấu -)
+    if (cell.formattedValue && cell.formattedValue !== '-') {
+      console.log(`Tìm thấy formattedValue: ${cell.formattedValue}`);
+      
+      let url = '';
+      let typeParam = '';
+      
+      if (type === 'live') {
+        typeParam = 'LIVE';
+        url = `/api/spreadsheets/${decodedId}/${typeParam}/${encodeURIComponent(lessonData.title || 'undefined')}/redirect`;
+        lessonData.liveLink = url;
+      } else if (type === 'doc') {
+        typeParam = 'TÀI LIỆU';
+        url = `/api/spreadsheets/${decodedId}/${typeParam}/${encodeURIComponent(lessonData.title || 'undefined')}/redirect`;
+        lessonData.documentLink = url;
+      } else if (type === 'homework') {
+        typeParam = 'BTVN';
+        url = `/api/spreadsheets/${decodedId}/${typeParam}/${encodeURIComponent(lessonData.title || 'undefined')}/redirect`;
+        lessonData.homeworkLink = url;
+      }
+      
+      lessonData.hasContent = true;
+    }
   };
   
   // Hàm chuyển đổi giữa các phần
@@ -390,92 +774,322 @@ export default function CourseDetailPage() {
               </div>
             )}
             
-            {/* Danh sách chi tiết bài học */}
-            <div className="overflow-hidden border border-gray-200 rounded-xl shadow-sm mb-8">
-              <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-4 border-b border-gray-200">
-                <div className="grid grid-cols-12 gap-2 font-medium text-gray-700">
-                  <div className="col-span-1 text-center">STT</div>
-                  <div className="col-span-2">Ngày học</div>
-                  <div className="col-span-5">Tên bài</div>
-                  <div className="col-span-4">Liên kết</div>
-                </div>
+            {/* Bảng khóa học theo định dạng gốc */}
+            {sections.length > 0 && activeSection < sections.length && sections[activeSection].lessons.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    {/* Hàng tiêu đề chính */}
+                    <tr>
+                      {sections[activeSection].columnMap && Object.entries(sections[activeSection].columnMap).map(([key, index], i) => (
+                        <th 
+                          key={i} 
+                          className={`p-3 border text-center font-bold ${
+                            key.includes('Chapter') ? 'bg-yellow-100' :
+                            key.includes('STT') ? 'bg-yellow-100' :
+                            key.includes('Nội dung') ? 'bg-yellow-100' :
+                            key.includes('Bài giảng') ? 'bg-green-100' :
+                            key.includes('Phụ đạo') ? 'bg-cyan-100' :
+                            'bg-gray-50'
+                          }`}
+                        >
+                          {key}
+                        </th>
+                      ))}
+                    </tr>
+                    
+                    {/* Hàng tiêu đề phụ nếu cần */}
+                    {sections[activeSection].hasSubHeader && (
+                      <tr>
+                        {sections[activeSection].columnMap && Object.entries(sections[activeSection].columnMap).map(([key, index], i) => (
+                          <th 
+                            key={i} 
+                            className="p-3 border text-center font-bold bg-gray-50"
+                          >
+                            {sections[activeSection].subHeaders && sections[activeSection].subHeaders[index] || ''}
+                          </th>
+                        ))}
+                      </tr>
+                    )}
+                  </thead>
+                  <tbody>
+                    {(() => {
+                      // Xác định nếu có cột Chapter
+                      const hasChapter = sections[activeSection].lessons.some(lesson => 
+                        lesson.additionalData && Object.keys(lesson.additionalData).some(key => 
+                          key.toLowerCase().includes('chapter')
+                        )
+                      );
+                      
+                      if (hasChapter) {
+                        // Nhóm bài học theo chapter
+                        const chapterGroups = {};
+                        sections[activeSection].lessons.forEach(lesson => {
+                          let chapterName = "Chưa phân loại";
+                          // Tìm tên chapter trong dữ liệu bổ sung
+                          if (lesson.additionalData) {
+                            Object.entries(lesson.additionalData).forEach(([key, data]) => {
+                              if (key.toLowerCase().includes('chapter') && data.value) {
+                                chapterName = data.value;
+                              }
+                            });
+                          }
+                          
+                          if (!chapterGroups[chapterName]) {
+                            chapterGroups[chapterName] = [];
+                          }
+                          chapterGroups[chapterName].push(lesson);
+                        });
+                        
+                        // Render từng nhóm chapter
+                        return Object.entries(chapterGroups).map(([chapterName, lessons], chapterIndex) => {
+                          return (
+                            <React.Fragment key={`chapter-${chapterIndex}`}>
+                              {/* Hàng tiêu đề chapter */}
+                              <tr className="bg-blue-50">
+                                <td className="p-3 border font-bold" colSpan={Object.keys(sections[activeSection].columnMap).length}>
+                                  {chapterName}
+                                </td>
+                              </tr>
+                              
+                              {/* Các bài học trong chapter */}
+                              {lessons.map((lesson, lessonIndex) => (
+                                <tr key={`lesson-${chapterIndex}-${lessonIndex}`} className="hover:bg-gray-50">
+                                  {sections[activeSection].columnMap && Object.entries(sections[activeSection].columnMap).map(([key, index], i) => {
+                                    // Xác định nội dung ô
+                                    let cellContent = null;
+                                    
+                                    if (key === 'STT' || key === 'Theme') {
+                                      cellContent = <span className="font-medium">{lesson.stt}</span>;
+                                    } else if (key === 'NGÀY HỌC' || key.includes('Ngày')) {
+                                      cellContent = lesson.date;
+                                    } else if (key === 'TÊN BÀI' || key.includes('Nội dung')) {
+                                      cellContent = <span className="font-medium">{lesson.title}</span>;
+                                    } else if (key.includes('LIVE') || key.includes('VIDEO') || key.includes('Bài giảng')) {
+                                      if (lesson.liveLink) {
+                                        cellContent = (
+                                          <a
+                                            href={lesson.liveLink}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="block py-2 px-4 text-center text-blue-600 hover:text-blue-800 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+                                          >
+                                            VIDEO
+                                          </a>
+                                        );
+                                      } else {
+                                        cellContent = <span className="text-center block">-</span>;
+                                      }
+                                    } else if (key.includes('TÀI LIỆU') || key.includes('DOCUMENT') || key.includes('Handout')) {
+                                      if (lesson.documentLink) {
+                                        cellContent = (
+                                          <a
+                                            href={lesson.documentLink}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="block py-2 px-4 text-center text-green-600 hover:text-green-800 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
+                                          >
+                                            FILE PDF
+                                          </a>
+                                        );
+                                      } else {
+                                        cellContent = <span className="text-center block">-</span>;
+                                      }
+                                    } else if (key.includes('BTVN') || key.includes('Bài tập') || key.includes('Homework')) {
+                                      if (lesson.homeworkLink) {
+                                        cellContent = (
+                                          <a
+                                            href={lesson.homeworkLink}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="block py-2 px-4 text-center text-red-600 hover:text-red-800 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
+                                          >
+                                            BÀI TẬP
+                                          </a>
+                                        );
+                                      } else {
+                                        cellContent = <span className="text-center block">-</span>;
+                                      }
+                                    } else if (lesson.additionalData && lesson.additionalData[key]) {
+                                      // Xử lý các cột khác từ dữ liệu bổ sung
+                                      const data = lesson.additionalData[key];
+                                      if (data.extractedLink) {
+                                        // Nếu có liên kết
+                                        let linkText = data.value || 'LINK';
+                                        let bgColorClass = 'bg-gray-50';
+                                        let textColorClass = 'text-gray-600';
+                                        
+                                        // Xác định màu dựa trên nội dung
+                                        if (linkText.includes('VIDEO') || linkText.includes('LIVE')) {
+                                          bgColorClass = 'bg-blue-50';
+                                          textColorClass = 'text-blue-600 hover:text-blue-800';
+                                          linkText = 'VIDEO';
+                                        } else if (linkText.includes('PDF') || linkText.includes('TÀI LIỆU')) {
+                                          bgColorClass = 'bg-green-50';
+                                          textColorClass = 'text-green-600 hover:text-green-800';
+                                          linkText = 'FILE PDF';
+                                        } else if (linkText.includes('BTVN') || linkText.includes('BÀI TẬP')) {
+                                          bgColorClass = 'bg-red-50';
+                                          textColorClass = 'text-red-600 hover:text-red-800';
+                                          linkText = 'BÀI TẬP';
+                                        }
+                                        
+                                        cellContent = (
+                                          <a
+                                            href={data.extractedLink}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className={`block py-2 px-4 text-center ${textColorClass} ${bgColorClass} rounded-lg hover:bg-opacity-70 transition-colors`}
+                                          >
+                                            {linkText}
+                                          </a>
+                                        );
+                                      } else if (data.value) {
+                                        // Nếu chỉ có văn bản
+                                        cellContent = <span className="block">{data.value}</span>;
+                                      } else {
+                                        cellContent = <span className="text-center block">-</span>;
+                                      }
+                                    } else {
+                                      cellContent = <span className="text-center block">-</span>;
+                                    }
+                                    
+                                    return (
+                                      <td key={`cell-${chapterIndex}-${lessonIndex}-${i}`} className="p-3 border text-center">
+                                        {cellContent}
+                                      </td>
+                                    );
+                                  })}
+                                </tr>
+                              ))}
+                            </React.Fragment>
+                          );
+                        });
+                      } else {
+                        // Không có nhóm chapter, hiển thị danh sách thông thường
+                        return sections[activeSection].lessons.map((lesson, lessonIndex) => (
+                          <tr key={`lesson-${lessonIndex}`} className="hover:bg-gray-50">
+                            {sections[activeSection].columnMap && Object.entries(sections[activeSection].columnMap).map(([key, index], i) => {
+                              // Xử lý tương tự như trên
+                              let cellContent = null;
+                              
+                              if (key === 'STT' || key === 'Theme') {
+                                cellContent = <span className="font-medium">{lesson.stt}</span>;
+                              } else if (key === 'NGÀY HỌC' || key.includes('Ngày')) {
+                                cellContent = lesson.date;
+                              } else if (key === 'TÊN BÀI' || key.includes('Nội dung')) {
+                                cellContent = <span className="font-medium">{lesson.title}</span>;
+                              } else if (key.includes('LIVE') || key.includes('VIDEO') || key.includes('Bài giảng')) {
+                                if (lesson.liveLink) {
+                                  cellContent = (
+                                    <a
+                                      href={lesson.liveLink}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="block py-2 px-4 text-center text-blue-600 hover:text-blue-800 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+                                    >
+                                      VIDEO
+                                    </a>
+                                  );
+                                } else {
+                                  cellContent = <span className="text-center block">-</span>;
+                                }
+                              } else if (key.includes('TÀI LIỆU') || key.includes('DOCUMENT') || key.includes('Handout')) {
+                                if (lesson.documentLink) {
+                                  cellContent = (
+                                    <a
+                                      href={lesson.documentLink}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="block py-2 px-4 text-center text-green-600 hover:text-green-800 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
+                                    >
+                                      FILE PDF
+                                    </a>
+                                  );
+                                } else {
+                                  cellContent = <span className="text-center block">-</span>;
+                                }
+                              } else if (key.includes('BTVN') || key.includes('Bài tập') || key.includes('Homework')) {
+                                if (lesson.homeworkLink) {
+                                  cellContent = (
+                                    <a
+                                      href={lesson.homeworkLink}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="block py-2 px-4 text-center text-red-600 hover:text-red-800 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
+                                    >
+                                      BÀI TẬP
+                                    </a>
+                                  );
+                                } else {
+                                  cellContent = <span className="text-center block">-</span>;
+                                }
+                              } else if (lesson.additionalData && lesson.additionalData[key]) {
+                                // Xử lý các cột khác từ dữ liệu bổ sung
+                                const data = lesson.additionalData[key];
+                                if (data.extractedLink) {
+                                  // Nếu có liên kết
+                                  let linkText = data.value || 'LINK';
+                                  let bgColorClass = 'bg-gray-50';
+                                  let textColorClass = 'text-gray-600';
+                                  
+                                  // Xác định màu dựa trên nội dung
+                                  if (linkText.includes('VIDEO') || linkText.includes('LIVE')) {
+                                    bgColorClass = 'bg-blue-50';
+                                    textColorClass = 'text-blue-600 hover:text-blue-800';
+                                    linkText = 'VIDEO';
+                                  } else if (linkText.includes('PDF') || linkText.includes('TÀI LIỆU')) {
+                                    bgColorClass = 'bg-green-50';
+                                    textColorClass = 'text-green-600 hover:text-green-800';
+                                    linkText = 'FILE PDF';
+                                  } else if (linkText.includes('BTVN') || linkText.includes('BÀI TẬP')) {
+                                    bgColorClass = 'bg-red-50';
+                                    textColorClass = 'text-red-600 hover:text-red-800';
+                                    linkText = 'BÀI TẬP';
+                                  }
+                                  
+                                  cellContent = (
+                                    <a
+                                      href={data.extractedLink}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className={`block py-2 px-4 text-center ${textColorClass} ${bgColorClass} rounded-lg hover:bg-opacity-70 transition-colors`}
+                                    >
+                                      {linkText}
+                                    </a>
+                                  );
+                                } else if (data.value) {
+                                  // Nếu chỉ có văn bản
+                                  cellContent = <span className="block">{data.value}</span>;
+                                } else {
+                                  cellContent = <span className="text-center block">-</span>;
+                                }
+                              } else {
+                                cellContent = <span className="text-center block">-</span>;
+                              }
+                              
+                              return (
+                                <td key={`cell-${lessonIndex}-${i}`} className="p-3 border text-center">
+                                  {cellContent}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        ));
+                      }
+                    })()}
+                  </tbody>
+                </table>
               </div>
-              
-              {sections.length > 0 && activeSection < sections.length && sections[activeSection].lessons.length > 0 ? (
-                <div className="divide-y divide-gray-200">
-                  {sections[activeSection].lessons.map((lesson, index) => (
-                    <div key={index} className="p-4 hover:bg-gray-50 transition-colors">
-                      <div className="grid grid-cols-12 gap-2 items-center">
-                        <div className="col-span-1 text-center font-medium text-indigo-700 bg-indigo-50 rounded-full w-8 h-8 flex items-center justify-center mx-auto">
-                          {lesson.stt}
-                        </div>
-                        <div className="col-span-2 text-sm text-gray-600">
-                          {lesson.date && (
-                            <span className="inline-block px-2 py-1 bg-orange-50 text-orange-800 rounded-md border border-orange-100">
-                              {lesson.date}
-                            </span>
-                          )}
-                        </div>
-                        <div className="col-span-5 font-medium text-gray-800">{lesson.title}</div>
-                        <div className="col-span-4 flex items-center flex-wrap gap-2">
-                          {lesson.liveLink && (
-                            <a 
-                              href={lesson.liveLink}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center px-3 py-1.5 bg-red-50 text-red-700 text-sm font-medium rounded-lg hover:bg-red-100 transition-colors border border-red-200 shadow-sm"
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5" viewBox="0 0 20 20" fill="currentColor">
-                                <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
-                                <path d="M14 6a2 2 0 012 2v7a2 2 0 01-2 2H9a2 2 0 01-2-2V8a2 2 0 012-2h5z" />
-                              </svg>
-                              Video
-                            </a>
-                          )}
-                          
-                          {lesson.documentLink && (
-                            <a 
-                              href={lesson.documentLink}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center px-3 py-1.5 bg-blue-50 text-blue-700 text-sm font-medium rounded-lg hover:bg-blue-100 transition-colors border border-blue-200 shadow-sm"
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
-                              </svg>
-                              Tài liệu
-                            </a>
-                          )}
-                          
-                          {lesson.homeworkLink && (
-                            <a 
-                              href={lesson.homeworkLink}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center px-3 py-1.5 bg-green-50 text-green-700 text-sm font-medium rounded-lg hover:bg-green-100 transition-colors border border-green-200 shadow-sm"
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5" viewBox="0 0 20 20" fill="currentColor">
-                                <path d="M9 2a2 2 0 00-2 2v8a2 2 0 002 2h6a2 2 0 002-2V6.414A2 2 0 0016.414 5L14 2.586A2 2 0 0012.586 2H9z" />
-                                <path d="M3 8a2 2 0 012-2h2a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
-                              </svg>
-                              BTVN
-                            </a>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="py-16 text-center bg-gray-50">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  <p className="text-gray-500 text-lg">Chưa có bài học nào trong phần này</p>
-                  <p className="text-gray-400 text-sm mt-2">Vui lòng quay lại sau, bài học sẽ sớm được cập nhật.</p>
-                </div>
-              )}
-            </div>
+            ) : (
+              <div className="py-16 text-center bg-gray-50">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <p className="text-gray-500 text-lg">Chưa có bài học nào trong phần này</p>
+                <p className="text-gray-400 text-sm mt-2">Vui lòng quay lại sau, bài học sẽ sớm được cập nhật.</p>
+              </div>
+            )}
             
             <div className="mt-8 rounded-xl overflow-hidden shadow-md bg-gradient-to-r from-amber-50 to-yellow-50 border border-yellow-200">
               <div className="p-5">
