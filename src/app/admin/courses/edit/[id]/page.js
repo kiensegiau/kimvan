@@ -2,10 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { use } from 'react';
 import { ArrowLeftIcon, PencilIcon, TrashIcon, CloudArrowDownIcon, ExclamationCircleIcon, XMarkIcon, ArrowPathIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 
 export default function CourseEditPage({ params }) {
   const router = useRouter();
+  const courseId = use(params).id; // Sử dụng React.use() để unwrap params
+  
   const [course, setCourse] = useState(null);
   const [formData, setFormData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -19,7 +22,7 @@ export default function CourseEditPage({ params }) {
     setError(null);
     
     try {
-      const response = await fetch(`/api/courses/${params.id}?type=_id`);
+      const response = await fetch(`/api/courses/${courseId}?type=_id`);
       
       if (!response.ok) {
         throw new Error(`Lỗi ${response.status}: ${response.statusText}`);
@@ -50,7 +53,7 @@ export default function CourseEditPage({ params }) {
     setError(null);
     
     try {
-      const response = await fetch(`/api/courses/${params.id}?type=_id`, {
+      const response = await fetch(`/api/courses/${courseId}?type=_id`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -91,7 +94,7 @@ export default function CourseEditPage({ params }) {
   // Tải thông tin khóa học khi component được tạo
   useEffect(() => {
     fetchCourse();
-  }, [params.id]);
+  }, [courseId]);
 
   // Hàm xử lý khi người dùng thay đổi trường input
   const handleChange = (e) => {
@@ -180,7 +183,7 @@ export default function CourseEditPage({ params }) {
         {/* Header */}
         <div className="mb-6 flex justify-between items-center">
           <button
-            onClick={() => router.push(`/admin/courses/${params.id}`)}
+            onClick={() => router.push(`/admin/courses/${courseId}`)}
             className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-700 bg-gray-100 hover:bg-gray-200"
           >
             <ArrowLeftIcon className="-ml-0.5 mr-2 h-4 w-4" />
@@ -289,7 +292,7 @@ export default function CourseEditPage({ params }) {
             <div className="flex justify-end">
               <button
                 type="button"
-                onClick={() => router.push(`/admin/courses/${params.id}`)}
+                onClick={() => router.push(`/admin/courses/${courseId}`)}
                 className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 mr-3"
               >
                 Hủy

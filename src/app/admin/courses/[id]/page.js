@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { use } from 'react';
 import { ArrowLeftIcon, PencilIcon, TrashIcon, CloudArrowDownIcon, ExclamationCircleIcon, XMarkIcon, ArrowPathIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 
 export default function CourseDetailPage({ params }) {
   const router = useRouter();
-  const { id } = params;
+  const courseId = use(params).id;
   
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -25,7 +26,7 @@ export default function CourseDetailPage({ params }) {
   const fetchCourseDetail = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/courses/${params.id}?type=_id`);
+      const response = await fetch(`/api/courses/${courseId}?type=_id`);
       if (!response.ok) {
         throw new Error(`Lỗi ${response.status}: ${response.statusText}`);
       }
@@ -174,7 +175,7 @@ export default function CourseDetailPage({ params }) {
   // Tải thông tin khóa học khi component được tạo
   useEffect(() => {
     fetchCourseDetail();
-  }, [id]);
+  }, [courseId]);
 
   if (loading) {
     return (
