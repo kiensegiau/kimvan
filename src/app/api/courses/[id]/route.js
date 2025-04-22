@@ -140,7 +140,7 @@ export async function DELETE(request, { params }) {
 // PATCH: Đồng bộ một khóa học từ Kimvan
 export async function PATCH(request, { params }) {
   try {
-    const id = params.id;
+    const id = params.id; // Lấy ID từ params mà không cần destructuring
     
     const mongoClient = await clientPromise;
     const db = mongoClient.db('kimvan');
@@ -188,18 +188,27 @@ export async function PATCH(request, { params }) {
     console.log('Đã nhận dữ liệu từ kimvan API thành công!');
     const kimvanData = await kimvanResponse.json();
     
-    // Cập nhật khóa học với dữ liệu mới
-    const updateData = {
-      name: kimvanData.name || existingCourse.name,
-      description: `Khóa học ${kimvanData.name}` || existingCourse.description,
+    // Giữ lại _id và kimvanId từ dữ liệu cũ
+    const _id = existingCourse._id;
+    const kimvanId = existingCourse.kimvanId;
+    
+    // Tạo document mới hoàn toàn để thay thế dữ liệu cũ
+    const newCourseData = {
+      _id: _id,
+      kimvanId: kimvanId,
+      name: kimvanData.name || 'Khóa học không tên',
+      description: `Khóa học ${kimvanData.name || 'không tên'}`,
+      price: existingCourse.price || 500000, // Giữ giá cũ nếu có
+      status: existingCourse.status || 'active',
+      createdAt: existingCourse.createdAt || new Date(),
       updatedAt: new Date(),
-      originalData: kimvanData
+      originalData: kimvanData // Lưu dữ liệu gốc mới
     };
     
-    // Thực hiện cập nhật
-    const result = await collection.updateOne(
+    // Xóa document cũ và thay thế bằng document mới
+    const result = await collection.replaceOne(
       { kimvanId: id },
-      { $set: updateData }
+      newCourseData
     );
     
     if (result.modifiedCount === 0) {
@@ -214,8 +223,8 @@ export async function PATCH(request, { params }) {
     
     return NextResponse.json({
       success: true,
-      message: 'Đồng bộ khóa học thành công',
-      updatedFields: Object.keys(updateData)
+      message: 'Đồng bộ khóa học thành công - Dữ liệu đã được làm mới hoàn toàn',
+      updatedFields: Object.keys(newCourseData)
     });
   } catch (error) {
     console.error('Lỗi khi đồng bộ khóa học:', error);

@@ -511,7 +511,7 @@ export default function CoursesPage() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{course.name}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {course.updatedAt 
-                            ? new Date(course.updatedAt).toLocaleDateString('vi-VN')
+                            ? new Date(course.updatedAt).toLocaleDateString('vi-VN') + ' ' + new Date(course.updatedAt).toLocaleTimeString('vi-VN')
                             : new Date(course.createdAt).toLocaleDateString('vi-VN')}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
