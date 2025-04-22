@@ -46,8 +46,8 @@ export async function POST(request) {
         name: item.name,
         description: `Khóa học ${item.name}`,
         price: 500000,
-        status: 'active'
-        // Không lưu originalData tại đây để tránh dữ liệu quá lớn
+        status: 'active',
+        originalData: item // Lưu dữ liệu gốc trong document
       }));
     }
 
@@ -55,7 +55,6 @@ export async function POST(request) {
     const mongoClient = await clientPromise;
     const db = mongoClient.db('kimvan');
     const coursesCollection = db.collection('courses');
-    const kimvanDataCollection = db.collection('kimvan_data');
 
     // Đếm số khóa học đã có trong DB
     const existingCoursesCount = await coursesCollection.countDocuments({});
@@ -69,72 +68,69 @@ export async function POST(request) {
       errors: 0
     };
 
+    // Kiểm tra trước và tạo danh sách các ID cần xử lý
+    const existingCoursesMap = {};
+    const existingCourses = await coursesCollection.find(
+      { kimvanId: { $in: coursesToSync.map(course => course.kimvanId) } },
+      { projection: { kimvanId: 1 } }
+    ).toArray();
+    
+    existingCourses.forEach(course => {
+      existingCoursesMap[course.kimvanId] = true;
+    });
+
+    // Tạo các thao tác upsert cho tất cả khóa học để thực hiện hàng loạt
+    const bulkOps = [];
+
     for (const course of coursesToSync) {
       try {
-        const originalData = course.originalData;
+        // Giữ lại dữ liệu gốc trong cùng document
+        // Không cần tách ra collection riêng
         
-        // Loại bỏ dữ liệu gốc từ đối tượng khóa học để giảm kích thước
-        const courseToSave = { ...course };
-        delete courseToSave.originalData;
+        // Kiểm tra xem khóa học đã tồn tại chưa
+        const exists = existingCoursesMap[course.kimvanId];
         
-        // Kiểm tra xem khóa học đã tồn tại chưa (dựa vào kimvanId)
-        const existingCourse = await coursesCollection.findOne({ kimvanId: course.kimvanId });
-
-        if (existingCourse) {
+        if (exists) {
           // Cập nhật khóa học hiện có
-          await coursesCollection.updateOne(
-            { kimvanId: course.kimvanId },
-            {
-              $set: {
-                ...courseToSave,
-                updatedAt: new Date()
-              }
-            }
-          );
-          
-          // Lưu hoặc cập nhật dữ liệu gốc lớn trong collection riêng biệt
-          if (originalData) {
-            await kimvanDataCollection.updateOne(
-              { kimvanId: course.kimvanId },
-              { 
-                $set: { 
-                  kimvanId: course.kimvanId,
-                  originalData: originalData,
+          bulkOps.push({
+            updateOne: {
+              filter: { kimvanId: course.kimvanId },
+              update: {
+                $set: {
+                  ...course, // Bao gồm cả originalData
                   updatedAt: new Date()
                 }
-              },
-              { upsert: true }
-            );
-          }
+              }
+            }
+          });
           
           syncResults.updated++;
         } else {
           // Tạo khóa học mới
-          await coursesCollection.insertOne({
-            ...courseToSave,
-            createdAt: new Date()
+          bulkOps.push({
+            insertOne: {
+              document: {
+                ...course, // Bao gồm cả originalData
+                createdAt: new Date()
+              }
+            }
           });
-          
-          // Lưu dữ liệu gốc lớn trong collection riêng biệt
-          if (originalData) {
-            await kimvanDataCollection.insertOne({
-              kimvanId: course.kimvanId,
-              originalData: originalData,
-              createdAt: new Date()
-            });
-          }
           
           syncResults.created++;
         }
       } catch (err) {
-        console.error(`Lỗi khi đồng bộ khóa học ID ${course.kimvanId}:`, err);
+        console.error(`Lỗi khi chuẩn bị đồng bộ khóa học ID ${course.kimvanId}:`, err);
         syncResults.errors++;
       }
     }
 
+    // Thực hiện các thao tác hàng loạt nếu có
+    if (bulkOps.length > 0) {
+      await coursesCollection.bulkWrite(bulkOps);
+    }
+
     // Lấy số khóa học sau khi đồng bộ
     const currentCoursesCount = await coursesCollection.countDocuments({});
-    const kimvanDataCount = await kimvanDataCollection.countDocuments({});
 
     return NextResponse.json({
       success: true,
@@ -142,7 +138,6 @@ export async function POST(request) {
       summary: {
         previousCount: existingCoursesCount,
         currentCount: currentCoursesCount,
-        kimvanDataCount: kimvanDataCount,
         ...syncResults
       }
     });

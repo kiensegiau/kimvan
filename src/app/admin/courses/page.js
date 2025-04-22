@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { PlusIcon, PencilIcon, TrashIcon, CloudArrowDownIcon, ExclamationCircleIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, PencilIcon, TrashIcon, CloudArrowDownIcon, ExclamationCircleIcon, XMarkIcon, ArrowPathIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 import { ServerIcon as DatabaseIcon } from '@heroicons/react/24/outline';
 
 export default function CoursesPage() {
@@ -20,6 +20,13 @@ export default function CoursesPage() {
   const [kimvanCourses, setKimvanCourses] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [showOriginalDataModal, setShowOriginalDataModal] = useState(false);
+  const [showOriginalData, setShowOriginalData] = useState(false);
+  const [originalData, setOriginalData] = useState(null);
+  const [currentCourseId, setCurrentCourseId] = useState(null);
+  const [loadingOriginalData, setLoadingOriginalData] = useState(false);
+  const [originalDataError, setOriginalDataError] = useState(null);
+  const [downloadingData, setDownloadingData] = useState(false);
+  const [downloadError, setDownloadError] = useState(null);
 
   // Hàm để tải danh sách khóa học từ API
   const fetchCourses = async () => {
@@ -274,35 +281,68 @@ export default function CoursesPage() {
     setShowSyncModal(false);
   };
 
-  // Hàm để hiển thị modal xem dữ liệu gốc từ Kimvan
+  // Hàm hiển thị dữ liệu gốc trong modal
   const handleViewOriginalData = async (courseId) => {
+    setShowOriginalDataModal(true);
+    setLoadingOriginalData(true);
+    setCurrentCourseId(courseId);
+    
     try {
-      setLoading(true);
-      setError(null);
-      
-      // Lấy dữ liệu gốc từ API
-      const response = await fetch(`/api/kimvan-data/${courseId}`);
-      const data = await response.json();
-      
+      const response = await fetch(`/api/courses/${courseId}`);
       if (!response.ok) {
-        throw new Error(data.message || 'Không thể lấy dữ liệu gốc từ Kimvan');
+        throw new Error(`Lỗi: ${response.status} ${response.statusText}`);
+      }
+      const data = await response.json();
+      setOriginalData(data.originalData);
+    } catch (error) {
+      console.error('Lỗi khi lấy dữ liệu gốc:', error);
+      setOriginalData(null);
+    } finally {
+      setLoadingOriginalData(false);
+    }
+  }
+
+  // Hàm để tải xuống dữ liệu gốc dưới dạng file JSON
+  const handleDownloadOriginalData = async () => {
+    if (!currentCourseId) return;
+    
+    setDownloadingData(true);
+    setDownloadError(null);
+    
+    try {
+      const response = await fetch(`/api/courses/${currentCourseId}`);
+      if (!response.ok) {
+        throw new Error(`Lỗi: ${response.status} ${response.statusText}`);
       }
       
-      // Hiển thị dữ liệu gốc
-      setSelectedCourse(data);
-      setShowOriginalDataModal(true);
-    } catch (err) {
-      console.error('Lỗi khi lấy dữ liệu gốc:', err);
-      setError(err.message || 'Đã xảy ra lỗi khi lấy dữ liệu gốc từ Kimvan');
+      const courseData = await response.json();
+      
+      if (!courseData.originalData) {
+        throw new Error('Không tìm thấy dữ liệu gốc cho khóa học này');
+      }
+      
+      // Tạo file JSON để tải xuống
+      const blob = new Blob([JSON.stringify(courseData.originalData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      
+      // Tạo thẻ a và kích hoạt sự kiện click để tải xuống
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `kimvan-course-${currentCourseId}.json`;
+      document.body.appendChild(a);
+      a.click();
+      
+      // Dọn dẹp
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 100);
+    } catch (error) {
+      console.error('Lỗi khi tải xuống dữ liệu gốc:', error);
+      setDownloadError(error.message);
     } finally {
-      setLoading(false);
+      setDownloadingData(false);
     }
-  };
-
-  // Hàm đóng modal xem dữ liệu gốc
-  const handleCloseOriginalDataModal = () => {
-    setShowOriginalDataModal(false);
-    setSelectedCourse(null);
   };
 
   return (
@@ -688,71 +728,69 @@ export default function CoursesPage() {
         </>
       )}
 
-      {/* Modal Xem dữ liệu gốc từ Kimvan */}
+      {/* Modal hiển thị dữ liệu gốc */}
       {showOriginalDataModal && (
-        <>
-          {/* Lớp phủ */}
-          <div 
-            className="fixed inset-0 bg-gray-500 bg-opacity-75 z-40 cursor-pointer" 
-            onClick={handleCloseOriginalDataModal}
-          ></div>
-          
-          {/* Nội dung modal */}
-          <div className="fixed z-50 inset-0 overflow-y-auto">
-            <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-              <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-              <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
-                <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                  <div className="sm:flex sm:items-start">
-                    <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 sm:mx-0 sm:h-10 sm:w-10">
-                      <CloudArrowDownIcon className="h-6 w-6 text-yellow-600" aria-hidden="true" />
-                    </div>
-                    <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
-                      <h3 className="text-lg leading-6 font-medium text-gray-900">
-                        Dữ liệu gốc từ Kimvan
-                      </h3>
-                      <div className="mt-2">
-                        <p className="text-sm text-gray-500 mb-4">
-                          Dữ liệu gốc từ Kimvan được hiển thị dưới đây. Vui lòng kiểm tra và xác nhận để tiếp tục.
-                        </p>
-                        
-                        {selectedCourse && (
-                          <div className="mt-4 max-h-96 overflow-y-auto">
-                            <table className="min-w-full divide-y divide-gray-200">
-                              <thead className="bg-gray-50">
-                                <tr>
-                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên trường</th>
-                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Giá trị</th>
-                                </tr>
-                              </thead>
-                              <tbody className="bg-white divide-y divide-gray-200">
-                                {Object.entries(selectedCourse).map(([key, value]) => (
-                                  <tr key={key}>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-500">{key}</td>
-                                    <td className="px-6 py-4 text-sm text-gray-900">{value}</td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                  <button
-                    type="button"
-                    onClick={handleCloseOriginalDataModal}
-                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:ml-3 sm:w-auto sm:text-sm"
-                  >
-                    Đóng
-                  </button>
-                </div>
-              </div>
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium">Dữ liệu gốc của khóa học</h3>
+              <button
+                onClick={() => setShowOriginalDataModal(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <XMarkIcon className="h-6 w-6" />
+              </button>
             </div>
+            
+            <div className="mb-4">
+              <button
+                onClick={handleDownloadOriginalData}
+                disabled={downloadingData || !originalData}
+                className="bg-green-600 text-white px-4 py-2 rounded mr-2 hover:bg-green-700 disabled:opacity-50"
+              >
+                {downloadingData ? (
+                  <span className="flex items-center">
+                    <ArrowPathIcon className="h-4 w-4 animate-spin mr-2" />
+                    Đang tải xuống...
+                  </span>
+                ) : (
+                  <span className="flex items-center">
+                    <ArrowDownTrayIcon className="h-4 w-4 mr-2" />
+                    Tải xuống dữ liệu đầy đủ
+                  </span>
+                )}
+              </button>
+              
+              {downloadError && (
+                <div className="text-red-500 mt-2">
+                  <p>Lỗi khi tải xuống: {downloadError}</p>
+                </div>
+              )}
+            </div>
+            
+            {loadingOriginalData ? (
+              <div className="flex justify-center items-center py-20">
+                <ArrowPathIcon className="h-8 w-8 animate-spin text-blue-500" />
+                <span className="ml-2">Đang tải dữ liệu...</span>
+              </div>
+            ) : originalDataError ? (
+              <div className="text-red-500 py-10 text-center">
+                <p>Đã xảy ra lỗi khi tải dữ liệu:</p>
+                <p>{originalDataError}</p>
+              </div>
+            ) : originalData ? (
+              <div className="bg-gray-100 p-4 rounded-md">
+                <pre className="whitespace-pre-wrap overflow-auto max-h-[60vh]">
+                  {JSON.stringify(originalData, null, 2)}
+                </pre>
+              </div>
+            ) : (
+              <div className="text-center py-10">
+                <p>Không có dữ liệu để hiển thị</p>
+              </div>
+            )}
           </div>
-        </>
+        </div>
       )}
     </div>
   );
