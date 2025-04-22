@@ -9,38 +9,31 @@ export default function CoursesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [currentCourse, setCurrentCourse] = useState(null);
+  const [error, setError] = useState(null);
+
+  // Hàm để tải danh sách khóa học từ API
+  const fetchCourses = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/courses');
+      
+      if (!response.ok) {
+        throw new Error('Không thể tải dữ liệu khóa học');
+      }
+      
+      const data = await response.json();
+      setCourses(data);
+      setError(null);
+    } catch (err) {
+      console.error('Lỗi khi tải danh sách khóa học:', err);
+      setError('Đã xảy ra lỗi khi tải dữ liệu. Vui lòng thử lại sau.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    // Simulate fetching data
-    setTimeout(() => {
-      setCourses([
-        {
-          id: 1,
-          name: 'Khóa học Excel cơ bản',
-          description: 'Học cách sử dụng Excel từ cơ bản đến nâng cao',
-          price: 500000,
-          status: 'active',
-          createdAt: '2024-01-15',
-        },
-        {
-          id: 2,
-          name: 'Khóa học Word nâng cao',
-          description: 'Nâng cao kỹ năng sử dụng Microsoft Word',
-          price: 400000,
-          status: 'active',
-          createdAt: '2024-01-20',
-        },
-        {
-          id: 3,
-          name: 'Khóa học PowerPoint',
-          description: 'Tạo bài thuyết trình chuyên nghiệp',
-          price: 450000,
-          status: 'inactive',
-          createdAt: '2024-02-01',
-        },
-      ]);
-      setLoading(false);
-    }, 1000);
+    fetchCourses();
   }, []);
 
   const filteredCourses = courses.filter(course =>
@@ -49,28 +42,88 @@ export default function CoursesPage() {
   );
 
   const handleEdit = (course) => {
-    setCurrentCourse(course);
+    setCurrentCourse({
+      _id: course._id,
+      name: course.name,
+      description: course.description,
+      price: course.price,
+      status: course.status
+    });
     setShowModal(true);
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (window.confirm('Bạn có chắc chắn muốn xóa khóa học này?')) {
-      setCourses(courses.filter(course => course.id !== id));
+      try {
+        const response = await fetch(`/api/courses/${id}`, {
+          method: 'DELETE',
+        });
+        
+        if (!response.ok) {
+          throw new Error('Không thể xóa khóa học');
+        }
+        
+        // Cập nhật danh sách khóa học sau khi xóa
+        setCourses(courses.filter(course => course._id !== id));
+      } catch (err) {
+        console.error('Lỗi khi xóa khóa học:', err);
+        alert('Đã xảy ra lỗi khi xóa khóa học. Vui lòng thử lại sau.');
+      }
     }
   };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
-    // Simulate saving data
-    if (currentCourse.id) {
-      setCourses(courses.map(course => 
-        course.id === currentCourse.id ? currentCourse : course
-      ));
-    } else {
-      setCourses([...courses, { ...currentCourse, id: courses.length + 1 }]);
+    
+    try {
+      let response;
+      
+      // Nếu có _id, thì cập nhật khóa học hiện có
+      if (currentCourse._id) {
+        response = await fetch(`/api/courses/${currentCourse._id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(currentCourse),
+        });
+        
+        if (!response.ok) {
+          throw new Error('Không thể cập nhật khóa học');
+        }
+        
+        // Cập nhật danh sách khóa học
+        setCourses(courses.map(course => 
+          course._id === currentCourse._id ? currentCourse : course
+        ));
+      } 
+      // Ngược lại, tạo khóa học mới
+      else {
+        response = await fetch('/api/courses', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(currentCourse),
+        });
+        
+        if (!response.ok) {
+          throw new Error('Không thể tạo khóa học mới');
+        }
+        
+        const data = await response.json();
+        
+        // Thêm khóa học mới vào danh sách
+        setCourses([...courses, data.course]);
+      }
+      
+      // Đóng modal và đặt lại trạng thái
+      setShowModal(false);
+      setCurrentCourse(null);
+    } catch (err) {
+      console.error('Lỗi khi lưu khóa học:', err);
+      alert('Đã xảy ra lỗi khi lưu khóa học. Vui lòng thử lại sau.');
     }
-    setShowModal(false);
-    setCurrentCourse(null);
   };
 
   return (
@@ -80,7 +133,7 @@ export default function CoursesPage() {
         <button
           onClick={() => {
             setCurrentCourse({
-              id: null,
+              _id: null,
               name: '',
               description: '',
               price: 0,
@@ -107,6 +160,16 @@ export default function CoursesPage() {
             />
           </div>
 
+          {error && (
+            <div className="bg-red-50 p-4 mb-4 rounded-md">
+              <div className="flex">
+                <div className="text-red-700">
+                  {error}
+                </div>
+              </div>
+            </div>
+          )}
+
           {loading ? (
             <div className="text-center py-4">Đang tải...</div>
           ) : (
@@ -123,39 +186,47 @@ export default function CoursesPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredCourses.map((course) => (
-                    <tr key={course.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{course.name}</td>
-                      <td className="px-6 py-4 text-sm text-gray-500">{course.description}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {course.price.toLocaleString('vi-VN')}đ
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          course.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                        }`}>
-                          {course.status === 'active' ? 'Đang hoạt động' : 'Ngừng hoạt động'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(course.createdAt).toLocaleDateString('vi-VN')}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button
-                          onClick={() => handleEdit(course)}
-                          className="text-indigo-600 hover:text-indigo-900 mr-4"
-                        >
-                          <PencilIcon className="h-5 w-5" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(course.id)}
-                          className="text-red-600 hover:text-red-900"
-                        >
-                          <TrashIcon className="h-5 w-5" />
-                        </button>
+                  {filteredCourses.length > 0 ? (
+                    filteredCourses.map((course) => (
+                      <tr key={course._id}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{course.name}</td>
+                        <td className="px-6 py-4 text-sm text-gray-500">{course.description}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {course.price.toLocaleString('vi-VN')}đ
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            course.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                          }`}>
+                            {course.status === 'active' ? 'Đang hoạt động' : 'Ngừng hoạt động'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {new Date(course.createdAt).toLocaleDateString('vi-VN')}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <button
+                            onClick={() => handleEdit(course)}
+                            className="text-indigo-600 hover:text-indigo-900 mr-4"
+                          >
+                            <PencilIcon className="h-5 w-5" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(course._id)}
+                            className="text-red-600 hover:text-red-900"
+                          >
+                            <TrashIcon className="h-5 w-5" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="6" className="px-6 py-4 text-center text-sm text-gray-500">
+                        Không tìm thấy khóa học nào
                       </td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>
             </div>
@@ -175,7 +246,7 @@ export default function CoursesPage() {
               <form onSubmit={handleSave}>
                 <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                   <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
-                    {currentCourse.id ? 'Chỉnh sửa khóa học' : 'Thêm khóa học mới'}
+                    {currentCourse._id ? 'Chỉnh sửa khóa học' : 'Thêm khóa học mới'}
                   </h3>
                   <div className="space-y-4">
                     <div>
