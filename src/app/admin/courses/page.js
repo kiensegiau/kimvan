@@ -501,30 +501,18 @@ export default function CoursesPage() {
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên khóa học</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mô tả</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Giá</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày tạo</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày chỉnh sửa</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Hành động</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {filteredCourses.map((course) => (
                       <tr key={course._id}>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{course.name}</td>
-                        <td className="px-6 py-4 text-sm text-gray-500">{course.description}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {course.price.toLocaleString('vi-VN')}đ
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            course.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                          }`}>
-                            {course.status === 'active' ? 'Đang hoạt động' : 'Ngừng hoạt động'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {new Date(course.createdAt).toLocaleDateString('vi-VN')}
+                          {course.updatedAt 
+                            ? new Date(course.updatedAt).toLocaleDateString('vi-VN')
+                            : new Date(course.createdAt).toLocaleDateString('vi-VN')}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <button
@@ -541,6 +529,60 @@ export default function CoursesPage() {
                               title="Xem dữ liệu gốc"
                             >
                               <CloudArrowDownIcon className="h-5 w-5" />
+                            </button>
+                          )}
+                          {course.kimvanId && (
+                            <button
+                              onClick={() => {
+                                const syncSingleCourse = async () => {
+                                  try {
+                                    setSyncing(true);
+                                    setError(null);
+                                    
+                                    // Sử dụng phương thức PATCH để đồng bộ khóa học
+                                    const response = await fetch(`/api/courses/${course.kimvanId}`, {
+                                      method: 'PATCH',
+                                      headers: {
+                                        'Content-Type': 'application/json',
+                                      }
+                                    });
+                                    
+                                    const syncData = await response.json();
+                                    
+                                    if (!response.ok) {
+                                      throw new Error(syncData.message || 'Không thể đồng bộ khóa học');
+                                    }
+                                    
+                                    // Hiển thị kết quả đồng bộ
+                                    setSyncResults({
+                                      success: true,
+                                      message: syncData.message,
+                                      summary: {
+                                        total: 1,
+                                        created: 0,
+                                        updated: 1,
+                                        errors: 0
+                                      }
+                                    });
+                                    
+                                    // Tải lại danh sách khóa học
+                                    await fetchCourses();
+                                  } catch (err) {
+                                    console.error('Lỗi khi đồng bộ khóa học:', err);
+                                    setError(err.message || 'Đã xảy ra lỗi khi đồng bộ khóa học. Vui lòng kiểm tra kết nối MongoDB.');
+                                  } finally {
+                                    setSyncing(false);
+                                  }
+                                };
+                                
+                                if (window.confirm(`Bạn có muốn đồng bộ khóa học "${course.name}" không?`)) {
+                                  syncSingleCourse();
+                                }
+                              }}
+                              className="text-green-600 hover:text-green-900 mr-2"
+                              title="Đồng bộ khóa học này"
+                            >
+                              <ArrowPathIcon className="h-5 w-5" />
                             </button>
                           )}
                           <button
