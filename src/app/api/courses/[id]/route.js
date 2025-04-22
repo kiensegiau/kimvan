@@ -188,6 +188,26 @@ export async function PATCH(request, { params }) {
     console.log('Đã nhận dữ liệu từ kimvan API thành công!');
     const kimvanData = await kimvanResponse.json();
     
+    // Log dữ liệu từ API để kiểm tra
+    console.log('Dữ liệu nhận được từ Kimvan:', kimvanData);
+    
+    // Xử lý dữ liệu dựa vào cấu trúc thực tế từ API
+    // Kimvan API có thể trả về dữ liệu trong nhiều định dạng khác nhau
+    let courseName = '';
+    
+    // Kiểm tra cấu trúc dữ liệu và lấy tên khóa học
+    if (kimvanData && typeof kimvanData === 'object') {
+      if (kimvanData.name) {
+        courseName = kimvanData.name;
+      } else if (kimvanData.data && kimvanData.data.name) {
+        courseName = kimvanData.data.name;
+      } else if (Array.isArray(kimvanData) && kimvanData.length > 0 && kimvanData[0].name) {
+        courseName = kimvanData[0].name;
+      }
+    }
+    
+    console.log('Tên khóa học được xác định:', courseName);
+    
     // Giữ lại _id và kimvanId từ dữ liệu cũ
     const _id = existingCourse._id;
     const kimvanId = existingCourse.kimvanId;
@@ -196,13 +216,15 @@ export async function PATCH(request, { params }) {
     const newCourseData = {
       _id: _id,
       kimvanId: kimvanId,
-      name: kimvanData.name || 'Khóa học không tên',
-      description: `Khóa học ${kimvanData.name || 'không tên'}`,
-      price: existingCourse.price || 500000, // Giữ giá cũ nếu có
+      name: courseName || existingCourse.name, // Sử dụng tên đã xác định hoặc giữ tên cũ
+      description: courseName 
+        ? `Khóa học ${courseName}` 
+        : existingCourse.description, // Giữ mô tả cũ nếu không có tên mới
+      price: existingCourse.price || 500000, 
       status: existingCourse.status || 'active',
       createdAt: existingCourse.createdAt || new Date(),
       updatedAt: new Date(),
-      originalData: kimvanData // Lưu dữ liệu gốc mới
+      originalData: kimvanData
     };
     
     // Xóa document cũ và thay thế bằng document mới
