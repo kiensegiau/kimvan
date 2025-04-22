@@ -2,8 +2,9 @@ import { NextResponse } from 'next/server';
 
 export async function GET(request, { params }) {
   try {
-    // Lấy tham số name từ đường dẫn
-    const name = params.name;
+    // Đảm bảo await params trước khi sử dụng
+    const paramsData = await params;
+    const name = paramsData.name;
     
     if (!name) {
       return NextResponse.json({ error: 'Tên không được cung cấp' }, { status: 400 });

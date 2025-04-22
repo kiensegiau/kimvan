@@ -141,6 +141,9 @@ export default function CoursesPage() {
               const gradientClass = getSubjectColor(subject);
               const icon = getSubjectIcon(subject);
               
+              // Log ID để debug
+              console.log(`Course ${index}: ${course.name} - ID: ${course.id}`);
+              
               return (
                 <div key={index} className="bg-white rounded-xl shadow-lg overflow-hidden transform transition duration-300 hover:scale-105 hover:shadow-xl">
                   <div className={`bg-gradient-to-r ${gradientClass} h-32 flex items-center justify-center relative`}>
@@ -169,14 +172,12 @@ export default function CoursesPage() {
                     )}
                     
                     <div className="mt-4 pt-4 border-t border-gray-100">
-                      <a 
-                        href={`/api/spreadsheets/${course.id}/LIVE/2K8/redirect`}
-                        target="_blank" 
-                        rel="noopener noreferrer" 
+                      <Link 
+                        href={`/khoa-hoc/${encodeURIComponent(course.id)}`}
                         className="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition"
                       >
-                        Xem khóa học
-                      </a>
+                        Xem chi tiết khóa học
+                      </Link>
                     </div>
                   </div>
                 </div>

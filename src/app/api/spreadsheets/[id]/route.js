@@ -48,7 +48,14 @@ export async function GET(request, { params }) {
     // Log thành công
     console.log('Đã nhận dữ liệu từ kimvan API thành công!');
     
-    return NextResponse.json(data);
+    // Trả về với các headers tương tự như kimvan API
+    return NextResponse.json(data, {
+      headers: {
+        'Cache-Control': 'public, max-age=0, must-revalidate',
+        'Content-Type': 'application/json',
+        'Strict-Transport-Security': 'max-age=63072000'
+      }
+    });
     
   } catch (error) {
     console.error('Lỗi khi gọi API kimvan:', error);

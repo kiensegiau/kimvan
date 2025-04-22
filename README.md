@@ -1,36 +1,156 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# API Documentation
 
-## Getting Started
+## Spreadsheets API
 
-First, run the development server:
+### Danh sách Spreadsheets
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```
+GET /api/spreadsheets/create/{name}
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Ví dụ:
+```
+GET /api/spreadsheets/create/fullcombokhoa2k8
+```
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+#### Response
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Status: 200 OK
+- Type: application/json
+- Server: Vercel
 
-## Learn More
+#### Response Data
 
-To learn more about Next.js, take a look at the following resources:
+```json
+[
+    {
+        "id": "4tKFsUi5Wf8eFN0_CZjARkxWHgSTvzvlIncwx4HGKJZltzAbm0CKFwliyBrlTIqbOVRWKAgJiGdaYOpoh9wGoLHUF_34BBgF",
+        "name": "2K8 XPS | VẬT LÝ - VŨ NGỌC ANH"
+    },
+    {
+        "id": "9auMxdPb_HFgfX6eFr4xGAjmqKWFUC911kyWNwHapcKQXdXyZqZWGwlSMk8cJr9gbWbICeQi-0zZLGwDQZKIGe3Gew95X8Wi",
+        "name": "2K8 XPS | HÓA - PHẠM VĂN TRỌNG"
+    },
+    {
+        "id": "WRn91SKHWM2l1OsMD6K5wVlYK9uVf6-ciycBBRQxZbaUrTjm_9z_txWiTRCIPegFXzc0FqKqadKt0xRVbEVQpo8jKjdUyqsF",
+        "name": "2K8 XPS | TOÁN - ĐỖ VĂN ĐỨC"
+    }
+]
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+> API trả về danh sách các spreadsheet dựa trên tên đã cung cấp. Thường trả về 10 spreadsheet với các môn học khác nhau (Vật lý, Hóa, Toán, Tiếng Anh).
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Chi tiết Spreadsheet
 
-## Deploy on Vercel
+```
+GET /api/spreadsheets/{id}
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Ví dụ:
+```
+GET /api/spreadsheets/4tKFsUi5Wf8eFN0_CZjARkxWHgSTvzvlIncwx4HGKJZltzAbm0CKFwliyBrlTIqbOVRWKAgJiGdaYOpoh9wGoLHUF_34BBgF
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+#### Response
+
+- Status: 200 OK
+- Type: application/json
+- Server: Vercel
+
+#### Response Data
+
+```json
+{
+    "sheets": [
+        {
+            "data": [
+                {
+                    "rowData": [
+                        {
+                            "values": [
+                                {
+                                    "formattedValue": "STT",
+                                    "userEnteredFormat": {
+                                        "numberFormat": {
+                                            "type": "TEXT"
+                                        },
+                                        "backgroundColor": {
+                                            "red": 1,
+                                            "green": 0.9764706,
+                                            "blue": 0.8627451
+                                        },
+                                        "borders": {
+                                            "top": {
+                                                "style": "SOLID",
+                                                "width": 1
+                                            },
+                                            "bottom": {
+                                                "style": "SOLID",
+                                                "width": 1
+                                            },
+                                            "left": {
+                                                "style": "SOLID",
+                                                "width": 1
+                                            },
+                                            "right": {
+                                                "style": "SOLID",
+                                                "width": 1
+                                            }
+                                        },
+                                        "horizontalAlignment": "CENTER",
+                                        "verticalAlignment": "MIDDLE",
+                                        "textFormat": {
+                                            "foregroundColor": {
+                                                "blue": 1
+                                            },
+                                            "fontFamily": "Palatino Linotype",
+                                            "fontSize": 12,
+                                            "bold": true
+                                        }
+                                    }
+                                },
+                                {
+                                    "formattedValue": "NGÀY HỌC",
+                                    "userEnteredFormat": {
+                                        "numberFormat": {
+                                            "type": "DATE",
+                                            "pattern": "dd/m/yyyy"
+                                        }
+                                    }
+                                },
+                                {
+                                    "formattedValue": "TÊN BÀI"
+                                },
+                                {
+                                    "formattedValue": "LIVE"
+                                },
+                                {
+                                    "formattedValue": "TÀI LIỆU"
+                                },
+                                {
+                                    "formattedValue": "BTVN"
+                                }
+                            ]
+                        }
+                        // ... Các dòng khác
+                    ]
+                }
+            ]
+        }
+    ]
+}
+```
+
+> API trả về dữ liệu chi tiết của spreadsheet được chỉ định bởi ID, bao gồm định dạng và nội dung các ô trong bảng tính. Dữ liệu bao gồm các cột: STT, NGÀY HỌC, TÊN BÀI, LIVE, TÀI LIỆU và BTVN.
+
+### API Bổ sung
+
+Hệ thống cũng hỗ trợ các API bổ sung sau (hiện chưa sử dụng trong tài liệu):
+
+```
+GET /api/spreadsheets/{id}/{mode}/{title}
+GET /api/spreadsheets/{id}/{category}/{name}
+GET /api/spreadsheets/{id}/{type}/{course}
+GET /api/cache
+GET /api/redirect
+```

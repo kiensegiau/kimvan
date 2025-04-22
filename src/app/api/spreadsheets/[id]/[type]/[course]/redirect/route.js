@@ -43,8 +43,9 @@ function saveLinksData(data) {
 async function fetchLinkFromKimvan(id, type, course) {
   try {
     console.log('Đang kết nối đến server kimvan.id.vn...');
+    const encodedType = encodeURIComponent(type);
     const encodedCourse = encodeURIComponent(course);
-    const kimvanUrl = `https://kimvan.id.vn/api/spreadsheets/${id}/${type}/${encodedCourse}/redirect`;
+    const kimvanUrl = `https://kimvan.id.vn/api/spreadsheets/${id}/${encodedType}/${encodedCourse}/redirect`;
     
     // Sử dụng cookie từ biến môi trường
     const kimvanCookie = process.env.KIMVAN_COOKIE || '';
@@ -58,17 +59,19 @@ async function fetchLinkFromKimvan(id, type, course) {
         'accept-language': 'vi',
         'cache-control': 'no-cache',
         'pragma': 'no-cache',
-        'sec-ch-ua': '"Not(A:Brand";v="99", "Google Chrome";v="133", "Chromium";v="133"',
+        'sec-ch-ua': '"Chromium";v="134", "Not:A-Brand";v="24", "Google Chrome";v="134"',
         'sec-ch-ua-mobile': '?0',
         'sec-ch-ua-platform': '"Windows"',
         'sec-fetch-dest': 'document',
         'sec-fetch-mode': 'navigate',
-        'sec-fetch-site': 'none',
+        'sec-fetch-site': 'same-origin',
         'sec-fetch-user': '?1',
         'upgrade-insecure-requests': '1',
-        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36',
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36',
         'cookie': kimvanCookie,
-        'host': 'kimvan.id.vn'
+        'authority': 'kimvan.id.vn',
+        'priority': 'u=1, i',
+        'referer': 'https://kimvan.id.vn/'
       },
       redirect: 'manual' // Quan trọng: Không tự động follow redirect
     });
@@ -113,34 +116,62 @@ export async function GET(request, { params }) {
     
     // Kiểm tra xem cacheKey có tồn tại trong dữ liệu không
     let targetUrl = linksData[cacheKey] || '';
+    let needsUpdate = false;
     
-    // Nếu không có trong cache, kết nối đến server kimvan
-    if (!targetUrl) {
-      console.log('Không tìm thấy URL trong cache, thử kết nối đến server kimvan...');
-      targetUrl = await fetchLinkFromKimvan(id, type, course);
+    // Kiểm tra xem URL có hết hạn không (7 ngày)
+    const now = Date.now();
+    if (linksData[cacheKey] && linksData[cacheKey + '_timestamp']) {
+      const timestamp = linksData[cacheKey + '_timestamp'];
+      const ageInDays = (now - timestamp) / (1000 * 60 * 60 * 24);
+      
+      if (ageInDays > 7) {
+        console.log('URL trong cache đã hết hạn (>7 ngày), cần cập nhật');
+        needsUpdate = true;
+      }
+    } else if (targetUrl) {
+      // Nếu có URL nhưng không có timestamp, thêm timestamp
+      linksData[cacheKey + '_timestamp'] = now;
+      saveLinksData(linksData);
+    }
+    
+    // Nếu không có trong cache hoặc cần cập nhật, kết nối đến server kimvan
+    if (!targetUrl || needsUpdate) {
+      console.log('Không tìm thấy URL trong cache hoặc URL đã hết hạn, thử kết nối đến server kimvan...');
+      const newUrl = await fetchLinkFromKimvan(id, type, course);
       
       // Nếu lấy được URL từ server, lưu vào cache
-      if (targetUrl) {
-        linksData[cacheKey] = targetUrl;
+      if (newUrl) {
+        linksData[cacheKey] = newUrl;
+        linksData[cacheKey + '_timestamp'] = now;
         saveLinksData(linksData);
-        console.log('Đã lưu liên kết vào cache:', cacheKey, '=>', targetUrl);
+        console.log('Đã lưu liên kết vào cache:', cacheKey, '=>', newUrl);
+        targetUrl = newUrl;
       }
     } else {
       console.log('Đã tìm thấy URL trong cache:', targetUrl);
     }
     
-    console.log('URL đích cuối cùng:', targetUrl || '/');
+    // Nếu vẫn không có URL, trả về lỗi
+    if (!targetUrl) {
+      console.log('Không thể lấy được URL đích, trả về lỗi 404');
+      return NextResponse.json(
+        { error: 'Không tìm thấy URL đích', message: 'URL không tồn tại hoặc đã hết hạn' },
+        { status: 404 }
+      );
+    }
+    
+    console.log('URL đích cuối cùng:', targetUrl);
     
     // Chuẩn bị các header cơ bản
-    const responseHeaders = {
-      'Location': targetUrl || '/',
+    const responseHeaders = new Headers({
+      'Location': targetUrl,
       'Cache-Control': 'public, max-age=0, must-revalidate',
       'Strict-Transport-Security': 'max-age=63072000',
       'Server': 'Vercel',
       'Age': '0',
-      'Date': new Date().toUTCString(),
+      'Content-Type': 'text/plain',
       'X-Vercel-Cache': 'MISS'
-    };
+    });
     
     // Trả về response với các header
     return new Response(null, {
@@ -154,7 +185,7 @@ export async function GET(request, { params }) {
     console.error('Thông báo lỗi:', error.message);
     
     // Trả về JSON response với mã lỗi 500
-    return Response.json(
+    return NextResponse.json(
       { 
         error: 'Có lỗi xảy ra khi xử lý yêu cầu chuyển hướng',
         message: error.message
