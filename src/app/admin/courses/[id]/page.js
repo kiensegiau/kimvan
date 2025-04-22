@@ -2,12 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { use } from 'react';
 import { ArrowLeftIcon, PencilIcon, TrashIcon, CloudArrowDownIcon, ExclamationCircleIcon, XMarkIcon, ArrowPathIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 
 export default function CourseDetailPage({ params }) {
   const router = useRouter();
-  const courseId = use(params).id;
+  const { id } = params;
   
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -21,12 +20,20 @@ export default function CourseDetailPage({ params }) {
   const [syncResult, setSyncResult] = useState(null);
   const [formData, setFormData] = useState(null);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [activeSheet, setActiveSheet] = useState(0);
   
+  // Hàm lấy tiêu đề của sheet
+  const getSheetTitle = (index, sheets) => {
+    if (!sheets || !sheets[index]) return `Khóa ${index + 1}`;
+    const sheet = sheets[index];
+    return sheet?.properties?.title || `Khóa ${index + 1}`;
+  };
+
   // Lấy thông tin chi tiết của khóa học
   const fetchCourseDetail = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/courses/${courseId}?type=_id`);
+      const response = await fetch(`/api/courses/${params.id}?type=_id`);
       if (!response.ok) {
         throw new Error(`Lỗi ${response.status}: ${response.statusText}`);
       }
@@ -175,7 +182,14 @@ export default function CourseDetailPage({ params }) {
   // Tải thông tin khóa học khi component được tạo
   useEffect(() => {
     fetchCourseDetail();
-  }, [courseId]);
+  }, [id]);
+
+  // Set sheet đầu tiên nếu có dữ liệu sheets
+  useEffect(() => {
+    if (course?.originalData?.sheets && course.originalData.sheets.length > 0) {
+      setActiveSheet(0);
+    }
+  }, [course]);
 
   if (loading) {
     return (
@@ -429,105 +443,139 @@ export default function CourseDetailPage({ params }) {
               </div>
             </div>
 
+            {/* Chọn khóa học khi có nhiều sheet */}
+            {course.originalData?.sheets && course.originalData.sheets.length > 1 && (
+              <div className="border-b border-gray-200 px-6 py-4 bg-gray-50">
+                <h3 className="text-base font-medium text-gray-800 mb-3">Chọn khóa học:</h3>
+                <div className="flex gap-2 overflow-x-auto pb-2">
+                  {course.originalData.sheets.map((sheet, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setActiveSheet(index)}
+                      className={`
+                        px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap
+                        ${activeSheet === index 
+                          ? 'bg-blue-600 text-white' 
+                          : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                        }
+                      `}
+                    >
+                      <div className="flex items-center">
+                        <span>{getSheetTitle(index, course.originalData.sheets)}</span>
+                        {sheet?.data?.[0]?.rowData && (
+                          <span className={`text-xs ml-2 px-2 py-0.5 rounded-full ${
+                            activeSheet === index ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600'
+                          }`}>
+                            {(sheet.data[0].rowData.length - 1) || 0}
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Hiển thị dữ liệu dưới dạng bảng */}
-            {course.originalData && course.originalData.sheets && course.originalData.sheets.length > 0 && (
+            {course.originalData?.sheets && course.originalData.sheets.length > 0 && (
               <div className="overflow-x-auto">
-                {course.originalData.sheets.map((sheet, sheetIndex) => (
-                  <div key={sheetIndex} className="mb-6">
-                    <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
-                      <div className="font-medium text-gray-800 flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                        </svg>
-                        {sheet?.properties?.title || `Khóa ${sheetIndex + 1}`}
-                      </div>
-                      {sheet?.data?.[0]?.rowData && (
-                        <div className="text-sm text-gray-600">
-                          Tổng số: <span className="font-medium text-blue-600">{(sheet.data[0].rowData.length - 1) || 0} buổi</span>
-                        </div>
-                      )}
+                {/* Hiển thị sheet được chọn */}
+                <div key={activeSheet} className="mb-6">
+                  <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
+                    <div className="font-medium text-gray-800 flex items-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                      </svg>
+                      {getSheetTitle(activeSheet, course.originalData.sheets)}
                     </div>
-                    
-                    {sheet?.data?.[0]?.rowData && sheet.data[0].rowData.length > 0 ? (
-                      <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-200">
-                          <thead>
-                            <tr className="bg-gradient-to-r from-blue-600 to-indigo-600">
-                              {sheet.data[0].rowData[0]?.values?.map((cell, index) => (
-                                <th 
-                                  key={index} 
-                                  className={`px-6 py-3.5 text-left text-xs font-medium text-white uppercase tracking-wider ${
-                                    index === 0 ? 'text-center w-16' : ''
-                                  }`}
-                                >
-                                  <div className="flex items-center">
-                                    {cell.formattedValue || ''}
-                                    {index > 0 && 
-                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
-                                      </svg>
-                                    }
-                                  </div>
-                                </th>
-                              ))}
-                            </tr>
-                          </thead>
-                          <tbody className="bg-white divide-y divide-gray-200">
-                            {sheet.data[0].rowData.slice(1).map((row, rowIndex) => (
-                              <tr 
-                                key={rowIndex} 
-                                className="group hover:bg-blue-50 transition-colors duration-150"
-                              >
-                                {row.values && row.values.map((cell, cellIndex) => (
-                                  <td 
-                                    key={cellIndex} 
-                                    className={`px-6 py-4 text-sm ${
-                                      cellIndex === 0 
-                                        ? 'whitespace-nowrap font-medium text-gray-900 text-center' 
-                                        : 'text-gray-700'
-                                    }`}
-                                  >
-                                    {cellIndex === 0 
-                                      ? (cell.formattedValue || '')
-                                      : cell.hyperlink || cell.userEnteredFormat?.textFormat?.link?.uri
-                                        ? (
-                                            <a 
-                                              href={cell.userEnteredFormat?.textFormat?.link?.uri} 
-                                              target="_blank"
-                                              rel="noopener noreferrer"
-                                              className="inline-flex items-center text-blue-600 font-medium hover:text-blue-800 transition-colors duration-150 group"
-                                            >
-                                              <span>{cell.formattedValue || ''}</span>
-                                              <span className="ml-1.5 p-1 rounded-md group-hover:bg-blue-100 transition-colors duration-150">
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                                </svg>
-                                              </span>
-                                            </a>
-                                          ) 
-                                        : (cell.formattedValue || '')}
-                                  </td>
-                                ))}
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    ) : (
-                      <div className="bg-white p-12 text-center">
-                        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 text-blue-600 mb-6">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                          </svg>
-                        </div>
-                        <h3 className="text-lg font-medium text-gray-900 mb-1">Không có dữ liệu</h3>
-                        <p className="text-gray-500 max-w-md mx-auto">
-                          Hiện không có thông tin buổi học nào được tìm thấy trong hệ thống.
-                        </p>
+                    {course.originalData.sheets[activeSheet]?.data?.[0]?.rowData && (
+                      <div className="text-sm text-gray-600">
+                        Tổng số: <span className="font-medium text-blue-600">
+                          {(course.originalData.sheets[activeSheet].data[0].rowData.length - 1) || 0} buổi
+                        </span>
                       </div>
                     )}
                   </div>
-                ))}
+                  
+                  {course.originalData.sheets[activeSheet]?.data?.[0]?.rowData && course.originalData.sheets[activeSheet].data[0].rowData.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead>
+                          <tr className="bg-gradient-to-r from-blue-600 to-indigo-600">
+                            {course.originalData.sheets[activeSheet].data[0].rowData[0]?.values?.map((cell, index) => (
+                              <th 
+                                key={index} 
+                                className={`px-6 py-3.5 text-left text-xs font-medium text-white uppercase tracking-wider ${
+                                  index === 0 ? 'text-center w-16' : ''
+                                }`}
+                              >
+                                <div className="flex items-center">
+                                  {cell.formattedValue || ''}
+                                  {index > 0 && 
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
+                                    </svg>
+                                  }
+                                </div>
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {course.originalData.sheets[activeSheet].data[0].rowData.slice(1).map((row, rowIndex) => (
+                            <tr 
+                              key={rowIndex} 
+                              className="group hover:bg-blue-50 transition-colors duration-150"
+                            >
+                              {row.values && row.values.map((cell, cellIndex) => (
+                                <td 
+                                  key={cellIndex} 
+                                  className={`px-6 py-4 text-sm ${
+                                    cellIndex === 0 
+                                      ? 'whitespace-nowrap font-medium text-gray-900 text-center' 
+                                      : 'text-gray-700'
+                                  }`}
+                                >
+                                  {cellIndex === 0 
+                                    ? (cell.formattedValue || '')
+                                    : cell.hyperlink || cell.userEnteredFormat?.textFormat?.link?.uri
+                                      ? (
+                                          <a 
+                                            href={cell.userEnteredFormat?.textFormat?.link?.uri} 
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center text-blue-600 font-medium hover:text-blue-800 transition-colors duration-150 group"
+                                          >
+                                            <span>{cell.formattedValue || ''}</span>
+                                            <span className="ml-1.5 p-1 rounded-md group-hover:bg-blue-100 transition-colors duration-150">
+                                              <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                              </svg>
+                                            </span>
+                                          </a>
+                                        ) 
+                                      : (cell.formattedValue || '')}
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="bg-white p-12 text-center">
+                      <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 text-blue-600 mb-6">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                      </div>
+                      <h3 className="text-lg font-medium text-gray-900 mb-1">Không có dữ liệu</h3>
+                      <p className="text-gray-500 max-w-md mx-auto">
+                        Hiện không có thông tin buổi học nào được tìm thấy trong hệ thống.
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
             
