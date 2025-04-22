@@ -18,6 +18,8 @@ export default function CoursesPage() {
   const [initResult, setInitResult] = useState(null);
   const [hasMongoConnection, setHasMongoConnection] = useState(true);
   const [kimvanCourses, setKimvanCourses] = useState([]);
+  const [selectedCourse, setSelectedCourse] = useState(null);
+  const [showOriginalDataModal, setShowOriginalDataModal] = useState(false);
 
   // Hàm để tải danh sách khóa học từ API
   const fetchCourses = async () => {
@@ -159,36 +161,17 @@ export default function CoursesPage() {
         throw new Error(data.message || 'Không thể lấy danh sách khóa học từ Kimvan');
       }
       
-      // Chuyển đổi dữ liệu từ Kimvan thành dạng khóa học phù hợp
-      const courses = data.map((item, index) => {
-        // Trích xuất tên môn học từ tên khóa (thường có dạng "2K8 XPS | MÔN HỌC - GIÁO VIÊN")
-        const nameParts = item.name.split('|');
-        const course = nameParts.length > 1 ? nameParts[1].trim() : item.name;
-        
-        // Trích xuất tên lớp từ phần đầu
-        const className = nameParts.length > 0 ? nameParts[0].trim() : '';
-        
-        // Tìm tên giáo viên (thường sau dấu -)
-        const teacherName = course.includes('-') ? course.split('-')[1].trim() : '';
-        
-        // Tìm tên môn học (thường trước dấu -)
-        const subjectName = course.includes('-') ? course.split('-')[0].trim() : course;
-        
-        return {
-          kimvanId: item.id,
-          name: `Khóa học ${subjectName} - ${teacherName}`,
-          description: `Khóa học ${subjectName} cho ${className} do giáo viên ${teacherName} giảng dạy`,
-          price: 500000 + (index * 50000), // Giá mẫu, tăng dần theo index
-          status: 'active',
-          className: className,
-          teacher: teacherName,
-          subject: subjectName,
-          originalData: item
-        };
-      });
+      // Lưu danh sách khóa học gốc từ Kimvan vào state
+      const kimvanCoursesOriginal = data.map((item) => ({
+        kimvanId: item.id,
+        name: item.name,
+        description: `Khóa học ${item.name}`,
+        price: 500000,
+        status: 'active',
+        originalData: item
+      }));
       
-      // Lưu danh sách khóa học từ Kimvan vào state
-      setKimvanCourses(courses || []);
+      setKimvanCourses(kimvanCoursesOriginal || []);
       setShowSyncModal(true);
     } catch (err) {
       console.error('Lỗi khi lấy danh sách khóa học từ Kimvan:', err);
@@ -201,37 +184,52 @@ export default function CoursesPage() {
   // Hàm đồng bộ dữ liệu từ Kimvan
   const handleSync = async () => {
     try {
-      setSyncing(true);
-      setSyncResults(null);
+      // Đóng modal đồng bộ trước tiên để loại bỏ overlay
       setShowSyncModal(false);
-      setError(null);
       
-      const response = await fetch('/api/kimvan-sync', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          sync: true,
-          courses: kimvanCourses // Chuyển danh sách khóa học đã chuyển đổi
-        }),
-      });
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.message || 'Không thể đồng bộ dữ liệu');
-      }
-      
-      // Hiển thị kết quả đồng bộ
-      setSyncResults(data);
-      
-      // Tải lại danh sách khóa học
-      fetchCourses();
+      // Đợi một chút để đảm bảo DOM đã được cập nhật
+      setTimeout(() => {
+        const startSync = async () => {
+          try {
+            setSyncing(true);
+            setSyncResults(null);
+            setError(null);
+            
+            const response = await fetch('/api/kimvan-sync', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ 
+                sync: true,
+                courses: kimvanCourses
+              }),
+            });
+            
+            const data = await response.json();
+            
+            if (!response.ok) {
+              throw new Error(data.message || 'Không thể đồng bộ dữ liệu');
+            }
+            
+            // Hiển thị kết quả đồng bộ
+            setSyncResults(data);
+            
+            // Tải lại danh sách khóa học
+            await fetchCourses();
+          } catch (err) {
+            console.error('Lỗi khi đồng bộ dữ liệu:', err);
+            setError(err.message || 'Đã xảy ra lỗi khi đồng bộ dữ liệu. Vui lòng kiểm tra kết nối MongoDB.');
+          } finally {
+            setSyncing(false);
+          }
+        };
+        
+        startSync();
+      }, 300); // Tăng thời gian delay để đảm bảo overlay đã biến mất
     } catch (err) {
-      console.error('Lỗi khi đồng bộ dữ liệu:', err);
-      setError(err.message || 'Đã xảy ra lỗi khi đồng bộ dữ liệu. Vui lòng kiểm tra kết nối MongoDB.');
-    } finally {
+      console.error('Lỗi khi xử lý đồng bộ:', err);
+      setError(err.message || 'Đã xảy ra lỗi khi xử lý yêu cầu đồng bộ.');
       setSyncing(false);
     }
   };
@@ -264,6 +262,47 @@ export default function CoursesPage() {
     } finally {
       setInitializing(false);
     }
+  };
+
+  // Thêm hàm xử lý khi đóng modal
+  const handleCloseModal = () => {
+    setShowModal(false);
+  };
+
+  // Thêm hàm xử lý khi đóng modal đồng bộ
+  const handleCloseSyncModal = () => {
+    setShowSyncModal(false);
+  };
+
+  // Hàm để hiển thị modal xem dữ liệu gốc từ Kimvan
+  const handleViewOriginalData = async (courseId) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Lấy dữ liệu gốc từ API
+      const response = await fetch(`/api/kimvan-data/${courseId}`);
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Không thể lấy dữ liệu gốc từ Kimvan');
+      }
+      
+      // Hiển thị dữ liệu gốc
+      setSelectedCourse(data);
+      setShowOriginalDataModal(true);
+    } catch (err) {
+      console.error('Lỗi khi lấy dữ liệu gốc:', err);
+      setError(err.message || 'Đã xảy ra lỗi khi lấy dữ liệu gốc từ Kimvan');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Hàm đóng modal xem dữ liệu gốc
+  const handleCloseOriginalDataModal = () => {
+    setShowOriginalDataModal(false);
+    setSelectedCourse(null);
   };
 
   return (
@@ -450,13 +489,24 @@ export default function CoursesPage() {
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <button
                             onClick={() => handleEdit(course)}
-                            className="text-indigo-600 hover:text-indigo-900 mr-4"
+                            className="text-indigo-600 hover:text-indigo-900 mr-2"
+                            title="Chỉnh sửa khóa học"
                           >
                             <PencilIcon className="h-5 w-5" />
                           </button>
+                          {course.kimvanId && (
+                            <button
+                              onClick={() => handleViewOriginalData(course.kimvanId)}
+                              className="text-yellow-600 hover:text-yellow-900 mr-2"
+                              title="Xem dữ liệu gốc"
+                            >
+                              <CloudArrowDownIcon className="h-5 w-5" />
+                            </button>
+                          )}
                           <button
                             onClick={() => handleDelete(course._id)}
                             className="text-red-600 hover:text-red-900"
+                            title="Xóa khóa học"
                           >
                             <TrashIcon className="h-5 w-5" />
                           </button>
@@ -477,165 +527,232 @@ export default function CoursesPage() {
 
       {/* Modal Thêm/Chỉnh sửa khóa học */}
       {showModal && (
-        <div className="fixed z-10 inset-0 overflow-y-auto">
-          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
-              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+        <>
+          {/* Lớp phủ */}
+          <div 
+            className="fixed inset-0 bg-gray-500 bg-opacity-75 z-40 cursor-pointer" 
+            onClick={handleCloseModal}
+          ></div>
+          
+          {/* Nội dung modal */}
+          <div className="fixed z-50 inset-0 overflow-y-auto">
+            <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+              <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+              <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full" onClick={(e) => e.stopPropagation()}>
+                <form onSubmit={handleSave}>
+                  <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
+                      {currentCourse._id ? 'Chỉnh sửa khóa học' : 'Thêm khóa học mới'}
+                    </h3>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Tên khóa học</label>
+                        <input
+                          type="text"
+                          value={currentCourse.name}
+                          onChange={(e) => setCurrentCourse({ ...currentCourse, name: e.target.value })}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Mô tả</label>
+                        <textarea
+                          value={currentCourse.description}
+                          onChange={(e) => setCurrentCourse({ ...currentCourse, description: e.target.value })}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                          rows="3"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Giá</label>
+                        <input
+                          type="number"
+                          value={currentCourse.price}
+                          onChange={(e) => setCurrentCourse({ ...currentCourse, price: parseInt(e.target.value) })}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Trạng thái</label>
+                        <select
+                          value={currentCourse.status}
+                          onChange={(e) => setCurrentCourse({ ...currentCourse, status: e.target.value })}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                        >
+                          <option value="active">Đang hoạt động</option>
+                          <option value="inactive">Ngừng hoạt động</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                    <button
+                      type="submit"
+                      className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm"
+                    >
+                      Lưu
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleCloseModal}
+                      className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                    >
+                      Hủy
+                    </button>
+                  </div>
+                </form>
+              </div>
             </div>
-            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-              <form onSubmit={handleSave}>
+          </div>
+        </>
+      )}
+
+      {/* Modal Xác nhận đồng bộ */}
+      {showSyncModal && (
+        <>
+          {/* Lớp phủ */}
+          <div 
+            className="fixed inset-0 bg-gray-500 bg-opacity-75 z-40 cursor-pointer" 
+            onClick={handleCloseSyncModal}
+          ></div>
+          
+          {/* Nội dung modal */}
+          <div className="fixed z-50 inset-0 overflow-y-auto">
+            <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+              <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+              <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
                 <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                  <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
-                    {currentCourse._id ? 'Chỉnh sửa khóa học' : 'Thêm khóa học mới'}
-                  </h3>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Tên khóa học</label>
-                      <input
-                        type="text"
-                        value={currentCourse.name}
-                        onChange={(e) => setCurrentCourse({ ...currentCourse, name: e.target.value })}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                        required
-                      />
+                  <div className="sm:flex sm:items-start">
+                    <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 sm:mx-0 sm:h-10 sm:w-10">
+                      <CloudArrowDownIcon className="h-6 w-6 text-yellow-600" aria-hidden="true" />
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Mô tả</label>
-                      <textarea
-                        value={currentCourse.description}
-                        onChange={(e) => setCurrentCourse({ ...currentCourse, description: e.target.value })}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                        rows="3"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Giá</label>
-                      <input
-                        type="number"
-                        value={currentCourse.price}
-                        onChange={(e) => setCurrentCourse({ ...currentCourse, price: parseInt(e.target.value) })}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Trạng thái</label>
-                      <select
-                        value={currentCourse.status}
-                        onChange={(e) => setCurrentCourse({ ...currentCourse, status: e.target.value })}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                      >
-                        <option value="active">Đang hoạt động</option>
-                        <option value="inactive">Ngừng hoạt động</option>
-                      </select>
+                    <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                      <h3 className="text-lg leading-6 font-medium text-gray-900">
+                        Đồng bộ dữ liệu từ Kimvan
+                      </h3>
+                      <div className="mt-2">
+                        <p className="text-sm text-gray-500 mb-4">
+                          Danh sách khóa học sẽ được đồng bộ từ Kimvan. Vui lòng kiểm tra và xác nhận để tiếp tục.
+                        </p>
+                        
+                        {kimvanCourses.length > 0 ? (
+                          <div className="mt-4 max-h-96 overflow-y-auto">
+                            <table className="min-w-full divide-y divide-gray-200">
+                              <thead className="bg-gray-50">
+                                <tr>
+                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID Khóa học</th>
+                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên khóa học</th>
+                                </tr>
+                              </thead>
+                              <tbody className="bg-white divide-y divide-gray-200">
+                                {kimvanCourses.map((course, index) => (
+                                  <tr key={index}>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-500">{course.kimvanId.substring(0, 20)}...</td>
+                                    <td className="px-6 py-4 text-sm text-gray-900">{course.name}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        ) : (
+                          <div className="text-center py-4">
+                            <p className="text-gray-500">Không có khóa học nào từ Kimvan</p>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
                 <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
                   <button
-                    type="submit"
-                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm"
+                    type="button"
+                    onClick={handleSync}
+                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:ml-3 sm:w-auto sm:text-sm"
                   >
-                    Lưu
+                    Đồng bộ ngay
                   </button>
                   <button
                     type="button"
-                    onClick={() => setShowModal(false)}
+                    onClick={handleCloseSyncModal}
                     className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
                   >
                     Hủy
                   </button>
                 </div>
-              </form>
+              </div>
             </div>
           </div>
-        </div>
+        </>
       )}
 
-      {/* Modal Xác nhận đồng bộ */}
-      {showSyncModal && (
-        <div className="fixed z-10 inset-0 overflow-y-auto">
-          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
-              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
-            </div>
-            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
-              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                <div className="sm:flex sm:items-start">
-                  <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 sm:mx-0 sm:h-10 sm:w-10">
-                    <CloudArrowDownIcon className="h-6 w-6 text-yellow-600" aria-hidden="true" />
-                  </div>
-                  <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
-                    <h3 className="text-lg leading-6 font-medium text-gray-900">
-                      Đồng bộ dữ liệu từ Kimvan
-                    </h3>
-                    <div className="mt-2">
-                      <p className="text-sm text-gray-500 mb-4">
-                        Danh sách khóa học sẽ được đồng bộ từ Kimvan. Vui lòng kiểm tra và xác nhận để tiếp tục.
-                      </p>
-                      
-                      {kimvanCourses.length > 0 ? (
-                        <div className="mt-4 max-h-96 overflow-y-auto">
-                          <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-gray-50">
-                              <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên khóa học</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mô tả</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Giá</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
-                              </tr>
-                            </thead>
-                            <tbody className="bg-white divide-y divide-gray-200">
-                              {kimvanCourses.map((course, index) => (
-                                <tr key={index}>
-                                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{course.name}</td>
-                                  <td className="px-6 py-4 text-sm text-gray-500">{course.description}</td>
-                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    {course.price?.toLocaleString('vi-VN')}đ
-                                  </td>
-                                  <td className="px-6 py-4 whitespace-nowrap">
-                                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                      course.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                                    }`}>
-                                      {course.status === 'active' ? 'Đang hoạt động' : 'Ngừng hoạt động'}
-                                    </span>
-                                  </td>
+      {/* Modal Xem dữ liệu gốc từ Kimvan */}
+      {showOriginalDataModal && (
+        <>
+          {/* Lớp phủ */}
+          <div 
+            className="fixed inset-0 bg-gray-500 bg-opacity-75 z-40 cursor-pointer" 
+            onClick={handleCloseOriginalDataModal}
+          ></div>
+          
+          {/* Nội dung modal */}
+          <div className="fixed z-50 inset-0 overflow-y-auto">
+            <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+              <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+              <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
+                <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                  <div className="sm:flex sm:items-start">
+                    <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 sm:mx-0 sm:h-10 sm:w-10">
+                      <CloudArrowDownIcon className="h-6 w-6 text-yellow-600" aria-hidden="true" />
+                    </div>
+                    <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                      <h3 className="text-lg leading-6 font-medium text-gray-900">
+                        Dữ liệu gốc từ Kimvan
+                      </h3>
+                      <div className="mt-2">
+                        <p className="text-sm text-gray-500 mb-4">
+                          Dữ liệu gốc từ Kimvan được hiển thị dưới đây. Vui lòng kiểm tra và xác nhận để tiếp tục.
+                        </p>
+                        
+                        {selectedCourse && (
+                          <div className="mt-4 max-h-96 overflow-y-auto">
+                            <table className="min-w-full divide-y divide-gray-200">
+                              <thead className="bg-gray-50">
+                                <tr>
+                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên trường</th>
+                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Giá trị</th>
                                 </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      ) : (
-                        <div className="text-center py-4">
-                          <p className="text-gray-500">Không có khóa học nào từ Kimvan</p>
-                        </div>
-                      )}
+                              </thead>
+                              <tbody className="bg-white divide-y divide-gray-200">
+                                {Object.entries(selectedCourse).map(([key, value]) => (
+                                  <tr key={key}>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-500">{key}</td>
+                                    <td className="px-6 py-4 text-sm text-gray-900">{value}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                <button
-                  type="button"
-                  onClick={handleSync}
-                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:ml-3 sm:w-auto sm:text-sm"
-                >
-                  Đồng bộ ngay
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowSyncModal(false)}
-                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-                >
-                  Hủy
-                </button>
+                <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                  <button
+                    type="button"
+                    onClick={handleCloseOriginalDataModal}
+                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:ml-3 sm:w-auto sm:text-sm"
+                  >
+                    Đóng
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );

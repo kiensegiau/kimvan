@@ -19,7 +19,7 @@ export async function POST(request) {
     let coursesToSync = [];
     
     if (courses && Array.isArray(courses) && courses.length > 0) {
-      // Sử dụng danh sách khóa học đã chuyển đổi từ client
+      // Sử dụng danh sách khóa học từ client
       coursesToSync = courses;
     } else {
       // Nếu không có danh sách từ client, gọi API để lấy danh sách
@@ -40,39 +40,22 @@ export async function POST(request) {
         throw new Error('Định dạng dữ liệu không hợp lệ từ Kimvan API');
       }
       
-      // Chuyển đổi dữ liệu từ Kimvan thành dạng khóa học phù hợp
-      coursesToSync = kimvanData.map((item, index) => {
-        // Trích xuất tên môn học từ tên khóa (thường có dạng "2K8 XPS | MÔN HỌC - GIÁO VIÊN")
-        const nameParts = item.name.split('|');
-        const course = nameParts.length > 1 ? nameParts[1].trim() : item.name;
-        
-        // Trích xuất tên lớp từ phần đầu
-        const className = nameParts.length > 0 ? nameParts[0].trim() : '';
-        
-        // Tìm tên giáo viên (thường sau dấu -)
-        const teacherName = course.includes('-') ? course.split('-')[1].trim() : '';
-        
-        // Tìm tên môn học (thường trước dấu -)
-        const subjectName = course.includes('-') ? course.split('-')[0].trim() : course;
-        
-        return {
-          kimvanId: item.id,
-          name: `Khóa học ${subjectName} - ${teacherName}`,
-          description: `Khóa học ${subjectName} cho ${className} do giáo viên ${teacherName} giảng dạy`,
-          price: 500000 + (index * 50000), // Giá mẫu, tăng dần theo index
-          status: 'active',
-          className: className,
-          teacher: teacherName,
-          subject: subjectName,
-          originalData: item
-        };
-      });
+      // Lưu danh sách khóa học gốc từ Kimvan
+      coursesToSync = kimvanData.map((item) => ({
+        kimvanId: item.id,
+        name: item.name,
+        description: `Khóa học ${item.name}`,
+        price: 500000,
+        status: 'active'
+        // Không lưu originalData tại đây để tránh dữ liệu quá lớn
+      }));
     }
 
     // Kết nối MongoDB
     const mongoClient = await clientPromise;
     const db = mongoClient.db('kimvan');
     const coursesCollection = db.collection('courses');
+    const kimvanDataCollection = db.collection('kimvan_data');
 
     // Đếm số khóa học đã có trong DB
     const existingCoursesCount = await coursesCollection.countDocuments({});
@@ -88,6 +71,12 @@ export async function POST(request) {
 
     for (const course of coursesToSync) {
       try {
+        const originalData = course.originalData;
+        
+        // Loại bỏ dữ liệu gốc từ đối tượng khóa học để giảm kích thước
+        const courseToSave = { ...course };
+        delete courseToSave.originalData;
+        
         // Kiểm tra xem khóa học đã tồn tại chưa (dựa vào kimvanId)
         const existingCourse = await coursesCollection.findOne({ kimvanId: course.kimvanId });
 
@@ -97,33 +86,44 @@ export async function POST(request) {
             { kimvanId: course.kimvanId },
             {
               $set: {
-                name: course.name,
-                description: course.description,
-                price: course.price,
-                status: course.status,
-                updatedAt: new Date(),
-                subject: course.subject,
-                teacher: course.teacher,
-                className: course.className,
-                originalData: course.originalData
+                ...courseToSave,
+                updatedAt: new Date()
               }
             }
           );
+          
+          // Lưu hoặc cập nhật dữ liệu gốc lớn trong collection riêng biệt
+          if (originalData) {
+            await kimvanDataCollection.updateOne(
+              { kimvanId: course.kimvanId },
+              { 
+                $set: { 
+                  kimvanId: course.kimvanId,
+                  originalData: originalData,
+                  updatedAt: new Date()
+                }
+              },
+              { upsert: true }
+            );
+          }
+          
           syncResults.updated++;
         } else {
           // Tạo khóa học mới
           await coursesCollection.insertOne({
-            kimvanId: course.kimvanId,
-            name: course.name,
-            description: course.description,
-            price: course.price,
-            status: course.status,
-            createdAt: new Date(),
-            subject: course.subject,
-            teacher: course.teacher,
-            className: course.className,
-            originalData: course.originalData
+            ...courseToSave,
+            createdAt: new Date()
           });
+          
+          // Lưu dữ liệu gốc lớn trong collection riêng biệt
+          if (originalData) {
+            await kimvanDataCollection.insertOne({
+              kimvanId: course.kimvanId,
+              originalData: originalData,
+              createdAt: new Date()
+            });
+          }
+          
           syncResults.created++;
         }
       } catch (err) {
@@ -134,6 +134,7 @@ export async function POST(request) {
 
     // Lấy số khóa học sau khi đồng bộ
     const currentCoursesCount = await coursesCollection.countDocuments({});
+    const kimvanDataCount = await kimvanDataCollection.countDocuments({});
 
     return NextResponse.json({
       success: true,
@@ -141,6 +142,7 @@ export async function POST(request) {
       summary: {
         previousCount: existingCoursesCount,
         currentCount: currentCoursesCount,
+        kimvanDataCount: kimvanDataCount,
         ...syncResults
       }
     });
