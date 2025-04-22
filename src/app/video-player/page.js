@@ -19,6 +19,7 @@ export default function CustomVideoPlayer() {
   const playerContainerRef = useRef(null);
   const playerRef = useRef(null);
   const playerWrapperRef = useRef(null);
+  const overlayRef = useRef(null);
   
   // ID video YouTube từ URL
   const videoId = 'rQp-pUVW0yI';
@@ -82,21 +83,60 @@ export default function CustomVideoPlayer() {
             const iframeDoc = iframe.contentWindow.document;
             const style = document.createElement('style');
             style.textContent = `
-              .ytp-chrome-top { display: none !important; opacity: 0 !important; }
-              .ytp-chrome-bottom { display: none !important; opacity: 0 !important; }
-              .ytp-gradient-top { display: none !important; opacity: 0 !important; }
-              .ytp-gradient-bottom { display: none !important; opacity: 0 !important; }
-              .ytp-watermark { display: none !important; opacity: 0 !important; }
-              .ytp-show-cards-title { display: none !important; opacity: 0 !important; }
-              .ytp-pause-overlay { display: none !important; opacity: 0 !important; }
-              .ytp-caption-window-container { display: none !important; opacity: 0 !important; }
-              .ytp-title { display: none !important; opacity: 0 !important; visibility: hidden !important; }
-              .ytp-title-text { display: none !important; opacity: 0 !important; visibility: hidden !important; }
-              .ytp-title-link { display: none !important; opacity: 0 !important; visibility: hidden !important; }
-              .ytp-title-channel { display: none !important; opacity: 0 !important; visibility: hidden !important; }
-              .html5-video-player:hover .ytp-title { display: none !important; }
+              .ytp-chrome-top { display: none !important; opacity: 0 !important; pointer-events: none !important; }
+              .ytp-chrome-bottom { display: none !important; opacity: 0 !important; pointer-events: none !important; }
+              .ytp-gradient-top { display: none !important; opacity: 0 !important; pointer-events: none !important; }
+              .ytp-gradient-bottom { display: none !important; opacity: 0 !important; pointer-events: none !important; }
+              .ytp-watermark { display: none !important; opacity: 0 !important; pointer-events: none !important; }
+              .ytp-show-cards-title { display: none !important; opacity: 0 !important; pointer-events: none !important; }
+              .ytp-pause-overlay { display: none !important; opacity: 0 !important; pointer-events: none !important; }
+              .ytp-caption-window-container { display: none !important; opacity: 0 !important; pointer-events: none !important; }
+              .ytp-title { display: none !important; opacity: 0 !important; visibility: hidden !important; pointer-events: none !important; }
+              .ytp-title-text { display: none !important; opacity: 0 !important; visibility: hidden !important; pointer-events: none !important; }
+              .ytp-title-link { display: none !important; opacity: 0 !important; visibility: hidden !important; pointer-events: none !important; }
+              .ytp-title-channel { display: none !important; opacity: 0 !important; visibility: hidden !important; pointer-events: none !important; }
+              .html5-video-player:hover .ytp-title { display: none !important; opacity: 0 !important; }
+              .html5-video-player * { pointer-events: none !important; }
+              .html5-video-player .html5-video-container { pointer-events: auto !important; }
+              
+              /* Ẩn mọi phần tử trên top */
+              .ytp-chrome-top, 
+              .ytp-title, 
+              .ytp-title-channel, 
+              .ytp-title-text {
+                height: 0 !important;
+                width: 0 !important;
+                max-height: 0 !important;
+                max-width: 0 !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                display: none !important;
+                visibility: hidden !important;
+                opacity: 0 !important;
+                overflow: hidden !important;
+              }
+              
+              /* Loại bỏ top margin từ video */
+              .html5-video-container {
+                margin-top: 0 !important;
+                top: 0 !important;
+              }
             `;
             iframeDoc.head.appendChild(style);
+            
+            // Thêm một lớp lắng nghe sự kiện vào document của iframe
+            const script = document.createElement('script');
+            script.textContent = `
+              document.addEventListener('mousemove', function(e) {
+                var top = document.querySelector('.ytp-chrome-top');
+                if (top) {
+                  top.style.display = 'none';
+                  top.style.opacity = '0';
+                  top.style.visibility = 'hidden';
+                }
+              });
+            `;
+            iframeDoc.body.appendChild(script);
           }
         } catch (e) {
           console.log('Không thể tiêm CSS vào iframe do hạn chế CORS');
@@ -132,11 +172,39 @@ export default function CustomVideoPlayer() {
           const iframeDoc = iframe.contentWindow.document;
           const style = document.createElement('style');
           style.textContent = `
-            .ytp-title { display: none !important; visibility: hidden !important; }
-            .ytp-title-text { display: none !important; visibility: hidden !important; }
-            .ytp-chrome-top { display: none !important; }
+            .ytp-title { display: none !important; visibility: hidden !important; pointer-events: none !important; }
+            .ytp-title-text { display: none !important; visibility: hidden !important; pointer-events: none !important; }
+            .ytp-chrome-top { display: none !important; pointer-events: none !important; }
+            .html5-video-player * { pointer-events: none !important; }
+            .html5-video-player .html5-video-container { pointer-events: auto !important; }
           `;
           iframeDoc.head.appendChild(style);
+          
+          // Thêm MutationObserver để liên tục ẩn các phần tử khi chúng xuất hiện
+          const script = document.createElement('script');
+          script.textContent = `
+            (function() {
+              var observer = new MutationObserver(function(mutations) {
+                var chromeTop = document.querySelector('.ytp-chrome-top');
+                if (chromeTop) {
+                  chromeTop.style.display = 'none';
+                  chromeTop.style.visibility = 'hidden';
+                }
+                
+                var title = document.querySelector('.ytp-title');
+                if (title) {
+                  title.style.display = 'none';
+                  title.style.visibility = 'hidden';
+                }
+              });
+              
+              observer.observe(document.body, { 
+                childList: true, 
+                subtree: true 
+              });
+            })();
+          `;
+          iframeDoc.body.appendChild(script);
         }
       } catch (e) {
         console.log('Không thể tiêm CSS lần 2');
@@ -194,6 +262,13 @@ export default function CustomVideoPlayer() {
       stopProgressInterval();
     };
   }, []);
+  
+  // Khi video đã tải, thêm lớp phủ cứng
+  useEffect(() => {
+    if (videoLoaded && overlayRef.current) {
+      // Thực hiện thao tác nếu cần sau khi video tải
+    }
+  }, [videoLoaded]);
   
   // Xử lý các sự kiện điều khiển
   const togglePlay = () => {
@@ -326,22 +401,35 @@ export default function CustomVideoPlayer() {
           ref={playerWrapperRef}
           className="relative w-full pt-[56.25%]"
         >
-          {/* Container cho player YouTube */}
+          {/* Container cho player YouTube với các lớp ẩn */}
           <div className="absolute inset-0 overflow-hidden">
-            <div 
-              id="youtube-player" 
-              className="absolute top-0 left-0 w-full h-full z-5"
-            ></div>
+            {/* Không cắt video nữa, để hiển thị toàn bộ */}
+            <div className="absolute inset-0">
+              <div 
+                id="youtube-player" 
+                className="absolute top-0 left-0 w-full h-full z-5"
+              ></div>
+            </div>
+            
+            {/* Lớp phủ trong suốt ngăn tương tác với các phần tử YouTube */}
+            <div className="absolute inset-0 z-10 pointer-events-auto" style={{ backgroundColor: 'transparent' }}></div>
           </div>
-          
-          {/* Lớp phủ chặn tương tác chuột với tiêu đề */}
-          <div className="absolute top-0 left-0 right-0 h-[60px] z-10 pointer-events-auto"></div>
           
           {/* Các overlay chỉ hiển thị khi video đã tải xong */}
           {videoLoaded && (
             <>
-              {/* Chỉ che góc phải dưới với một lớp phủ nhỏ */}
-              <div className="absolute bottom-0 right-0 w-[60px] h-[25px] bg-black z-10"></div>
+              {/* Lớp phủ trong suốt bắt sự kiện trên toàn bộ video */}
+              <div 
+                ref={overlayRef}
+                className="absolute inset-0 z-7 pointer-events-auto" 
+                onClick={togglePlay}
+                style={{ 
+                  background: 'transparent'
+                }}
+              ></div>
+              
+              {/* Chỉ che góc nhỏ có logo YouTube dưới bên phải */}
+              <div className="absolute bottom-0 right-0 w-[40px] h-[40px] bg-black z-9"></div>
             </>
           )}
           
@@ -516,6 +604,9 @@ export default function CustomVideoPlayer() {
           height: 0 !important;
           width: 0 !important;
           pointer-events: none !important;
+          position: absolute !important;
+          z-index: -9999 !important;
+          transform: translateY(-9999px) !important;
         }
         
         /* Ẩn tooltip và phần tử nổi */
@@ -524,21 +615,54 @@ export default function CustomVideoPlayer() {
           display: none !important;
         }
         
-        /* Cấu hình iframe để ngăn hiển thị tiêu đề */
-        iframe#youtube-player {
-          border: 0;
-          width: 100% !important;
-          height: 104% !important; /* Cao hơn một chút để ẩn phần tiêu đề */
-          margin-top: -1.5%; /* Dịch lên trên một chút */
-          background-color: #000;
-          position: absolute;
-          top: 0;
-          left: 0;
-        }
-        
-        /* Fix tương tác với iframe */
+        /* Chỉ cho phép tương tác với phần video */
         #youtube-player {
           pointer-events: auto !important;
+          z-index: 1 !important;
+        }
+
+        /* Fix cho sự kiện chuột, cho phép click vào video */
+        .html5-video-player .html5-video-container {
+          pointer-events: auto !important;
+          z-index: 1 !important;
+        }
+        
+        /* Ẩn hoàn toàn các phần tử YouTube */
+        .ytp-pause-overlay,
+        .ytp-title,
+        .ytp-chrome-top,
+        .ytp-chrome-bottom,
+        .ytp-gradient-top,
+        .ytp-gradient-bottom,
+        .ytp-watermark {
+          display: none !important;
+          pointer-events: none !important;
+          height: 0 !important;
+          width: 0 !important;
+          opacity: 0 !important;
+          visibility: hidden !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          border: none !important;
+          min-height: 0 !important;
+          max-height: 0 !important;
+          overflow: hidden !important;
+          position: absolute !important;
+          top: -9999px !important;
+          left: -9999px !important;
+        }
+        
+        /* Ngăn chặn mọi animation */
+        .ytp-title-reveal {
+          display: none !important;
+          animation: none !important;
+        }
+        
+        /* Chặn hiển thị văn bản khi hover */
+        .ytp-tooltip {
+          display: none !important;
+          opacity: 0 !important;
+          visibility: hidden !important;
         }
       `}</style>
     </div>
