@@ -17,7 +17,30 @@ export async function GET(request, { params }) {
       );
     }
 
-    const course = await collection.findOne({ kimvanId: id });
+    // Kiểm tra xem có tham số type=_id không
+    const { searchParams } = new URL(request.url);
+    const type = searchParams.get('type');
+    
+    let query = {};
+    
+    // Truy vấn theo loại ID
+    if (type === '_id') {
+      // Truy vấn theo MongoDB _id 
+      try {
+        query = { _id: new ObjectId(id) };
+      } catch (err) {
+        return NextResponse.json(
+          { message: 'ID không hợp lệ' },
+          { status: 400 }
+        );
+      }
+    } else {
+      // Truy vấn theo kimvanId
+      query = { kimvanId: id };
+    }
+
+    // Thực hiện truy vấn MongoDB
+    const course = await collection.findOne(query);
 
     if (!course) {
       return NextResponse.json(
@@ -58,7 +81,29 @@ export async function PUT(request, { params }) {
       );
     }
     
-    const course = await collection.findOne({ kimvanId: id });
+    // Kiểm tra xem có tham số type=_id không
+    const { searchParams } = new URL(request.url);
+    const type = searchParams.get('type');
+    
+    let query = {};
+    
+    // Truy vấn theo loại ID
+    if (type === '_id') {
+      // Truy vấn theo MongoDB _id 
+      try {
+        query = { _id: new ObjectId(id) };
+      } catch (err) {
+        return NextResponse.json(
+          { message: 'ID không hợp lệ' },
+          { status: 400 }
+        );
+      }
+    } else {
+      // Truy vấn theo kimvanId
+      query = { kimvanId: id };
+    }
+    
+    const course = await collection.findOne(query);
     if (!course) {
       return NextResponse.json(
         { message: 'Không tìm thấy khóa học' },
@@ -75,7 +120,7 @@ export async function PUT(request, { params }) {
     data.originalData = course.originalData;
     
     const result = await collection.updateOne(
-      { kimvanId: id },
+      query, // Sử dụng query đã được xây dựng ở trên
       { $set: data }
     );
     

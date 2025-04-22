@@ -3,8 +3,10 @@
 import { useState, useEffect } from 'react';
 import { PlusIcon, PencilIcon, TrashIcon, CloudArrowDownIcon, ExclamationCircleIcon, XMarkIcon, ArrowPathIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 import { ServerIcon as DatabaseIcon } from '@heroicons/react/24/outline';
+import { useRouter } from 'next/navigation';
 
 export default function CoursesPage() {
+  const router = useRouter();
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -415,27 +417,39 @@ export default function CoursesPage() {
       )}
 
       {syncResults && (
-        <div className="bg-green-50 p-4 rounded-md mb-4">
+        <div className={`bg-${syncResults.success ? 'green' : 'orange'}-50 p-4 rounded-md mb-4`}>
           <div className="flex">
             <div className="flex-shrink-0">
-              <CloudArrowDownIcon className="h-5 w-5 text-green-400" aria-hidden="true" />
+              {syncResults.inProgress ? (
+                <ArrowPathIcon className="h-5 w-5 text-blue-500 animate-spin" aria-hidden="true" />
+              ) : (
+                <CloudArrowDownIcon className={`h-5 w-5 text-${syncResults.success ? 'green' : 'orange'}-400`} aria-hidden="true" />
+              )}
             </div>
             <div className="ml-3">
-              <h3 className="text-sm font-medium text-green-800">Đồng bộ thành công</h3>
-              <div className="mt-2 text-sm text-green-700">
-                <p>Tổng số khóa học: {syncResults.summary.total}</p>
-                <p>Khóa học mới: {syncResults.summary.created}</p>
-                <p>Khóa học cập nhật: {syncResults.summary.updated}</p>
-                <p>Tổng số lỗi: {syncResults.summary.errors}</p>
+              <h3 className={`text-sm font-medium text-${syncResults.success ? 'green' : 'orange'}-800`}>
+                {syncResults.inProgress ? 'Đang đồng bộ...' : (syncResults.success ? 'Đồng bộ thành công' : 'Đồng bộ không thành công')}
+              </h3>
+              <div className="mt-2 text-sm text-gray-700">
+                <p>{syncResults.message}</p>
+                {!syncResults.inProgress && (
+                  <>
+                    <p>Tổng số khóa học: {syncResults.summary.total}</p>
+                    <p>Khóa học mới: {syncResults.summary.created}</p>
+                    <p>Khóa học cập nhật: {syncResults.summary.updated}</p>
+                    <p>Tổng số lỗi: {syncResults.summary.errors}</p>
+                  </>
+                )}
               </div>
               <div className="mt-4">
                 <div className="-mx-2 -my-1.5 flex">
                   <button
                     type="button"
                     onClick={() => setSyncResults(null)}
-                    className="bg-green-50 px-2 py-1.5 rounded-md text-sm font-medium text-green-800 hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                    className={`bg-${syncResults.success ? 'green' : 'orange'}-50 px-2 py-1.5 rounded-md text-sm font-medium text-${syncResults.success ? 'green' : 'orange'}-800 hover:bg-${syncResults.success ? 'green' : 'orange'}-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-${syncResults.success ? 'green' : 'orange'}-500`}
+                    disabled={syncResults.inProgress}
                   >
-                    Đóng
+                    {syncResults.inProgress ? 'Đang xử lý...' : 'Đóng'}
                   </button>
                 </div>
               </div>
@@ -508,7 +522,14 @@ export default function CoursesPage() {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {filteredCourses.map((course) => (
                       <tr key={course._id}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{course.name}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          <button 
+                            onClick={() => router.push(`/admin/courses/${course._id}`)}
+                            className="text-left hover:text-indigo-600 hover:underline cursor-pointer"
+                          >
+                            {course.name}
+                          </button>
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {course.updatedAt 
                             ? new Date(course.updatedAt).toLocaleDateString('vi-VN') + ' ' + new Date(course.updatedAt).toLocaleTimeString('vi-VN')
@@ -539,6 +560,19 @@ export default function CoursesPage() {
                                     setSyncing(true);
                                     setError(null);
                                     
+                                    // Hiển thị thông báo đang đồng bộ cho khóa học cụ thể
+                                    setSyncResults({
+                                      success: true,
+                                      message: `Đang đồng bộ khóa học "${course.name}"...`,
+                                      summary: {
+                                        total: 1,
+                                        created: 0,
+                                        updated: 0,
+                                        errors: 0
+                                      },
+                                      inProgress: true
+                                    });
+                                    
                                     // Sử dụng phương thức PATCH để đồng bộ khóa học
                                     const response = await fetch(`/api/courses/${course.kimvanId}`, {
                                       method: 'PATCH',
@@ -556,13 +590,14 @@ export default function CoursesPage() {
                                     // Hiển thị kết quả đồng bộ
                                     setSyncResults({
                                       success: true,
-                                      message: syncData.message,
+                                      message: syncData.message || 'Đồng bộ khóa học thành công',
                                       summary: {
                                         total: 1,
                                         created: 0,
                                         updated: 1,
                                         errors: 0
-                                      }
+                                      },
+                                      inProgress: false
                                     });
                                     
                                     // Tải lại danh sách khóa học
@@ -570,6 +605,19 @@ export default function CoursesPage() {
                                   } catch (err) {
                                     console.error('Lỗi khi đồng bộ khóa học:', err);
                                     setError(err.message || 'Đã xảy ra lỗi khi đồng bộ khóa học. Vui lòng kiểm tra kết nối MongoDB.');
+                                    
+                                    // Hiển thị thông báo lỗi
+                                    setSyncResults({
+                                      success: false,
+                                      message: `Lỗi đồng bộ: ${err.message}`,
+                                      summary: {
+                                        total: 1,
+                                        created: 0,
+                                        updated: 0,
+                                        errors: 1
+                                      },
+                                      inProgress: false
+                                    });
                                   } finally {
                                     setSyncing(false);
                                   }
@@ -581,8 +629,13 @@ export default function CoursesPage() {
                               }}
                               className="text-green-600 hover:text-green-900 mr-2"
                               title="Đồng bộ khóa học này"
+                              disabled={syncing}
                             >
-                              <ArrowPathIcon className="h-5 w-5" />
+                              {syncing && syncResults?.inProgress ? (
+                                <ArrowPathIcon className="h-5 w-5 animate-spin" />
+                              ) : (
+                                <ArrowPathIcon className="h-5 w-5" />
+                              )}
                             </button>
                           )}
                           <button
