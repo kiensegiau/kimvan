@@ -9,7 +9,7 @@ export default function CourseDetailPage() {
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState('overview');
+  const [lessons, setLessons] = useState([]);
 
   useEffect(() => {
     const fetchCourseData = async () => {
@@ -44,6 +44,86 @@ export default function CourseDetailPage() {
           name: courseName,
           details: detailData
         });
+        
+        // Xử lý dữ liệu bài học từ spreadsheet
+        if (detailData.sheets && detailData.sheets[0] && detailData.sheets[0].data && detailData.sheets[0].data[0] && detailData.sheets[0].data[0].rowData) {
+          const rowData = detailData.sheets[0].data[0].rowData;
+          
+          // Bỏ qua dòng tiêu đề (dòng đầu tiên)
+          const processedLessons = [];
+          
+          for (let i = 1; i < rowData.length; i++) {
+            const row = rowData[i];
+            if (row.values) {
+              // Lấy giá trị cơ bản
+              const lessonData = {
+                stt: row.values[0]?.formattedValue || '',
+                date: row.values[1]?.formattedValue || '',
+                title: row.values[2]?.formattedValue || '',
+                liveLink: '',
+                documentLink: '',
+                homeworkLink: '',
+                hasContent: false
+              };
+              
+              // Trích xuất liên kết YouTube (LIVE) nếu có
+              if (row.values[3]) {
+                if (row.values[3].userEnteredFormat?.textFormat?.link?.uri) {
+                  lessonData.liveLink = row.values[3].userEnteredFormat.textFormat.link.uri;
+                  lessonData.hasContent = true;
+                } else if (row.values[3].formattedValue && row.values[3].formattedValue !== '-') {
+                  lessonData.liveLink = `/api/spreadsheets/${decodedId}/LIVE/${encodeURIComponent(lessonData.title)}/redirect`;
+                  lessonData.hasContent = true;
+                }
+              }
+              
+              // Trích xuất liên kết Google Drive (TÀI LIỆU) nếu có
+              if (row.values[4]) {
+                if (row.values[4].userEnteredFormat?.textFormat?.link?.uri) {
+                  lessonData.documentLink = row.values[4].userEnteredFormat.textFormat.link.uri;
+                  lessonData.hasContent = true;
+                } else if (row.values[4].hyperlink) {
+                  // Nếu là ID Drive, chuyển thành URL Drive
+                  if (!row.values[4].hyperlink.startsWith('http')) {
+                    lessonData.documentLink = `https://drive.google.com/open?id=${row.values[4].hyperlink}`;
+                  } else {
+                    lessonData.documentLink = row.values[4].hyperlink;
+                  }
+                  lessonData.hasContent = true;
+                } else if (row.values[4].formattedValue && row.values[4].formattedValue !== '-') {
+                  lessonData.documentLink = `/api/spreadsheets/${decodedId}/TÀI LIỆU/${encodeURIComponent(lessonData.title)}/redirect`;
+                  lessonData.hasContent = true;
+                }
+              }
+              
+              // Trích xuất liên kết BTVN nếu có
+              if (row.values[5]) {
+                if (row.values[5].userEnteredFormat?.textFormat?.link?.uri) {
+                  lessonData.homeworkLink = row.values[5].userEnteredFormat.textFormat.link.uri;
+                  lessonData.hasContent = true;
+                } else if (row.values[5].hyperlink) {
+                  if (!row.values[5].hyperlink.startsWith('http')) {
+                    lessonData.homeworkLink = `https://drive.google.com/open?id=${row.values[5].hyperlink}`;
+                  } else {
+                    lessonData.homeworkLink = row.values[5].hyperlink;
+                  }
+                  lessonData.hasContent = true;
+                } else if (row.values[5].formattedValue && row.values[5].formattedValue !== '-') {
+                  lessonData.homeworkLink = `/api/spreadsheets/${decodedId}/BTVN/${encodeURIComponent(lessonData.title)}/redirect`;
+                  lessonData.hasContent = true;
+                }
+              }
+              
+              // Chỉ thêm vào mảng nếu có dữ liệu ý nghĩa
+              if (lessonData.title || lessonData.hasContent) {
+                processedLessons.push(lessonData);
+              }
+            }
+          }
+          
+          setLessons(processedLessons);
+          console.log('Đã xử lý', processedLessons.length, 'bài học');
+        }
         
         console.log('Đã tải dữ liệu khóa học thành công:', decodedId);
         
@@ -164,167 +244,162 @@ export default function CourseDetailPage() {
             </div>
           </div>
           
-          <div className="border-b border-gray-200">
-            <nav className="flex space-x-8 px-6">
-              <button
-                onClick={() => setActiveTab('overview')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'overview'
-                    ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                Tổng quan khóa học
-              </button>
-              <button
-                onClick={() => setActiveTab('lessons')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'lessons'
-                    ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                Danh sách bài học
-              </button>
-              <button
-                onClick={() => setActiveTab('materials')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'materials'
-                    ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                Tài liệu học tập
-              </button>
-            </nav>
-          </div>
-          
           <div className="p-6">
-            {activeTab === 'overview' && (
-              <div>
-                <h2 className="text-xl font-semibold mb-4">Giới thiệu khóa học</h2>
-                <p className="text-gray-600 mb-6">
-                  Đây là khóa học {subject} được giảng dạy bởi {teacher}. 
-                  Khóa học này cung cấp kiến thức từ cơ bản đến nâng cao, giúp học sinh chuẩn bị tốt cho kỳ thi THPT Quốc gia.
-                </p>
-                
-                <div className="bg-blue-50 rounded-lg p-5 border border-blue-100">
-                  <h3 className="text-lg font-medium text-blue-800 mb-3">Thông tin chung</h3>
-                  <ul className="space-y-2 text-blue-700">
-                    <li className="flex items-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                      <span>Môn học: {subject}</span>
-                    </li>
-                    <li className="flex items-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                      <span>Giảng viên: {teacher}</span>
-                    </li>
-                    <li className="flex items-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                      <span>Đối tượng: Học sinh lớp 12 (2K8)</span>
-                    </li>
-                    <li className="flex items-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                      <span>ID Khóa học: {id}</span>
-                    </li>
-                  </ul>
+            <h2 className="text-xl font-semibold mb-4">Danh sách bài học</h2>
+            <p className="text-gray-600 mb-6">
+              Dưới đây là danh sách các bài học trong khóa học này. Nhấn vào từng bài để xem chi tiết.
+            </p>
+            
+            {/* Các nút truy cập nhanh */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+              <a 
+                href={`/api/spreadsheets/${course.id}/LIVE/2K8/redirect`}
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-blue-50 transition"
+              >
+                <div className="bg-red-100 rounded-lg p-3 mr-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
                 </div>
-                
-                <div className="mt-8 flex space-x-4">
-                  <a 
-                    href={`/api/spreadsheets/${course.id}/LIVE/2K8/redirect`}
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    className="flex-1 text-center bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition"
-                  >
-                    Xem video bài giảng
-                  </a>
-                  <a 
-                    href={`/api/spreadsheets/${course.id}/TÀI LIỆU/2K8/redirect`}
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    className="flex-1 text-center bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-lg transition"
-                  >
-                    Tải tài liệu
-                  </a>
+                <div>
+                  <h3 className="font-medium text-gray-900">Video bài giảng</h3>
+                  <p className="text-sm text-gray-500">Xem tất cả video bài giảng</p>
+                </div>
+              </a>
+              
+              <a 
+                href={`/api/spreadsheets/${course.id}/TÀI LIỆU/2K8/redirect`}
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-blue-50 transition"
+              >
+                <div className="bg-blue-100 rounded-lg p-3 mr-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="font-medium text-gray-900">Tài liệu học tập</h3>
+                  <p className="text-sm text-gray-500">Tải tất cả tài liệu học tập</p>
+                </div>
+              </a>
+              
+              <a 
+                href={`/api/spreadsheets/${course.id}/BTVN/2K8/redirect`}
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-blue-50 transition"
+              >
+                <div className="bg-green-100 rounded-lg p-3 mr-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="font-medium text-gray-900">Bài tập về nhà</h3>
+                  <p className="text-sm text-gray-500">Tải bài tập về nhà và đáp án</p>
+                </div>
+              </a>
+            </div>
+            
+            {/* Danh sách chi tiết bài học */}
+            <div className="overflow-hidden border border-gray-200 rounded-lg">
+              <div className="bg-gray-50 p-3 border-b border-gray-200">
+                <div className="grid grid-cols-12 gap-2 font-medium text-gray-700">
+                  <div className="col-span-1 text-center">STT</div>
+                  <div className="col-span-2">Ngày học</div>
+                  <div className="col-span-5">Tên bài</div>
+                  <div className="col-span-4">Liên kết</div>
                 </div>
               </div>
-            )}
+              
+              {lessons.length > 0 ? (
+                <div className="divide-y divide-gray-200">
+                  {lessons.map((lesson, index) => (
+                    <div key={index} className="p-3 hover:bg-gray-50">
+                      <div className="grid grid-cols-12 gap-2 items-center">
+                        <div className="col-span-1 text-center text-gray-600">{lesson.stt}</div>
+                        <div className="col-span-2 text-sm text-gray-600">{lesson.date}</div>
+                        <div className="col-span-5 font-medium">{lesson.title}</div>
+                        <div className="col-span-4 flex items-center space-x-2">
+                          {lesson.liveLink && (
+                            <a 
+                              href={lesson.liveLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center px-2.5 py-1.5 bg-red-100 text-red-800 text-xs font-medium rounded hover:bg-red-200"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+                                <path d="M14 6a2 2 0 012 2v7a2 2 0 01-2 2H9a2 2 0 01-2-2V8a2 2 0 012-2h5z" />
+                              </svg>
+                              Video
+                            </a>
+                          )}
+                          
+                          {lesson.documentLink && (
+                            <a 
+                              href={lesson.documentLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center px-2.5 py-1.5 bg-blue-100 text-blue-800 text-xs font-medium rounded hover:bg-blue-200"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
+                              </svg>
+                              Tài liệu
+                            </a>
+                          )}
+                          
+                          {lesson.homeworkLink && (
+                            <a 
+                              href={lesson.homeworkLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center px-2.5 py-1.5 bg-green-100 text-green-800 text-xs font-medium rounded hover:bg-green-200"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M9 2a2 2 0 00-2 2v8a2 2 0 002 2h6a2 2 0 002-2V6.414A2 2 0 0016.414 5L14 2.586A2 2 0 0012.586 2H9z" />
+                                <path d="M3 8a2 2 0 012-2h2a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
+                              </svg>
+                              BTVN
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <p className="mt-2 text-gray-500">Chưa có bài học nào trong khóa học này</p>
+                </div>
+              )}
+            </div>
             
-            {activeTab === 'lessons' && (
-              <div>
-                <h2 className="text-xl font-semibold mb-4">Danh sách bài học</h2>
-                <p className="text-gray-600 mb-6">
-                  Dưới đây là danh sách các bài học trong khóa học này. Nhấn vào từng bài để xem chi tiết.
-                </p>
-                
-                <div className="overflow-hidden rounded-lg border border-gray-200">
-                  <div className="bg-gray-50 py-3 px-4 text-gray-600 font-medium text-sm">
-                    Nội dung đang được cập nhật...
-                  </div>
-                  
-                  <div className="text-center py-10">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            <div className="mt-8">
+              <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-100">
+                <div className="flex items-start">
+                  <div className="text-yellow-500 mr-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <p className="mt-4 text-gray-500">Danh sách bài học sẽ sớm được cập nhật</p>
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-yellow-700 mb-1">Thông tin quan trọng</h3>
+                    <p className="text-yellow-600 text-sm">
+                      ID Khóa học: {id}
+                    </p>
                   </div>
                 </div>
               </div>
-            )}
-            
-            {activeTab === 'materials' && (
-              <div>
-                <h2 className="text-xl font-semibold mb-4">Tài liệu học tập</h2>
-                <p className="text-gray-600 mb-6">
-                  Truy cập vào các tài liệu học tập được cung cấp kèm với khóa học. Tài liệu bao gồm bài tập, đề thi và tài liệu tham khảo.
-                </p>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                  <a 
-                    href={`/api/spreadsheets/${course.id}/TÀI LIỆU/2K8/redirect`}
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-blue-50 transition"
-                  >
-                    <div className="bg-blue-100 rounded-lg p-3 mr-4">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <h3 className="font-medium text-gray-900">Tài liệu học tập</h3>
-                      <p className="text-sm text-gray-500">Tải các tài liệu học tập của khóa học</p>
-                    </div>
-                  </a>
-                  
-                  <a 
-                    href={`/api/spreadsheets/${course.id}/BTVN/2K8/redirect`}
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-blue-50 transition"
-                  >
-                    <div className="bg-green-100 rounded-lg p-3 mr-4">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                      </svg>
-                    </div>
-                    <div>
-                      <h3 className="font-medium text-gray-900">Bài tập về nhà</h3>
-                      <p className="text-sm text-gray-500">Tải bài tập về nhà và đáp án</p>
-                    </div>
-                  </a>
-                </div>
-              </div>
-            )}
+            </div>
           </div>
         </div>
       </div>
