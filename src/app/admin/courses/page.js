@@ -17,6 +17,7 @@ export default function CoursesPage() {
   const [initializing, setInitializing] = useState(false);
   const [initResult, setInitResult] = useState(null);
   const [hasMongoConnection, setHasMongoConnection] = useState(true);
+  const [kimvanCourses, setKimvanCourses] = useState([]);
 
   // Hàm để tải danh sách khóa học từ API
   const fetchCourses = async () => {
@@ -145,8 +146,56 @@ export default function CoursesPage() {
   };
 
   // Hàm mở modal xác nhận đồng bộ
-  const handleShowSyncModal = () => {
-    setShowSyncModal(true);
+  const handleShowSyncModal = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Lấy danh sách khóa học từ API spreadsheets
+      const response = await fetch('/api/spreadsheets/create/fullcombokhoa2k8');
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Không thể lấy danh sách khóa học từ Kimvan');
+      }
+      
+      // Chuyển đổi dữ liệu từ Kimvan thành dạng khóa học phù hợp
+      const courses = data.map((item, index) => {
+        // Trích xuất tên môn học từ tên khóa (thường có dạng "2K8 XPS | MÔN HỌC - GIÁO VIÊN")
+        const nameParts = item.name.split('|');
+        const course = nameParts.length > 1 ? nameParts[1].trim() : item.name;
+        
+        // Trích xuất tên lớp từ phần đầu
+        const className = nameParts.length > 0 ? nameParts[0].trim() : '';
+        
+        // Tìm tên giáo viên (thường sau dấu -)
+        const teacherName = course.includes('-') ? course.split('-')[1].trim() : '';
+        
+        // Tìm tên môn học (thường trước dấu -)
+        const subjectName = course.includes('-') ? course.split('-')[0].trim() : course;
+        
+        return {
+          kimvanId: item.id,
+          name: `Khóa học ${subjectName} - ${teacherName}`,
+          description: `Khóa học ${subjectName} cho ${className} do giáo viên ${teacherName} giảng dạy`,
+          price: 500000 + (index * 50000), // Giá mẫu, tăng dần theo index
+          status: 'active',
+          className: className,
+          teacher: teacherName,
+          subject: subjectName,
+          originalData: item
+        };
+      });
+      
+      // Lưu danh sách khóa học từ Kimvan vào state
+      setKimvanCourses(courses || []);
+      setShowSyncModal(true);
+    } catch (err) {
+      console.error('Lỗi khi lấy danh sách khóa học từ Kimvan:', err);
+      setError(err.message || 'Đã xảy ra lỗi khi lấy danh sách khóa học từ Kimvan');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Hàm đồng bộ dữ liệu từ Kimvan
@@ -162,7 +211,10 @@ export default function CoursesPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ sync: true }),
+        body: JSON.stringify({ 
+          sync: true,
+          courses: kimvanCourses // Chuyển danh sách khóa học đã chuyển đổi
+        }),
       });
       
       const data = await response.json();
@@ -510,21 +562,57 @@ export default function CoursesPage() {
               <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
             </div>
             <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
               <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                 <div className="sm:flex sm:items-start">
                   <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 sm:mx-0 sm:h-10 sm:w-10">
                     <CloudArrowDownIcon className="h-6 w-6 text-yellow-600" aria-hidden="true" />
                   </div>
-                  <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                  <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
                     <h3 className="text-lg leading-6 font-medium text-gray-900">
                       Đồng bộ dữ liệu từ Kimvan
                     </h3>
                     <div className="mt-2">
-                      <p className="text-sm text-gray-500">
-                        Bạn có chắc chắn muốn đồng bộ tất cả khóa học từ Kimvan về hệ thống? 
-                        Điều này sẽ tạo mới hoặc cập nhật các khóa học hiện có.
+                      <p className="text-sm text-gray-500 mb-4">
+                        Danh sách khóa học sẽ được đồng bộ từ Kimvan. Vui lòng kiểm tra và xác nhận để tiếp tục.
                       </p>
+                      
+                      {kimvanCourses.length > 0 ? (
+                        <div className="mt-4 max-h-96 overflow-y-auto">
+                          <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                              <tr>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên khóa học</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mô tả</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Giá</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
+                              </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                              {kimvanCourses.map((course, index) => (
+                                <tr key={index}>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{course.name}</td>
+                                  <td className="px-6 py-4 text-sm text-gray-500">{course.description}</td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {course.price?.toLocaleString('vi-VN')}đ
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap">
+                                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                      course.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                                    }`}>
+                                      {course.status === 'active' ? 'Đang hoạt động' : 'Ngừng hoạt động'}
+                                    </span>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <div className="text-center py-4">
+                          <p className="text-gray-500">Không có khóa học nào từ Kimvan</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
