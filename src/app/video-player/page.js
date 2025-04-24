@@ -374,10 +374,16 @@ export default function CustomVideoPlayer() {
   const togglePlay = () => {
     if (!playerRef.current) return;
     
-    if (isPlaying) {
-      playerRef.current.pauseVideo();
-    } else {
-      playerRef.current.playVideo();
+    try {
+      if (isPlaying) {
+        playerRef.current.pauseVideo();
+        setIsPlaying(false);
+      } else {
+        playerRef.current.playVideo();
+        setIsPlaying(true);
+      }
+    } catch (error) {
+      console.error("Lỗi khi toggle play/pause:", error);
     }
   };
   
@@ -750,8 +756,11 @@ export default function CustomVideoPlayer() {
               {/* Lớp phủ trong suốt bắt sự kiện trên toàn bộ video */}
               <div 
                 ref={overlayRef}
-                className="absolute inset-0 z-7 pointer-events-auto" 
-                onClick={togglePlay}
+                className="absolute inset-0 z-20 cursor-pointer" 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  togglePlay();
+                }}
                 style={{ 
                   background: 'transparent'
                 }}
