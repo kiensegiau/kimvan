@@ -239,34 +239,60 @@ export default function CustomVideoPlayer() {
       
       // Lấy danh sách chất lượng có sẵn
       const qualities = event.target.getAvailableQualityLevels();
-      console.log("Chất lượng có sẵn:", qualities);
+      console.log("=== THÔNG TIN CHẤT LƯỢNG VIDEO ===");
+      console.log("Các chất lượng có sẵn từ YouTube:", qualities);
+      
+      // Chỉ lấy các chất lượng thực tế có sẵn
+      const availableQualityLevels = qualities.filter(q => q !== 'auto' && q !== 'unknown');
       
       // Định dạng lại danh sách chất lượng
       const formattedQualities = [
         { value: 'auto', label: 'Tự động' },
-        ...qualities.map(quality => {
+        ...availableQualityLevels.map(quality => {
+          let label;
           switch(quality) {
-            case 'highres': return { value: quality, label: '4K' };
-            case 'hd2880': return { value: quality, label: '2880p' };
-            case 'hd2160': return { value: quality, label: '2160p' };
-            case 'hd1440': return { value: quality, label: '1440p' };
-            case 'hd1080': return { value: quality, label: '1080p HD' };
-            case 'hd720': return { value: quality, label: '720p HD' };
-            case 'large': return { value: quality, label: '480p' };
-            case 'medium': return { value: quality, label: '360p' };
-            case 'small': return { value: quality, label: '240p' };
-            case 'tiny': return { value: quality, label: '144p' };
-            default: return { value: quality, label: quality };
+            case 'highres': label = '4K'; break;
+            case 'hd2880': label = '2880p'; break;
+            case 'hd2160': label = '2160p'; break;
+            case 'hd1440': label = '1440p'; break;
+            case 'hd1080': label = '1080p HD'; break;
+            case 'hd720': label = '720p HD'; break;
+            case 'large': label = '480p'; break;
+            case 'medium': label = '360p'; break;
+            case 'small': label = '240p'; break;
+            case 'tiny': label = '144p'; break;
+            default: label = quality;
           }
+          return { value: quality, label };
         })
       ];
       
+      console.log("Danh sách chất lượng đã định dạng:", formattedQualities);
       setAvailableQualities(formattedQualities);
       
-      // Lấy chất lượng hiện tại
-      const currentQuality = event.target.getPlaybackQuality();
-      console.log("Chất lượng hiện tại:", currentQuality);
-      setCurrentQuality(currentQuality || 'auto');
+      // Lấy và đặt chất lượng hiện tại
+      const actualQuality = event.target.getPlaybackQuality();
+      console.log("Chất lượng thực tế ban đầu:", actualQuality);
+      
+      // Nếu chất lượng là unknown, thử lấy lại sau 1 giây
+      if (actualQuality === 'unknown') {
+        setTimeout(() => {
+          const newQuality = event.target.getPlaybackQuality();
+          console.log("Thử lấy lại chất lượng sau 1s:", newQuality);
+          setCurrentQuality(newQuality === 'unknown' ? 'auto' : newQuality);
+        }, 1000);
+      } else {
+        setCurrentQuality(actualQuality);
+      }
+
+      // Thêm event listener để theo dõi thay đổi chất lượng
+      event.target.addEventListener('onPlaybackQualityChange', (e) => {
+        const newQuality = e.data;
+        console.log("Chất lượng thay đổi tự động:", newQuality);
+        if (newQuality !== 'unknown') {
+          setCurrentQuality(newQuality);
+        }
+      });
 
       // Phát video và tạm dừng để hiển thị thumbnail
       event.target.playVideo();
@@ -274,6 +300,13 @@ export default function CustomVideoPlayer() {
         if (playerRef.current) {
           playerRef.current.pauseVideo();
           setVideoLoaded(true);
+          
+          // Kiểm tra lại chất lượng sau khi video đã load
+          const finalQuality = playerRef.current.getPlaybackQuality();
+          console.log("Chất lượng sau khi load:", finalQuality);
+          if (finalQuality !== 'unknown') {
+            setCurrentQuality(finalQuality);
+          }
         }
       }, 500);
     } catch (error) {
@@ -535,26 +568,64 @@ export default function CustomVideoPlayer() {
     return found ? found.label : quality;
   };
 
-  // Thêm hàm lấy chất lượng hiện tại của video
-  const getCurrentQualityLabel = () => {
-    if (!playerRef.current) return 'Tự động';
-    
-    try {
-      if (currentQuality === 'auto') {
-        return 'Tự động';
-      }
+  // Thêm hàm kiểm tra chất lượng video sau khi đã load
+  useEffect(() => {
+    // Nếu player đã sẵn sàng và video đã tải
+    if (isReady && videoLoaded && playerRef.current) {
+      // Tạo danh sách chất lượng cố định
+      const allPossibleQualities = [
+        { value: 'auto', label: 'Tự động' },
+        { value: 'hd1080', label: '1080p HD' },
+        { value: 'hd720', label: '720p HD' },
+        { value: 'large', label: '480p' },
+        { value: 'medium', label: '360p' },
+        { value: 'small', label: '240p' },
+        { value: 'tiny', label: '144p' }
+      ];
       
-      const quality = availableQualities.find(q => q.value === currentQuality);
-      return quality ? quality.label : 'Tự động';
-    } catch (error) {
-      console.error("Lỗi khi lấy nhãn chất lượng:", error);
-      return 'Tự động';
+      try {
+        // Kiểm tra phương thức tồn tại
+        if (typeof playerRef.current.getAvailableQualityLevels === 'function') {
+          // Lấy danh sách chất lượng thực tế
+          const availableQualityLevels = playerRef.current.getAvailableQualityLevels();
+          console.log("DANH SÁCH CHẤT LƯỢNG THỰC TẾ:", availableQualityLevels);
+          
+          // Lọc theo chất lượng có sẵn
+          const filteredQualities = [
+            { value: 'auto', label: 'Tự động' },
+            ...allPossibleQualities.filter(q => 
+              q.value !== 'auto' && availableQualityLevels.includes(q.value)
+            )
+          ];
+          
+          console.log("DANH SÁCH CHẤT LƯỢNG ĐÃ LỌC:", filteredQualities);
+          setAvailableQualities(filteredQualities);
+        } else {
+          console.warn("Phương thức getAvailableQualityLevels không tồn tại");
+          setAvailableQualities(allPossibleQualities);
+        }
+        
+        // Kiểm tra phương thức tồn tại
+        if (typeof playerRef.current.getPlaybackQuality === 'function') {
+          const actualQuality = playerRef.current.getPlaybackQuality();
+          console.log("CHẤT LƯỢNG THỰC TẾ:", actualQuality);
+          if (actualQuality && actualQuality !== 'unknown') {
+            setCurrentQuality(actualQuality);
+          }
+        } else {
+          console.warn("Phương thức getPlaybackQuality không tồn tại");
+          setCurrentQuality('auto');
+        }
+      } catch (error) {
+        console.error("Lỗi khi kiểm tra chất lượng:", error);
+        setAvailableQualities(allPossibleQualities);
+      }
     }
-  };
-
+  }, [isReady, videoLoaded]);
+  
   // Cập nhật hàm xử lý thay đổi chất lượng
   const handleQualityChange = (quality) => {
-    console.log("Đang thay đổi chất lượng sang:", quality);
+    console.log("ĐANG THAY ĐỔI CHẤT LƯỢNG SANG:", quality);
     
     if (!playerRef.current) {
       console.error("Player chưa sẵn sàng");
@@ -562,18 +633,26 @@ export default function CustomVideoPlayer() {
     }
 
     try {
+      // Lưu trạng thái hiện tại
       const currentTime = playerRef.current.getCurrentTime();
       const wasPlaying = playerRef.current.getPlayerState() === 1;
-
-      if (quality === 'auto') {
-        playerRef.current.setPlaybackQuality('default');
+      
+      // Kiểm tra phương thức tồn tại
+      if (typeof playerRef.current.setPlaybackQuality === 'function') {
+        // Đặt chất lượng mới
+        if (quality === 'auto') {
+          playerRef.current.setPlaybackQuality('default');
+        } else {
+          playerRef.current.setPlaybackQuality(quality);
+        }
       } else {
-        playerRef.current.setPlaybackQuality(quality);
+        console.warn("Phương thức setPlaybackQuality không tồn tại");
       }
-
+      
+      // Cập nhật state
       setCurrentQuality(quality);
       setShowQualityMenu(false);
-
+      
       // Đảm bảo video tiếp tục phát từ vị trí cũ
       playerRef.current.seekTo(currentTime);
       if (wasPlaying) {
@@ -584,30 +663,19 @@ export default function CustomVideoPlayer() {
     }
   };
 
-  // Thêm hàm kiểm tra chất lượng thực tế
-  const checkActualQuality = () => {
-    if (!playerRef.current) return;
-
-    try {
-      const actualQuality = playerRef.current.getPlaybackQuality();
-      const availableQualities = playerRef.current.getAvailableQualityLevels();
-      console.log("Kiểm tra chất lượng:", {
-        thựcTế: actualQuality,
-        đãChọn: currentQuality,
-        cóSẵn: availableQualities
-      });
-    } catch (error) {
-      console.error("Lỗi khi kiểm tra chất lượng:", error);
+  // Thêm component hiển thị debug
+  const Debug = () => {
+    if (!process.env.NODE_ENV || process.env.NODE_ENV === 'development') {
+      return (
+        <div className="fixed bottom-0 left-0 bg-black/80 text-white p-2 text-xs z-50">
+          <div>Chất lượng hiện tại: {currentQuality}</div>
+          <div>Số chất lượng có sẵn: {availableQualities.length}</div>
+          <div>Các chất lượng: {availableQualities.map(q => q.value).join(', ')}</div>
+        </div>
+      );
     }
+    return null;
   };
-
-  // Thêm effect để theo dõi thay đổi chất lượng
-  useEffect(() => {
-    if (isReady && playerRef.current) {
-      const qualityCheckInterval = setInterval(checkActualQuality, 2000);
-      return () => clearInterval(qualityCheckInterval);
-    }
-  }, [isReady, currentQuality]);
 
   // Xử lý phụ đề
   const handleCaptionChange = (lang) => {
@@ -622,6 +690,33 @@ export default function CustomVideoPlayer() {
       }
       setSelectedCaption(lang);
       setShowCaptionsMenu(false);
+    }
+  };
+  
+  // Cập nhật hàm lấy nhãn chất lượng hiện tại
+  const getCurrentQualityLabel = () => {
+    if (!playerRef.current) return 'Tự động';
+    
+    try {
+      let actualQuality = currentQuality;
+      
+      // Kiểm tra nếu phương thức tồn tại
+      if (typeof playerRef.current.getPlaybackQuality === 'function') {
+        const playerQuality = playerRef.current.getPlaybackQuality();
+        if (playerQuality && playerQuality !== 'unknown') {
+          actualQuality = playerQuality;
+        }
+      }
+      
+      if (currentQuality === 'auto') {
+        return 'Tự động';
+      }
+      
+      const quality = availableQualities.find(q => q.value === actualQuality);
+      return quality ? quality.label : 'Tự động';
+    } catch (error) {
+      console.error("Lỗi khi lấy nhãn chất lượng:", error);
+      return 'Tự động';
     }
   };
   
@@ -850,7 +945,7 @@ export default function CustomVideoPlayer() {
                       <div className="px-4 py-2 text-sm text-gray-400 border-b border-gray-700">Chất lượng</div>
                       {availableQualities.map((quality) => (
                         <button
-                          key={quality.value}
+                          key={`quality-${quality.value}`}
                           onClick={() => handleQualityChange(quality.value)}
                           className={`w-full px-4 py-2 text-left hover:bg-white/10 flex items-center justify-between ${currentQuality === quality.value ? 'text-red-500' : ''}`}
                         >
@@ -951,6 +1046,9 @@ export default function CustomVideoPlayer() {
           </div>
         </div>
       </div>
+
+      {/* Hiển thị debug */}
+      <Debug />
 
       {/* Thêm CSS để ẩn hoàn toàn logo và tiêu đề YouTube */}
       <style jsx global>{`
