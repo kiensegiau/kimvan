@@ -3,10 +3,10 @@
 import { useState, useRef, useEffect } from 'react';
 
 export default function CustomVideoPlayer() {
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(true);
   const [progress, setProgress] = useState(0);
   const [volume, setVolume] = useState(100);
-  const [isMuted, setIsMuted] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [isReady, setIsReady] = useState(false);
   const [playerState, setPlayerState] = useState(null);
@@ -189,6 +189,7 @@ export default function CustomVideoPlayer() {
         host: 'https://www.youtube.com',
         playerVars: {
           autoplay: 1,
+          mute: 1,
           controls: 0,
           rel: 0,
           showinfo: 0,
@@ -236,6 +237,10 @@ export default function CustomVideoPlayer() {
     try {
       // Lưu player instance
       playerRef.current = event.target;
+      
+      // Đảm bảo video phát
+      event.target.playVideo();
+      setIsPlaying(true);
       
       // Lấy danh sách chất lượng có sẵn
       const qualities = event.target.getAvailableQualityLevels();
@@ -294,21 +299,14 @@ export default function CustomVideoPlayer() {
         }
       });
 
-      // Phát video và tạm dừng để hiển thị thumbnail
-      event.target.playVideo();
-      setTimeout(() => {
-        if (playerRef.current) {
-          playerRef.current.pauseVideo();
-          setVideoLoaded(true);
-          
-          // Kiểm tra lại chất lượng sau khi video đã load
-          const finalQuality = playerRef.current.getPlaybackQuality();
-          console.log("Chất lượng sau khi load:", finalQuality);
-          if (finalQuality !== 'unknown') {
-            setCurrentQuality(finalQuality);
-          }
-        }
-      }, 500);
+      setVideoLoaded(true);
+      
+      // Kiểm tra lại chất lượng sau khi video đã load
+      const finalQuality = playerRef.current.getPlaybackQuality();
+      console.log("Chất lượng sau khi load:", finalQuality);
+      if (finalQuality !== 'unknown') {
+        setCurrentQuality(finalQuality);
+      }
     } catch (error) {
       console.error("Lỗi khi khởi tạo player:", error);
     }
