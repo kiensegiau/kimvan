@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeftIcon, PencilIcon, TrashIcon, CloudArrowDownIcon, ExclamationCircleIcon, XMarkIcon, ArrowPathIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 import { use } from 'react';
+import YouTubeModal from '../../components/YouTubeModal';
 
 export default function CourseDetailPage({ params }) {
   const router = useRouter();
@@ -23,6 +24,7 @@ export default function CourseDetailPage({ params }) {
   const [formData, setFormData] = useState(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [activeSheet, setActiveSheet] = useState(0);
+  const [youtubeModal, setYoutubeModal] = useState({ isOpen: false, videoId: null, title: '' });
   
   // Hàm lấy tiêu đề của sheet
   const getSheetTitle = (index, sheets) => {
@@ -179,6 +181,39 @@ export default function CourseDetailPage({ params }) {
         setSyncing(false);
       }
     }
+  };
+
+  // Hàm trích xuất YouTube video ID từ URL
+  const extractYoutubeId = (url) => {
+    if (!url) return null;
+    
+    // Hỗ trợ nhiều định dạng URL YouTube
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    
+    return (match && match[2].length === 11) ? match[2] : null;
+  };
+  
+  // Hàm kiểm tra xem URL có phải là YouTube link không
+  const isYoutubeLink = (url) => {
+    if (!url) return false;
+    return url.includes('youtube.com') || url.includes('youtu.be');
+  };
+  
+  // Hàm mở modal YouTube
+  const openYoutubeModal = (url, title = '') => {
+    const videoId = extractYoutubeId(url);
+    if (videoId) {
+      setYoutubeModal({ isOpen: true, videoId, title });
+    } else {
+      // Nếu không phải YouTube link, mở URL bình thường
+      window.open(url, '_blank');
+    }
+  };
+  
+  // Hàm đóng modal YouTube
+  const closeYoutubeModal = () => {
+    setYoutubeModal({ isOpen: false, videoId: null, title: '' });
   };
 
   // Tải thông tin khóa học khi component được tạo
@@ -543,16 +578,30 @@ export default function CourseDetailPage({ params }) {
                                     : cell.hyperlink || cell.userEnteredFormat?.textFormat?.link?.uri
                                       ? (
                                           <a 
-                                            href={cell.userEnteredFormat?.textFormat?.link?.uri} 
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="inline-flex items-center text-blue-600 font-medium hover:text-blue-800 transition-colors duration-150 group"
+                                            onClick={(e) => {
+                                              e.preventDefault();
+                                              const url = cell.userEnteredFormat?.textFormat?.link?.uri || cell.hyperlink;
+                                              if (isYoutubeLink(url)) {
+                                                openYoutubeModal(url, cell.formattedValue);
+                                              } else {
+                                                window.open(url, '_blank');
+                                              }
+                                            }}
+                                            href={cell.userEnteredFormat?.textFormat?.link?.uri || cell.hyperlink}
+                                            className="inline-flex items-center text-blue-600 font-medium hover:text-blue-800 transition-colors duration-150 group cursor-pointer"
                                           >
                                             <span>{cell.formattedValue || ''}</span>
                                             <span className="ml-1.5 p-1 rounded-md group-hover:bg-blue-100 transition-colors duration-150">
-                                              <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                              </svg>
+                                              {isYoutubeLink(cell.userEnteredFormat?.textFormat?.link?.uri || cell.hyperlink) ? (
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                              ) : (
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                                </svg>
+                                              )}
                                             </span>
                                           </a>
                                         ) 
@@ -630,6 +679,16 @@ export default function CourseDetailPage({ params }) {
               </div>
             </div>
           </div>
+        )}
+        
+        {/* YouTube Modal */}
+        {youtubeModal.isOpen && (
+          <YouTubeModal
+            isOpen={youtubeModal.isOpen}
+            onClose={closeYoutubeModal}
+            videoId={youtubeModal.videoId}
+            title={youtubeModal.title}
+          />
         )}
       </div>
     </div>
