@@ -15,30 +15,163 @@ export default function CustomVideoPlayer() {
   const [showControls, setShowControls] = useState(false);
   const [videoLoaded, setVideoLoaded] = useState(false);
   const [loadError, setLoadError] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const [showSpeedMenu, setShowSpeedMenu] = useState(false);
+  const [showQualityMenu, setShowQualityMenu] = useState(false);
+  const [currentQuality, setCurrentQuality] = useState('auto');
+  const [availableQualities, setAvailableQualities] = useState([]);
+  const [videoDetails, setVideoDetails] = useState(null);
+  const [isLooping, setIsLooping] = useState(false);
+  const [showCaptions, setShowCaptions] = useState(false);
+  const [availableCaptions, setAvailableCaptions] = useState([]);
+  const [selectedCaption, setSelectedCaption] = useState('off');
+  const [showCaptionsMenu, setShowCaptionsMenu] = useState(false);
   
   const playerContainerRef = useRef(null);
   const playerRef = useRef(null);
   const playerWrapperRef = useRef(null);
   const overlayRef = useRef(null);
+  const controlsTimeoutRef = useRef(null);
   
   // ID video YouTube từ URL
   const videoId = 'rQp-pUVW0yI';
   
+  // API key của YouTube Data API 
+  const API_KEY = process.env.NEXT_PUBLIC_YOUTUBE_API_KEY;
+  
+  // Danh sách tất cả các chất lượng có thể có
+  const allQualities = [
+    { value: 'highres', label: '4K' },
+    { value: 'hd2880', label: '2880p' },
+    { value: 'hd2160', label: '2160p' },
+    { value: 'hd1440', label: '1440p' },
+    { value: 'hd1080', label: '1080p HD' },
+    { value: 'hd720', label: '720p HD' },
+    { value: 'large', label: '480p' },
+    { value: 'medium', label: '360p' },
+    { value: 'small', label: '240p' },
+    { value: 'tiny', label: '144p' }
+  ];
+  
+  // Hàm lấy thông tin video từ YouTube API
+  const fetchVideoDetails = async (videoId) => {
+    if (!API_KEY) {
+      console.error('API key chưa được cấu hình');
+      return;
+    }
+
+    console.log('Đang lấy thông tin video...', videoId);
+    try {
+      const response = await fetch(
+        `https://www.googleapis.com/youtube/v3/videos?part=contentDetails,snippet,status&id=${videoId}&key=${API_KEY}`
+      );
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('Kết quả API:', data);
+      
+      if (data.error) {
+        console.error('Lỗi API YouTube:', data.error.message);
+        return;
+      }
+      
+      if (data.items && data.items.length > 0) {
+        setVideoDetails(data.items[0]);
+        console.log("Chi tiết video:", data.items[0]);
+        
+        // Lấy danh sách chất lượng từ fileDetails nếu có
+        if (data.items[0].contentDetails) {
+          const definition = data.items[0].contentDetails.definition;
+          console.log('Định dạng video:', definition);
+          
+          const availableFormats = [];
+          
+          if (definition === 'hd') {
+            availableFormats.push(
+              { value: 'hd1080', label: '1080p HD' },
+              { value: 'hd720', label: '720p HD' }
+            );
+          }
+          
+          availableFormats.push(
+            { value: 'large', label: '480p' },
+            { value: 'medium', label: '360p' },
+            { value: 'small', label: '240p' }
+          );
+          
+          console.log('Chất lượng có sẵn:', availableFormats);
+          
+          setAvailableQualities([
+            { value: 'auto', label: 'Tự động' },
+            ...availableFormats
+          ]);
+        }
+      } else {
+        console.error('Không tìm thấy video với ID:', videoId);
+      }
+    } catch (error) {
+      console.error("Lỗi khi lấy thông tin video:", error);
+    }
+  };
+  
   useEffect(() => {
+    // Log để kiểm tra API key
+    console.log('API Key configured:', API_KEY ? 'Yes' : 'No');
+    if (!API_KEY) {
+      console.error('YouTube API key chưa được cấu hình trong .env.local');
+    }
+    
     // Tải YouTube API
-    const tag = document.createElement('script');
-    tag.src = 'https://www.youtube.com/iframe_api';
-    const firstScriptTag = document.getElementsByTagName('script')[0];
-    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-    
-    // Định nghĩa hàm callback khi API sẵn sàng
-    window.onYouTubeIframeAPIReady = initializePlayer;
-    
-    // Dọn dẹp
+    const loadYouTubeAPI = () => {
+      return new Promise((resolve, reject) => {
+        if (window.YT) {
+          resolve(window.YT);
+          return;
+        }
+
+        const tag = document.createElement('script');
+        tag.src = 'https://www.youtube.com/iframe_api';
+        tag.async = true;
+        const firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+        window.onYouTubeIframeAPIReady = () => {
+          resolve(window.YT);
+        };
+
+        tag.onerror = (error) => {
+          reject('Lỗi khi tải YouTube API: ' + error);
+        };
+      });
+    };
+
+    const setupPlayer = async () => {
+      try {
+        await loadYouTubeAPI();
+        initializePlayer();
+      } catch (error) {
+        console.error(error);
+        setLoadError(true);
+      }
+    };
+
+    setupPlayer();
+    fetchVideoDetails(videoId);
+
     return () => {
       window.onYouTubeIframeAPIReady = null;
+      if (playerRef.current) {
+        try {
+          playerRef.current.destroy();
+        } catch (error) {
+          console.error("Lỗi khi dọn dẹp player:", error);
+        }
+      }
     };
-  }, []);
+  }, [videoId]);
   
   // Khởi tạo player YouTube
   const initializePlayer = () => {
@@ -53,95 +186,36 @@ export default function CustomVideoPlayer() {
         videoId: videoId,
         width: '100%',
         height: '100%',
+        host: 'https://www.youtube.com',
         playerVars: {
-          autoplay: 1, // Tự động phát để kiểm tra video đã hiển thị
-          controls: 0,  // Tắt điều khiển của YouTube
-          rel: 0,       // Tắt video liên quan
-          showinfo: 0,  // Tắt thông tin video
-          modestbranding: 1, // Giảm dấu hiệu thương hiệu
-          iv_load_policy: 3, // Tắt chú thích
-          fs: 0,        // Tắt nút toàn màn hình của YouTube
+          autoplay: 1,
+          controls: 0,
+          rel: 0,
+          showinfo: 0,
+          modestbranding: 1,
+          iv_load_policy: 3,
+          fs: 0,
           enablejsapi: 1,
-          disablekb: 1, // Tắt điều khiển bàn phím
+          disablekb: 1,
           playsinline: 1,
-          origin: window.location.origin
+          origin: window.location.origin,
+          widget_referrer: window.location.origin
         },
         events: {
           onReady: onPlayerReady,
           onStateChange: onPlayerStateChange,
-          onError: onPlayerError
+          onError: onPlayerError,
+          onPlaybackQualityChange: (event) => {
+            const newQuality = event.data;
+            console.log("Chất lượng video đã thay đổi:", newQuality);
+            if (currentQuality !== 'auto') {
+              setCurrentQuality(newQuality);
+            }
+          }
         }
       });
       
       console.log("Đang khởi tạo trình phát YouTube...");
-      
-      // Thêm CSS tùy chỉnh vào iframe khi iframe đã tải
-      setTimeout(() => {
-        try {
-          const iframe = document.getElementById('youtube-player');
-          if (iframe) {
-            const iframeDoc = iframe.contentWindow.document;
-            const style = document.createElement('style');
-            style.textContent = `
-              .ytp-chrome-top { display: none !important; opacity: 0 !important; pointer-events: none !important; }
-              .ytp-chrome-bottom { display: none !important; opacity: 0 !important; pointer-events: none !important; }
-              .ytp-gradient-top { display: none !important; opacity: 0 !important; pointer-events: none !important; }
-              .ytp-gradient-bottom { display: none !important; opacity: 0 !important; pointer-events: none !important; }
-              .ytp-watermark { display: none !important; opacity: 0 !important; pointer-events: none !important; }
-              .ytp-show-cards-title { display: none !important; opacity: 0 !important; pointer-events: none !important; }
-              .ytp-pause-overlay { display: none !important; opacity: 0 !important; pointer-events: none !important; }
-              .ytp-caption-window-container { display: none !important; opacity: 0 !important; pointer-events: none !important; }
-              .ytp-title { display: none !important; opacity: 0 !important; visibility: hidden !important; pointer-events: none !important; }
-              .ytp-title-text { display: none !important; opacity: 0 !important; visibility: hidden !important; pointer-events: none !important; }
-              .ytp-title-link { display: none !important; opacity: 0 !important; visibility: hidden !important; pointer-events: none !important; }
-              .ytp-title-channel { display: none !important; opacity: 0 !important; visibility: hidden !important; pointer-events: none !important; }
-              .html5-video-player:hover .ytp-title { display: none !important; opacity: 0 !important; }
-              .html5-video-player * { pointer-events: none !important; }
-              .html5-video-player .html5-video-container { pointer-events: auto !important; }
-              
-              /* Ẩn mọi phần tử trên top */
-              .ytp-chrome-top, 
-              .ytp-title, 
-              .ytp-title-channel, 
-              .ytp-title-text {
-                height: 0 !important;
-                width: 0 !important;
-                max-height: 0 !important;
-                max-width: 0 !important;
-                padding: 0 !important;
-                margin: 0 !important;
-                display: none !important;
-                visibility: hidden !important;
-                opacity: 0 !important;
-                overflow: hidden !important;
-              }
-              
-              /* Loại bỏ top margin từ video */
-              .html5-video-container {
-                margin-top: 0 !important;
-                top: 0 !important;
-              }
-            `;
-            iframeDoc.head.appendChild(style);
-            
-            // Thêm một lớp lắng nghe sự kiện vào document của iframe
-            const script = document.createElement('script');
-            script.textContent = `
-              document.addEventListener('mousemove', function(e) {
-                var top = document.querySelector('.ytp-chrome-top');
-                if (top) {
-                  top.style.display = 'none';
-                  top.style.opacity = '0';
-                  top.style.visibility = 'hidden';
-                }
-              });
-            `;
-            iframeDoc.body.appendChild(script);
-          }
-        } catch (e) {
-          console.log('Không thể tiêm CSS vào iframe do hạn chế CORS');
-        }
-      }, 1000);
     } catch (error) {
       console.error("Lỗi khi khởi tạo trình phát YouTube:", error);
       setLoadError(true);
@@ -159,57 +233,52 @@ export default function CustomVideoPlayer() {
     setIsReady(true);
     setDuration(event.target.getDuration());
     
-    // Tạm dừng video sau khi tải để hiển thị thumbnail đầu tiên
-    event.target.playVideo();
-    setTimeout(() => {
-      event.target.pauseVideo();
-      setVideoLoaded(true);
+    try {
+      // Lưu player instance
+      playerRef.current = event.target;
       
-      // Thêm lần nữa CSS sau khi video đã tải
-      try {
-        const iframe = document.getElementById('youtube-player');
-        if (iframe && iframe.contentWindow && iframe.contentWindow.document) {
-          const iframeDoc = iframe.contentWindow.document;
-          const style = document.createElement('style');
-          style.textContent = `
-            .ytp-title { display: none !important; visibility: hidden !important; pointer-events: none !important; }
-            .ytp-title-text { display: none !important; visibility: hidden !important; pointer-events: none !important; }
-            .ytp-chrome-top { display: none !important; pointer-events: none !important; }
-            .html5-video-player * { pointer-events: none !important; }
-            .html5-video-player .html5-video-container { pointer-events: auto !important; }
-          `;
-          iframeDoc.head.appendChild(style);
-          
-          // Thêm MutationObserver để liên tục ẩn các phần tử khi chúng xuất hiện
-          const script = document.createElement('script');
-          script.textContent = `
-            (function() {
-              var observer = new MutationObserver(function(mutations) {
-                var chromeTop = document.querySelector('.ytp-chrome-top');
-                if (chromeTop) {
-                  chromeTop.style.display = 'none';
-                  chromeTop.style.visibility = 'hidden';
-                }
-                
-                var title = document.querySelector('.ytp-title');
-                if (title) {
-                  title.style.display = 'none';
-                  title.style.visibility = 'hidden';
-                }
-              });
-              
-              observer.observe(document.body, { 
-                childList: true, 
-                subtree: true 
-              });
-            })();
-          `;
-          iframeDoc.body.appendChild(script);
+      // Lấy danh sách chất lượng có sẵn
+      const qualities = event.target.getAvailableQualityLevels();
+      console.log("Chất lượng có sẵn:", qualities);
+      
+      // Định dạng lại danh sách chất lượng
+      const formattedQualities = [
+        { value: 'auto', label: 'Tự động' },
+        ...qualities.map(quality => {
+          switch(quality) {
+            case 'highres': return { value: quality, label: '4K' };
+            case 'hd2880': return { value: quality, label: '2880p' };
+            case 'hd2160': return { value: quality, label: '2160p' };
+            case 'hd1440': return { value: quality, label: '1440p' };
+            case 'hd1080': return { value: quality, label: '1080p HD' };
+            case 'hd720': return { value: quality, label: '720p HD' };
+            case 'large': return { value: quality, label: '480p' };
+            case 'medium': return { value: quality, label: '360p' };
+            case 'small': return { value: quality, label: '240p' };
+            case 'tiny': return { value: quality, label: '144p' };
+            default: return { value: quality, label: quality };
+          }
+        })
+      ];
+      
+      setAvailableQualities(formattedQualities);
+      
+      // Lấy chất lượng hiện tại
+      const currentQuality = event.target.getPlaybackQuality();
+      console.log("Chất lượng hiện tại:", currentQuality);
+      setCurrentQuality(currentQuality || 'auto');
+
+      // Phát video và tạm dừng để hiển thị thumbnail
+      event.target.playVideo();
+      setTimeout(() => {
+        if (playerRef.current) {
+          playerRef.current.pauseVideo();
+          setVideoLoaded(true);
         }
-      } catch (e) {
-        console.log('Không thể tiêm CSS lần 2');
-      }
-    }, 500);
+      }, 500);
+    } catch (error) {
+      console.error("Lỗi khi khởi tạo player:", error);
+    }
   };
   
   // Xử lý khi trạng thái player thay đổi
@@ -369,8 +438,10 @@ export default function CustomVideoPlayer() {
   
   // Thêm title trực tiếp trong document
   useEffect(() => {
-    document.title = "Trình phát video";
-  }, []);
+    if (videoDetails?.snippet) {
+      document.title = videoDetails.snippet.title;
+    }
+  }, [videoDetails]);
 
   // Hiển thị/ẩn điều khiển khi di chuột
   const handleMouseEnter = () => {
@@ -389,11 +460,176 @@ export default function CustomVideoPlayer() {
     initializePlayer();
   };
   
+  // Thêm xử lý phím tắt
+  useEffect(() => {
+    const handleKeyPress = (e) => {
+      if (!isReady) return;
+
+      switch(e.key.toLowerCase()) {
+        case ' ':
+        case 'k':
+          e.preventDefault();
+          togglePlay();
+          break;
+        case 'f':
+          e.preventDefault();
+          toggleFullScreen();
+          break;
+        case 'm':
+          e.preventDefault();
+          toggleMute();
+          break;
+        case 'arrowleft':
+          e.preventDefault();
+          if (playerRef.current) {
+            const newTime = Math.max(currentTime - 5, 0);
+            playerRef.current.seekTo(newTime, true);
+          }
+          break;
+        case 'arrowright':
+          e.preventDefault();
+          if (playerRef.current) {
+            const newTime = Math.min(currentTime + 5, duration);
+            playerRef.current.seekTo(newTime, true);
+          }
+          break;
+        case 'arrowup':
+          e.preventDefault();
+          const newVolumeUp = Math.min(volume + 5, 100);
+          setVolume(newVolumeUp);
+          if (playerRef.current) {
+            playerRef.current.setVolume(newVolumeUp);
+          }
+          break;
+        case 'arrowdown':
+          e.preventDefault();
+          const newVolumeDown = Math.max(volume - 5, 0);
+          setVolume(newVolumeDown);
+          if (playerRef.current) {
+            playerRef.current.setVolume(newVolumeDown);
+          }
+          break;
+        case 'l':
+          e.preventDefault();
+          setIsLooping(!isLooping);
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.addEventListener('keydown', handleKeyPress);
+  }, [isReady, isPlaying, volume, currentTime, duration, isLooping]);
+
+  // Xử lý tốc độ phát
+  const handleSpeedChange = (speed) => {
+    if (playerRef.current) {
+      playerRef.current.setPlaybackRate(speed);
+      setPlaybackSpeed(speed);
+      setShowSpeedMenu(false);
+    }
+  };
+
+  // Thêm hàm chuyển đổi chất lượng sang định dạng dễ đọc
+  const formatQuality = (quality) => {
+    const found = allQualities.find(q => q.value === quality);
+    return found ? found.label : quality;
+  };
+
+  // Thêm hàm lấy chất lượng hiện tại của video
+  const getCurrentQualityLabel = () => {
+    if (!playerRef.current) return 'Tự động';
+    
+    try {
+      if (currentQuality === 'auto') {
+        return 'Tự động';
+      }
+      
+      const quality = availableQualities.find(q => q.value === currentQuality);
+      return quality ? quality.label : 'Tự động';
+    } catch (error) {
+      console.error("Lỗi khi lấy nhãn chất lượng:", error);
+      return 'Tự động';
+    }
+  };
+
+  // Cập nhật hàm xử lý thay đổi chất lượng
+  const handleQualityChange = (quality) => {
+    console.log("Đang thay đổi chất lượng sang:", quality);
+    
+    if (!playerRef.current) {
+      console.error("Player chưa sẵn sàng");
+      return;
+    }
+
+    try {
+      const currentTime = playerRef.current.getCurrentTime();
+      const wasPlaying = playerRef.current.getPlayerState() === 1;
+
+      if (quality === 'auto') {
+        playerRef.current.setPlaybackQuality('default');
+      } else {
+        playerRef.current.setPlaybackQuality(quality);
+      }
+
+      setCurrentQuality(quality);
+      setShowQualityMenu(false);
+
+      // Đảm bảo video tiếp tục phát từ vị trí cũ
+      playerRef.current.seekTo(currentTime);
+      if (wasPlaying) {
+        playerRef.current.playVideo();
+      }
+    } catch (error) {
+      console.error("Lỗi khi thay đổi chất lượng:", error);
+    }
+  };
+
+  // Thêm hàm kiểm tra chất lượng thực tế
+  const checkActualQuality = () => {
+    if (!playerRef.current) return;
+
+    try {
+      const actualQuality = playerRef.current.getPlaybackQuality();
+      const availableQualities = playerRef.current.getAvailableQualityLevels();
+      console.log("Kiểm tra chất lượng:", {
+        thựcTế: actualQuality,
+        đãChọn: currentQuality,
+        cóSẵn: availableQualities
+      });
+    } catch (error) {
+      console.error("Lỗi khi kiểm tra chất lượng:", error);
+    }
+  };
+
+  // Thêm effect để theo dõi thay đổi chất lượng
+  useEffect(() => {
+    if (isReady && playerRef.current) {
+      const qualityCheckInterval = setInterval(checkActualQuality, 2000);
+      return () => clearInterval(qualityCheckInterval);
+    }
+  }, [isReady, currentQuality]);
+
+  // Xử lý phụ đề
+  const handleCaptionChange = (lang) => {
+    if (playerRef.current) {
+      if (lang === 'off') {
+        playerRef.current.unloadModule('captions');
+        setShowCaptions(false);
+      } else {
+        playerRef.current.loadModule('captions');
+        playerRef.current.setOption('captions', 'track', {languageCode: lang});
+        setShowCaptions(true);
+      }
+      setSelectedCaption(lang);
+      setShowCaptionsMenu(false);
+    }
+  };
+  
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 p-4">
       <div 
         ref={playerContainerRef}
-        className="w-full max-w-4xl bg-black text-white rounded-lg overflow-hidden shadow-2xl"
+        className="w-full max-w-4xl bg-black text-white rounded-lg overflow-hidden shadow-2xl relative group"
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
@@ -479,29 +715,29 @@ export default function CustomVideoPlayer() {
             </div>
           )}
           
-          {/* Thanh điều khiển - Hiển thị khi hover hoặc video đang tạm dừng */}
+          {/* Thanh điều khiển mới */}
           <div 
-            className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-4 z-30 transition-opacity duration-300 ${(showControls || !isPlaying) ? 'opacity-100' : 'opacity-0'}`}
+            className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-4 z-30 transition-all duration-300 ${(showControls || !isPlaying) ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-2'}`}
           >
             {/* Thanh tiến độ */}
             <div 
-              className="h-1 bg-gray-700 rounded-full mb-2 cursor-pointer"
+              className="h-1 bg-gray-700 rounded-full mb-4 cursor-pointer group/progress"
               onClick={handleProgressBarClick}
             >
               <div 
-                className="h-full bg-red-600 rounded-full relative"
+                className="h-full bg-red-600 rounded-full relative group-hover/progress:h-2 transition-all"
                 style={{ width: `${progress}%` }}
               >
-                <div className="absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-1/2 w-3 h-3 bg-red-600 rounded-full"></div>
+                <div className="absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-1/2 w-3 h-3 bg-red-600 rounded-full opacity-0 group-hover/progress:opacity-100 transition-opacity"></div>
               </div>
             </div>
-            
+
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-4">
                 {/* Nút phát/tạm dừng */}
                 <button 
                   onClick={togglePlay}
-                  className="p-1"
+                  className="p-2 hover:bg-white/10 rounded-full transition-colors"
                   aria-label={isPlaying ? "Tạm dừng" : "Phát"}
                 >
                   {isPlaying ? (
@@ -515,10 +751,14 @@ export default function CustomVideoPlayer() {
                     </svg>
                   )}
                 </button>
-                
+
                 {/* Điều khiển âm lượng */}
-                <div className="flex items-center space-x-1">
-                  <button onClick={toggleMute} className="p-1" aria-label={isMuted ? "Bật tiếng" : "Tắt tiếng"}>
+                <div className="flex items-center space-x-2 group/volume">
+                  <button 
+                    onClick={toggleMute}
+                    className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                    aria-label={isMuted ? "Bật tiếng" : "Tắt tiếng"}
+                  >
                     {isMuted || volume === 0 ? (
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" clipRule="evenodd" />
@@ -543,22 +783,120 @@ export default function CustomVideoPlayer() {
                     max="100" 
                     value={isMuted ? 0 : volume} 
                     onChange={handleVolumeChange}
-                    className="w-20 accent-red-600"
+                    className="w-0 group-hover/volume:w-20 transition-all duration-300 accent-red-600"
                     aria-label="Âm lượng"
                   />
                 </div>
-                
+
                 {/* Hiển thị thời gian */}
-                <div className="text-sm">
+                <div className="text-sm font-medium">
                   {formatTime(currentTime)} / {formatTime(duration)}
                 </div>
+
+                {/* Nút lặp lại */}
+                <button
+                  onClick={() => setIsLooping(!isLooping)}
+                  className={`p-2 hover:bg-white/10 rounded-full transition-colors ${isLooping ? 'text-red-500' : ''}`}
+                  aria-label="Lặp lại"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                </button>
               </div>
-              
-              <div>
+
+              <div className="flex items-center space-x-4">
+                {/* Tốc độ phát */}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowSpeedMenu(!showSpeedMenu)}
+                    className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                    aria-label="Tốc độ phát"
+                  >
+                    <span className="text-sm font-medium">{playbackSpeed}x</span>
+                  </button>
+                  
+                  {showSpeedMenu && (
+                    <div className="absolute bottom-full right-0 mb-2 bg-black/90 rounded-lg py-2 min-w-[120px]">
+                      {[0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2].map((speed) => (
+                        <button
+                          key={speed}
+                          onClick={() => handleSpeedChange(speed)}
+                          className={`w-full px-4 py-2 text-left hover:bg-white/10 ${playbackSpeed === speed ? 'text-red-500' : ''}`}
+                        >
+                          {speed}x
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Chất lượng video */}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowQualityMenu(!showQualityMenu)}
+                    className="p-2 hover:bg-white/10 rounded-full transition-colors flex items-center space-x-1"
+                    aria-label="Chất lượng"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <span className="text-sm hidden md:inline">{getCurrentQualityLabel()}</span>
+                  </button>
+
+                  {showQualityMenu && (
+                    <div className="absolute bottom-full right-0 mb-2 bg-black/90 rounded-lg py-2 min-w-[200px] shadow-xl">
+                      <div className="px-4 py-2 text-sm text-gray-400 border-b border-gray-700">Chất lượng</div>
+                      {availableQualities.map((quality) => (
+                        <button
+                          key={quality.value}
+                          onClick={() => handleQualityChange(quality.value)}
+                          className={`w-full px-4 py-2 text-left hover:bg-white/10 flex items-center justify-between ${currentQuality === quality.value ? 'text-red-500' : ''}`}
+                        >
+                          <span>{quality.label}</span>
+                          {currentQuality === quality.value && (
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Phụ đề */}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowCaptionsMenu(!showCaptionsMenu)}
+                    className={`p-2 hover:bg-white/10 rounded-full transition-colors ${showCaptions ? 'text-red-500' : ''}`}
+                    aria-label="Phụ đề"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                    </svg>
+                  </button>
+
+                  {showCaptionsMenu && (
+                    <div className="absolute bottom-full right-0 mb-2 bg-black/90 rounded-lg py-2 min-w-[150px]">
+                      {availableCaptions.map((caption) => (
+                        <button
+                          key={caption.languageCode}
+                          onClick={() => handleCaptionChange(caption.languageCode)}
+                          className={`w-full px-4 py-2 text-left hover:bg-white/10 ${selectedCaption === caption.languageCode ? 'text-red-500' : ''}`}
+                        >
+                          {caption.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
                 {/* Nút toàn màn hình */}
                 <button 
                   onClick={toggleFullScreen} 
-                  className="p-1"
+                  className="p-2 hover:bg-white/10 rounded-full transition-colors"
                   aria-label={isFullScreen ? "Thoát toàn màn hình" : "Toàn màn hình"}
                 >
                   {isFullScreen ? (
@@ -578,10 +916,40 @@ export default function CustomVideoPlayer() {
       </div>
       
       <div className="mt-8 text-white max-w-4xl text-center">
-        <h1 className="text-2xl font-bold mb-2">Tiêu đề Video</h1>
+        <h1 className="text-2xl font-bold mb-2">
+          {videoDetails?.snippet?.title || 'Đang tải...'}
+        </h1>
         <p className="text-gray-300">
-          Đây là mô tả video được hiển thị bên dưới trình phát. Bạn có thể thêm nội dung tùy ý ở đây mà không cần hiển thị thông tin nguồn YouTube.
+          {videoDetails?.snippet?.description || 'Đang tải thông tin video...'}
         </p>
+      </div>
+
+      {/* Thông tin phím tắt */}
+      <div className="mt-8 text-white max-w-4xl text-center">
+        <h2 className="text-xl font-bold mb-4">Phím tắt</h2>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+          <div>
+            <kbd className="px-2 py-1 bg-gray-700 rounded">Space</kbd> hoặc <kbd className="px-2 py-1 bg-gray-700 rounded">K</kbd> - Phát/Tạm dừng
+          </div>
+          <div>
+            <kbd className="px-2 py-1 bg-gray-700 rounded">M</kbd> - Tắt/Bật tiếng
+          </div>
+          <div>
+            <kbd className="px-2 py-1 bg-gray-700 rounded">F</kbd> - Toàn màn hình
+          </div>
+          <div>
+            <kbd className="px-2 py-1 bg-gray-700 rounded">←</kbd> - Lùi 5 giây
+          </div>
+          <div>
+            <kbd className="px-2 py-1 bg-gray-700 rounded">→</kbd> - Tiến 5 giây
+          </div>
+          <div>
+            <kbd className="px-2 py-1 bg-gray-700 rounded">↑</kbd><kbd className="px-2 py-1 bg-gray-700 rounded">↓</kbd> - Điều chỉnh âm lượng
+          </div>
+          <div>
+            <kbd className="px-2 py-1 bg-gray-700 rounded">L</kbd> - Bật/tắt lặp lại
+          </div>
+        </div>
       </div>
 
       {/* Thêm CSS để ẩn hoàn toàn logo và tiêu đề YouTube */}
