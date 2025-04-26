@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeftIcon, PencilIcon, TrashIcon, CloudArrowDownIcon, ExclamationCircleIcon, XMarkIcon, ArrowPathIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 import { use } from 'react';
 import YouTubeModal from '../../components/YouTubeModal';
+import PDFModal from '../../components/PDFModal';
 
 export default function CourseDetailPage({ params }) {
   const router = useRouter();
@@ -25,6 +26,7 @@ export default function CourseDetailPage({ params }) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [activeSheet, setActiveSheet] = useState(0);
   const [youtubeModal, setYoutubeModal] = useState({ isOpen: false, videoId: null, title: '' });
+  const [pdfModal, setPdfModal] = useState({ isOpen: false, fileUrl: null, title: '' });
   
   // Hàm lấy tiêu đề của sheet
   const getSheetTitle = (index, sheets) => {
@@ -200,6 +202,18 @@ export default function CourseDetailPage({ params }) {
     return url.includes('youtube.com') || url.includes('youtu.be');
   };
   
+  // Hàm kiểm tra xem URL có phải là PDF không
+  const isPdfLink = (url) => {
+    if (!url) return false;
+    return url.toLowerCase().endsWith('.pdf');
+  };
+  
+  // Hàm kiểm tra xem URL có phải là Google Drive link không
+  const isGoogleDriveLink = (url) => {
+    if (!url) return false;
+    return url.includes('drive.google.com') || url.includes('docs.google.com');
+  };
+  
   // Hàm mở modal YouTube
   const openYoutubeModal = (url, title = '') => {
     const videoId = extractYoutubeId(url);
@@ -214,6 +228,27 @@ export default function CourseDetailPage({ params }) {
   // Hàm đóng modal YouTube
   const closeYoutubeModal = () => {
     setYoutubeModal({ isOpen: false, videoId: null, title: '' });
+  };
+
+  // Hàm mở modal PDF
+  const openPdfModal = (url, title = '') => {
+    setPdfModal({ isOpen: true, fileUrl: url, title });
+  };
+
+  // Hàm đóng modal PDF
+  const closePdfModal = () => {
+    setPdfModal({ isOpen: false, fileUrl: null, title: '' });
+  };
+
+  // Hàm xử lý click vào link
+  const handleLinkClick = (url, title) => {
+    if (isYoutubeLink(url)) {
+      openYoutubeModal(url, title);
+    } else if (isPdfLink(url) || isGoogleDriveLink(url)) {
+      openPdfModal(url, title);
+    } else {
+      window.open(url, '_blank');
+    }
   };
 
   // Tải thông tin khóa học khi component được tạo
@@ -294,10 +329,10 @@ export default function CourseDetailPage({ params }) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 p-6">
-      <div className="max-w-4xl mx-auto bg-white rounded-lg shadow p-8 relative">
+    <div className="min-h-screen bg-gray-100 p-2 sm:p-6">
+      <div className="max-w-4xl mx-auto bg-white rounded-lg shadow p-4 sm:p-8 relative">
         {/* Header */}
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
           <button
             onClick={() => router.push('/admin/courses')}
             className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-700 bg-gray-100 hover:bg-gray-200"
@@ -306,7 +341,7 @@ export default function CourseDetailPage({ params }) {
             Quay lại danh sách
           </button>
           
-          <div className="flex space-x-2">
+          <div className="flex flex-wrap gap-2">
             {course.kimvanId && (
               <button
                 onClick={handleSync}
@@ -385,14 +420,14 @@ export default function CourseDetailPage({ params }) {
         
         {/* Thông tin khóa học */}
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+          <div className="px-4 sm:px-6 py-4 border-b border-gray-200 bg-gray-50">
             <h3 className="text-lg font-medium text-gray-900">Thông tin khóa học</h3>
           </div>
-          <div className="p-6">
+          <div className="p-4 sm:p-6">
             <dl className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
               <div className="sm:col-span-2">
                 <dt className="text-sm font-medium text-gray-500">Tên khóa học</dt>
-                <dd className="mt-1 text-lg font-medium text-gray-900">{course.name || 'Chưa có tên'}</dd>
+                <dd className="mt-1 text-lg font-medium text-gray-900 break-words">{course.name || 'Chưa có tên'}</dd>
               </div>
               
               <div className="sm:col-span-2">
@@ -421,7 +456,7 @@ export default function CourseDetailPage({ params }) {
               {course.kimvanId && (
                 <div>
                   <dt className="text-sm font-medium text-gray-500">ID Kimvan</dt>
-                  <dd className="mt-1 text-sm text-gray-900">{course.kimvanId}</dd>
+                  <dd className="mt-1 text-sm text-gray-900 break-words">{course.kimvanId}</dd>
                 </div>
               )}
               
@@ -446,9 +481,9 @@ export default function CourseDetailPage({ params }) {
         {/* Dữ liệu gốc khóa học */}
         {course.originalData && (
           <div className="mt-6 bg-white rounded-lg border border-gray-200 overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
+            <div className="px-4 sm:px-6 py-4 border-b border-gray-200 bg-gray-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
               <h3 className="text-lg font-medium text-gray-900">Dữ liệu gốc</h3>
-              <div className="flex space-x-2">
+              <div className="flex flex-wrap gap-2">
                 <button
                   onClick={handleViewOriginalData}
                   className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-700 bg-gray-100 hover:bg-gray-200"
@@ -482,9 +517,9 @@ export default function CourseDetailPage({ params }) {
 
             {/* Chọn khóa học khi có nhiều sheet */}
             {course.originalData?.sheets && course.originalData.sheets.length > 1 && (
-              <div className="border-b border-gray-200 px-6 py-4 bg-gray-50">
+              <div className="border-b border-gray-200 px-4 sm:px-6 py-4 bg-gray-50">
                 <h3 className="text-base font-medium text-gray-800 mb-3">Chọn khóa học:</h3>
-                <div className="flex gap-2 overflow-x-auto pb-2">
+                <div className="flex flex-wrap gap-2 overflow-x-auto pb-2">
                   {course.originalData.sheets.map((sheet, index) => (
                     <button
                       key={index}
@@ -518,7 +553,7 @@ export default function CourseDetailPage({ params }) {
               <div className="overflow-x-auto">
                 {/* Hiển thị sheet được chọn */}
                 <div key={activeSheet} className="mb-6">
-                  <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
+                  <div className="px-4 sm:px-6 py-4 border-b border-gray-200 bg-gray-50 flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-2">
                     <div className="font-medium text-gray-800 flex items-center">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
@@ -526,7 +561,7 @@ export default function CourseDetailPage({ params }) {
                       {getSheetTitle(activeSheet, course.originalData.sheets)}
                     </div>
                     {course.originalData.sheets[activeSheet]?.data?.[0]?.rowData && (
-                      <div className="text-sm text-gray-600">
+                      <div className="text-sm text-gray-600 ml-7 sm:ml-0">
                         Tổng số: <span className="font-medium text-blue-600">
                           {(course.originalData.sheets[activeSheet].data[0].rowData.length - 1) || 0} buổi
                         </span>
@@ -535,86 +570,144 @@ export default function CourseDetailPage({ params }) {
                   </div>
                   
                   {course.originalData.sheets[activeSheet]?.data?.[0]?.rowData && course.originalData.sheets[activeSheet].data[0].rowData.length > 0 ? (
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full divide-y divide-gray-200">
-                        <thead>
-                          <tr className="bg-gradient-to-r from-blue-600 to-indigo-600">
-                            {course.originalData.sheets[activeSheet].data[0].rowData[0]?.values?.map((cell, index) => (
-                              <th 
-                                key={index} 
-                                className={`px-6 py-3.5 text-left text-xs font-medium text-white uppercase tracking-wider ${
-                                  index === 0 ? 'text-center w-16' : ''
-                                }`}
-                              >
-                                <div className="flex items-center">
-                                  {cell.formattedValue || ''}
-                                  {index > 0 && 
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
-                                    </svg>
-                                  }
-                                </div>
-                              </th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                          {course.originalData.sheets[activeSheet].data[0].rowData.slice(1).map((row, rowIndex) => (
-                            <tr 
-                              key={rowIndex} 
-                              className="group hover:bg-blue-50 transition-colors duration-150"
-                            >
-                              {row.values && row.values.map((cell, cellIndex) => (
-                                <td 
-                                  key={cellIndex} 
-                                  className={`px-6 py-4 text-sm ${
-                                    cellIndex === 0 
-                                      ? 'whitespace-nowrap font-medium text-gray-900 text-center' 
-                                      : 'text-gray-700'
-                                  }`}
+                    <div className="relative">
+                      {/* Chỉ báo cuộn ngang cho điện thoại */}
+                      <div className="md:hidden bg-blue-50 p-2 border-b border-blue-100 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                        </svg>
+                        <span className="text-sm text-blue-700">Vuốt ngang để xem đầy đủ nội dung</span>
+                      </div>
+                      
+                      <div className="overflow-x-auto pb-4">
+                        <table className="min-w-full divide-y divide-gray-200">
+                          <thead>
+                            <tr className="bg-gradient-to-r from-blue-600 to-indigo-600">
+                              {course.originalData.sheets[activeSheet].data[0].rowData[0]?.values?.map((cell, index) => (
+                                <th 
+                                  key={index} 
+                                  className={`px-3 sm:px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider ${
+                                    index === 0 ? 'text-center w-12 sm:w-16' : ''
+                                  } ${index > 2 ? 'hidden sm:table-cell' : ''}`}
                                 >
-                                  {cellIndex === 0 
-                                    ? (cell.formattedValue || '')
-                                    : cell.hyperlink || cell.userEnteredFormat?.textFormat?.link?.uri
-                                      ? (
-                                          <a 
-                                            onClick={(e) => {
-                                              e.preventDefault();
-                                              const url = cell.userEnteredFormat?.textFormat?.link?.uri || cell.hyperlink;
-                                              if (isYoutubeLink(url)) {
-                                                openYoutubeModal(url, cell.formattedValue);
-                                              } else {
-                                                window.open(url, '_blank');
-                                              }
-                                            }}
-                                            href={cell.userEnteredFormat?.textFormat?.link?.uri || cell.hyperlink}
-                                            className="inline-flex items-center text-blue-600 font-medium hover:text-blue-800 transition-colors duration-150 group cursor-pointer"
-                                          >
-                                            <span>{cell.formattedValue || ''}</span>
-                                            <span className="ml-1.5 p-1 rounded-md group-hover:bg-blue-100 transition-colors duration-150">
-                                              {isYoutubeLink(cell.userEnteredFormat?.textFormat?.link?.uri || cell.hyperlink) ? (
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                </svg>
-                                              ) : (
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                                </svg>
-                                              )}
-                                            </span>
-                                          </a>
-                                        ) 
-                                      : (cell.formattedValue || '')}
-                                </td>
+                                  <div className="flex items-center">
+                                    {cell.formattedValue || ''}
+                                    {index > 0 && 
+                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
+                                      </svg>
+                                    }
+                                  </div>
+                                </th>
                               ))}
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200">
+                            {course.originalData.sheets[activeSheet].data[0].rowData.slice(1).map((row, rowIndex) => (
+                              <tr 
+                                key={rowIndex} 
+                                className="group hover:bg-blue-50 transition-colors duration-150"
+                              >
+                                {row.values && row.values.map((cell, cellIndex) => {
+                                  // Xác định loại link nếu có
+                                  const url = cell.userEnteredFormat?.textFormat?.link?.uri || cell.hyperlink;
+                                  const isLink = url ? true : false;
+                                  const linkType = isLink 
+                                    ? isYoutubeLink(url) 
+                                      ? 'youtube' 
+                                      : isPdfLink(url) 
+                                        ? 'pdf' 
+                                        : isGoogleDriveLink(url) 
+                                          ? 'drive' 
+                                          : 'external'
+                                    : null;
+                                  
+                                  return (
+                                    <td 
+                                      key={cellIndex} 
+                                      className={`px-3 sm:px-6 py-3 sm:py-4 text-sm ${
+                                        cellIndex === 0 
+                                          ? 'whitespace-nowrap font-medium text-gray-900 text-center' 
+                                          : 'text-gray-700'
+                                      } ${cellIndex > 2 ? 'hidden sm:table-cell' : ''}`}
+                                    >
+                                      {cellIndex === 0 
+                                        ? (cell.formattedValue || '')
+                                        : isLink
+                                          ? (
+                                              <a 
+                                                onClick={(e) => {
+                                                  e.preventDefault();
+                                                  handleLinkClick(url, cell.formattedValue);
+                                                }}
+                                                href={url}
+                                                className="inline-flex items-center text-blue-600 font-medium hover:text-blue-800 transition-colors duration-150 group cursor-pointer"
+                                              >
+                                                <span className="break-words line-clamp-2 sm:line-clamp-none">
+                                                  {cell.formattedValue || (linkType === 'youtube' ? 'Xem video' : linkType === 'pdf' ? 'Xem PDF' : 'Xem tài liệu')}
+                                                </span>
+                                                <span className="ml-1.5 p-1 rounded-md group-hover:bg-blue-100 transition-colors duration-150">
+                                                  {linkType === 'youtube' ? (
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                  ) : linkType === 'pdf' ? (
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                    </svg>
+                                                  ) : linkType === 'drive' ? (
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
+                                                    </svg>
+                                                  ) : (
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                                    </svg>
+                                                  )}
+                                                </span>
+                                              </a>
+                                            ) 
+                                          : (
+                                              <span className="break-words line-clamp-2 sm:line-clamp-none">
+                                                {cell.formattedValue || ''}
+                                              </span>
+                                            )
+                                      }
+                                    </td>
+                                  );
+                                })}
+
+                                {/* Hiển thị nút "Xem thêm" chỉ trên mobile khi có hơn 3 cột */}
+                                {row.values && row.values.length > 3 && (
+                                  <td className="px-3 py-3 text-sm text-right sm:hidden">
+                                    <button
+                                      onClick={() => {
+                                        // Tìm link đầu tiên trong dòng nếu có
+                                        const firstLink = row.values.find(cell => 
+                                          cell.userEnteredFormat?.textFormat?.link?.uri || cell.hyperlink
+                                        );
+                                        
+                                        if (firstLink) {
+                                          const url = firstLink.userEnteredFormat?.textFormat?.link?.uri || firstLink.hyperlink;
+                                          handleLinkClick(url, firstLink.formattedValue);
+                                        }
+                                      }}
+                                      className="bg-blue-50 text-blue-600 px-2 py-1 rounded text-xs font-medium hover:bg-blue-100"
+                                    >
+                                      Chi tiết
+                                    </button>
+                                  </td>
+                                )}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
                   ) : (
-                    <div className="bg-white p-12 text-center">
+                    <div className="bg-white p-6 sm:p-12 text-center">
                       <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 text-blue-600 mb-6">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -640,9 +733,9 @@ export default function CourseDetailPage({ params }) {
         
         {/* Modal xem dữ liệu gốc */}
         {showOriginalDataModal && (
-          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+              <div className="px-4 sm:px-6 py-4 border-b border-gray-200 flex justify-between items-center">
                 <h3 className="text-lg font-medium text-gray-900">Dữ liệu gốc</h3>
                 <button
                   onClick={() => setShowOriginalDataModal(false)}
@@ -652,7 +745,7 @@ export default function CourseDetailPage({ params }) {
                 </button>
               </div>
               
-              <div className="p-6 overflow-auto max-h-[calc(90vh-8rem)]">
+              <div className="p-4 sm:p-6 overflow-auto max-h-[calc(90vh-8rem)]">
                 {loadingOriginalData ? (
                   <div className="text-center py-4">
                     <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-600 mb-2"></div>
@@ -669,7 +762,7 @@ export default function CourseDetailPage({ params }) {
                 )}
               </div>
               
-              <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end">
+              <div className="px-4 sm:px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end">
                 <button
                   onClick={() => setShowOriginalDataModal(false)}
                   className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
@@ -690,6 +783,14 @@ export default function CourseDetailPage({ params }) {
             title={youtubeModal.title}
           />
         )}
+        
+        {/* PDF Modal */}
+        <PDFModal
+          isOpen={pdfModal.isOpen}
+          onClose={closePdfModal}
+          fileUrl={pdfModal.fileUrl}
+          title={pdfModal.title}
+        />
       </div>
     </div>
   );
