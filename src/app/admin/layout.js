@@ -16,12 +16,16 @@ export default function AdminLayout({ children }) {
   const router = useRouter();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  
+  // Trong quá trình phát triển, luôn coi như đã đăng nhập
+  const [isLoggedIn, setIsLoggedIn] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   
   // Kiểm tra nếu đang ở trang login
   const isLoginPage = pathname === '/admin/login';
   
+  // Bỏ kiểm tra xác thực trong quá trình phát triển
+  /*
   useEffect(() => {
     // Kiểm tra cookie để xác định trạng thái đăng nhập
     const checkAuth = async () => {
@@ -49,6 +53,7 @@ export default function AdminLayout({ children }) {
     
     checkAuth();
   }, [pathname, isLoginPage, router]);
+  */
   
   // Xử lý đăng xuất
   const handleLogout = async () => {

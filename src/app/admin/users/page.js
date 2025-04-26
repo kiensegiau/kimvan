@@ -40,43 +40,7 @@ export default function UsersPage() {
       }
       
       setError(err.message);
-      
-      // Sử dụng dữ liệu mẫu nếu không thể kết nối
-      setUsers([
-        {
-          id: 'user1',
-          email: 'nguyenvana@example.com',
-          displayName: 'Nguyễn Văn A',
-          phoneNumber: '+84123456789',
-          emailVerified: true,
-          role: 'user',
-          status: 'active',
-          createdAt: '2023-01-15T00:00:00.000Z',
-          lastLoginAt: '2023-06-01T00:00:00.000Z',
-        },
-        {
-          id: 'admin1',
-          email: 'tranthib@example.com',
-          displayName: 'Trần Thị B',
-          phoneNumber: '+84987654321',
-          emailVerified: true,
-          role: 'admin',
-          status: 'active',
-          createdAt: '2023-01-20T00:00:00.000Z',
-          lastLoginAt: '2023-06-10T00:00:00.000Z',
-        },
-        {
-          id: 'user2',
-          email: 'levanc@example.com',
-          displayName: 'Lê Văn C',
-          phoneNumber: '',
-          emailVerified: false,
-          role: 'user',
-          status: 'inactive',
-          createdAt: '2023-02-01T00:00:00.000Z',
-          lastLoginAt: '2023-05-01T00:00:00.000Z',
-        },
-      ]);
+      setUsers([]);
     } finally {
       setLoading(false);
     }
