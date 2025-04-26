@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import Image from 'next/image';
 import { ExclamationCircleIcon } from '@heroicons/react/24/outline';
 
 export default function AdminLoginPage() {

@@ -4,26 +4,30 @@ import * as admin from 'firebase-admin';
 let firebaseAdmin;
 
 if (!admin.apps.length) {
-  // Nếu không có service account, sử dụng biến môi trường
+  // Kiểm tra các biến môi trường cần thiết
+  const projectId = process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY;
+  const databaseURL = process.env.FIREBASE_DATABASE_URL;
+
   try {
-    firebaseAdmin = admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId: process.env.FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        // Thay thế ký tự xuống dòng trong private key
-        privateKey: process.env.FIREBASE_PRIVATE_KEY 
-          ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
-          : undefined,
-      }),
-      // Nếu có cấu hình databaseURL
-      databaseURL: process.env.FIREBASE_DATABASE_URL,
-    });
-    console.log('Firebase Admin SDK đã được khởi tạo thành công');
+    // Nếu có cấu hình đầy đủ, khởi tạo Firebase Admin
+    if (projectId && clientEmail && privateKey) {
+      firebaseAdmin = admin.initializeApp({
+        credential: admin.credential.cert({
+          projectId,
+          clientEmail,
+          // Thay thế ký tự xuống dòng trong private key
+          privateKey: privateKey.replace(/\\n/g, '\n'),
+        }),
+        databaseURL: databaseURL || `https://${projectId}.firebaseio.com`,
+      });
+      console.log('Firebase Admin SDK đã được khởi tạo thành công');
+    } else {
+      throw new Error('Thiếu thông tin cấu hình Firebase Admin. Sử dụng giả lập cho môi trường phát triển.');
+    }
   } catch (error) {
-    console.error('Lỗi khởi tạo Firebase Admin:', error);
-    
-    // Tạo giả lập nếu không có cấu hình Firebase
-    console.warn('Sử dụng Firebase Admin giả lập cho mục đích phát triển');
+    console.warn('Sử dụng Firebase Admin giả lập cho môi trường phát triển:', error.message);
     
     // Mock Firebase Admin API cho môi trường phát triển
     firebaseAdmin = {
@@ -71,6 +75,24 @@ if (!admin.apps.length) {
             },
           ],
         }),
+        getUserByEmail: async (email) => {
+          if (email === 'admin@example.com') {
+            return {
+              uid: 'admin1',
+              email: 'admin@example.com',
+              displayName: 'Quản trị viên',
+              emailVerified: true,
+            };
+          } else if (email === 'user1@example.com') {
+            return {
+              uid: 'user1',
+              email: 'user1@example.com',
+              displayName: 'Người dùng 1',
+              emailVerified: true,
+            };
+          }
+          throw new Error('User not found');
+        },
         createUser: async (userData) => ({
           uid: 'new-user-' + Date.now(),
           ...userData,
