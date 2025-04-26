@@ -258,7 +258,11 @@ export default function UsersPage() {
                                 <img className="h-10 w-10 rounded-full" src={user.photoURL} alt="" />
                               ) : (
                                 <span className="text-lg font-medium">
-                                  {user.displayName ? user.displayName.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase()}
+                                  {user.displayName && user.displayName.trim() 
+                                    ? user.displayName.charAt(0).toUpperCase() 
+                                    : user.email && user.email.trim()
+                                      ? user.email.charAt(0).toUpperCase()
+                                      : 'U'}
                                 </span>
                               )}
                             </div>
