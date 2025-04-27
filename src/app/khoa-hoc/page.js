@@ -1,221 +1,298 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
+import { ExclamationCircleIcon, MagnifyingGlassIcon, AcademicCapIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
+import { StarIcon } from '@heroicons/react/24/solid';
+import { useRouter } from 'next/navigation';
 
-export default function KhoaHoc() {
+export default function CoursesPage() {
+  const router = useRouter();
   const [courses, setCourses] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState(null);
-  const [filteredCourses, setFilteredCourses] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState('all');
 
-  // Hàm trích xuất môn học từ tên
-  const extractSubject = (name) => {
-    if (!name) return 'Khóa học';
-    
-    const subjects = ['VẬT LÝ', 'HÓA', 'TOÁN', 'TIẾNG ANH', 'SINH HỌC', 'SỬ', 'ĐỊA', 'GDCD'];
-    
-    for (const subject of subjects) {
-      if (name.includes(subject)) {
-        return subject;
-      }
-    }
-    
-    return 'Khóa học';
-  };
-
-  useEffect(() => {
-    // Danh sách ID khóa học mẫu
-    const sampleCourses = [
-      {
-        id: "GXYIluW-XHl2t70uUId_QuXwzki8rsS0fQ0aaTjVvxHem7ZCq-HdsUPd-sT13lxKlOzW02V-GpOKcN5Zf6shmXXzMSrHKiRR", 
-        name: "2K8 XPS | VẬT LÝ - VŨ NGỌC ANH",
-        description: "Khóa học Vật lý ôn thi THPT Quốc gia dành cho học sinh 2K8"
-      },
-      {
-        id: "4tKFsUi5Wf8eFN0_CZjARkxWHgSTvzvlIncwx4HGKJZltzAbm0CKFwliyBrlTIqbOVRWKAgJiGdaYOpoh9wGoLHUF_34BBgF", 
-        name: "2K8 XPS | HÓA HỌC - PHẠM VĂN TRỌNG",
-        description: "Khóa học Hóa học ôn thi THPT Quốc gia dành cho học sinh 2K8"
-      },
-      {
-        id: "WRn91SKHWM2l1OsMD6K5wVlYK9uVf6-ciycBBRQxZbaUrTjm_9z_txWiTRCIPegFXzc0FqKqadKt0xRVbEVQpo8jKjdUyqsF", 
-        name: "2K8 XPS | TOÁN - ĐỖ VĂN ĐỨC",
-        description: "Khóa học Toán ôn thi THPT Quốc gia dành cho học sinh 2K8"
-      },
-      {
-        id: "Dn9JLo16zP9RlsP0emxLE6gNSKm_fTOuCs8xgnaHDW6Fz8EyRnSL_zO-NRendI8jHy0c4egsb8hDt7--8DthYzHvNVwBngK6", 
-        name: "2K8 XPS | TIẾNG ANH - NGUYỄN THỊ THÚY",
-        description: "Khóa học Tiếng Anh ôn thi THPT Quốc gia dành cho học sinh 2K8"
-      },
-      {
-        id: "TYPfY4brHpLrvIKc9ZTDzAo2rqsnhma7pbjWwP-RdjnaxJJhFcvrJUsGIFlU4-dQmnBCpfos9SJlotwFaN3LfMsEsNc2mII7", 
-        name: "2K8 XPS | SINH HỌC - DƯƠNG THỊ HÀ",
-        description: "Khóa học Sinh học ôn thi THPT Quốc gia dành cho học sinh 2K8"
-      },
-      {
-        id: "aVeEbaNjSDLyy0XvxBLUk6k-B7a21Qe3YduGYRpuBE4-09v0VZ1sGCVScvDbLeET8z9JQ_hjN6IyNIs7OkVPagdp01OErCVc", 
-        name: "2K8 XPS | SỬ - NGUYỄN QUỐC CHÍ",
-        description: "Khóa học Lịch sử ôn thi THPT Quốc gia dành cho học sinh 2K8"
-      }
-    ];
-
+  // Hàm để tải danh sách khóa học từ API
+  const fetchCourses = async () => {
     try {
       setLoading(true);
-      // Sử dụng dữ liệu mẫu thay vì gọi API
-      setCourses(sampleCourses);
-      setFilteredCourses(sampleCourses);
-      console.log('Đã tải danh sách khóa học mẫu:', sampleCourses.length);
+      setError(null);
+      
+      const response = await fetch('/api/courses');
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Không thể tải dữ liệu khóa học');
+      }
+      
+      setCourses(data);
     } catch (err) {
-      console.error('Lỗi khi tải dữ liệu khóa học:', err);
-      setError(err.message);
+      console.error('Lỗi khi tải danh sách khóa học:', err);
+      setError(err.message || 'Đã xảy ra lỗi khi tải dữ liệu khóa học.');
+      setCourses([]);
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
   useEffect(() => {
-    // Lọc khóa học dựa trên từ khóa tìm kiếm
-    if (searchTerm.trim() === '') {
-      setFilteredCourses(courses);
-    } else {
-      const filtered = courses.filter(course =>
-        course.name && course.name.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-      setFilteredCourses(filtered);
-    }
-  }, [searchTerm, courses]);
+    fetchCourses();
+  }, []);
 
-  // Hàm lấy màu nền dựa trên môn học
-  const getSubjectColor = (subject) => {
-    const colors = {
-      'VẬT LÝ': 'bg-blue-100',
-      'HÓA': 'bg-green-100',
-      'TOÁN': 'bg-red-100',
-      'TIẾNG ANH': 'bg-purple-100',
-      'SINH HỌC': 'bg-emerald-100',
-      'SỬ': 'bg-amber-100',
-      'ĐỊA': 'bg-cyan-100',
-      'GDCD': 'bg-orange-100'
-    };
+  // Tạo danh sách các danh mục giả định
+  const categories = [
+    { id: 'all', name: 'Tất cả' },
+    { id: 'popular', name: 'Phổ biến' },
+    { id: 'new', name: 'Mới nhất' },
+    { id: 'advanced', name: 'Nâng cao' }
+  ];
+
+  const filteredCourses = courses.filter(course =>
+    (course.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    course.description?.toLowerCase().includes(searchTerm.toLowerCase())) &&
+    (selectedCategory === 'all' || course.category === selectedCategory)
+  );
+
+  // Tạo hàm tạo ngẫu nhiên đánh giá cho khóa học
+  const getRandomRating = () => {
+    return (Math.floor(Math.random() * 10) + 40) / 10; // Tạo số ngẫu nhiên từ 4.0 đến 5.0
+  };
+
+  // Tạo Mảng sao từ đánh giá
+  const renderStars = (rating) => {
+    const stars = [];
+    const roundedRating = Math.round(rating * 2) / 2; // Làm tròn đến 0.5 gần nhất
     
-    return colors[subject] || 'bg-blue-100';
-  };
-
-  // Hàm lấy icon dựa trên môn học
-  const getSubjectIcon = (subject) => {
-    switch(subject) {
-      case 'VẬT LÝ': return '⚡';
-      case 'HÓA': return '🧪';
-      case 'TOÁN': return '📊';
-      case 'TIẾNG ANH': return '🌎';
-      case 'SINH HỌC': return '🧬';
-      case 'SỬ': return '📜';
-      case 'ĐỊA': return '🌏';
-      case 'GDCD': return '⚖️';
-      default: return '📚';
+    for (let i = 1; i <= 5; i++) {
+      if (i <= roundedRating) {
+        stars.push(<StarIcon key={i} className="h-5 w-5 text-yellow-400" />);
+      } else if (i - 0.5 === roundedRating) {
+        stars.push(<StarIcon key={i} className="h-5 w-5 text-yellow-400 opacity-50" />);
+      } else {
+        stars.push(<StarIcon key={i} className="h-5 w-5 text-gray-300" />);
+      }
     }
+    
+    return stars;
   };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex justify-center items-center bg-gray-50">
-        <div className="text-center">
-          <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"></div>
-          <p className="mt-4 text-lg font-medium text-gray-700">Đang tải dữ liệu khóa học...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen flex justify-center items-center bg-gray-50">
-        <div className="text-center max-w-md p-8 bg-white rounded-lg shadow-lg">
-          <div className="text-red-600 text-5xl mb-4">⚠️</div>
-          <h1 className="text-2xl font-bold text-red-600 mb-4">Lỗi khi tải dữ liệu</h1>
-          <p className="mb-6 text-gray-600">{error}</p>
-          <Link href="/" className="inline-block px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">
-            ← Trở về trang chủ
-          </Link>
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <div className="min-h-screen bg-gray-100 py-12 px-4">
-      <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-12">
-          <span className="text-blue-600 text-lg font-semibold">XPS IMOE 2025</span>
-          <h1 className="text-4xl font-bold text-gray-900 mt-2 mb-4">
-            Danh sách khóa học Full Combo 2K8
-          </h1>
-          <p className="max-w-2xl mx-auto text-gray-600 mb-8">
-            Trọn bộ tài liệu và khóa học giúp bạn chuẩn bị tốt nhất cho kỳ thi THPT Quốc gia. 
-            Học với những giảng viên chất lượng cao.
-          </p>
-          <div className="max-w-md mx-auto mb-8">
-            <input 
-              type="text" 
-              placeholder="Tìm kiếm khóa học..." 
-              className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+      {/* Hero Section */}
+      <div className="relative bg-indigo-700 text-white overflow-hidden">
+        <div className="absolute inset-0 bg-[url('/hero-pattern.svg')] opacity-10"></div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-20 relative z-10">
+          <div className="text-center max-w-3xl mx-auto">
+            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-4">
+              Nâng cao kỹ năng với các khóa học chất lượng
+            </h1>
+            <p className="text-xl text-indigo-100 mb-8">
+              Khám phá hàng trăm khóa học được thiết kế bởi các chuyên gia hàng đầu
+            </p>
+            <div className="relative max-w-xl mx-auto">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                placeholder="Tìm kiếm khóa học bạn quan tâm..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="block w-full pl-10 pr-3 py-3 border border-transparent rounded-md leading-5 bg-white bg-opacity-90 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-indigo-600 transition duration-150 ease-in-out"
+              />
+            </div>
           </div>
-          <Link href="/" className="text-blue-600 hover:text-blue-800 font-medium">
-            ← Trở về trang chủ
-          </Link>
         </div>
-        
-        {filteredCourses.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredCourses.map((course, index) => {
-              const subject = extractSubject(course.name);
-              const bgColorClass = getSubjectColor(subject);
-              const icon = getSubjectIcon(subject);
-              
-              // Log để debug
-              console.log(`Khóa học ${index}: ${course.name} - ID: ${course.id}`);
-              
-              return (
-                <div key={course.id || index} className="bg-white rounded-xl shadow-lg overflow-hidden transform transition duration-300 hover:scale-105 hover:shadow-xl">
-                  <div className={`${bgColorClass} h-48 flex items-center justify-center relative`}>
-                    <div className="text-6xl">{icon}</div>
-                    <div className="absolute top-3 right-3 bg-white bg-opacity-70 backdrop-blur-sm px-3 py-1 rounded-full">
-                      <span className="text-blue-800 font-medium">2K8 XPS</span>
-                    </div>
-                  </div>
-                  <div className="p-6">
-                    <div className="flex items-center mb-3">
-                      <span className="px-3 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded-full">
-                        {subject}
-                      </span>
-                    </div>
-                    
-                    <h2 className="text-xl font-bold text-gray-800 mb-2">{course.name}</h2>
-                    <p className="text-gray-600 mb-4 line-clamp-2">{course.description}</p>
-                    
-                    <div className="mt-4 pt-4 border-t border-gray-100">
-                      <Link 
-                        href={`/khoa-hoc/${encodeURIComponent(course.id)}`}
-                        className="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition"
-                      >
-                        Xem chi tiết khóa học
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+        <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-b from-transparent to-white"></div>
+      </div>
+
+      {/* Thống kê */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+          <div className="p-4 bg-white rounded-lg shadow-sm border border-gray-100">
+            <div className="text-3xl font-bold text-indigo-600 mb-2">1,000+</div>
+            <div className="text-sm text-gray-600">Khóa học</div>
           </div>
-        ) : (
-          <div className="text-center py-16 bg-white rounded-xl shadow">
-            <div className="text-gray-400 text-5xl mb-4">📚</div>
-            <p className="text-gray-600 text-xl">Không có khóa học nào được tìm thấy.</p>
+          <div className="p-4 bg-white rounded-lg shadow-sm border border-gray-100">
+            <div className="text-3xl font-bold text-indigo-600 mb-2">50,000+</div>
+            <div className="text-sm text-gray-600">Học viên</div>
+          </div>
+          <div className="p-4 bg-white rounded-lg shadow-sm border border-gray-100">
+            <div className="text-3xl font-bold text-indigo-600 mb-2">100+</div>
+            <div className="text-sm text-gray-600">Giảng viên</div>
+          </div>
+          <div className="p-4 bg-white rounded-lg shadow-sm border border-gray-100">
+            <div className="text-3xl font-bold text-indigo-600 mb-2">4.8</div>
+            <div className="text-sm text-gray-600">Đánh giá trung bình</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Danh mục */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+        <div className="flex flex-wrap justify-center gap-2 mb-8">
+          {categories.map((category) => (
+            <button
+              key={category.id}
+              onClick={() => setSelectedCategory(category.id)}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+                selectedCategory === category.id
+                  ? 'bg-indigo-600 text-white shadow-md hover:bg-indigo-700'
+                  : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              {category.name}
+            </button>
+          ))}
+        </div>
+
+        {/* Tiêu đề danh sách khóa học */}
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+            <AcademicCapIcon className="h-6 w-6 mr-2 text-indigo-600" />
+            Danh sách khóa học
+          </h2>
+          <div className="text-sm text-gray-500">
+            {filteredCourses.length} khóa học
+          </div>
+        </div>
+
+        {error && (
+          <div className="bg-red-50 p-4 mb-6 rounded-md">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <ExclamationCircleIcon className="h-5 w-5 text-red-400" aria-hidden="true" />
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-red-800">
+                  Đã xảy ra lỗi
+                </h3>
+                <div className="mt-2 text-sm text-red-700">
+                  <p>{error}</p>
+                </div>
+              </div>
+            </div>
           </div>
         )}
+
+        {loading ? (
+          <div className="text-center py-16">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-3 border-b-3 border-indigo-600 mb-4"></div>
+            <p className="text-gray-500 text-lg">Đang tải dữ liệu khóa học...</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            {filteredCourses.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {filteredCourses.map((course) => {
+                  const rating = getRandomRating();
+                  
+                  return (
+                    <div 
+                      key={course._id} 
+                      className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-all duration-300 hover:translate-y-[-4px] group"
+                    >
+                      <div className="h-48 bg-indigo-100 relative overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-purple-600 opacity-80"></div>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <h3 className="text-2xl font-bold text-white text-center px-4">
+                            {course.name}
+                          </h3>
+                        </div>
+                        {/* Badge */}
+                        {Math.random() > 0.7 && (
+                          <div className="absolute top-3 right-3 bg-yellow-400 text-gray-900 text-xs font-bold px-2 py-1 rounded-md">
+                            HOT
+                          </div>
+                        )}
+                      </div>
+                      <div className="p-6">
+                        <div className="flex items-center mb-3">
+                          <div className="flex mr-2">
+                            {renderStars(rating)}
+                          </div>
+                          <span className="text-sm text-gray-500">({rating.toFixed(1)})</span>
+                        </div>
+                        <p className="text-gray-600 mb-4 line-clamp-3 min-h-[4.5rem]">{course.description}</p>
+                        <div className="border-t border-gray-100 pt-4">
+                          <div className="flex flex-col space-y-2">
+                            <div className="flex items-center">
+                              <CheckCircleIcon className="h-5 w-5 text-green-500 mr-2" />
+                              <span className="text-sm text-gray-600">80+ bài học</span>
+                            </div>
+                            <div className="flex items-center">
+                              <CheckCircleIcon className="h-5 w-5 text-green-500 mr-2" />
+                              <span className="text-sm text-gray-600">Học mọi lúc, mọi nơi</span>
+                            </div>
+                          </div>
+                          <div className="mt-4 flex justify-between items-center">
+                            <span className="text-xl font-bold text-indigo-600">
+                              {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(course.price)}
+                            </span>
+                            <button
+                              onClick={() => router.push(`/khoa-hoc/${course._id}`)}
+                              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
+                            >
+                              Xem chi tiết
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-16 bg-gray-50 rounded-xl border border-gray-200">
+                <MagnifyingGlassIcon className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-1">Không tìm thấy khóa học nào</h3>
+                <p className="text-gray-500 mb-4">Hãy thử tìm kiếm với từ khóa khác hoặc xem tất cả các khóa học</p>
+                <button 
+                  onClick={() => {setSearchTerm(''); setSelectedCategory('all');}}
+                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
+                >
+                  Xem tất cả khóa học
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+      
+      {/* Phần khuyến mãi */}
+      <div className="bg-gradient-to-r from-indigo-600 to-purple-700 py-16 mt-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="lg:flex lg:items-center lg:justify-between">
+            <div className="max-w-xl">
+              <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+                Sẵn sàng nâng cao kỹ năng?
+              </h2>
+              <p className="mt-3 text-lg text-indigo-100">
+                Đăng ký ngay hôm nay và nhận ưu đãi giảm 20% cho tất cả các khóa học
+                trong tháng này.
+              </p>
+            </div>
+            <div className="mt-8 flex lg:mt-0 lg:flex-shrink-0">
+              <div className="inline-flex rounded-md shadow">
+                <a
+                  href="#"
+                  className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-indigo-700 bg-white hover:bg-indigo-50 transition-colors duration-200"
+                >
+                  Đăng ký ngay
+                </a>
+              </div>
+              <div className="ml-3 inline-flex rounded-md shadow">
+                <a
+                  href="#"
+                  className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-800 bg-opacity-60 hover:bg-opacity-70 transition-colors duration-200"
+                >
+                  Tìm hiểu thêm
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
