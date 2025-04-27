@@ -381,8 +381,8 @@ export default function Home() {
             </button>
           </div>
         </div>
-      </div>
-
+              </div>
+              
       {/* Phần CTA */}
       <div className="bg-gradient-to-r from-indigo-600 to-purple-700 py-12 md:py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

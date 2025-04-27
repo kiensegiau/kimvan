@@ -180,10 +180,10 @@ export default function CoursesPage() {
               </button>
               <button className="inline-flex items-center justify-center px-4 py-2 border border-white rounded-md text-sm font-medium text-white bg-transparent hover:bg-white hover:bg-opacity-10 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50 transition-all duration-200 w-full sm:w-auto mt-3 sm:mt-0">
                 Tư vấn miễn phí <ArrowRightIcon className="h-4 w-4 ml-2" />
-              </button>
+                  </button>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
         {/* Wave shape divider */}
         <div className="absolute bottom-0 left-0 right-0">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 80" fill="#ffffff" preserveAspectRatio="none">
@@ -212,13 +212,13 @@ export default function CoursesPage() {
             <div className="text-sm text-gray-600">Đánh giá trung bình</div>
           </div>
         </div>
-      </div>
+            </div>
 
       {/* Danh mục */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
         <div className="flex flex-wrap justify-center gap-2 mb-8 md:mb-10 px-2 md:px-0">
           {categories.map((category) => (
-            <button
+                  <button
               key={category.id}
               onClick={() => setSelectedCategory(category.id)}
               className={`mb-1 px-3 sm:px-5 py-2 sm:py-2.5 rounded-full text-sm font-medium transition-all duration-200 flex items-center ${
@@ -229,9 +229,9 @@ export default function CoursesPage() {
             >
               <category.icon className="h-4 w-4 mr-1.5" />
               {category.name}
-            </button>
+                  </button>
           ))}
-        </div>
+                </div>
 
         {/* Tiêu đề danh sách khóa học */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 px-2 md:px-0">
@@ -251,35 +251,35 @@ export default function CoursesPage() {
               <span className="text-sm font-medium text-gray-800">{filteredCourses.length} khóa học</span>
             </div>
           </div>
-        </div>
+          </div>
 
-        {error && (
+          {error && (
           <div className="bg-red-50 p-4 mb-6 rounded-md shadow">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <ExclamationCircleIcon className="h-5 w-5 text-red-400" aria-hidden="true" />
-              </div>
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-red-800">
-                  Đã xảy ra lỗi
-                </h3>
-                <div className="mt-2 text-sm text-red-700">
-                  <p>{error}</p>
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <ExclamationCircleIcon className="h-5 w-5 text-red-400" aria-hidden="true" />
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-red-800">
+                    Đã xảy ra lỗi
+                  </h3>
+                  <div className="mt-2 text-sm text-red-700">
+                    <p>{error}</p>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {loading ? (
+          {loading ? (
           <div className="text-center py-20">
             <div className="inline-block animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-indigo-600 mb-5"></div>
             <p className="text-gray-500 text-lg font-medium">Đang tải dữ liệu khóa học...</p>
             <p className="text-gray-400">Vui lòng đợi trong giây lát</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            {filteredCourses.length > 0 ? (
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              {filteredCourses.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-8">
                 {filteredCourses.map((course, index) => {
                   const rating = getRandomRating();
@@ -357,24 +357,24 @@ export default function CoursesPage() {
                             >
                               Xem chi tiết
                             </button>
-                          </div>
-                        </div>
+        </div>
+      </div>
                       </div>
                     </div>
                   );
                 })}
-              </div>
+                  </div>
             ) : (
               <div className="text-center py-16 bg-gray-50 rounded-xl border border-gray-200 shadow-sm">
                 <MagnifyingGlassIcon className="mx-auto h-12 w-12 text-gray-400 mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-1">Không tìm thấy khóa học nào</h3>
                 <p className="text-gray-500 mb-5 max-w-md mx-auto">Hãy thử tìm kiếm với từ khóa khác hoặc xem tất cả các khóa học</p>
-                <button 
+                    <button
                   onClick={() => {setSearchTerm(''); setSelectedCategory('all');}}
                   className="inline-flex items-center px-5 py-2.5 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800"
                 >
                   Xem tất cả khóa học
-                </button>
+                    </button>
               </div>
             )}
           </div>
@@ -396,12 +396,12 @@ export default function CoursesPage() {
               <div key={testimonial.id} className="bg-white p-5 md:p-6 rounded-xl shadow-md border border-gray-100 hover:shadow-lg transition-all duration-300">
                 <div className="flex mb-1">
                   {renderStars(testimonial.rating)}
-                </div>
+                    </div>
                 <p className="text-gray-700 italic mb-4 text-sm md:text-base">"{testimonial.content}"</p>
                 <div className="flex items-center">
                   <div className="h-9 w-9 md:h-10 md:w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-lg">
                     {testimonial.name.charAt(0)}
-                  </div>
+                          </div>
                   <div className="ml-3">
                     <h4 className="text-sm font-semibold text-gray-900">{testimonial.name}</h4>
                     <p className="text-xs text-gray-500">{testimonial.role}</p>
@@ -411,8 +411,8 @@ export default function CoursesPage() {
             ))}
           </div>
         </div>
-      </div>
-      
+            </div>
+            
       {/* Phần khuyến mãi */}
       <div className="bg-gradient-to-r from-indigo-600 to-purple-700 py-12 md:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -443,7 +443,7 @@ export default function CoursesPage() {
                   Tìm hiểu thêm
                 </a>
               </div>
-            </div>
+              </div>
           </div>
         </div>
       </div>
