@@ -135,7 +135,7 @@ export default function CourseDetailPage({ params }) {
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white p-6">
         <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-lg p-8 relative overflow-hidden">
           <div className="relative z-10">
-            <div className="text-center py-10">
+          <div className="text-center py-10">
               <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600 mb-4"></div>
               <p className="text-lg text-gray-700 font-medium">Đang tải thông tin khóa học...</p>
               <p className="text-gray-500 text-sm">Vui lòng đợi trong giây lát</p>
@@ -204,17 +204,90 @@ export default function CourseDetailPage({ params }) {
   }
 
   return (
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white p-2 sm:p-6">
+      <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-lg relative overflow-hidden">
+        {/* Header Banner */}
+        <div className="bg-gradient-to-r from-indigo-600 to-purple-700 h-32 sm:h-48 relative">
+          <div className="absolute bottom-0 left-0 right-0">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 150" className="w-full h-12 sm:h-16" preserveAspectRatio="none">
+              <path fill="#ffffff" fillOpacity="1" d="M0,64L60,80C120,96,240,128,360,138.7C480,149,600,139,720,122.7C840,107,960,85,1080,80C1200,75,1320,85,1380,90.7L1440,96L1440,150L1380,150C1320,150,1200,150,1080,150C960,150,840,150,720,150C600,150,480,150,360,150C240,150,120,150,60,150L0,150Z"></path>
+            </svg>
+          </div>
+          <div className="absolute top-4 left-4">
+            <button
+              onClick={() => router.push('/khoa-hoc')}
+              className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-full text-white bg-white bg-opacity-25 hover:bg-opacity-35 backdrop-blur-sm transition-all duration-200"
+            >
+              <ArrowLeftIcon className="h-5 w-5 mr-1" />
+              Quay lại
+            </button>
+          </div>
+        </div>
 
-      <div className="">
+        {/* Course Title and Main Info */}
+        <div className="px-4 sm:px-8 pb-6 -mt-6 relative">
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 mb-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 break-words">{course.name || 'Chưa có tên'}</h1>
+            </div>
+            
+            {/* Course description */}
+            <div className="mb-6">
+              <h3 className="text-sm font-medium uppercase tracking-wider text-gray-500 mb-2">Mô tả khóa học</h3>
+              <p className="text-gray-700">{course.description || 'Chưa có mô tả cho khóa học này.'}</p>
+            </div>
+            
+            {/* Course Details Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h3 className="text-sm font-medium uppercase tracking-wider text-gray-500 mb-2">Thông tin cơ bản</h3>
+                <dl className="space-y-2">
+                  <div className="flex justify-between">
+                    <dt className="text-sm text-gray-500">Giá</dt>
+                    <dd className="text-sm font-semibold text-gray-900">
+                      {course.price ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(course.price) : 'Chưa có giá'}
+                    </dd>
+                  </div>
+                  
+                  <div className="flex justify-between">
+                    <dt className="text-sm text-gray-500">Trạng thái</dt>
+                    <dd>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        course.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {course.status === 'active' ? 'Đang hoạt động' : 'Ngừng hoạt động'}
+                      </span>
+                    </dd>
+                  </div>
+                  
+                  {course.updatedAt && (
+                    <div className="flex justify-between">
+                      <dt className="text-sm text-gray-500">Cập nhật lần cuối</dt>
+                      <dd className="text-sm text-gray-900">
+                        {new Date(course.updatedAt).toLocaleString('vi-VN', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        })}
+                      </dd>
+                    </div>
+                  )}
+                </dl>
+              </div>
+            </div>
+          </div>
+        </div>
         
-       
         {/* Dữ liệu khóa học */}
         {course.originalData && (
-          <div className=" bg-white rounded-lg border border-gray-200 overflow-hidden">
-            
+          <div className="mt-6 bg-white rounded-lg border border-gray-200 overflow-hidden">
+            <div className="px-4 sm:px-6 py-4 border-b border-gray-200 bg-gray-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+              <h3 className="text-lg font-medium text-gray-900">Nội dung khóa học</h3>
+            </div>
+
             {/* Hiển thị dữ liệu dưới dạng bảng */}
             {course.originalData?.sheets && course.originalData.sheets.length > 0 && (
-              <div className=" bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+              <div className="mt-6 bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
                 {/* Chọn khóa học khi có nhiều sheet */}
                 {course.originalData?.sheets && course.originalData.sheets.length > 1 && (
                   <div className="border-b border-gray-200 px-4 sm:px-6 py-4 bg-gradient-to-r from-gray-50 to-white">
@@ -387,37 +460,37 @@ export default function CourseDetailPage({ params }) {
                                                 </span>
                                               )
                                           }
-                                        </td>
-                                      );
-                                    })}
-
-                                    {/* Hiển thị nút "Chi tiết" chỉ trên mobile khi có hơn 3 cột */}
-                                    {row.values && row.values.length > 3 && (
-                                      <td className="px-3 py-3 text-right sm:hidden">
-                                        <button
-                                          onClick={() => {
-                                            // Tìm link đầu tiên trong dòng nếu có
-                                            const firstLink = row.values.find(cell => 
-                                              cell.userEnteredFormat?.textFormat?.link?.uri || cell.hyperlink
-                                            );
-                                            
-                                            if (firstLink) {
-                                              const url = firstLink.userEnteredFormat?.textFormat?.link?.uri || firstLink.hyperlink;
-                                              handleLinkClick(url, firstLink.formattedValue);
-                                            }
-                                          }}
-                                          className="inline-flex items-center justify-center bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-xs font-medium hover:bg-indigo-200 transition-colors duration-150 shadow-sm"
-                                        >
-                                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                          </svg>
-                                          Chi tiết
-                                        </button>
                                       </td>
-                                    )}
-                                  </tr>
-                                ))}
+                                    );
+                                  })}
+
+                                  {/* Hiển thị nút "Chi tiết" chỉ trên mobile khi có hơn 3 cột */}
+                                  {row.values && row.values.length > 3 && (
+                                    <td className="px-3 py-3 text-right sm:hidden">
+                                      <button
+                                        onClick={() => {
+                                          // Tìm link đầu tiên trong dòng nếu có
+                                          const firstLink = row.values.find(cell => 
+                                            cell.userEnteredFormat?.textFormat?.link?.uri || cell.hyperlink
+                                          );
+                                          
+                                          if (firstLink) {
+                                            const url = firstLink.userEnteredFormat?.textFormat?.link?.uri || firstLink.hyperlink;
+                                            handleLinkClick(url, firstLink.formattedValue);
+                                          }
+                                        }}
+                                        className="inline-flex items-center justify-center bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-xs font-medium hover:bg-indigo-200 transition-colors duration-150 shadow-sm"
+                                      >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                        </svg>
+                                        Chi tiết
+                                      </button>
+                                    </td>
+                                  )}
+                                </tr>
+                              ))}
                             </tbody>
                           </table>
                         </div>
@@ -460,8 +533,23 @@ export default function CourseDetailPage({ params }) {
           title={pdfModal.title}
         />
 
-       
-      
+        {/* Footer */}
+        <div className="mt-6 border-t border-gray-200 pt-6 pb-2 px-4 sm:px-8">
+          <div className="flex flex-col sm:flex-row justify-between items-center text-sm text-gray-500">
+            <div className="mb-4 sm:mb-0">
+              <p>© {new Date().getFullYear()} Kimvan. Hệ thống quản lý học tập.</p>
+            </div>
+            <div className="flex space-x-4">
+              <button onClick={() => router.push('/khoa-hoc')} className="text-indigo-600 hover:text-indigo-800 transition-colors">
+                Danh sách khóa học
+              </button>
+              <button onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})} className="text-indigo-600 hover:text-indigo-800 transition-colors">
+                Lên đầu trang
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
