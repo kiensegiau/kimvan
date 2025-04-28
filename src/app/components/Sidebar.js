@@ -69,12 +69,12 @@ const Sidebar = ({ closeSidebar }) => {
                 href={item.path}
                 className={`flex items-center p-3 rounded-lg transition-all ${
                   pathname === item.path
-                    ? 'bg-indigo-600 text-white'
+                    ? 'bg-indigo-700 text-white'
                     : 'text-indigo-100 hover:bg-indigo-800 hover:text-white'
                 }`}
                 onClick={handleMenuItemClick}
               >
-                <span className="mr-3">{item.icon}</span>
+                <span className={`mr-3 ${pathname === item.path ? 'text-white' : 'text-indigo-300'}`}>{item.icon}</span>
                 <span className="font-medium">{item.name}</span>
                 {pathname === item.path && (
                   <ChevronRightIcon className="ml-auto w-4 h-4" />
@@ -106,11 +106,21 @@ const Sidebar = ({ closeSidebar }) => {
           </div>
         </div>
         <div className="mt-3 space-y-2">
-          <button className="w-full flex items-center p-2 rounded-lg hover:bg-indigo-800 transition-colors">
-            <UserCircleIcon className="w-5 h-5 text-indigo-300 mr-3" />
+          <Link 
+            href="/ca-nhan" 
+            className={`w-full flex items-center p-2 rounded-lg transition-colors ${
+              pathname === '/ca-nhan' 
+                ? 'bg-indigo-700 text-white' 
+                : 'hover:bg-indigo-800 text-indigo-100'
+            }`}
+          >
+            <UserCircleIcon className={`w-5 h-5 mr-3 ${pathname === '/ca-nhan' ? 'text-white' : 'text-indigo-300'}`} />
             <span className="text-sm">Trang cá nhân</span>
-          </button>
-          <button className="w-full flex items-center p-2 rounded-lg hover:bg-indigo-800 transition-colors">
+            {pathname === '/ca-nhan' && (
+              <ChevronRightIcon className="ml-auto w-4 h-4" />
+            )}
+          </Link>
+          <button className="w-full flex items-center p-2 rounded-lg hover:bg-indigo-800 transition-colors text-indigo-100">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-indigo-300 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
             </svg>
