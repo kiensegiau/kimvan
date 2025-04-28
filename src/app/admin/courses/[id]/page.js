@@ -7,6 +7,7 @@ import { AdjustmentsHorizontalIcon, DocumentArrowUpIcon } from '@heroicons/react
 import { use } from 'react';
 import YouTubeModal from '../../components/YouTubeModal';
 import PDFModal from '../../components/PDFModal';
+import MediaProcessingModal from '../../components/MediaProcessingModal';
 
 export default function CourseDetailPage({ params }) {
   const router = useRouter();
@@ -1005,68 +1006,12 @@ export default function CourseDetailPage({ params }) {
 
         {/* Modal xử lý dữ liệu */}
         {showProcessModal && (
-          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden">
-              <div className="px-4 sm:px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-                <h3 className="text-lg font-medium text-gray-900">Xử lý dữ liệu khóa học</h3>
-                <button
-                  onClick={() => setShowProcessModal(false)}
-                  className="text-gray-400 hover:text-gray-500"
-                >
-                  <XMarkIcon className="h-6 w-6" />
-                </button>
-              </div>
-              
-              <div className="p-4 sm:p-6">
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Phương thức xử lý</label>
-                    <select
-                      value={processMethod}
-                      onChange={(e) => setProcessMethod(e.target.value)}
-                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                      disabled={processingData}
-                    >
-                      <option value="normalize_data">Chuẩn hóa dữ liệu</option>
-                      <option value="reindex_sheets">Đánh chỉ mục lại sheet</option>
-                      <option value="clean_urls">Làm sạch URL</option>
-                      <option value="validate_links">Kiểm tra link</option>
-                      <option value="extract_metadata">Trích xuất metadata</option>
-                    </select>
-                  </div>
-                  
-                  <div className="bg-yellow-50 px-4 py-3 rounded-md">
-                    <p className="text-sm text-yellow-700">
-                      Việc xử lý dữ liệu có thể mất một thời gian tùy thuộc vào kích thước dữ liệu khóa học.
-                    </p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="px-4 sm:px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end">
-                <button
-                  onClick={() => setShowProcessModal(false)}
-                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 mr-3"
-                >
-                  Hủy
-                </button>
-                <button
-                  onClick={handleProcessData}
-                  disabled={processingData}
-                  className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50"
-                >
-                  {processingData ? (
-                    <span className="flex items-center">
-                      <ArrowPathIcon className="animate-spin h-4 w-4 mr-2" />
-                      Đang xử lý...
-                    </span>
-                  ) : (
-                    'Xử lý dữ liệu'
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
+          <MediaProcessingModal
+            isOpen={showProcessModal}
+            onClose={() => setShowProcessModal(false)}
+            courseData={course}
+            courseId={course._id}
+          />
         )}
         
         {/* Modal upload PDF */}

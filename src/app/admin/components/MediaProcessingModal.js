@@ -65,7 +65,7 @@ const MediaProcessingModal = ({
               status: 'pending',
               selected: false
             });
-          } else if (url.toLowerCase().endsWith('.pdf') || url.includes('drive.google.com') && url.includes('.pdf')) {
+          } else if (url.toLowerCase().endsWith('.pdf') || url.includes('drive.google.com') || url.includes('docs.google.com')) {
             pdfs.push({
               id: `pdf-${sheetIndex}-${rowIndex}-${cellIndex}`,
               url,
