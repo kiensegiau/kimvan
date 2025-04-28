@@ -1,19 +1,37 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
-import prisma from '@/lib/prisma';
 import { google } from 'googleapis';
 import fs from 'fs';
 import path from 'path';
+import prisma from '@/lib/prisma';
+
+// File path để lưu token
+const TOKEN_PATH = path.join(process.cwd(), 'youtube_token.json');
+
+// Đọc token từ file
+function getStoredToken() {
+  try {
+    if (fs.existsSync(TOKEN_PATH)) {
+      const tokenContent = fs.readFileSync(TOKEN_PATH, 'utf8');
+      return JSON.parse(tokenContent);
+    }
+  } catch (error) {
+    console.error('Error reading token file:', error);
+  }
+  return null;
+}
+
+// Lưu token vào file
+function saveToken(token) {
+  try {
+    fs.writeFileSync(TOKEN_PATH, JSON.stringify(token, null, 2));
+    console.log('Token saved to', TOKEN_PATH);
+  } catch (error) {
+    console.error('Error saving token:', error);
+  }
+}
 
 export async function POST(request) {
   try {
-    // Check user authentication
-    const session = await getServerSession(authOptions);
-    if (!session || !session.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     // Parse request data
     const data = await request.json();
     const { courseId, mediaItems } = data;
@@ -23,38 +41,39 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    // Verify the course belongs to the current user
+    // Verify the course exists
     const course = await prisma.course.findFirst({
       where: {
-        id: courseId,
-        userId: session.user.id
+        id: courseId
       }
     });
 
     if (!course) {
-      return NextResponse.json({ error: 'Course not found or you do not have permission to access it' }, { status: 404 });
+      return NextResponse.json({ error: 'Course not found' }, { status: 404 });
     }
 
-    // Get Google OAuth2 tokens from the user's account
-    const userAccount = await prisma.account.findFirst({
-      where: {
-        userId: session.user.id,
-        provider: 'google'
-      }
-    });
+    // Setup YouTube API client with environment variables and token file
+    const oauth2Client = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET,
+      process.env.GOOGLE_REDIRECT_URI
+    );
 
-    if (!userAccount || !userAccount.access_token) {
+    // Lấy token từ file
+    const storedToken = getStoredToken();
+    if (!storedToken) {
       return NextResponse.json({ 
-        error: 'Google account not connected or missing YouTube permissions. Please connect your Google account with YouTube scope.' 
+        error: 'YouTube token not found. Please run setup process first.',
+        setupRequired: true
       }, { status: 403 });
     }
 
-    // Setup Google OAuth with user's access token
-    const oauth2Client = new google.auth.OAuth2();
-    oauth2Client.setCredentials({
-      access_token: userAccount.access_token,
-      refresh_token: userAccount.refresh_token,
-      expiry_date: userAccount.expires_at * 1000,
+    oauth2Client.setCredentials(storedToken);
+
+    // Xử lý token khi được làm mới
+    oauth2Client.on('tokens', (tokens) => {
+      const updatedTokens = { ...storedToken, ...tokens };
+      saveToken(updatedTokens);
     });
 
     const youtube = google.youtube({ version: 'v3', auth: oauth2Client });

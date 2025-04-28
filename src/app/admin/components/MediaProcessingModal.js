@@ -209,7 +209,7 @@ const MediaProcessingModal = ({
         },
         body: JSON.stringify({
           courseId,
-          media: mediaToUpload,
+          mediaItems: mediaToUpload,
           destination
         }),
       });
@@ -217,6 +217,15 @@ const MediaProcessingModal = ({
       const data = await response.json();
       
       if (!response.ok) {
+        // Kiểm tra nếu API báo lỗi token
+        if (data.setupRequired) {
+          setStatus({
+            type: 'error',
+            message: 'Cần thiết lập YouTube API. Vui lòng kiểm tra thông báo ở đầu trang.'
+          });
+          return;
+        }
+        
         throw new Error(data.message || `Không thể tải lên ${destination === 'youtube' ? 'YouTube' : 'Google Drive'}`);
       }
       
@@ -227,8 +236,8 @@ const MediaProcessingModal = ({
       
       setProcessingSummary({
         total: mediaToUpload.length,
-        success: data.success || 0,
-        failed: data.failed || 0,
+        success: data.successCount || 0,
+        failed: data.failedCount || 0,
         details: data.details || []
       });
       
@@ -449,20 +458,24 @@ const MediaProcessingModal = ({
         <div className="px-4 sm:px-6 py-4 bg-gray-50 border-t border-gray-200">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
             <div className="w-full sm:w-auto">
-              <label htmlFor="destination" className="text-sm font-medium text-gray-700 block mb-1">
+              <span className="text-sm font-medium text-gray-700 block mb-1">
                 Đích đến tải lên
-              </label>
-              <select
-                id="destination"
-                name="destination"
-                className="block w-full sm:w-48 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                value={destination}
-                onChange={(e) => setDestination(e.target.value)}
-                disabled={uploading}
-              >
-                <option value="youtube">YouTube</option>
-                <option value="drive">Google Drive</option>
-              </select>
+              </span>
+              <div className="flex items-center">
+                <input
+                  type="radio"
+                  id="youtube"
+                  name="destination"
+                  value="youtube"
+                  checked={destination === 'youtube'}
+                  onChange={() => setDestination('youtube')}
+                  className="h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
+                  disabled={uploading}
+                />
+                <label htmlFor="youtube" className="ml-2 text-sm text-gray-700">
+                  YouTube
+                </label>
+              </div>
             </div>
             
             <div className="flex space-x-3 w-full sm:w-auto">
@@ -487,8 +500,33 @@ const MediaProcessingModal = ({
               
               <button
                 type="button"
-                onClick={handleUpload}
+                onClick={() => handleUpload()}
                 disabled={selectedMedia.length === 0 || downloading || uploading}
+                className="flex-1 sm:flex-none inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
+              >
+                {uploading ? (
+                  <>
+                    <ArrowPathIcon className="animate-spin -ml-1 mr-2 h-5 w-5" />
+                    Đang tải lên...
+                  </>
+                ) : (
+                  <>
+                    <CloudArrowUpIcon className="-ml-1 mr-2 h-5 w-5" />
+                    Xử lý đã chọn
+                  </>
+                )}
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => {
+                  // Chọn tất cả các mục nếu chưa được chọn
+                  if (mediaList[activeTab].length > selectedMedia.length) {
+                    toggleSelectAll();
+                  }
+                  handleUpload();
+                }}
+                disabled={mediaList[activeTab].length === 0 || downloading || uploading}
                 className="flex-1 sm:flex-none inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
               >
                 {uploading ? (
@@ -499,7 +537,7 @@ const MediaProcessingModal = ({
                 ) : (
                   <>
                     <CloudArrowUpIcon className="-ml-1 mr-2 h-5 w-5" />
-                    Tải lên {destination === 'youtube' ? 'YouTube' : 'Drive'}
+                    Xử lý tất cả
                   </>
                 )}
               </button>
