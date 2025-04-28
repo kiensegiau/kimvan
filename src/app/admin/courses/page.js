@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { PlusIcon, PencilIcon, TrashIcon, CloudArrowDownIcon, ExclamationCircleIcon, XMarkIcon, ArrowPathIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 import { ServerIcon as DatabaseIcon } from '@heroicons/react/24/outline';
+import { AdjustmentsHorizontalIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
 
 export default function CoursesPage() {
@@ -29,6 +30,12 @@ export default function CoursesPage() {
   const [originalDataError, setOriginalDataError] = useState(null);
   const [downloadingData, setDownloadingData] = useState(false);
   const [downloadError, setDownloadError] = useState(null);
+  const [showProcessModal, setShowProcessModal] = useState(false);
+  const [processingData, setProcessingData] = useState(false);
+  const [processMethod, setProcessMethod] = useState('update_prices');
+  const [processResult, setProcessResult] = useState(null);
+  const [selectedCourses, setSelectedCourses] = useState([]);
+  const [processValue, setProcessValue] = useState('');
 
   // Hàm để tải danh sách khóa học từ API
   const fetchCourses = async () => {
@@ -347,6 +354,71 @@ export default function CoursesPage() {
     }
   };
 
+  // Thêm hàm xử lý dữ liệu khóa học
+  const handleProcessData = async () => {
+    if (selectedCourses.length === 0) {
+      alert('Vui lòng chọn ít nhất một khóa học để xử lý');
+      return;
+    }
+
+    try {
+      setProcessingData(true);
+      setError(null);
+      setProcessResult(null);
+      
+      const response = await fetch('/api/courses/process', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          courseIds: selectedCourses,
+          method: processMethod,
+          value: processValue
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Không thể xử lý dữ liệu khóa học');
+      }
+      
+      setProcessResult(data);
+      
+      // Nếu xử lý thành công, tải lại danh sách khóa học
+      if (data.success) {
+        await fetchCourses();
+        
+        // Reset lựa chọn sau khi xử lý thành công
+        setSelectedCourses([]);
+      }
+    } catch (err) {
+      console.error('Lỗi khi xử lý dữ liệu khóa học:', err);
+      setError(err.message || 'Đã xảy ra lỗi khi xử lý dữ liệu khóa học');
+    } finally {
+      setProcessingData(false);
+    }
+  };
+
+  // Xử lý chọn tất cả khóa học
+  const handleSelectAllCourses = (e) => {
+    if (e.target.checked) {
+      setSelectedCourses(courses.map(course => course._id));
+    } else {
+      setSelectedCourses([]);
+    }
+  };
+
+  // Xử lý chọn/bỏ chọn một khóa học
+  const handleSelectCourse = (courseId, isChecked) => {
+    if (isChecked) {
+      setSelectedCourses([...selectedCourses, courseId]);
+    } else {
+      setSelectedCourses(selectedCourses.filter(id => id !== courseId));
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -367,6 +439,13 @@ export default function CoursesPage() {
           >
             <CloudArrowDownIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
             {syncing ? 'Đang đồng bộ...' : 'Đồng bộ từ Kimvan'}
+          </button>
+          <button
+            onClick={() => setShowProcessModal(true)}
+            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
+          >
+            <AdjustmentsHorizontalIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
+            Xử lý dữ liệu
           </button>
           <button
             onClick={() => {
@@ -458,6 +537,46 @@ export default function CoursesPage() {
         </div>
       )}
 
+      {processResult && (
+        <div className={`bg-${processResult.success ? 'blue' : 'red'}-50 p-4 rounded-md mb-4`}>
+          <div className="flex">
+            <div className="flex-shrink-0">
+              {processResult.success ? (
+                <CheckCircleIcon className="h-5 w-5 text-blue-400" aria-hidden="true" />
+              ) : (
+                <ExclamationCircleIcon className="h-5 w-5 text-red-400" aria-hidden="true" />
+              )}
+            </div>
+            <div className="ml-3">
+              <h3 className={`text-sm font-medium text-${processResult.success ? 'blue' : 'red'}-800`}>
+                {processResult.success ? 'Xử lý dữ liệu thành công' : 'Xử lý dữ liệu thất bại'}
+              </h3>
+              <div className={`mt-2 text-sm text-${processResult.success ? 'blue' : 'red'}-700`}>
+                <p>{processResult.message}</p>
+                {processResult.success && processResult.summary && (
+                  <>
+                    <p>Tổng số khóa học đã xử lý: {processResult.summary.total}</p>
+                    <p>Số khóa học cập nhật thành công: {processResult.summary.success}</p>
+                    <p>Số khóa học bị lỗi: {processResult.summary.errors}</p>
+                  </>
+                )}
+              </div>
+              <div className="mt-4">
+                <div className="-mx-2 -my-1.5 flex">
+                  <button
+                    type="button"
+                    onClick={() => setProcessResult(null)}
+                    className={`bg-${processResult.success ? 'blue' : 'red'}-50 px-2 py-1.5 rounded-md text-sm font-medium text-${processResult.success ? 'blue' : 'red'}-800 hover:bg-${processResult.success ? 'blue' : 'red'}-100`}
+                  >
+                    Đóng
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="bg-white shadow rounded-lg">
         <div className="px-4 py-5 sm:p-6">
           <div className="mb-4">
@@ -514,6 +633,14 @@ export default function CoursesPage() {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
+                      <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <input
+                          type="checkbox"
+                          onChange={handleSelectAllCourses}
+                          checked={selectedCourses.length === courses.length && courses.length > 0}
+                          className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                        />
+                      </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên khóa học</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày chỉnh sửa</th>
                       <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Hành động</th>
@@ -522,6 +649,14 @@ export default function CoursesPage() {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {filteredCourses.map((course) => (
                       <tr key={course._id}>
+                        <td className="px-2 py-4 whitespace-nowrap">
+                          <input
+                            type="checkbox"
+                            checked={selectedCourses.includes(course._id)}
+                            onChange={(e) => handleSelectCourse(course._id, e.target.checked)}
+                            className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                          />
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                           <button 
                             onClick={() => router.push(`/admin/courses/${course._id}`)}
@@ -550,92 +685,6 @@ export default function CoursesPage() {
                               title="Xem dữ liệu gốc"
                             >
                               <CloudArrowDownIcon className="h-5 w-5" />
-                            </button>
-                          )}
-                          {course.kimvanId && (
-                            <button
-                              onClick={() => {
-                                const syncSingleCourse = async () => {
-                                  try {
-                                    setSyncing(true);
-                                    setError(null);
-                                    
-                                    // Hiển thị thông báo đang đồng bộ cho khóa học cụ thể
-                                    setSyncResults({
-                                      success: true,
-                                      message: `Đang đồng bộ khóa học "${course.name}"...`,
-                                      summary: {
-                                        total: 1,
-                                        created: 0,
-                                        updated: 0,
-                                        errors: 0
-                                      },
-                                      inProgress: true
-                                    });
-                                    
-                                    // Sử dụng phương thức PATCH để đồng bộ khóa học
-                                    const response = await fetch(`/api/courses/${course.kimvanId}`, {
-                                      method: 'PATCH',
-                                      headers: {
-                                        'Content-Type': 'application/json',
-                                      }
-                                    });
-                                    
-                                    const syncData = await response.json();
-                                    
-                                    if (!response.ok) {
-                                      throw new Error(syncData.message || 'Không thể đồng bộ khóa học');
-                                    }
-                                    
-                                    // Hiển thị kết quả đồng bộ
-                                    setSyncResults({
-                                      success: true,
-                                      message: syncData.message || 'Đồng bộ khóa học thành công',
-                                      summary: {
-                                        total: 1,
-                                        created: 0,
-                                        updated: 1,
-                                        errors: 0
-                                      },
-                                      inProgress: false
-                                    });
-                                    
-                                    // Tải lại danh sách khóa học
-                                    await fetchCourses();
-                                  } catch (err) {
-                                    console.error('Lỗi khi đồng bộ khóa học:', err);
-                                    setError(err.message || 'Đã xảy ra lỗi khi đồng bộ khóa học. Vui lòng kiểm tra kết nối MongoDB.');
-                                    
-                                    // Hiển thị thông báo lỗi
-                                    setSyncResults({
-                                      success: false,
-                                      message: `Lỗi đồng bộ: ${err.message}`,
-                                      summary: {
-                                        total: 1,
-                                        created: 0,
-                                        updated: 0,
-                                        errors: 1
-                                      },
-                                      inProgress: false
-                                    });
-                                  } finally {
-                                    setSyncing(false);
-                                  }
-                                };
-                                
-                                if (window.confirm(`Bạn có muốn đồng bộ khóa học "${course.name}" không?`)) {
-                                  syncSingleCourse();
-                                }
-                              }}
-                              className="text-green-600 hover:text-green-900 mr-2"
-                              title="Đồng bộ khóa học này"
-                              disabled={syncing}
-                            >
-                              {syncing && syncResults?.inProgress ? (
-                                <ArrowPathIcon className="h-5 w-5 animate-spin" />
-                              ) : (
-                                <ArrowPathIcon className="h-5 w-5" />
-                              )}
                             </button>
                           )}
                           <button
@@ -886,6 +935,107 @@ export default function CoursesPage() {
             )}
           </div>
         </div>
+      )}
+
+      {/* Modal Xử lý dữ liệu khóa học */}
+      {showProcessModal && (
+        <>
+          {/* Lớp phủ */}
+          <div 
+            className="fixed inset-0 bg-gray-500 bg-opacity-75 z-40 cursor-pointer" 
+            onClick={() => setShowProcessModal(false)}
+          ></div>
+          
+          {/* Nội dung modal */}
+          <div className="fixed z-50 inset-0 overflow-y-auto">
+            <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+              <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+              <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full" onClick={(e) => e.stopPropagation()}>
+                <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                  <div className="sm:flex sm:items-start">
+                    <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-orange-100 sm:mx-0 sm:h-10 sm:w-10">
+                      <AdjustmentsHorizontalIcon className="h-6 w-6 text-orange-600" aria-hidden="true" />
+                    </div>
+                    <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                      <h3 className="text-lg leading-6 font-medium text-gray-900">
+                        Xử lý dữ liệu khóa học
+                      </h3>
+                      <div className="mt-4">
+                        <p className="text-sm text-gray-500 mb-4">
+                          Chọn phương thức xử lý và giá trị tương ứng để áp dụng cho các khóa học đã chọn.
+                        </p>
+                        
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Phương thức xử lý</label>
+                            <select
+                              value={processMethod}
+                              onChange={(e) => setProcessMethod(e.target.value)}
+                              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                            >
+                              <option value="update_prices">Cập nhật giá</option>
+                              <option value="update_status">Thay đổi trạng thái</option>
+                              <option value="add_tag">Thêm thẻ</option>
+                              <option value="remove_tag">Xóa thẻ</option>
+                              <option value="add_category">Thêm danh mục</option>
+                            </select>
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Giá trị</label>
+                            {processMethod === 'update_status' ? (
+                              <select
+                                value={processValue}
+                                onChange={(e) => setProcessValue(e.target.value)}
+                                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                              >
+                                <option value="active">Hoạt động</option>
+                                <option value="inactive">Không hoạt động</option>
+                                <option value="draft">Nháp</option>
+                              </select>
+                            ) : (
+                              <input
+                                type={processMethod === 'update_prices' ? 'number' : 'text'}
+                                value={processValue}
+                                onChange={(e) => setProcessValue(e.target.value)}
+                                placeholder={processMethod === 'update_prices' ? 'Nhập giá mới' : 'Nhập giá trị'}
+                                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                              />
+                            )}
+                          </div>
+                          
+                          <div className="bg-yellow-50 px-4 py-3 rounded-md">
+                            <p className="text-sm text-yellow-700">
+                              Đã chọn {selectedCourses.length} khóa học để xử lý. 
+                              {selectedCourses.length === 0 && ' Vui lòng chọn ít nhất một khóa học để tiếp tục.'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                  <button
+                    type="button"
+                    onClick={handleProcessData}
+                    disabled={processingData || selectedCourses.length === 0 || !processValue}
+                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-orange-600 text-base font-medium text-white hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50"
+                  >
+                    {processingData ? 'Đang xử lý...' : 'Xử lý dữ liệu'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowProcessModal(false)}
+                    className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                  >
+                    Hủy
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

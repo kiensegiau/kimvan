@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeftIcon, PencilIcon, TrashIcon, CloudArrowDownIcon, ExclamationCircleIcon, XMarkIcon, ArrowPathIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
+import { AdjustmentsHorizontalIcon, DocumentArrowUpIcon } from '@heroicons/react/24/outline';
 import { use } from 'react';
 import YouTubeModal from '../../components/YouTubeModal';
 import PDFModal from '../../components/PDFModal';
@@ -27,6 +28,14 @@ export default function CourseDetailPage({ params }) {
   const [activeSheet, setActiveSheet] = useState(0);
   const [youtubeModal, setYoutubeModal] = useState({ isOpen: false, videoId: null, title: '' });
   const [pdfModal, setPdfModal] = useState({ isOpen: false, fileUrl: null, title: '' });
+  const [showProcessModal, setShowProcessModal] = useState(false);
+  const [processingData, setProcessingData] = useState(false);
+  const [processMethod, setProcessMethod] = useState('normalize_data');
+  const [processResult, setProcessResult] = useState(null);
+  const [uploadingPdf, setUploadingPdf] = useState(false);
+  const [pdfFile, setPdfFile] = useState(null);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [uploadResult, setUploadResult] = useState(null);
   
   // Hàm lấy tiêu đề của sheet
   const getSheetTitle = (index, sheets) => {
@@ -251,6 +260,112 @@ export default function CourseDetailPage({ params }) {
     }
   };
 
+  // Hàm xử lý dữ liệu database
+  const handleProcessData = async () => {
+    if (!course) return;
+    
+    try {
+      setProcessingData(true);
+      setError(null);
+      setProcessResult(null);
+      
+      const response = await fetch(`/api/courses/process/${course._id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          method: processMethod
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Không thể xử lý dữ liệu khóa học');
+      }
+      
+      setProcessResult(data);
+      
+      // Nếu xử lý thành công, tải lại thông tin khóa học
+      if (data.success) {
+        await fetchCourseDetail();
+      }
+    } catch (err) {
+      console.error('Lỗi khi xử lý dữ liệu khóa học:', err);
+      setProcessResult({
+        success: false,
+        message: err.message || 'Đã xảy ra lỗi khi xử lý dữ liệu khóa học'
+      });
+    } finally {
+      setProcessingData(false);
+    }
+  };
+
+  // Hàm xử lý upload file PDF
+  const handleUploadPdf = async (e) => {
+    e.preventDefault();
+    
+    if (!pdfFile) {
+      alert('Vui lòng chọn file PDF để tải lên');
+      return;
+    }
+    
+    // Kiểm tra định dạng file
+    if (pdfFile.type !== 'application/pdf') {
+      alert('Chỉ hỗ trợ tải lên file PDF');
+      return;
+    }
+    
+    try {
+      setUploadingPdf(true);
+      setUploadResult(null);
+      
+      const formData = new FormData();
+      formData.append('pdf', pdfFile);
+      formData.append('courseId', course._id);
+      
+      const response = await fetch('/api/courses/pdf/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Không thể tải lên file PDF');
+      }
+      
+      setUploadResult({
+        success: true,
+        message: 'Tải lên file PDF thành công',
+        url: data.url,
+        filename: data.filename
+      });
+      
+      // Reset file input
+      setPdfFile(null);
+      
+      // Tải lại thông tin khóa học
+      await fetchCourseDetail();
+    } catch (err) {
+      console.error('Lỗi khi tải lên file PDF:', err);
+      setUploadResult({
+        success: false,
+        message: err.message || 'Đã xảy ra lỗi khi tải lên file PDF'
+      });
+    } finally {
+      setUploadingPdf(false);
+    }
+  };
+
+  // Hàm xử lý chọn file PDF
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setPdfFile(e.target.files[0]);
+    }
+  };
+
   // Tải thông tin khóa học khi component được tạo
   useEffect(() => {
     fetchCourseDetail();
@@ -342,7 +457,7 @@ export default function CourseDetailPage({ params }) {
           </button>
           
           <div className="flex flex-wrap gap-2">
-            {course.kimvanId && (
+            {course?.kimvanId && (
               <button
                 onClick={handleSync}
                 disabled={syncing}
@@ -363,7 +478,23 @@ export default function CourseDetailPage({ params }) {
             )}
             
             <button
-              onClick={() => router.push(`/admin/courses/edit/${course._id}`)}
+              onClick={() => setShowProcessModal(true)}
+              className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700"
+            >
+              <AdjustmentsHorizontalIcon className="h-4 w-4 mr-2" />
+              Xử lý dữ liệu
+            </button>
+            
+            <button
+              onClick={() => setShowUploadModal(true)}
+              className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
+            >
+              <DocumentArrowUpIcon className="h-4 w-4 mr-2" />
+              Tải lên PDF
+            </button>
+            
+            <button
+              onClick={() => router.push(`/admin/courses/edit/${course?._id}`)}
               className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
             >
               <PencilIcon className="h-4 w-4 mr-2" />
@@ -379,6 +510,82 @@ export default function CourseDetailPage({ params }) {
             </button>
           </div>
         </div>
+        
+        {/* Kết quả xử lý dữ liệu */}
+        {processResult && (
+          <div className={`bg-${processResult.success ? 'purple' : 'red'}-50 p-4 rounded-md mb-6`}>
+            <div className="flex">
+              <div className="flex-shrink-0">
+                {processResult.success ? (
+                  <svg className="h-5 w-5 text-purple-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                ) : (
+                  <ExclamationCircleIcon className="h-5 w-5 text-red-400" aria-hidden="true" />
+                )}
+              </div>
+              <div className="ml-3">
+                <p className={`text-sm font-medium text-${processResult.success ? 'purple' : 'red'}-800`}>
+                  {processResult.message}
+                </p>
+              </div>
+              <div className="ml-auto pl-3">
+                <div className="-mx-1.5 -my-1.5">
+                  <button
+                    onClick={() => setProcessResult(null)}
+                    className={`inline-flex rounded-md p-1.5 text-${processResult.success ? 'purple' : 'red'}-500 hover:bg-${processResult.success ? 'purple' : 'red'}-100`}
+                  >
+                    <XMarkIcon className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Kết quả upload PDF */}
+        {uploadResult && (
+          <div className={`bg-${uploadResult.success ? 'green' : 'red'}-50 p-4 rounded-md mb-6`}>
+            <div className="flex">
+              <div className="flex-shrink-0">
+                {uploadResult.success ? (
+                  <svg className="h-5 w-5 text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                ) : (
+                  <ExclamationCircleIcon className="h-5 w-5 text-red-400" aria-hidden="true" />
+                )}
+              </div>
+              <div className="ml-3">
+                <p className={`text-sm font-medium text-${uploadResult.success ? 'green' : 'red'}-800`}>
+                  {uploadResult.message}
+                </p>
+                {uploadResult.success && uploadResult.url && (
+                  <div className="mt-2">
+                    <a 
+                      href={uploadResult.url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-sm text-blue-600 hover:underline"
+                    >
+                      {uploadResult.filename || 'Xem file PDF đã tải lên'}
+                    </a>
+                  </div>
+                )}
+              </div>
+              <div className="ml-auto pl-3">
+                <div className="-mx-1.5 -my-1.5">
+                  <button
+                    onClick={() => setUploadResult(null)}
+                    className={`inline-flex rounded-md p-1.5 text-${uploadResult.success ? 'green' : 'red'}-500 hover:bg-${uploadResult.success ? 'green' : 'red'}-100`}
+                  >
+                    <XMarkIcon className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         
         {/* Thông báo kết quả đồng bộ */}
         {syncResult && (
@@ -560,11 +767,15 @@ export default function CourseDetailPage({ params }) {
                       </svg>
                       {getSheetTitle(activeSheet, course.originalData.sheets)}
                     </div>
-                    {course.originalData.sheets[activeSheet]?.data?.[0]?.rowData && (
+                    {course.originalData.sheets[activeSheet]?.data?.[0]?.rowData && course.originalData.sheets[activeSheet].data[0].rowData.length > 0 ? (
                       <div className="text-sm text-gray-600 ml-7 sm:ml-0">
                         Tổng số: <span className="font-medium text-blue-600">
                           {(course.originalData.sheets[activeSheet].data[0].rowData.length - 1) || 0} buổi
                         </span>
+                      </div>
+                    ) : (
+                      <div className="text-sm text-gray-600 ml-7 sm:ml-0">
+                        Không có dữ liệu buổi học
                       </div>
                     )}
                   </div>
@@ -681,7 +892,7 @@ export default function CourseDetailPage({ params }) {
 
                                 {/* Hiển thị nút "Xem thêm" chỉ trên mobile khi có hơn 3 cột */}
                                 {row.values && row.values.length > 3 && (
-                                  <td className="px-3 py-3 text-sm text-right sm:hidden">
+                                  <td className="px-3 py-3 text-right sm:hidden">
                                     <button
                                       onClick={() => {
                                         // Tìm link đầu tiên trong dòng nếu có
@@ -791,6 +1002,149 @@ export default function CourseDetailPage({ params }) {
           fileUrl={pdfModal.fileUrl}
           title={pdfModal.title}
         />
+
+        {/* Modal xử lý dữ liệu */}
+        {showProcessModal && (
+          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden">
+              <div className="px-4 sm:px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                <h3 className="text-lg font-medium text-gray-900">Xử lý dữ liệu khóa học</h3>
+                <button
+                  onClick={() => setShowProcessModal(false)}
+                  className="text-gray-400 hover:text-gray-500"
+                >
+                  <XMarkIcon className="h-6 w-6" />
+                </button>
+              </div>
+              
+              <div className="p-4 sm:p-6">
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Phương thức xử lý</label>
+                    <select
+                      value={processMethod}
+                      onChange={(e) => setProcessMethod(e.target.value)}
+                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                      disabled={processingData}
+                    >
+                      <option value="normalize_data">Chuẩn hóa dữ liệu</option>
+                      <option value="reindex_sheets">Đánh chỉ mục lại sheet</option>
+                      <option value="clean_urls">Làm sạch URL</option>
+                      <option value="validate_links">Kiểm tra link</option>
+                      <option value="extract_metadata">Trích xuất metadata</option>
+                    </select>
+                  </div>
+                  
+                  <div className="bg-yellow-50 px-4 py-3 rounded-md">
+                    <p className="text-sm text-yellow-700">
+                      Việc xử lý dữ liệu có thể mất một thời gian tùy thuộc vào kích thước dữ liệu khóa học.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="px-4 sm:px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end">
+                <button
+                  onClick={() => setShowProcessModal(false)}
+                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 mr-3"
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={handleProcessData}
+                  disabled={processingData}
+                  className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50"
+                >
+                  {processingData ? (
+                    <span className="flex items-center">
+                      <ArrowPathIcon className="animate-spin h-4 w-4 mr-2" />
+                      Đang xử lý...
+                    </span>
+                  ) : (
+                    'Xử lý dữ liệu'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Modal upload PDF */}
+        {showUploadModal && (
+          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden">
+              <div className="px-4 sm:px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                <h3 className="text-lg font-medium text-gray-900">Tải lên file PDF</h3>
+                <button
+                  onClick={() => setShowUploadModal(false)}
+                  className="text-gray-400 hover:text-gray-500"
+                >
+                  <XMarkIcon className="h-6 w-6" />
+                </button>
+              </div>
+              
+              <form onSubmit={handleUploadPdf}>
+                <div className="p-4 sm:p-6">
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Chọn file PDF</label>
+                      <input
+                        type="file"
+                        accept=".pdf"
+                        onChange={handleFileChange}
+                        className="block w-full text-sm text-gray-500
+                          file:mr-4 file:py-2 file:px-4
+                          file:rounded-md file:border-0
+                          file:text-sm file:font-semibold
+                          file:bg-blue-50 file:text-blue-700
+                          hover:file:bg-blue-100"
+                        disabled={uploadingPdf}
+                      />
+                    </div>
+                    
+                    {pdfFile && (
+                      <div className="bg-green-50 p-3 rounded-md">
+                        <p className="text-sm text-green-700">
+                          File đã chọn: {pdfFile.name} ({Math.round(pdfFile.size / 1024)} KB)
+                        </p>
+                      </div>
+                    )}
+                    
+                    <div className="bg-yellow-50 px-4 py-3 rounded-md">
+                      <p className="text-sm text-yellow-700">
+                        Chỉ hỗ trợ tải lên file PDF. Kích thước tối đa 10MB.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="px-4 sm:px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setShowUploadModal(false)}
+                    className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 mr-3"
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={!pdfFile || uploadingPdf}
+                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
+                  >
+                    {uploadingPdf ? (
+                      <span className="flex items-center">
+                        <ArrowPathIcon className="animate-spin h-4 w-4 mr-2" />
+                        Đang tải lên...
+                      </span>
+                    ) : (
+                      'Tải lên'
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
