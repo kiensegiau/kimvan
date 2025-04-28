@@ -84,24 +84,66 @@ export default function CoursesPage() {
   const testimonials = [
     {
       id: 1,
-      name: 'Nguyễn Văn A',
-      role: 'Học viên',
-      content: 'Các khóa học cung cấp kiến thức chuyên sâu, giúp tôi nâng cao kỹ năng chuyên môn một cách rõ rệt. Giảng viên nhiệt tình và nội dung rất bổ ích.',
+      name: 'Nguyễn Minh Tuấn',
+      role: 'Học sinh lớp 12',
+      content: 'Khóa học Toán nâng cao đã giúp em hiểu sâu hơn về các khái niệm phức tạp. Thầy cô rất tận tâm và luôn sẵn sàng giải đáp mọi thắc mắc. Nhờ khóa học này mà em đã cải thiện đáng kể điểm số của mình.',
       rating: 5
     },
     {
       id: 2,
-      name: 'Trần Thị B',
-      role: 'Giám đốc nhân sự',
-      content: 'Tôi đã cử nhiều nhân viên tham gia các khóa học và nhận thấy hiệu quả rõ rệt. Nội dung thiết thực, cập nhật và dễ ứng dụng vào công việc thực tế.',
+      name: 'Trần Thị Hương',
+      role: 'Học sinh lớp 11',
+      content: 'Em đã tham gia khóa học Hóa học và thấy rất bổ ích. Các bài giảng rất dễ hiểu với nhiều ví dụ thực tế. Đặc biệt là phần bài tập và đề thi thử giúp em rất nhiều trong việc ôn tập.',
       rating: 5
     },
     {
       id: 3,
-      name: 'Phạm Văn C',
-      role: 'Sinh viên',
-      content: 'Các bài giảng rõ ràng, dễ hiểu và có nhiều bài tập thực hành. Tôi đã học được rất nhiều kỹ năng mới từ các khóa học này.',
+      name: 'Phạm Đức Anh',
+      role: 'Học sinh lớp 12',
+      content: 'Các bài giảng Vật lý rõ ràng, dễ hiểu và có nhiều bài tập thực hành. Em đã học được rất nhiều kiến thức mới từ khóa học này. Đặc biệt là phần thực hành giúp em nắm vững kiến thức ngay lập tức.',
       rating: 4.5
+    },
+    {
+      id: 4,
+      name: 'Lê Thanh Hà',
+      role: 'Học sinh lớp 10',
+      content: 'Khóa học Ngữ văn đã mở ra cho em nhiều góc nhìn mới về các tác phẩm văn học. Tài liệu học tập phong phú, bài tập thực tế và feedback chi tiết từ giáo viên. Đây là một trong những khóa học chất lượng nhất mà em từng tham gia.',
+      rating: 5
+    },
+    {
+      id: 5,
+      name: 'Vũ Hoàng Nam',
+      role: 'Học sinh lớp 12',
+      content: 'Em đã tham gia khóa học Tiếng Anh và thấy rất hữu ích. Các bài học tình huống thực tế giúp em tự tin hơn trong giao tiếp. Kiến thức học được đã giúp em đạt điểm cao trong kỳ thi học kỳ vừa qua.',
+      rating: 4.5
+    },
+    {
+      id: 6,
+      name: 'Đặng Thị Minh Ngọc',
+      role: 'Học sinh lớp 11',
+      content: 'Khóa học Sinh học của trang web này đã giúp em nắm vững các khái niệm phức tạp. Em đặc biệt ấn tượng với phần thực hành và các mô hình 3D được giới thiệu trong khóa học.',
+      rating: 4
+    },
+    {
+      id: 7,
+      name: 'Hoàng Văn Bình',
+      role: 'Học sinh lớp 10',
+      content: 'Em đã hoàn thành khóa học Tin học và rất hài lòng với chất lượng. Từ một người mới bắt đầu, giờ đây em đã có thể tự tin lập trình các ứng dụng đơn giản. Cảm ơn các thầy cô đã tận tâm giảng dạy!',
+      rating: 5
+    },
+    {
+      id: 8,
+      name: 'Ngô Thị Thu Trang',
+      role: 'Học sinh lớp 11',
+      content: 'Khóa học Địa lý rất thú vị với nhiều hình ảnh và video. Nội dung được trình bày dễ hiểu, phù hợp với chương trình học tại trường. Em rất vui vì được học thêm nhiều kiến thức mới về thế giới.',
+      rating: 4.5
+    },
+    {
+      id: 9,
+      name: 'Bùi Quang Hiếu',
+      role: 'Học sinh lớp 12',
+      content: 'Khóa học Luyện thi đại học đã giúp em chuẩn bị tốt cho kỳ thi sắp tới. Các thủ thuật và phương pháp được giảng dạy rất thực tế, giúp em tiết kiệm được rất nhiều thời gian ôn tập.',
+      rating: 4
     }
   ];
 
@@ -145,93 +187,12 @@ export default function CoursesPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
-      {/* Hero Section */}
-      <div className="relative bg-gradient-to-r from-indigo-700 to-purple-800 text-white overflow-hidden">
-        <div className="absolute inset-0 bg-[url('/hero-pattern.svg')] opacity-10"></div>
-        <div className="absolute inset-0 bg-black opacity-10"></div>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-20 lg:py-28 relative z-10">
-          <div className="text-center max-w-3xl mx-auto">
-            <div className="inline-block animate-bounce mb-2">
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-800 bg-opacity-50">
-                ✨ Nền tảng học tập hàng đầu tại Việt Nam ✨
-              </span>
-            </div>
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight mb-3 md:mb-4 [text-shadow:_0_1px_10px_rgb(0_0_0_/_20%)]">
-              Nâng cao kỹ năng với các khóa học chất lượng
-            </h1>
-            <p className="text-base md:text-xl text-indigo-100 mb-6 md:mb-8 max-w-2xl mx-auto px-4 md:px-0">
-              Khám phá hàng trăm khóa học được thiết kế bởi các chuyên gia hàng đầu, phù hợp cho mọi trình độ
-            </p>
-            <div className="relative max-w-xl mx-auto mb-6 md:mb-8 px-4 md:px-0">
-              <div className="absolute inset-y-0 left-0 pl-3 md:pl-3 flex items-center pointer-events-none">
-                <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
-              </div>
-              <input
-                type="text"
-                placeholder="Tìm kiếm khóa học bạn quan tâm..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="block w-full pl-10 pr-3 py-3 border border-transparent rounded-md leading-5 bg-white bg-opacity-90 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-indigo-600 transition duration-150 ease-in-out shadow-md"
-              />
-            </div>
-            <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-3 px-4 md:px-0">
-              <button className="inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gradient-to-r from-pink-600 to-pink-700 hover:from-pink-700 hover:to-pink-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-all duration-200 w-full sm:w-auto">
-                <UserCircleIcon className="h-5 w-5 mr-2" /> Đăng ký học ngay
-              </button>
-              <button className="inline-flex items-center justify-center px-4 py-2 border border-white rounded-md text-sm font-medium text-white bg-transparent hover:bg-white hover:bg-opacity-10 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50 transition-all duration-200 w-full sm:w-auto mt-3 sm:mt-0">
-                Tư vấn miễn phí <ArrowRightIcon className="h-4 w-4 ml-2" />
-                  </button>
-                </div>
-              </div>
-            </div>
-        {/* Wave shape divider */}
-        <div className="absolute bottom-0 left-0 right-0">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 80" fill="#ffffff" preserveAspectRatio="none">
-            <path d="M0,32L60,37.3C120,43,240,53,360,58.7C480,64,600,64,720,56C840,48,960,32,1080,26.7C1200,21,1320,27,1380,29.3L1440,32L1440,80L1380,80C1320,80,1200,80,1080,80C960,80,840,80,720,80C600,80,480,80,360,80C240,80,120,80,60,80L0,80Z"></path>
-          </svg>
-        </div>
-      </div>
-
-      {/* Thống kê */}
-      <div ref={statsRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-          <div className={`p-5 bg-white rounded-xl shadow-md border border-gray-100 transform transition-all duration-700 ${isInView ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`} style={{ transitionDelay: '0ms' }}>
-            <div className="text-4xl font-bold text-indigo-600 mb-2">1,000+</div>
-            <div className="text-sm text-gray-600">Khóa học</div>
-          </div>
-          <div className={`p-5 bg-white rounded-xl shadow-md border border-gray-100 transform transition-all duration-700 ${isInView ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`} style={{ transitionDelay: '200ms' }}>
-            <div className="text-4xl font-bold text-indigo-600 mb-2">50,000+</div>
-            <div className="text-sm text-gray-600">Học viên</div>
-          </div>
-          <div className={`p-5 bg-white rounded-xl shadow-md border border-gray-100 transform transition-all duration-700 ${isInView ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`} style={{ transitionDelay: '400ms' }}>
-            <div className="text-4xl font-bold text-indigo-600 mb-2">100+</div>
-            <div className="text-sm text-gray-600">Giảng viên</div>
-          </div>
-          <div className={`p-5 bg-white rounded-xl shadow-md border border-gray-100 transform transition-all duration-700 ${isInView ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`} style={{ transitionDelay: '600ms' }}>
-            <div className="text-4xl font-bold text-indigo-600 mb-2">4.8</div>
-            <div className="text-sm text-gray-600">Đánh giá trung bình</div>
-          </div>
-        </div>
-            </div>
+      
+   
 
       {/* Danh mục */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-        <div className="flex flex-wrap justify-center gap-2 mb-8 md:mb-10 px-2 md:px-0">
-          {categories.map((category) => (
-                  <button
-              key={category.id}
-              onClick={() => setSelectedCategory(category.id)}
-              className={`mb-1 px-3 sm:px-5 py-2 sm:py-2.5 rounded-full text-sm font-medium transition-all duration-200 flex items-center ${
-                selectedCategory === category.id
-                  ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-lg hover:shadow-indigo-500/30'
-                  : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 hover:shadow'
-              }`}
-            >
-              <category.icon className="h-4 w-4 mr-1.5" />
-              {category.name}
-                  </button>
-          ))}
-                </div>
+       
 
         {/* Tiêu đề danh sách khóa học */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 px-2 md:px-0">
@@ -280,90 +241,49 @@ export default function CoursesPage() {
           ) : (
             <div className="overflow-x-auto">
               {filteredCourses.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filteredCourses.map((course, index) => {
                   const rating = getRandomRating();
                   const level = getRandomLevel();
                   const students = getRandomStudentCount();
-                  const lessons = getRandomLessonCount();
-                  const isHot = Math.random() > 0.7;
                   
                   return (
                     <div 
                       key={course._id} 
-                      className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden hover:shadow-lg transition-all duration-300 hover:translate-y-[-6px] group"
-                      style={{ animationDelay: `${index * 100}ms` }}
+                      className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-all duration-200 flex flex-col h-full"
+                      onClick={() => router.push(`/khoa-hoc/${course._id}`)}
+                      style={{ cursor: 'pointer' }}
                     >
-                      <div className="h-44 sm:h-52 bg-indigo-100 relative overflow-hidden">
-                        <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-purple-600 opacity-90 group-hover:opacity-100 transition-opacity duration-300"></div>
-                        <div className="absolute inset-0 flex flex-col items-center justify-center p-5">
-                          <span className="text-indigo-100 uppercase tracking-wider text-xs font-semibold mb-2">
-                            {level}
-                          </span>
-                          <h3 className="text-xl md:text-2xl font-bold text-white text-center px-4 mb-2 md:mb-3 [text-shadow:_0_1px_3px_rgb(0_0_0_/_30%)]">
-                            {course.name}
-                          </h3>
-                          <div className="flex items-center justify-center">
-                            <div className="bg-white bg-opacity-20 rounded-full px-3 py-1 text-xs text-white flex items-center mt-1">
-                              <UserCircleIcon className="h-3 w-3 mr-1" />
-                              {students.toLocaleString()} học viên
-                            </div>
-                          </div>
+                      <div className="h-16 bg-gradient-to-r from-indigo-600 to-purple-700 relative">
+                        <div className="absolute -bottom-5 left-4 w-10 h-10 bg-white rounded-md shadow flex items-center justify-center">
+                          <AcademicCapIcon className="h-6 w-6 text-indigo-600" />
                         </div>
-                        {/* Badge */}
-                        {isHot && (
-                          <div className="absolute top-3 right-3 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md animate-pulse">
-                            <span className="flex items-center">
-                              <FireIcon className="h-3 w-3 mr-1" /> HOT
-                            </span>
-                          </div>
-                        )}
+                        <div className="absolute top-0 right-0 px-2 py-1 bg-indigo-800 bg-opacity-50 text-white text-xs">
+                          {level}
+                        </div>
                       </div>
-                      <div className="p-4 sm:p-6">
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center">
-                            <div className="flex mr-2">
-                              {renderStars(rating)}
-                            </div>
-                            <span className="text-sm text-gray-500">({rating.toFixed(1)})</span>
-                          </div>
-                          <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                            {lessons} bài học
-                          </span>
+                      
+                      <div className="p-4 pt-6 flex-grow">
+                        <h3 className="text-base font-medium text-gray-900 mb-3">{course.name}</h3>
+                        <div className="flex items-center text-xs text-gray-500 mb-1">
+                          <UserCircleIcon className="h-3 w-3 mr-1 text-gray-400" />
+                          <span>{students.toLocaleString()} học viên</span>
                         </div>
-                        <p className="text-gray-600 mb-4 line-clamp-3 min-h-[4.5rem] text-sm sm:text-base">{course.description}</p>
-                        <div className="border-t border-gray-100 pt-4">
-                          <div className="flex flex-col space-y-2.5">
-                            <div className="flex items-center">
-                              <CheckCircleIcon className="h-5 w-5 text-green-500 mr-2 flex-shrink-0" />
-                              <span className="text-sm text-gray-600">Học mọi lúc, mọi nơi</span>
-                            </div>
-                            <div className="flex items-center">
-                              <CheckCircleIcon className="h-5 w-5 text-green-500 mr-2 flex-shrink-0" />
-                              <span className="text-sm text-gray-600">Bài giảng chất lượng cao</span>
-                            </div>
-                            <div className="flex items-center">
-                              <ClockIcon className="h-5 w-5 text-indigo-500 mr-2 flex-shrink-0" />
-                              <span className="text-sm text-gray-600">Truy cập vĩnh viễn</span>
-                            </div>
-                          </div>
-                          <div className="mt-5 flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
-                            <span className="text-xl font-bold text-indigo-600">
-                              {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(course.price)}
-                            </span>
-                            <button
-                              onClick={() => router.push(`/khoa-hoc/${course._id}`)}
-                              className="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2.5 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200"
-                            >
-                              Xem chi tiết
-                            </button>
-        </div>
-      </div>
+                      </div>
+                      
+                      <div className="border-t border-gray-100 p-3 bg-gray-50 flex items-center justify-between">
+                        <div className="flex items-center">
+                          <StarIcon className="h-4 w-4 text-yellow-400" />
+                          <span className="ml-1 text-xs font-medium text-gray-600">{rating.toFixed(1)}</span>
+                        </div>
+                        <div className="font-medium text-indigo-600 text-sm">
+                          {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(course.price)}
+                        </div>
                       </div>
                     </div>
                   );
                 })}
-                  </div>
+              </div>
             ) : (
               <div className="text-center py-16 bg-gray-50 rounded-xl border border-gray-200 shadow-sm">
                 <MagnifyingGlassIcon className="mx-auto h-12 w-12 text-gray-400 mb-4" />
@@ -391,17 +311,18 @@ export default function CoursesPage() {
             </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {testimonials.map((testimonial) => (
-              <div key={testimonial.id} className="bg-white p-5 md:p-6 rounded-xl shadow-md border border-gray-100 hover:shadow-lg transition-all duration-300">
-                <div className="flex mb-1">
+              <div key={testimonial.id} className="bg-white p-5 rounded-xl shadow-md border border-gray-100 hover:shadow-lg transition-all duration-300 flex flex-col h-full">
+                <div className="flex mb-3">
                   {renderStars(testimonial.rating)}
-                    </div>
-                <p className="text-gray-700 italic mb-4 text-sm md:text-base">"{testimonial.content}"</p>
-                <div className="flex items-center">
-                  <div className="h-9 w-9 md:h-10 md:w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-lg">
+                  <span className="ml-2 text-xs text-gray-500">({testimonial.rating.toFixed(1)})</span>
+                </div>
+                <p className="text-gray-700 italic mb-4 text-sm flex-grow">{testimonial.content}</p>
+                <div className="flex items-center pt-3 border-t border-gray-100">
+                  <div className="h-10 w-10 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg">
                     {testimonial.name.charAt(0)}
-                          </div>
+                  </div>
                   <div className="ml-3">
                     <h4 className="text-sm font-semibold text-gray-900">{testimonial.name}</h4>
                     <p className="text-xs text-gray-500">{testimonial.role}</p>
@@ -410,8 +331,14 @@ export default function CoursesPage() {
               </div>
             ))}
           </div>
+          
+          <div className="mt-8 text-center">
+            <button className="inline-flex items-center px-5 py-2 border border-indigo-500 rounded-md text-sm font-medium text-indigo-600 bg-white hover:bg-indigo-50 transition-colors duration-200">
+              Xem thêm đánh giá
+            </button>
+          </div>
         </div>
-            </div>
+      </div>
             
       {/* Phần khuyến mãi */}
       <div className="bg-gradient-to-r from-indigo-600 to-purple-700 py-12 md:py-20">
