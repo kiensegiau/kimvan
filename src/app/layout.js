@@ -19,7 +19,13 @@ export default function RootLayout({ children }) {
   // Kiểm tra kích thước màn hình khi component được tạo và khi resize
   useEffect(() => {
     const checkIfMobile = () => {
-      setIsMobile(window.innerWidth < 1024);
+      const mobile = window.innerWidth < 1024;
+      setIsMobile(mobile);
+      
+      // Automatically set sidebar state based on screen size
+      if (!mobile && !sidebarOpen) {
+        setSidebarOpen(true);
+      }
     };
     
     // Kiểm tra khi tải trang
@@ -32,7 +38,7 @@ export default function RootLayout({ children }) {
     return () => {
       window.removeEventListener('resize', checkIfMobile);
     };
-  }, []);
+  }, [sidebarOpen]);
 
   // Đóng sidebar tự động khi chuyển đến màn hình nhỏ
   useEffect(() => {
@@ -50,22 +56,14 @@ export default function RootLayout({ children }) {
         <meta name="description" content={siteDescription} />
       </head>
       <body className={inter.className}>
-        <div className="flex relative">
-          {/* Overlay khi sidebar mở trên mobile */}
-          {sidebarOpen && isMobile && (
-            <div 
-              className="fixed inset-0 bg-gray-900 bg-opacity-50 z-20 lg:hidden transition-opacity duration-200"
-              onClick={() => setSidebarOpen(false)}
-            ></div>
-          )}
-          
+        <div className="flex h-screen overflow-hidden">
           {/* Sidebar */}
           <div className={`
             fixed top-0 left-0 h-full z-30 transform transition-all duration-300 ease-in-out
             ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-            lg:relative lg:z-0 w-64
+            lg:static lg:z-0 w-64 flex-shrink-0
           `}>
-            <Sidebar />
+            <Sidebar closeSidebar={() => isMobile && setSidebarOpen(false)} />
           </div>
           
           {/* Toggle button chỉ hiển thị trên mobile */}
@@ -80,12 +78,16 @@ export default function RootLayout({ children }) {
             )}
           </button>
           
+          {/* Overlay to close sidebar when clicking outside on mobile */}
+          {sidebarOpen && isMobile && (
+            <div 
+              className="fixed inset-0 z-20 lg:hidden"
+              onClick={() => setSidebarOpen(false)}
+            ></div>
+          )}
+          
           {/* Main content */}
-          <main className={`
-            flex-1 min-h-screen bg-gray-50 transition-all duration-300 ease-in-out
-            ${sidebarOpen ? 'lg:ml-64' : ''}
-            w-full
-          `}>
+          <main className="flex-1 overflow-y-auto p-4 w-full">
             {children}
           </main>
         </div>

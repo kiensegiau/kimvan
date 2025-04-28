@@ -12,11 +12,37 @@ import {
   BellIcon,
   UserCircleIcon
 } from '@heroicons/react/24/outline';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
-const Sidebar = () => {
+const Sidebar = ({ closeSidebar }) => {
   const pathname = usePathname();
   const [showNotifications, setShowNotifications] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Kiểm tra kích thước màn hình khi component được tạo và khi resize
+  useEffect(() => {
+    const checkIfMobile = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+    
+    // Kiểm tra khi tải trang
+    checkIfMobile();
+    
+    // Kiểm tra khi thay đổi kích thước màn hình
+    window.addEventListener('resize', checkIfMobile);
+    
+    // Cleanup event listener
+    return () => {
+      window.removeEventListener('resize', checkIfMobile);
+    };
+  }, []);
+
+  // Xử lý sự kiện khi nhấn vào một mục menu
+  const handleMenuItemClick = () => {
+    if (isMobile && closeSidebar) {
+      closeSidebar();
+    }
+  };
 
   const mainMenuItems = [
     { name: 'Trang chủ', path: '/', icon: <HomeIcon className="w-5 h-5" /> },
@@ -77,6 +103,7 @@ const Sidebar = () => {
                       ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-lg'
                       : 'text-indigo-100 hover:bg-indigo-800/60 hover:text-white'
                   }`}
+                  onClick={handleMenuItemClick}
                 >
                   <span className={`mr-3 ${pathname === item.path ? 'text-white' : 'text-indigo-300'}`}>{item.icon}</span>
                   <span className="font-medium">{item.name}</span>
@@ -102,6 +129,7 @@ const Sidebar = () => {
                       ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-lg'
                       : 'text-indigo-100 hover:bg-indigo-800/60 hover:text-white'
                   }`}
+                  onClick={handleMenuItemClick}
                 >
                   <span className={`mr-3 ${pathname === item.path ? 'text-white' : 'text-indigo-300'}`}>{item.icon}</span>
                   <span className="font-medium">{item.name}</span>
