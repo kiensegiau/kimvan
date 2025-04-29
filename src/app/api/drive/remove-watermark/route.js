@@ -835,23 +835,54 @@ async function processBatches(items, processFunc, maxConcurrent) {
 }
 
 // Hàm đếm số trang PDF bằng Ghostscript
-function countPdfPagesWithGhostscript(pdfPath, gsPath) {
+async function countPdfPagesWithGhostscript(pdfPath, gsPath) {
   console.log(`Đang đếm số trang PDF với Ghostscript: ${pdfPath}`);
   try {
-    // Kiểm tra file tồn tại
-    if (!fs.existsSync(pdfPath)) {
-      throw new Error(`File không tồn tại: ${pdfPath}`);
-    }
-
-    // Sử dụng Ghostscript để đếm số trang
-    const command = `"${gsPath}" -q -dNODISPLAY -c "(${pdfPath}) (r) file runpdfbegin pdfpagecount = quit"`;
+    // Chuẩn hóa đường dẫn và escape đúng cho cú pháp PostScript
+    const normalizedPath = pdfPath.replace(/\\/g, '/');
+    // Escape ( and ) characters in the path for PostScript
+    const escapedPath = normalizedPath.replace(/[\(\)]/g, '\\$&');
+    
+    // Cập nhật lệnh với đường dẫn đã escape đúng
+    const command = `"${gsPath}" -q -dNODISPLAY -c "(${escapedPath}) (r) file runpdfbegin pdfpagecount = quit"`;
     console.log(`Thực thi lệnh: ${command}`);
     
     const output = execSync(command, { encoding: 'utf8' }).trim();
-    console.log(`Kết quả đếm trang: "${output}"`);
+    console.log(`Output: ${output}`);
     
     const numPages = parseInt(output);
     if (isNaN(numPages)) {
+      // Phương pháp thay thế nếu phương pháp đầu tiên thất bại
+      console.warn(`Không thể phân tích số trang từ output. Thử phương pháp thay thế...`);
+      
+      // Sử dụng cách đếm trang thông qua -dFirstPage và -dLastPage
+      const altCommand = `"${gsPath}" -q -dBATCH -dNOPAUSE -dSAFER -sDEVICE=nullpage ` +
+                         `-dFirstPage=1 -dLastPage=5000 "${pdfPath}" 2>&1`;
+      
+      try {
+        const altOutput = execSync(altCommand, { encoding: 'utf8' }).trim();
+        // Tìm thông báo về số trang trong output
+        const pageMatch = altOutput.match(/Processing pages (\d+) through (\d+)/);
+        if (pageMatch && pageMatch[2]) {
+          console.log(`Phát hiện ${pageMatch[2]} trang từ phương pháp thay thế`);
+          return parseInt(pageMatch[2]);
+        }
+      } catch (altError) {
+        console.warn(`Phương pháp thay thế thất bại:`, altError.message);
+      }
+      
+      // Nếu không thể xác định số trang, thử đọc PDF với pdf-lib
+      try {
+        console.log(`Thử đếm số trang bằng pdf-lib...`);
+        const pdfBuffer = fs.readFileSync(pdfPath);
+        const pdfDoc = await PDFDocument.load(pdfBuffer);
+        const pageCount = pdfDoc.getPageCount();
+        console.log(`Số trang tìm thấy bằng pdf-lib: ${pageCount}`);
+        return pageCount;
+      } catch (pdfLibError) {
+        console.warn(`Không thể đếm trang bằng pdf-lib:`, pdfLibError.message);
+      }
+      
       console.warn(`Không thể phân tích số trang từ output: "${output}". Giả định 1 trang.`);
       return 1;
     }
@@ -860,7 +891,40 @@ function countPdfPagesWithGhostscript(pdfPath, gsPath) {
     return numPages;
   } catch (error) {
     console.error('Lỗi khi đếm số trang PDF:', error);
-    console.warn('Giả định PDF có 1 trang.');
+    
+    // Phương pháp thay thế: Đếm với tùy chọn khác của Ghostscript
+    try {
+      console.log('Thử phương pháp thay thế để đếm trang...');
+      // Phương pháp thay thế sử dụng tệp info.txt tạm thời
+      const infoFile = path.join(os.tmpdir(), `pdf_info_${Date.now()}.txt`);
+      // Normalize and escape path for PostScript
+      const escapedPath = pdfPath.replace(/\\/g, '/').replace(/[\(\)]/g, '\\$&');
+      const altCommand = `"${gsPath}" -q -dNODISPLAY -dNOSAFER -c "(${escapedPath}) << /SubFileDecode true >> (r) file pdfdict begin pdfinitfile Trailer/Root get/Pages get/Count get == quit"`;
+      
+      const altOutput = execSync(altCommand, { encoding: 'utf8' }).trim();
+      if (!isNaN(parseInt(altOutput))) {
+        console.log(`Phương pháp thay thế thành công, số trang: ${altOutput}`);
+        return parseInt(altOutput);
+      }
+    } catch (altError) {
+      console.warn('Phương pháp thay thế cũng thất bại:', altError.message);
+    }
+    
+    // Cuối cùng, nếu mọi phương pháp đều thất bại, dùng pdftk để đếm trang (nếu có)
+    try {
+      console.log('Thử sử dụng pdftk để đếm trang...');
+      const pdftk = 'pdftk';
+      const pdftkOutput = execSync(`${pdftk} "${pdfPath}" dump_data | grep NumberOfPages`, { encoding: 'utf8' }).trim();
+      const pdftkMatch = pdftkOutput.match(/NumberOfPages: (\d+)/);
+      if (pdftkMatch && pdftkMatch[1]) {
+        console.log(`pdftk phát hiện ${pdftkMatch[1]} trang`);
+        return parseInt(pdftkMatch[1]);
+      }
+    } catch (pdftkError) {
+      console.warn('Không thể sử dụng pdftk:', pdftkError.message);
+    }
+    
+    console.warn('Tất cả các phương pháp đếm trang đều thất bại. Giả định PDF có 1 trang.');
     return 1;
   }
 }
@@ -914,7 +978,7 @@ async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
   try {
     // Đếm số trang bằng Ghostscript
     console.log('Đang đếm số trang...');
-    const numPages = countPdfPagesWithGhostscript(inputPath, gsPath);
+    const numPages = await countPdfPagesWithGhostscript(inputPath, gsPath);
     
     // Tách PDF thành từng trang
     console.log('Đang tách PDF thành từng trang...');
