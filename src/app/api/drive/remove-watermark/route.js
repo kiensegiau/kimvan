@@ -105,7 +105,7 @@ function getStoredToken() {
   return null;
 }
 
-// Cập nhật hàm extractGoogleDriveFileId để lấy cả resource key
+// Thay thế hàm extractGoogleDriveFileId bằng phiên bản mới
 function extractGoogleDriveFileId(url) {
   // Handle different Drive URL formats
   let fileId = null;
@@ -135,7 +135,7 @@ function extractGoogleDriveFileId(url) {
     fileId = docsMatch[1].split('?')[0]; // Loại bỏ các tham số URL
   }
   
-  // Trích xuất resource key nếu có
+  // Extract resourceKey from URL
   const resourceKeyPattern = /[?&]resourcekey=([^&]+)/i;
   const resourceKeyMatch = url.match(resourceKeyPattern);
   
@@ -151,12 +151,12 @@ function extractGoogleDriveFileId(url) {
   return { fileId, resourceKey };
 }
 
-// Thêm hàm tìm kiếm file bằng tên
+// Thêm hàm tìm file bằng tên hoặc ID
 async function findFileByNameOrId(drive, nameOrId) {
   console.log(`Đang tìm kiếm file trong Drive với tên hoặc ID: ${nameOrId}`);
   
   try {
-    // Trước tiên thử truy cập trực tiếp bằng ID
+    // Thử truy cập trực tiếp bằng ID trước
     try {
       const fileInfo = await drive.files.get({
         fileId: nameOrId,
@@ -198,12 +198,12 @@ async function findFileByNameOrId(drive, nameOrId) {
   }
 }
 
-// Cập nhật hàm downloadFromGoogleDrive để thử phương pháp tìm kiếm
+// Cập nhật hàm downloadFromGoogleDrive
 async function downloadFromGoogleDrive(fileIdOrLink) {
   let fileId, resourceKey;
   
   // Kiểm tra xem input là file ID hay link
-  if (fileIdOrLink.includes('drive.google.com') || fileIdOrLink.includes('docs.google.com')) {
+  if (typeof fileIdOrLink === 'string' && (fileIdOrLink.includes('drive.google.com') || fileIdOrLink.includes('docs.google.com'))) {
     console.log(`Đang trích xuất file ID từ link: ${fileIdOrLink}`);
     const extracted = extractGoogleDriveFileId(fileIdOrLink);
     fileId = extracted.fileId;
@@ -243,7 +243,6 @@ async function downloadFromGoogleDrive(fileIdOrLink) {
         console.log('Token đã được làm mới tự động');
         // Lưu token mới nếu cần
         if (tokens.refresh_token) {
-          // Lưu token mới vào file
           const newToken = {...storedToken, ...tokens};
           fs.writeFileSync(TOKEN_PATH, JSON.stringify(newToken));
           console.log('Đã lưu token mới');
@@ -263,109 +262,96 @@ async function downloadFromGoogleDrive(fileIdOrLink) {
     console.log(`Token Drive hợp lệ. Người dùng: ${aboutResponse.data.user?.displayName || 'Không xác định'}`);
     console.log(`Email người dùng: ${aboutResponse.data.user?.emailAddress || 'Không xác định'}`);
     
-    // Trước khi lấy thông tin file, thử tìm kiếm file
+    // Tìm file bằng ID hoặc tên
     console.log(`Đang tìm kiếm file Google Drive: ${fileId}`);
-    let fileInfo;
+    const foundFile = await findFileByNameOrId(drive, fileId);
     
-    try {
-      // Tìm file bằng ID hoặc tên
-      const foundFile = await findFileByNameOrId(drive, fileId);
-      
-      if (foundFile) {
-        console.log('Thông tin file Google Drive:');
-        console.log(`- Tên: ${foundFile.name}`);
-        console.log(`- Loại: ${foundFile.mimeType}`);
-        console.log(`- Kích thước: ${foundFile.size || 'Không xác định'}`);
-        
-        // Cập nhật fileId nếu tìm thấy file khác
-        if (foundFile.id !== fileId) {
-          console.log(`Đã tìm thấy file với ID khác: ${foundFile.id} (thay cho ${fileId})`);
-          fileId = foundFile.id;
-        }
-        
-        const fileName = foundFile.name || `google-drive-${fileId}`;
-        const contentType = foundFile.mimeType || 'application/octet-stream';
-        
-        // Check if can download
-        if (foundFile.capabilities && !foundFile.capabilities.canDownload) {
-          console.warn('CẢNH BÁO: Bạn không có quyền tải xuống file này!');
-          throw new Error('Bạn không có quyền tải xuống file này. Hãy yêu cầu chủ sở hữu chia sẻ file với quyền chỉnh sửa.');
-        }
-        
-        // Download file
-        console.log(`Đang tải xuống file Google Drive với ID đã tìm thấy: ${fileId}`);
-        
-        // Thử tải xuống file
-        try {
-          const response = await drive.files.get({
-            fileId: fileId,
-            alt: 'media',
-            supportsAllDrives: true,
-            acknowledgeAbuse: true
-          }, {
-            responseType: 'arraybuffer'
-          });
-          
-          const fileBuffer = Buffer.from(response.data);
-          console.log(`Đã tải xuống file Google Drive thành công (${fileBuffer.length} bytes)`);
-          
-          // Create unique filename
-          const fileExtension = path.extname(fileName) || getExtensionFromMimeType(contentType);
-          const uniqueFileName = `${uuidv4()}${fileExtension}`;
-          const filePath = path.join(outputDir, uniqueFileName);
-          
-          // Save file to temp directory
-          fs.writeFileSync(filePath, fileBuffer);
-          
-          return {
-            success: true,
-            filePath: filePath,
-            fileName: fileName,
-            contentType: contentType,
-            outputDir: outputDir,
-            size: fileBuffer.length
-          };
-        } catch (downloadError) {
-          console.error('Lỗi khi tải xuống file:', downloadError.message);
-          
-          // Nếu là Google Docs, thử xuất ra PDF
-          if (foundFile.mimeType.includes('google-apps')) {
-            console.log('File là Google Docs, thử xuất ra PDF...');
-            const exportResponse = await drive.files.export({
-              fileId: fileId,
-              mimeType: 'application/pdf',
-              supportsAllDrives: true
-            }, {
-              responseType: 'arraybuffer'
-            });
-            
-            const fileBuffer = Buffer.from(exportResponse.data);
-            console.log(`Đã xuất file Google Drive thành công (${fileBuffer.length} bytes)`);
-            
-            // Tạo tên file
-            const uniqueFileName = `${uuidv4()}.pdf`;
-            const filePath = path.join(outputDir, uniqueFileName);
-            
-            // Lưu file
-            fs.writeFileSync(filePath, fileBuffer);
-            
-            return {
-              success: true,
-              filePath: filePath,
-              fileName: `${fileName}.pdf`,
-              contentType: 'application/pdf',
-              outputDir: outputDir,
-              size: fileBuffer.length
-            };
-          } else {
-            throw downloadError;
-          }
-        }
-      }
-    } catch (findError) {
-      console.error('Lỗi khi tìm file:', findError.message);
-      throw new Error(`Không thể tìm hoặc truy cập file: ${findError.message}`);
+    if (!foundFile) {
+      throw new Error(`Không tìm thấy file với ID: ${fileId}`);
     }
+    
+    console.log('Thông tin file Google Drive:');
+    console.log(`- Tên: ${foundFile.name}`);
+    console.log(`- Loại: ${foundFile.mimeType}`);
+    console.log(`- Kích thước: ${foundFile.size || 'Không xác định'}`);
+    
+    // Cập nhật fileId nếu cần
+    if (foundFile.id !== fileId) {
+      console.log(`Sử dụng ID tìm được: ${foundFile.id} (thay cho ${fileId})`);
+      fileId = foundFile.id;
+    }
+    
+    const fileName = foundFile.name || `google-drive-${fileId}`;
+    const contentType = foundFile.mimeType || 'application/octet-stream';
+    
+    // Check if can download
+    if (foundFile.capabilities && !foundFile.capabilities.canDownload) {
+      console.warn('CẢNH BÁO: Bạn không có quyền tải xuống file này!');
+      throw new Error('Bạn không có quyền tải xuống file này. Hãy yêu cầu chủ sở hữu chia sẻ file với quyền chỉnh sửa.');
+    }
+    
+    // Download file
+    console.log(`Đang tải xuống file Google Drive: ${fileId}`);
+    let fileBuffer;
+    
+    // Nếu là Google Workspace file (Docs, Sheets, Slides...)
+    if (contentType.includes('google-apps')) {
+      console.log('File là Google Workspace, xuất ra PDF...');
+      
+      try {
+        const exportResponse = await drive.files.export({
+          fileId: fileId,
+          mimeType: 'application/pdf',
+          supportsAllDrives: true
+        }, {
+          responseType: 'arraybuffer'
+        });
+        
+        fileBuffer = Buffer.from(exportResponse.data);
+      } catch (exportError) {
+        console.error('Lỗi khi xuất file Google Workspace:', exportError.message);
+        throw new Error(`Không thể xuất file Google Workspace: ${exportError.message}`);
+      }
+    } else {
+      // File thông thường
+      // Tạo options cho việc tải xuống
+      const downloadOptions = {
+        fileId: fileId,
+        alt: 'media',
+        supportsAllDrives: true,
+        acknowledgeAbuse: true
+      };
+      
+      // Thêm resource key nếu có
+      if (resourceKey) {
+        downloadOptions.resourceKey = resourceKey;
+      }
+      
+      const response = await drive.files.get(downloadOptions, {
+        responseType: 'arraybuffer'
+      });
+      
+      fileBuffer = Buffer.from(response.data);
+    }
+    
+    console.log(`Đã tải xuống file Google Drive thành công (${fileBuffer.length} bytes)`);
+    
+    // Create unique filename
+    const fileExtension = path.extname(fileName) || getExtensionFromMimeType(contentType);
+    const uniqueFileName = `${uuidv4()}${fileExtension}`;
+    const filePath = path.join(outputDir, uniqueFileName);
+    
+    // Save file to temp directory
+    fs.writeFileSync(filePath, fileBuffer);
+    
+    return {
+      success: true,
+      filePath: filePath,
+      fileName: fileName,
+      contentType: contentType,
+      outputDir: outputDir,
+      size: fileBuffer.length
+    };
   } catch (error) {
     // Clean up temp directory on error
     cleanupTempFiles(outputDir);
@@ -616,9 +602,11 @@ async function processPage(data) {
   }
 }
 
-// Kiểm tra và tìm GhostScript
+// Kiểm tra và tìm GhostScript với thông tin chi tiết hơn
 function findGhostscript() {
   const possibleGsPaths = [
+    // Đường dẫn Windows phổ biến
+    'C:\\Program Files\\gs\\gs10.05.0\\bin\\gswin64c.exe', // Thêm phiên bản 10.05.0 vào đầu danh sách
     'C:\\Program Files\\gs\\gs10.02.0\\bin\\gswin64c.exe',
     'C:\\Program Files\\gs\\gs10.01.2\\bin\\gswin64c.exe',
     'C:\\Program Files\\gs\\gs10.00.0\\bin\\gswin64c.exe',
@@ -626,11 +614,18 @@ function findGhostscript() {
     'C:\\Program Files\\gs\\gs9.55.0\\bin\\gswin64c.exe',
     'C:\\Program Files\\gs\\gs9.54.0\\bin\\gswin64c.exe',
     'C:\\Program Files\\gs\\gs9.53.3\\bin\\gswin64c.exe',
-    // Thêm đường dẫn cho các phiên bản Linux/Mac
+    // Đường dẫn 32-bit
+    'C:\\Program Files (x86)\\gs\\gs10.05.0\\bin\\gswin32c.exe', // Thêm phiên bản 10.05.0
+    'C:\\Program Files (x86)\\gs\\gs10.02.0\\bin\\gswin32c.exe',
+    'C:\\Program Files (x86)\\gs\\gs9.56.1\\bin\\gswin32c.exe',
+    // Đường dẫn Linux/Mac
     '/usr/bin/gs',
-    '/usr/local/bin/gs'
+    '/usr/local/bin/gs',
+    '/opt/homebrew/bin/gs'
   ];
 
+  console.log('Đang kiểm tra Ghostscript trong các đường dẫn cố định...');
+  
   // Thử tìm trong các đường dẫn có thể
   for (const gsPath of possibleGsPaths) {
     try {
@@ -638,7 +633,8 @@ function findGhostscript() {
         console.log(`Đã tìm thấy Ghostscript tại: ${gsPath}`);
         // Thử thực thi để kiểm tra
         try {
-          execSync(`"${gsPath}" -v`, { stdio: 'pipe' });
+          const version = execSync(`"${gsPath}" -v`, { stdio: 'pipe', encoding: 'utf8' });
+          console.log(`Ghostscript đã được xác nhận tại ${gsPath} - Phiên bản:`, version.trim().split('\n')[0]);
           return gsPath;
         } catch (error) {
           console.warn(`Ghostscript tồn tại tại ${gsPath} nhưng không thể thực thi:`, error.message);
@@ -651,19 +647,48 @@ function findGhostscript() {
     }
   }
 
-  // Thử thực thi 'gs' hoặc 'gswin64c' trực tiếp (nếu trong PATH)
+  console.log('Đang kiểm tra Ghostscript trong PATH hệ thống...');
+  
+  // Thử thực thi các lệnh Ghostscript trực tiếp (sử dụng PATH)
+  // Chú ý: Thử gswin64c trước vì bạn đã xác nhận lệnh này hoạt động
   try {
-    execSync('gs -v', { stdio: 'pipe' });
-    console.log('Đã tìm thấy Ghostscript trong PATH hệ thống');
-    return 'gs';
-  } catch (error) {
+    const version = execSync('gswin64c -v', { stdio: 'pipe', encoding: 'utf8' });
+    console.log('Đã tìm thấy gswin64c trong PATH hệ thống');
+    console.log('Phiên bản Ghostscript:', version.trim().split('\n')[0]);
+    return 'gswin64c';
+  } catch (gswin64cError) {
+    console.warn('Không tìm thấy gswin64c trong PATH:', gswin64cError.message);
+    
     try {
-      execSync('gswin64c -v', { stdio: 'pipe' });
-      console.log('Đã tìm thấy gswin64c trong PATH hệ thống');
-      return 'gswin64c';
-    } catch (error2) {
-      // Không tìm thấy trong PATH
+      const version = execSync('gswin32c -v', { stdio: 'pipe', encoding: 'utf8' });
+      console.log('Đã tìm thấy gswin32c trong PATH hệ thống');
+      console.log('Phiên bản Ghostscript:', version.trim().split('\n')[0]);
+      return 'gswin32c';
+    } catch (gswin32cError) {
+      console.warn('Không tìm thấy gswin32c trong PATH:', gswin32cError.message);
+      
+      try {
+        const version = execSync('gs -v', { stdio: 'pipe', encoding: 'utf8' });
+        console.log('Đã tìm thấy gs trong PATH hệ thống');
+        console.log('Phiên bản Ghostscript:', version.trim().split('\n')[0]);
+        return 'gs';
+      } catch (gsError) {
+        console.warn('Không tìm thấy gs trong PATH:', gsError.message);
+      }
     }
+  }
+
+  // Thử truy cập trực tiếp đường dẫn đã biết hoạt động
+  try {
+    console.log('Thử sử dụng đường dẫn đã biết hoạt động từ dòng lệnh...');
+    // Sử dụng đường dẫn bạn đã biết chắc chắn hoạt động
+    const knownPath = 'C:\\Program Files\\gs\\gs10.05.0\\bin\\gswin64c.exe';
+    if (fs.existsSync(knownPath)) {
+      console.log(`Đã tìm thấy Ghostscript tại đường dẫn đã biết: ${knownPath}`);
+      return knownPath;
+    }
+  } catch (error) {
+    console.warn('Lỗi khi kiểm tra đường dẫn đã biết:', error.message);
   }
 
   // Hiển thị thông báo lỗi chi tiết
@@ -677,8 +702,36 @@ Hướng dẫn cài đặt:
 - Ubuntu/Debian: sudo apt-get install ghostscript
 - Mac: brew install ghostscript
 
-Sau khi cài đặt, đảm bảo Ghostscript được thêm vào PATH hệ thống 
-hoặc cập nhật đường dẫn trong mã nguồn.
+Sau khi cài đặt, đảm bảo Ghostscript được thêm vào PATH hệ thống hoặc cập nhật đường dẫn trong mã nguồn.
+
+HƯỚNG DẪN THÊM VÀO PATH:
+1. Windows:
+   a. Nhấp chuột phải vào "This PC" hoặc "My Computer" > Properties
+   b. Chọn "Advanced system settings"
+   c. Nhấp vào "Environment Variables"
+   d. Trong phần "System Variables", tìm biến "Path" và nhấp "Edit"
+   e. Nhấp "New" và thêm đường dẫn đến thư mục bin của Ghostscript
+      (Thường là C:\\Program Files\\gs\\gs{version}\\bin)
+   f. Nhấp "OK" để lưu các thay đổi
+
+2. macOS:
+   a. Mở Terminal
+   b. Thực hiện lệnh: echo 'export PATH="/opt/homebrew/bin:$PATH"' >> ~/.zshrc
+      (hoặc ~/.bash_profile nếu dùng bash)
+   c. Tải lại profile: source ~/.zshrc (hoặc ~/.bash_profile)
+
+3. Linux:
+   a. Mở Terminal
+   b. Thực hiện lệnh: echo 'export PATH="/usr/local/bin:$PATH"' >> ~/.bashrc
+   c. Tải lại profile: source ~/.bashrc
+
+KIỂM TRA CÀI ĐẶT:
+Mở Terminal hoặc Command Prompt và thực hiện lệnh: gswin64c -v (Windows) hoặc gs -v (Mac/Linux)
+Nếu Ghostscript đã được cài đặt đúng, lệnh này sẽ hiển thị phiên bản.
+
+HOẶC CẬP NHẬT MÃ NGUỒN:
+Thay vì thêm vào PATH, bạn có thể cập nhật hàm findGhostscript() trong file này
+và thêm đường dẫn đầy đủ đến Ghostscript vào biến possibleGsPaths.
 ==================================================
   `);
   
