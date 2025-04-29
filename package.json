@@ -11,6 +11,7 @@
   "dependencies": {
     "@heroicons/react": "^2.2.0",
     "archiver": "^7.0.1",
+    "axios": "^1.9.0",
     "firebase": "^11.6.1",
     "firebase-admin": "^13.3.0",
     "googleapis": "^148.0.0",
@@ -22,7 +23,9 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-icons": "^5.5.0",
-    "react-player": "^2.16.0"
+    "react-player": "^2.16.0",
+    "sharp": "^0.34.1",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
