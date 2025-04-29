@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { XMarkIcon, ArrowPathIcon, ArrowDownTrayIcon, CloudArrowUpIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, ArrowPathIcon, CloudArrowUpIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 
 const MediaProcessingModal = ({ 
   isOpen, 
@@ -11,7 +11,6 @@ const MediaProcessingModal = ({
 }) => {
   const [activeTab, setActiveTab] = useState('videos');
   const [selectedMedia, setSelectedMedia] = useState([]);
-  const [downloading, setDownloading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [status, setStatus] = useState(null);
   const [destination, setDestination] = useState('youtube');
@@ -113,69 +112,6 @@ const MediaProcessingModal = ({
       setSelectedMedia(selectedMedia.filter(itemId => itemId !== id));
     } else {
       setSelectedMedia([...selectedMedia, id]);
-    }
-  };
-
-  // Tải xuống media đã chọn
-  const handleDownload = async () => {
-    if (selectedMedia.length === 0) {
-      setStatus({
-        type: 'error',
-        message: 'Vui lòng chọn ít nhất một tài liệu để tải xuống'
-      });
-      return;
-    }
-    
-    try {
-      setDownloading(true);
-      setStatus({
-        type: 'info',
-        message: 'Đang chuẩn bị tải xuống tài liệu...'
-      });
-      
-      // Lấy thông tin các media đã chọn
-      const mediaToDownload = [
-        ...mediaList.videos.filter(item => selectedMedia.includes(item.id)),
-        ...mediaList.pdfs.filter(item => selectedMedia.includes(item.id))
-      ];
-      
-      const response = await fetch('/api/courses/media/download', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          courseId,
-          media: mediaToDownload
-        }),
-      });
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.message || 'Không thể tải xuống tài liệu');
-      }
-      
-      setStatus({
-        type: 'success',
-        message: 'Tải xuống thành công!'
-      });
-      
-      setProcessingSummary({
-        total: mediaToDownload.length,
-        success: data.success || 0,
-        failed: data.failed || 0,
-        details: data.details || []
-      });
-      
-    } catch (error) {
-      console.error('Lỗi khi tải xuống tài liệu:', error);
-      setStatus({
-        type: 'error',
-        message: error.message || 'Đã xảy ra lỗi khi tải xuống tài liệu'
-      });
-    } finally {
-      setDownloading(false);
     }
   };
 
@@ -312,7 +248,7 @@ const MediaProcessingModal = ({
                   ) : status.type === 'error' ? (
                     <XMarkIcon className="h-5 w-5 text-red-400" />
                   ) : (
-                    <ArrowPathIcon className={`h-5 w-5 text-blue-400 ${downloading || uploading ? 'animate-spin' : ''}`} />
+                    <ArrowPathIcon className={`h-5 w-5 text-blue-400 ${uploading ? 'animate-spin' : ''}`} />
                   )}
                 </div>
                 <div className="ml-3">
@@ -481,27 +417,8 @@ const MediaProcessingModal = ({
             <div className="flex space-x-3 w-full sm:w-auto">
               <button
                 type="button"
-                onClick={handleDownload}
-                disabled={selectedMedia.length === 0 || downloading || uploading}
-                className="flex-1 sm:flex-none inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
-              >
-                {downloading ? (
-                  <>
-                    <ArrowPathIcon className="animate-spin -ml-1 mr-2 h-5 w-5" />
-                    Đang tải xuống...
-                  </>
-                ) : (
-                  <>
-                    <ArrowDownTrayIcon className="-ml-1 mr-2 h-5 w-5" />
-                    Tải xuống
-                  </>
-                )}
-              </button>
-              
-              <button
-                type="button"
-                onClick={() => handleUpload()}
-                disabled={selectedMedia.length === 0 || downloading || uploading}
+                onClick={handleUpload}
+                disabled={selectedMedia.length === 0 || uploading}
                 className="flex-1 sm:flex-none inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
               >
                 {uploading ? (
@@ -526,7 +443,7 @@ const MediaProcessingModal = ({
                   }
                   handleUpload();
                 }}
-                disabled={mediaList[activeTab].length === 0 || downloading || uploading}
+                disabled={mediaList[activeTab].length === 0 || uploading}
                 className="flex-1 sm:flex-none inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
               >
                 {uploading ? (
