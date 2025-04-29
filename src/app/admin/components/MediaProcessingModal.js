@@ -209,7 +209,7 @@ const MediaProcessingModal = ({
         },
         body: JSON.stringify({
           courseId,
-          mediaItems: mediaToUpload,
+          media: mediaToUpload,
           destination
         }),
       });

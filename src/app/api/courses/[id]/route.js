@@ -5,7 +5,8 @@ import { ObjectId } from 'mongodb';
 // GET: Lấy một khóa học theo ID
 export async function GET(request, { params }) {
   try {
-    const { id } = params;
+    // Đảm bảo params được awaited trước khi sử dụng
+    const id = params.id;
     const mongoClient = await clientPromise;
     const db = mongoClient.db('kimvan');
     const collection = db.collection('courses');

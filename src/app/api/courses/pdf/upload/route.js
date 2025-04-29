@@ -28,10 +28,38 @@ export async function POST(request) {
       );
     }
     
-    // Kiểm tra loại file
-    if (file.type !== 'application/pdf') {
+    // Log thông tin về file để debug
+    console.log('Thông tin file upload:', {
+      name: file.name,
+      type: file.type,
+      size: file.size
+    });
+    
+    // Kiểm tra loại file với nhiều MIME type có thể của PDF
+    const validPdfMimeTypes = [
+      'application/pdf',
+      'application/x-pdf',
+      'application/acrobat',
+      'applications/vnd.pdf',
+      'text/pdf',
+      'application/vnd.pdf'
+    ];
+    
+    // Kiểm tra cả MIME type và phần mở rộng file
+    const isPdfByMimeType = validPdfMimeTypes.includes(file.type);
+    const isPdfByExtension = file.name.toLowerCase().endsWith('.pdf');
+    
+    if (!isPdfByMimeType && !isPdfByExtension) {
       return NextResponse.json(
-        { success: false, message: 'Chỉ hỗ trợ tải lên file PDF' },
+        { 
+          success: false, 
+          message: 'Chỉ hỗ trợ tải lên file PDF', 
+          details: {
+            fileType: file.type,
+            fileName: file.name,
+            acceptedTypes: validPdfMimeTypes.join(', ')
+          }
+        },
         { status: 400 }
       );
     }
