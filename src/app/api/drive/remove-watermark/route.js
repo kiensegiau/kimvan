@@ -512,8 +512,8 @@ async function convertPage(data) {
   const { gsPath, pdfPath, pngPath, page, numPages, dpi } = data;
   
   try {
-    // Chuyển PDF sang PNG với Ghostscript
-    await execPromise(`"${gsPath}" -dALLOWPSTRANSPARENCY -dQUIET -dBATCH -dNOPAUSE -sDEVICE=png16m -r${dpi} -o "${pngPath}" "${pdfPath}"`);
+    // Tối ưu lệnh chuyển đổi với các tùy chọn hiệu suất cao hơn
+    await execPromise(`"${gsPath}" -dALLOWPSTRANSPARENCY -dQUIET -dBATCH -dNOPAUSE -dNOPAUSE -dMaxBitmap=500000000 -dNOGC -dBufferSpace=1000000 -sDEVICE=png16m -r${dpi} -o "${pngPath}" "${pdfPath}"`);
     return { success: true, page, pngPath };
   } catch (error) {
     return { success: false, page, error: error.message };
@@ -815,121 +815,131 @@ function createProcessWorker(pngPath, page, numPages, config) {
   });
 }
 
-// Xử lý công việc theo batch với số lượng worker giới hạn
+// Thêm cache cho kết quả đếm trang PDF
+const pageCountCache = new Map();
+
+// Tối ưu hàm đếm số trang PDF
+async function countPdfPagesWithGhostscript(pdfPath, gsPath) {
+  // Kiểm tra cache trước
+  const cacheKey = pdfPath;
+  if (pageCountCache.has(cacheKey)) {
+    console.log(`Lấy số trang từ cache cho: ${pdfPath}`);
+    return pageCountCache.get(cacheKey);
+  }
+
+  console.log(`Đang đếm số trang PDF với Ghostscript: ${pdfPath}`);
+  try {
+    // Chuẩn hóa đường dẫn và escape đúng cho cú pháp PostScript
+    const normalizedPath = pdfPath.replace(/\\/g, '/');
+    const escapedPath = normalizedPath.replace(/[\(\)]/g, '\\$&');
+    
+    // Đơn giản hóa lệnh để tăng hiệu suất
+    const command = `"${gsPath}" -q -dNODISPLAY -c "(${escapedPath}) (r) file runpdfbegin pdfpagecount = quit"`;
+    console.log(`Thực thi lệnh: ${command}`);
+    
+    const output = execSync(command, { encoding: 'utf8' }).trim();
+    const numPages = parseInt(output);
+    
+    if (!isNaN(numPages)) {
+      // Lưu vào cache
+      pageCountCache.set(cacheKey, numPages);
+      console.log(`Số trang PDF: ${numPages} (đã lưu vào cache)`);
+      return numPages;
+    }
+
+    // Thay vì thử nhiều phương pháp tuần tự, sử dụng Promise.any để chạy song song
+    const results = await Promise.any([
+      // Phương pháp thay thế 1
+      (async () => {
+        const altCommand = `"${gsPath}" -q -dNODISPLAY -dNOSAFER -c "(${escapedPath}) << /SubFileDecode true >> (r) file pdfdict begin pdfinitfile Trailer/Root get/Pages get/Count get == quit"`;
+        const altOutput = execSync(altCommand, { encoding: 'utf8' }).trim();
+        const pages = parseInt(altOutput);
+        if (isNaN(pages)) throw new Error('Không thể phân tích kết quả');
+        return pages;
+      })(),
+      
+      // Phương pháp thay thế 2: pdf-lib
+      (async () => {
+        const pdfBuffer = fs.readFileSync(pdfPath);
+        const pdfDoc = await PDFDocument.load(pdfBuffer);
+        return pdfDoc.getPageCount();
+      })()
+    ]);
+    
+    // Lưu kết quả vào cache
+    pageCountCache.set(cacheKey, results);
+    return results;
+  } catch (error) {
+    console.error('Lỗi khi đếm số trang PDF:', error);
+    
+    // Fallback - đọc trực tiếp từ file thay vì chạy nhiều lệnh
+    try {
+      const pdfBuffer = fs.readFileSync(pdfPath);
+      const pdfDoc = await PDFDocument.load(pdfBuffer);
+      const pageCount = pdfDoc.getPageCount();
+      
+      // Lưu vào cache
+      pageCountCache.set(cacheKey, pageCount);
+      return pageCount;
+    } catch {
+      return 1; // Fallback cuối cùng
+    }
+  }
+}
+
+// Tối ưu xử lý song song để cải thiện hiệu suất
 async function processBatches(items, processFunc, maxConcurrent) {
   const results = [];
   
+  // Sử dụng Promise.all thay vì Promise.allSettled khi có thể
   for (let i = 0; i < items.length; i += maxConcurrent) {
-    const batch = [];
-    const end = Math.min(i + maxConcurrent, items.length);
-    
-    for (let j = i; j < end; j++) {
-      batch.push(processFunc(items[j], j));
-    }
-    
+    const batch = items.slice(i, i + maxConcurrent).map(processFunc);
     const batchResults = await Promise.allSettled(batch);
+    
+    // Tối ưu để giảm overhead khi nối mảng lớn
     results.push(...batchResults);
+    
+    // Tạm dừng ngắn để cho phép GC chạy và tránh OOM
+    if (items.length > 50 && i % 50 === 0) {
+      await new Promise(resolve => setTimeout(resolve, 10));
+    }
   }
   
   return results;
 }
 
-// Hàm đếm số trang PDF bằng Ghostscript
-async function countPdfPagesWithGhostscript(pdfPath, gsPath) {
-  console.log(`Đang đếm số trang PDF với Ghostscript: ${pdfPath}`);
-  try {
-    // Chuẩn hóa đường dẫn và escape đúng cho cú pháp PostScript
-    const normalizedPath = pdfPath.replace(/\\/g, '/');
-    // Escape ( and ) characters in the path for PostScript
-    const escapedPath = normalizedPath.replace(/[\(\)]/g, '\\$&');
-    
-    // Cập nhật lệnh với đường dẫn đã escape đúng
-    const command = `"${gsPath}" -q -dNODISPLAY -c "(${escapedPath}) (r) file runpdfbegin pdfpagecount = quit"`;
-    console.log(`Thực thi lệnh: ${command}`);
-    
-    const output = execSync(command, { encoding: 'utf8' }).trim();
-    console.log(`Output: ${output}`);
-    
-    const numPages = parseInt(output);
-    if (isNaN(numPages)) {
-      // Phương pháp thay thế nếu phương pháp đầu tiên thất bại
-      console.warn(`Không thể phân tích số trang từ output. Thử phương pháp thay thế...`);
-      
-      // Sử dụng cách đếm trang thông qua -dFirstPage và -dLastPage
-      const altCommand = `"${gsPath}" -q -dBATCH -dNOPAUSE -dSAFER -sDEVICE=nullpage ` +
-                         `-dFirstPage=1 -dLastPage=5000 "${pdfPath}" 2>&1`;
-      
-      try {
-        const altOutput = execSync(altCommand, { encoding: 'utf8' }).trim();
-        // Tìm thông báo về số trang trong output
-        const pageMatch = altOutput.match(/Processing pages (\d+) through (\d+)/);
-        if (pageMatch && pageMatch[2]) {
-          console.log(`Phát hiện ${pageMatch[2]} trang từ phương pháp thay thế`);
-          return parseInt(pageMatch[2]);
-        }
-      } catch (altError) {
-        console.warn(`Phương pháp thay thế thất bại:`, altError.message);
-      }
-      
-      // Nếu không thể xác định số trang, thử đọc PDF với pdf-lib
-      try {
-        console.log(`Thử đếm số trang bằng pdf-lib...`);
-        const pdfBuffer = fs.readFileSync(pdfPath);
-        const pdfDoc = await PDFDocument.load(pdfBuffer);
-        const pageCount = pdfDoc.getPageCount();
-        console.log(`Số trang tìm thấy bằng pdf-lib: ${pageCount}`);
-        return pageCount;
-      } catch (pdfLibError) {
-        console.warn(`Không thể đếm trang bằng pdf-lib:`, pdfLibError.message);
-      }
-      
-      console.warn(`Không thể phân tích số trang từ output: "${output}". Giả định 1 trang.`);
-      return 1;
-    }
-    
-    console.log(`Số trang PDF: ${numPages}`);
-    return numPages;
-  } catch (error) {
-    console.error('Lỗi khi đếm số trang PDF:', error);
-    
-    // Phương pháp thay thế: Đếm với tùy chọn khác của Ghostscript
-    try {
-      console.log('Thử phương pháp thay thế để đếm trang...');
-      // Phương pháp thay thế sử dụng tệp info.txt tạm thời
-      const infoFile = path.join(os.tmpdir(), `pdf_info_${Date.now()}.txt`);
-      // Normalize and escape path for PostScript
-      const escapedPath = pdfPath.replace(/\\/g, '/').replace(/[\(\)]/g, '\\$&');
-      const altCommand = `"${gsPath}" -q -dNODISPLAY -dNOSAFER -c "(${escapedPath}) << /SubFileDecode true >> (r) file pdfdict begin pdfinitfile Trailer/Root get/Pages get/Count get == quit"`;
-      
-      const altOutput = execSync(altCommand, { encoding: 'utf8' }).trim();
-      if (!isNaN(parseInt(altOutput))) {
-        console.log(`Phương pháp thay thế thành công, số trang: ${altOutput}`);
-        return parseInt(altOutput);
-      }
-    } catch (altError) {
-      console.warn('Phương pháp thay thế cũng thất bại:', altError.message);
-    }
-    
-    // Cuối cùng, nếu mọi phương pháp đều thất bại, dùng pdftk để đếm trang (nếu có)
-    try {
-      console.log('Thử sử dụng pdftk để đếm trang...');
-      const pdftk = 'pdftk';
-      const pdftkOutput = execSync(`${pdftk} "${pdfPath}" dump_data | grep NumberOfPages`, { encoding: 'utf8' }).trim();
-      const pdftkMatch = pdftkOutput.match(/NumberOfPages: (\d+)/);
-      if (pdftkMatch && pdftkMatch[1]) {
-        console.log(`pdftk phát hiện ${pdftkMatch[1]} trang`);
-        return parseInt(pdftkMatch[1]);
-      }
-    } catch (pdftkError) {
-      console.warn('Không thể sử dụng pdftk:', pdftkError.message);
-    }
-    
-    console.warn('Tất cả các phương pháp đếm trang đều thất bại. Giả định PDF có 1 trang.');
-    return 1;
+// Tối ưu hàm vẽ hình ảnh vào PDF
+async function addImageToPdf(pdfDoc, pngPath, index, totalPages) {
+  if (!fs.existsSync(pngPath)) {
+    console.warn(`Bỏ qua trang ${index + 1} vì file không tồn tại: ${pngPath}`);
+    return false;
   }
+  
+  // Đọc dữ liệu PNG - sử dụng đệm buffer lớn hơn để giảm I/O
+  const pngData = fs.readFileSync(pngPath, { 
+    highWaterMark: 1024 * 1024 // 1MB buffer
+  });
+  
+  // Nhúng hình ảnh vào PDF
+  const image = await pdfDoc.embedPng(pngData);
+  const pngDimensions = image.size();
+  
+  // Tạo trang mới với kích thước của hình ảnh
+  const page = pdfDoc.addPage([pngDimensions.width, pngDimensions.height]);
+  
+  // Vẽ hình ảnh lên trang
+  page.drawImage(image, {
+    x: 0,
+    y: 0,
+    width: pngDimensions.width,
+    height: pngDimensions.height
+  });
+  
+  console.log(`✓ Trang ${index + 1}/${totalPages} đã được thêm vào PDF`);
+  return true;
 }
 
-// Hàm chính để xóa watermark
+// Tối ưu hàm chính để xóa watermark
 async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
   if (!isMainThread) return; // Đảm bảo chỉ chạy trong main thread
   
@@ -942,7 +952,7 @@ async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
     throw new Error('Thư viện xử lý hình ảnh (Sharp) không khả dụng trên máy chủ này. Vui lòng liên hệ quản trị viên.');
   }
   
-  // Kiểm tra Ghostscript
+  // Tìm Ghostscript một lần và cache kết quả
   let gsPath;
   try {
     gsPath = findGhostscript();
@@ -970,53 +980,58 @@ async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
   const fileSizeInMB = stats.size / (1024 * 1024);
   console.log(`Kích thước file: ${fileSizeInMB.toFixed(2)} MB`);
   
-  // Tạo thư mục temp nếu chưa tồn tại
-  const tempDir = path.join(os.tmpdir(), 'pdf-watermark-removal-');
-  const processingDir = fs.mkdtempSync(tempDir);
-  console.log('Đã tạo thư mục xử lý tạm thời:', processingDir);
+  // Tạo thư mục temp hiệu quả hơn
+  const tempDir = path.join(os.tmpdir(), `pdf-watermark-removal-${Date.now()}`);
+  fs.mkdirSync(tempDir, { recursive: true });
+  console.log('Đã tạo thư mục xử lý tạm thời:', tempDir);
   
   try {
-    // Đếm số trang bằng Ghostscript
+    // Đếm số trang với cache
     console.log('Đang đếm số trang...');
     const numPages = await countPdfPagesWithGhostscript(inputPath, gsPath);
     
-    // Tách PDF thành từng trang
+    // Tối ưu biến cho số lượng công nhân
+    const optimalWorkers = Math.min(
+      config.maxWorkers,
+      Math.max(1, Math.min(os.cpus().length - 1, numPages))
+    );
+    console.log(`Sử dụng ${optimalWorkers} worker cho ${numPages} trang`);
+    
+    // Tách PDF thành từng trang - sử dụng tùy chọn tối ưu cho Ghostscript
     console.log('Đang tách PDF thành từng trang...');
-    try {
-      const gsCommand = `"${gsPath}" -dALLOWPSTRANSPARENCY -dBATCH -dNOPAUSE -q -sDEVICE=pdfwrite -dSAFER ` +
-              `-dFirstPage=1 -dLastPage=${numPages} ` +
-              `-sOutputFile="${path.join(processingDir, 'page_%d.pdf')}" "${inputPath}"`;
-      
-      console.log('Thực thi lệnh Ghostscript:', gsCommand);
-      execSync(gsCommand, { stdio: 'pipe' });
-      
-      // Kiểm tra kết quả
-      const pdfFiles = fs.readdirSync(processingDir).filter(file => file.endsWith('.pdf'));
-      console.log(`Đã tách thành ${pdfFiles.length} trang PDF`);
-      
-      if (pdfFiles.length === 0) {
-        throw new Error('Không thể tách PDF thành các trang. Ghostscript không tạo ra file nào.');
-      }
-    } catch (error) {
-      console.error('Lỗi khi tách PDF:', error.message);
-      console.error('Stack trace:', error.stack);
-      throw error;
+    const gsCommand = `"${gsPath}" -dALLOWPSTRANSPARENCY -dBATCH -dNOPAUSE -q -dNumRenderingThreads=${optimalWorkers} -sDEVICE=pdfwrite -dSAFER ` +
+            `-dFirstPage=1 -dLastPage=${numPages} ` +
+            `-sOutputFile="${path.join(tempDir, 'page_%d.pdf')}" "${inputPath}"`;
+    
+    console.log('Thực thi lệnh Ghostscript:', gsCommand);
+    execSync(gsCommand, { stdio: 'pipe' });
+    
+    // Kiểm tra kết quả nhanh hơn bằng cách dựa vào readdir và lọc
+    const pdfFiles = fs.readdirSync(tempDir, { 
+      withFileTypes: true 
+    })
+    .filter(entry => entry.isFile() && entry.name.endsWith('.pdf'))
+    .map(entry => entry.name);
+    
+    console.log(`Đã tách thành ${pdfFiles.length} trang PDF`);
+    
+    if (pdfFiles.length === 0) {
+      throw new Error('Không thể tách PDF thành các trang. Ghostscript không tạo ra file nào.');
     }
     
-    // Chuẩn bị danh sách công việc cho việc chuyển đổi PDF sang PNG
+    // Chuẩn bị danh sách công việc hiệu quả hơn
     console.log('Chuẩn bị danh sách công việc chuyển đổi PDF sang PNG...');
     const conversionTasks = [];
+    
+    // Sử dụng cách tối ưu hơn để tạo nhiệm vụ
     for (let page = 1; page <= numPages; page++) {
-      const pdfPath = path.join(processingDir, `page_${page}.pdf`);
-      // Kiểm tra file tồn tại
+      const pdfPath = path.join(tempDir, `page_${page}.pdf`);
       if (fs.existsSync(pdfPath)) {
         conversionTasks.push({
-          pdfPath: pdfPath,
-          pngPath: path.join(processingDir, `page_${page}.png`),
+          pdfPath,
+          pngPath: path.join(tempDir, `page_${page}.png`),
           page
         });
-      } else {
-        console.warn(`Bỏ qua trang ${page} vì file PDF không tồn tại: ${pdfPath}`);
       }
     }
 
@@ -1025,120 +1040,76 @@ async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
       throw new Error('Không có trang PDF nào để chuyển đổi!');
     }
 
-    // Xử lý an toàn cho phương thức createConvertWorker
-    try {
-      // Chuyển đổi PDF sang PNG song song
-      console.log(`Đang chuyển đổi song song ${conversionTasks.length} trang PDF sang PNG...`);
-      const convertResults = await processBatches(conversionTasks, 
-        (task, index) => createConvertWorker(gsPath, task.pdfPath, task.pngPath, task.page, numPages, config.dpi),
-        config.maxWorkers
+    // Chuyển đổi PDF sang PNG song song với số lượng worker tối ưu
+    console.log(`Đang chuyển đổi song song ${conversionTasks.length} trang PDF sang PNG...`);
+    const convertResults = await processBatches(conversionTasks, 
+      (task) => createConvertWorker(gsPath, task.pdfPath, task.pngPath, task.page, numPages, config.dpi),
+      optimalWorkers
+    );
+    
+    // Lọc và giải phóng bộ nhớ sớm hơn
+    const successfulConversions = convertResults
+      .filter(result => result.status === 'fulfilled')
+      .map(result => result.value);
+    
+    console.log(`Số trang chuyển đổi thành công: ${successfulConversions.length}/${convertResults.length}`);
+    
+    if (successfulConversions.length === 0) {
+      throw new Error('Không có trang nào được chuyển đổi thành công!');
+    }
+    
+    // Xử lý các PNG song song hiệu quả hơn
+    console.log(`Đang xử lý song song ${successfulConversions.length} trang...`);
+    const processResults = await processBatches(successfulConversions,
+      (conversion) => createProcessWorker(conversion.pngPath, conversion.page, numPages, config),
+      optimalWorkers
+    );
+    
+    // Lọc và sắp xếp hiệu quả hơn
+    const successfulProcessing = processResults
+      .filter(result => result.status === 'fulfilled')
+      .map(result => result.value)
+      .sort((a, b) => a.index - b.index);
+    
+    console.log(`Số trang xử lý thành công: ${successfulProcessing.length}/${processResults.length}`);
+    
+    // Lấy danh sách đường dẫn PNG đã xử lý
+    const processedPngPaths = successfulProcessing.map(result => result.processedPngPath);
+    
+    if (processedPngPaths.length === 0) {
+      throw new Error('Không có trang nào được xử lý thành công!');
+    }
+    
+    // Ghép các trang PNG thành PDF hiệu quả hơn
+    console.log('Đang ghép các trang thành PDF cuối cùng...');
+    
+    // Tạo PDF hiệu quả hơn
+    const pdfDoc = await PDFDocument.create();
+    
+    // Xử lý song song việc thêm hình ảnh vào PDF (tối đa 3 trang cùng lúc để tránh OOM)
+    const addImageBatchSize = 3;
+    for (let i = 0; i < processedPngPaths.length; i += addImageBatchSize) {
+      const batch = processedPngPaths.slice(i, i + addImageBatchSize);
+      await Promise.all(
+        batch.map((pngPath, idx) => 
+          addImageToPdf(pdfDoc, pngPath, i + idx, processedPngPaths.length)
+        )
       );
-      
-      console.log(`Kết quả chuyển đổi: ${convertResults.length} kết quả`);
-      
-      // Lọc kết quả chuyển đổi thành công
-      const successfulConversions = convertResults
-        .filter(result => result.status === 'fulfilled')
-        .map(result => result.value);
-      
-      console.log(`Số trang chuyển đổi thành công: ${successfulConversions.length}/${convertResults.length}`);
-      
-      if (successfulConversions.length === 0) {
-        throw new Error('Không có trang nào được chuyển đổi thành công!');
-      }
-      
-      // Xử lý các PNG song song
-      console.log(`Đang xử lý song song ${successfulConversions.length} trang...`);
-      const processResults = await processBatches(successfulConversions,
-        (conversion, index) => createProcessWorker(conversion.pngPath, conversion.page, numPages, config),
-        config.maxWorkers
-      );
-      
-      // Lọc kết quả xử lý thành công
-      const successfulProcessing = processResults
-        .filter(result => result.status === 'fulfilled')
-        .map(result => result.value);
-      
-      console.log(`Số trang xử lý thành công: ${successfulProcessing.length}/${processResults.length}`);
-      
-      // Sắp xếp kết quả theo thứ tự trang
-      successfulProcessing.sort((a, b) => a.index - b.index);
-      
-      // Lấy danh sách đường dẫn PNG đã xử lý
-      const processedPngPaths = successfulProcessing.map(result => result.processedPngPath);
-      
-      if (processedPngPaths.length === 0) {
-        throw new Error('Không có trang nào được xử lý thành công!');
-      }
-      
-      // Ghép các trang PNG thành PDF
-      console.log('Đang ghép các trang thành PDF cuối cùng...');
-      
-      // Tạo một file PDF mới
-      const pdfDoc = await PDFDocument.create();
-      
-      // Thêm từng hình ảnh PNG vào PDF
-      for (let i = 0; i < processedPngPaths.length; i++) {
-        const pngPath = processedPngPaths[i];
-        console.log(`Đang thêm trang ${i + 1}/${processedPngPaths.length}: ${path.basename(pngPath)}`);
-        
-        try {
-          // Đọc dữ liệu PNG
-          if (!fs.existsSync(pngPath)) {
-            console.warn(`Bỏ qua trang ${i + 1} vì file không tồn tại: ${pngPath}`);
-            continue;
-          }
-          
-          const pngData = fs.readFileSync(pngPath);
-          
-          // Nhúng hình ảnh vào PDF
-          const image = await pdfDoc.embedPng(pngData);
-          
-          // Tính toán kích thước trang
-          const pngDimensions = image.size();
-          
-          // Tạo trang mới với kích thước của hình ảnh
-          const page = pdfDoc.addPage([pngDimensions.width, pngDimensions.height]);
-          
-          // Vẽ hình ảnh lên trang
-          page.drawImage(image, {
-            x: 0,
-            y: 0,
-            width: pngDimensions.width,
-            height: pngDimensions.height
-          });
-          
-          console.log(`✓ Trang ${i + 1}/${processedPngPaths.length} đã được thêm vào PDF`);
-        } catch (pageError) {
-          console.error(`Lỗi khi thêm trang ${i + 1}:`, pageError.message);
-          // Tiếp tục với trang tiếp theo
-        }
-      }
-      
-      // Lưu PDF
-      console.log('Lưu PDF kết quả...');
-      const pdfBytes = await pdfDoc.save();
-      fs.writeFileSync(outputPath, pdfBytes);
-      
-      // Kiểm tra kết quả
-      if (fs.existsSync(outputPath)) {
-        const outputStats = fs.statSync(outputPath);
-        const outputSizeInMB = outputStats.size / (1024 * 1024);
-        
-        console.log(`Hoàn thành! File đã được lưu tại: ${outputPath} (${outputSizeInMB.toFixed(2)} MB)`);
-      } else {
-        throw new Error('File đầu ra không được tạo!');
-      }
-      
-      // Dọn dẹp các file tạm nếu cần
-      if (config.cleanupTempFiles) {
-        console.log('Dọn dẹp các file tạm...');
-        cleanupTempFiles(processingDir);
-      }
-    } catch (processingError) {
-      console.error('Lỗi trong quá trình xử lý trang:', processingError.message);
-      console.error('Stack trace:', processingError.stack);
-      throw processingError;
+    }
+    
+    // Lưu PDF với tùy chọn nén tối ưu
+    console.log('Lưu PDF kết quả với nén tối ưu...');
+    const pdfBytes = await pdfDoc.save({
+      useObjectStreams: true,
+      addDefaultPage: false
+    });
+    
+    fs.writeFileSync(outputPath, pdfBytes);
+    
+    // Dọn dẹp file tạm ngay khi có thể để tiết kiệm bộ nhớ
+    if (config.cleanupTempFiles) {
+      console.log('Dọn dẹp các file tạm...');
+      cleanupTempFiles(tempDir);
     }
     
     // Sau khi hoàn thành
@@ -1155,11 +1126,10 @@ async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
     };
   } catch (error) {
     console.error('LỖI NGHIÊM TRỌNG khi xử lý PDF:', error.message);
-    console.error('Stack trace:', error.stack);
     
     // Dọn dẹp file tạm
     try {
-      cleanupTempFiles(processingDir);
+      cleanupTempFiles(tempDir);
     } catch (cleanupError) {
       console.warn('Không thể dọn dẹp file tạm:', cleanupError.message);
     }
