@@ -304,12 +304,50 @@ async function downloadFileToTemp(url, fileName) {
     console.log(`Đã tải xuống ${fileSize} bytes, đang lưu vào: ${filePath}`);
     await writeFile(filePath, fileBuffer);
     
-    console.log(`Đã tải xuống và lưu thành công file: ${filePath}`);
+    // Đảm bảo đuôi file phù hợp với MIME type
+    let finalFilePath = filePath;
+    let finalFileName = uniqueFileName;
+    
+    // Sửa đuôi file cho phù hợp với MIME type
+    if (contentType && (!fileExtension || fileExtension === '.tmp')) {
+      let newExtension = '.tmp';
+      
+      // Map MIME type sang đuôi file
+      if (contentType.includes('pdf')) {
+        newExtension = '.pdf';
+      } else if (contentType.includes('spreadsheet') || contentType.includes('excel')) {
+        newExtension = '.xlsx';
+      } else if (contentType.includes('presentation') || contentType.includes('powerpoint')) {
+        newExtension = '.pptx';
+      } else if (contentType.includes('document/') || contentType.includes('word')) {
+        newExtension = '.docx';
+      } else if (contentType.includes('text/plain')) {
+        newExtension = '.txt';
+      } else if (contentType.includes('image/')) {
+        newExtension = contentType.replace('image/', '.');
+      } else if (contentType.includes('video/')) {
+        newExtension = contentType.replace('video/', '.');
+      } else if (contentType.includes('audio/')) {
+        newExtension = contentType.replace('audio/', '.');
+      }
+      
+      // Nếu cần đổi đuôi file
+      if (newExtension !== fileExtension) {
+        finalFileName = `${uuidv4()}${newExtension}`;
+        finalFilePath = path.join(tempDir, finalFileName);
+        
+        // Đổi tên file
+        console.log(`Đổi đuôi file từ ${fileExtension} sang ${newExtension} theo MIME type ${contentType}`);
+        fs.renameSync(filePath, finalFilePath);
+      }
+    }
+    
+    console.log(`Đã tải xuống ${fileSize} bytes, đã lưu vào: ${finalFilePath}`);
     
     return {
       success: true,
-      filePath,
-      fileName: uniqueFileName,
+      filePath: finalFilePath,
+      fileName: finalFileName,
       originalName: fileName,
       size: fileSize,
       mimeType: contentType || 'application/octet-stream',
@@ -374,39 +412,119 @@ async function uploadToDrive(filePath, fileName, mimeType) {
       parents: ['root'] // Thêm vào My Drive (root folder)
     };
     
-    // Tạo media object
+    // Tạo media object - Thêm retry logic
     const media = {
       mimeType: mimeType,
       body: fs.createReadStream(filePath)
     };
     
-    // Tải file lên Drive
-    const driveResponse = await drive.files.create({
-      resource: fileMetadata,
-      media: media,
-      fields: 'id,name,webViewLink,webContentLink'
-    });
+    // Thử tải lên với cơ chế retry
+    let retryCount = 0;
+    const maxRetries = 3;
+    let lastError = null;
     
-    console.log('Tải lên Google Drive thành công:', driveResponse.data);
+    while (retryCount <= maxRetries) {
+      try {
+        console.log(`Đang tải lên Google Drive (lần thử ${retryCount + 1}/${maxRetries + 1})...`);
+        
+        // Tải file lên Drive
+        const driveResponse = await drive.files.create({
+          resource: fileMetadata,
+          media: media,
+          fields: 'id,name,webViewLink,webContentLink'
+        });
+        
+        console.log('Tải lên Google Drive thành công:', driveResponse.data);
+        
+        // Đặt quyền truy cập cho file (nếu cần)
+        try {
+          console.log('Đặt quyền truy cập cho file...');
+          
+          // Chia sẻ cho bất kỳ ai có link (không yêu cầu đăng nhập)
+          await drive.permissions.create({
+            fileId: driveResponse.data.id,
+            requestBody: {
+              role: 'reader',
+              type: 'anyone'
+            }
+          });
+          
+          console.log('Đã đặt quyền truy cập cho file thành công');
+        } catch (permissionError) {
+          console.warn('Không thể đặt quyền truy cập:', permissionError.message);
+          // Không throw lỗi vì việc tải lên đã thành công
+        }
+        
+        return {
+          success: true,
+          fileId: driveResponse.data.id,
+          fileName: driveResponse.data.name,
+          webViewLink: driveResponse.data.webViewLink,
+          downloadLink: driveResponse.data.webContentLink || null
+        };
+      } catch (uploadError) {
+        lastError = uploadError;
+        console.error(`Lỗi tải lên (lần thử ${retryCount + 1}/${maxRetries + 1}):`, uploadError.message);
+        
+        // Kiểm tra loại lỗi 
+        const errorMessage = uploadError.message || '';
+        
+        // Nếu là lỗi token
+        if (errorMessage.includes('invalid_grant') || 
+            errorMessage.includes('token has been expired') ||
+            errorMessage.includes('invalid token')) {
+          console.warn('Token hết hạn hoặc không hợp lệ, không thử lại');
+          throw new Error(`Token Google Drive không hợp lệ hoặc đã hết hạn. Vui lòng vào trang cài đặt để cấu hình lại.`);
+        }
+        
+        // Các lỗi cần thử lại
+        if (errorMessage.includes('rate limit') || 
+            errorMessage.includes('quota') ||
+            errorMessage.includes('timeout') ||
+            errorMessage.includes('connection') ||
+            errorMessage.includes('socket')) {
+          
+          retryCount++;
+          if (retryCount <= maxRetries) {
+            const delayMs = 1000 * retryCount; // Tăng thời gian chờ theo số lần thử
+            console.log(`Chờ ${delayMs}ms trước khi thử lại...`);
+            await new Promise(resolve => setTimeout(resolve, delayMs));
+            continue;
+          }
+        }
+        
+        // Lỗi khác không cần thử lại
+        throw uploadError;
+      }
+    }
     
-    return {
-      success: true,
-      fileId: driveResponse.data.id,
-      fileName: driveResponse.data.name,
-      webViewLink: driveResponse.data.webViewLink,
-      downloadLink: driveResponse.data.webContentLink || null
-    };
+    throw lastError || new Error('Không thể tải lên sau nhiều lần thử');
   } catch (error) {
     console.error('Lỗi khi tải lên Google Drive:', error);
+    
+    // Thêm thông báo chi tiết hơn
+    let errorMessage = error.message || error.toString();
+    
+    if (errorMessage.includes('The user does not have sufficient permissions')) {
+      errorMessage = 'Tài khoản Google không có đủ quyền để tải lên Drive. Vui lòng kiểm tra quyền truy cập trong trang cài đặt.';
+    } else if (errorMessage.includes('invalid_grant')) {
+      errorMessage = 'Token Google Drive đã hết hạn. Vui lòng vào trang cài đặt để cấu hình lại.';
+    } else if (errorMessage.includes('dailyLimitExceeded') || errorMessage.includes('quota')) {
+      errorMessage = 'Đã vượt quá giới hạn sử dụng Google Drive API. Vui lòng thử lại sau 24 giờ hoặc sử dụng tài khoản khác.';
+    }
+    
     return {
       success: false,
-      error: error.toString()
+      error: errorMessage
     };
   }
 }
 
 export async function POST(req) {
   try {
+    // Bắt đầu đo thời gian
+    const startTime = Date.now();
+    
     // Lấy thông tin từ request
     const body = await req.json();
     const { courseId, media, destination } = body;
@@ -453,100 +571,115 @@ export async function POST(req) {
     let successCount = 0;
     let failureCount = 0;
     
-    // Xử lý từng media item
-    for (const item of media) {
-      try {
-        console.log(`\n--- Đang xử lý tài liệu: ${item.title || 'Không tiêu đề'} ---`);
-        console.log(`URL: ${item.url}`);
-        
-        // Trước tiên tập trung vào việc tải file xuống thành công
-        const fileName = item.title || path.basename(item.url) || `file.${item.type === 'pdf' ? 'pdf' : 'mp4'}`;
-        console.log(`Tải xuống với tên file: ${fileName}`);
-        
-        const downloadResult = await downloadFileToTemp(item.url, fileName);
-        
-        if (!downloadResult.success) {
-          failureCount++;
-          results.push({
-            id: item.id,
-            title: item.title || 'Tài liệu',
-            type: item.type,
-            success: false,
-            message: `Không thể tải file về máy chủ: ${downloadResult.error}`
-          });
-          continue; // Chuyển sang file tiếp theo nếu tải xuống thất bại
-        }
-        
-        console.log(`✓ Đã tải file thành công vào: ${downloadResult.filePath}`);
-        console.log(`  Kích thước: ${downloadResult.size} bytes`);
-        console.log(`  MIME type: ${downloadResult.mimeType}`);
-        
-        // Với file đã tải xuống thành công, tiếp tục tải lên Google Drive/YouTube
-        if (item.type === 'pdf' || serviceType === 'drive') {
-          console.log(`Bắt đầu tải lên Google Drive: ${fileName}`);
+    // Xử lý nhiều media item song song với giới hạn số lượng
+    const MAX_CONCURRENT = 3; // Số lượng tải lên song song tối đa
+    const chunks = [];
+    
+    // Chia media thành các nhóm nhỏ để xử lý song song
+    for (let i = 0; i < media.length; i += MAX_CONCURRENT) {
+      chunks.push(media.slice(i, i + MAX_CONCURRENT));
+    }
+    
+    // Xử lý từng nhóm media (song song trong nhóm)
+    for (const chunk of chunks) {
+      console.log(`\n--- Bắt đầu xử lý nhóm ${chunks.indexOf(chunk) + 1}/${chunks.length} (${chunk.length} tài liệu) ---`);
+      
+      // Tạo mảng các promises để xử lý song song
+      const promises = chunk.map(async (item) => {
+        try {
+          console.log(`\n--- Đang xử lý tài liệu: ${item.title || 'Không tiêu đề'} ---`);
+          console.log(`URL: ${item.url}`);
           
-          const driveResult = await uploadToDrive(
-            downloadResult.filePath, 
-            fileName,
-            downloadResult.mimeType
-          );
+          // Trước tiên tập trung vào việc tải file xuống thành công
+          const fileName = item.title || path.basename(item.url) || `file.${item.type === 'pdf' ? 'pdf' : 'mp4'}`;
+          console.log(`Tải xuống với tên file: ${fileName}`);
           
-          if (driveResult.success) {
+          const downloadResult = await downloadFileToTemp(item.url, fileName);
+          
+          if (!downloadResult.success) {
+            failureCount++;
+            return {
+              id: item.id,
+              title: item.title || 'Tài liệu',
+              type: item.type,
+              success: false,
+              message: `Không thể tải file về máy chủ: ${downloadResult.error}`
+            };
+          }
+          
+          console.log(`✓ Đã tải file thành công vào: ${downloadResult.filePath}`);
+          console.log(`  Kích thước: ${downloadResult.size} bytes`);
+          console.log(`  MIME type: ${downloadResult.mimeType}`);
+          
+          // Với file đã tải xuống thành công, tiếp tục tải lên Google Drive/YouTube
+          if (item.type === 'pdf' || serviceType === 'drive') {
+            console.log(`Bắt đầu tải lên Google Drive: ${fileName}`);
+            
+            const driveResult = await uploadToDrive(
+              downloadResult.filePath, 
+              fileName,
+              downloadResult.mimeType
+            );
+            
+            if (driveResult.success) {
+              successCount++;
+              return {
+                id: item.id,
+                title: item.title || 'Tài liệu',
+                type: item.type,
+                success: true,
+                localFile: downloadResult.filePath,
+                driveUrl: driveResult.webViewLink,
+                driveFileId: driveResult.fileId,
+                message: `Đã tải về máy chủ và tải lên Google Drive thành công`
+              };
+            } else {
+              failureCount++;
+              return {
+                id: item.id,
+                title: item.title || 'Tài liệu',
+                type: item.type,
+                success: false,
+                localFile: downloadResult.filePath,
+                message: `Đã tải về máy chủ nhưng không thể tải lên Google Drive: ${driveResult.error}`
+              };
+            }
+          } else {
+            // TODO: Phần này sẽ xử lý tải lên YouTube
+            // Hiện tại YouTube API bị hạn chế trong chế độ test, nên tạm mô phỏng thành công
             successCount++;
-            results.push({
+            return {
               id: item.id,
               title: item.title || 'Tài liệu',
               type: item.type,
               success: true,
               localFile: downloadResult.filePath,
-              driveUrl: driveResult.webViewLink,
-              driveFileId: driveResult.fileId,
-              message: `Đã tải về máy chủ và tải lên Google Drive thành công`
-            });
-            console.log(`✓ Tải lên Google Drive thành công: ${driveResult.webViewLink}`);
-          } else {
-            failureCount++;
-            results.push({
-              id: item.id,
-              title: item.title || 'Tài liệu',
-              type: item.type,
-              success: false,
-              localFile: downloadResult.filePath,
-              message: `Đã tải về máy chủ nhưng không thể tải lên Google Drive: ${driveResult.error}`
-            });
-            console.log(`✗ Tải lên Google Drive thất bại: ${driveResult.error}`);
+              youtubeUrl: `https://youtube.com/watch?v=${Math.random().toString(36).substring(2, 12)}`,
+              message: `Đã tải về máy chủ và mô phỏng tải lên YouTube thành công (API YouTube bị hạn chế trong chế độ test)`
+            };
           }
-        } else {
-          // TODO: Phần này sẽ xử lý tải lên YouTube
-          // Hiện tại YouTube API bị hạn chế trong chế độ test, nên tạm mô phỏng thành công
-        successCount++;
-        results.push({
-          id: item.id,
+          
+          // Trong dự án thực, bạn có thể muốn xóa file tạm sau khi hoàn thành
+          // fs.unlinkSync(downloadResult.filePath);
+          
+        } catch (error) {
+          console.error(`Lỗi khi xử lý item ${item.id}:`, error);
+          failureCount++;
+          return {
+            id: item.id,
             title: item.title || 'Tài liệu',
-          type: item.type,
-          success: true,
-            localFile: downloadResult.filePath,
-          youtubeUrl: `https://youtube.com/watch?v=${Math.random().toString(36).substring(2, 12)}`,
-            message: `Đã tải về máy chủ và mô phỏng tải lên YouTube thành công (API YouTube bị hạn chế trong chế độ test)`
-          });
-          console.log('✓ Tải lên YouTube mô phỏng thành công');
+            type: item.type,
+            success: false,
+            message: `Lỗi xử lý: ${error.message}`
+          };
         }
-        
-        // Trong dự án thực, bạn có thể muốn xóa file tạm sau khi hoàn thành
-        // fs.unlinkSync(downloadResult.filePath);
-        console.log(`--- Hoàn thành xử lý tài liệu: ${item.title || 'Không tiêu đề'} ---\n`);
-        
-      } catch (error) {
-        console.error(`Lỗi khi xử lý item ${item.id}:`, error);
-        failureCount++;
-        results.push({
-          id: item.id,
-          title: item.title || 'Tài liệu',
-          type: item.type,
-          success: false,
-          message: `Lỗi xử lý: ${error.message}`
-        });
-      }
+      });
+      
+      // Chờ tất cả các promises trong chunk hoàn thành
+      const chunkResults = await Promise.all(promises);
+      results.push(...chunkResults);
+      
+      console.log(`--- Hoàn thành xử lý nhóm ${chunks.indexOf(chunk) + 1}/${chunks.length} ---\n`);
     }
 
     // Cập nhật thông tin trong database
@@ -562,13 +695,17 @@ export async function POST(req) {
     console.log(`Tổng kết: ${successCount} thành công, ${failureCount} thất bại`);
 
     // Trả về kết quả
+    const totalTime = ((Date.now() - startTime) / 1000).toFixed(2); // Thời gian tính bằng giây
+    console.log(`Hoàn thành trong ${totalTime}s: ${successCount} thành công, ${failureCount} thất bại`);
+    
     return NextResponse.json({
       success: true,
-      message: `Đã tải xuống và tải lên ${successCount}/${media.length} tài liệu lên ${serviceName}`,
+      message: `Đã tải xuống và tải lên ${successCount}/${media.length} tài liệu lên ${serviceName} trong ${totalTime}s`,
       totalItems: media.length,
       successCount,
       failureCount,
-      details: results
+      details: results,
+      processingTime: totalTime
     });
     
   } catch (error) {
