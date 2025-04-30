@@ -85,7 +85,7 @@ const DEFAULT_CONFIG = {
   cleanupTempFiles: false, // Có xóa file tạm không
   maxWorkers: Math.max(1, os.cpus().length - 1), // Số lượng worker tối đa (số lượng CPU - 1)
   backgroundImage: null,   // Đường dẫn đến hình nền tùy chỉnh
-  backgroundOpacity: 0.1,  // Độ trong suốt của hình nền (0.1 = 10%)
+  backgroundOpacity: 1.0,  // Tăng lên 1.0 (100% đục)
 };
 
 // Đọc token từ file
@@ -931,14 +931,22 @@ async function addImageToPdf(pdfDoc, pngPath, index, totalPages, config = DEFAUL
     highWaterMark: 1024 * 1024 // 1MB buffer
   });
   
-  // Nhúng hình ảnh vào PDF
-  const image = await pdfDoc.embedPng(pngData);
-  const pngDimensions = image.size();
+  // Nhúng hình ảnh nội dung vào PDF
+  const contentImage = await pdfDoc.embedPng(pngData);
+  const pngDimensions = contentImage.size();
   
   // Tạo trang mới với kích thước của hình ảnh
   const page = pdfDoc.addPage([pngDimensions.width, pngDimensions.height]);
   
-  // Thêm hình nền nếu có
+  // Vẽ hình ảnh nội dung lên trang
+  page.drawImage(contentImage, {
+    x: 0,
+    y: 0,
+    width: pngDimensions.width,
+    height: pngDimensions.height
+  });
+  
+  // Bây giờ thêm hình nền *SAU* nội dung (để hiển thị trên cùng)
   if (config.backgroundImage && fs.existsSync(config.backgroundImage)) {
     try {
       console.log(`==== THÊM HÌNH NỀN - TRANG ${index + 1} ====`);
@@ -950,53 +958,55 @@ async function addImageToPdf(pdfDoc, pngPath, index, totalPages, config = DEFAUL
       const backgroundData = fs.readFileSync(config.backgroundImage);
       console.log(`- Đã đọc file hình nền (${backgroundData.length} bytes)`);
       
-      let backgroundImage;
-      
       // Xác định loại file và nhúng phù hợp
+      let backgroundImage;
       if (config.backgroundImage.toLowerCase().endsWith('.png')) {
         console.log('- Loại file: PNG');
         backgroundImage = await pdfDoc.embedPng(backgroundData);
       } else if (config.backgroundImage.toLowerCase().endsWith('.jpg') || 
-                 config.backgroundImage.toLowerCase().endsWith('.jpeg')) {
+                config.backgroundImage.toLowerCase().endsWith('.jpeg')) {
         console.log('- Loại file: JPG/JPEG');
         backgroundImage = await pdfDoc.embedJpg(backgroundData);
       } else {
         console.warn(`- Định dạng file hình nền không được hỗ trợ: ${config.backgroundImage}`);
+        return true; // Vẫn tiếp tục mà không có hình nền
       }
       
       if (backgroundImage) {
-        // Vẽ hình nền
         const bgDimensions = backgroundImage.size();
         console.log(`- Kích thước hình nền: ${bgDimensions.width}x${bgDimensions.height}`);
         console.log(`- Kích thước trang PDF: ${pngDimensions.width}x${pngDimensions.height}`);
         
-        // Tính toán tỷ lệ để vừa với trang
-        let scale = 1;
-        let xOffset = 0;
-        let yOffset = 0;
+        // TẠO HÌNH CHÌM TÙY CHỈNH (lặp lại cho toàn bộ trang)
+        const tileSize = Math.min(pngDimensions.width, pngDimensions.height) * 0.3; // 30% kích thước trang
+        const colCount = Math.ceil(pngDimensions.width / tileSize);
+        const rowCount = Math.ceil(pngDimensions.height / tileSize);
         
-        // Đảm bảo hình nền phủ toàn bộ trang
-        const widthRatio = pngDimensions.width / bgDimensions.width;
-        const heightRatio = pngDimensions.height / bgDimensions.height;
-        scale = Math.max(widthRatio, heightRatio);
-        console.log(`- Tỷ lệ co giãn: ${scale.toFixed(2)}`);
+        console.log(`- Tạo hình chìm lặp lại: ${colCount}x${rowCount} ô, mỗi ô ${tileSize.toFixed(0)}px`);
         
-        // Tính toán vị trí để hình nền nằm giữa trang
-        const scaledWidth = bgDimensions.width * scale;
-        const scaledHeight = bgDimensions.height * scale;
-        xOffset = (pngDimensions.width - scaledWidth) / 2;
-        yOffset = (pngDimensions.height - scaledHeight) / 2;
-        console.log(`- Vị trí: (${xOffset.toFixed(2)}, ${yOffset.toFixed(2)}), Kích thước: ${scaledWidth.toFixed(2)}x${scaledHeight.toFixed(2)}`);
+        // Lặp qua toàn bộ trang theo lưới
+        for (let row = 0; row < rowCount; row++) {
+          for (let col = 0; col < colCount; col++) {
+            const x = col * tileSize + (tileSize / 2); // Cách đều
+            const y = row * tileSize + (tileSize / 2); // Cách đều
+            
+            // Tính kích thước để vừa với ô lưới
+            const bgWidth = tileSize * 0.8; // 80% kích thước ô
+            const bgHeight = (bgWidth / bgDimensions.width) * bgDimensions.height;
+            
+            // Vẽ 1 ô lưới của hình nền 
+            page.drawImage(backgroundImage, {
+              x: x,
+              y: y,
+              width: bgWidth,
+              height: bgHeight,
+              opacity: config.backgroundOpacity || 1.0,
+              rotate: { type: 'degrees', angle: 45 } // Xoay 45 độ
+            });
+          }
+        }
         
-        // Vẽ hình nền với độ trong suốt
-        page.drawImage(backgroundImage, {
-          x: xOffset,
-          y: yOffset,
-          width: scaledWidth,
-          height: scaledHeight,
-          opacity: config.backgroundOpacity || 0.1
-        });
-        console.log(`- Đã thêm hình nền thành công vào trang ${index + 1}`);
+        console.log(`- Đã thêm hình chìm lặp lại thành công vào trang ${index + 1}`);
       } else {
         console.warn(`- Không thể nhúng hình nền vào trang ${index + 1}`);
       }
@@ -1007,14 +1017,6 @@ async function addImageToPdf(pdfDoc, pngPath, index, totalPages, config = DEFAUL
       console.warn(`Stack trace:`, backgroundError.stack);
     }
   }
-  
-  // Vẽ hình ảnh lên trang
-  page.drawImage(image, {
-    x: 0,
-    y: 0,
-    width: pngDimensions.width,
-    height: pngDimensions.height
-  });
   
   console.log(`✓ Trang ${index + 1}/${totalPages} đã được thêm vào PDF`);
   return true;
@@ -1242,7 +1244,8 @@ export async function POST(request) {
       console.log('Sử dụng hình nền mặc định:', backgroundImage);
     }
     if (backgroundOpacity === undefined) {
-      backgroundOpacity = 0.1;
+      backgroundOpacity = 1.0; // Tăng lên 1.0 (hoàn toàn đục)
+      console.log('Sử dụng độ đục mặc định tối đa:', backgroundOpacity);
     }
 
     // Thêm log chi tiết về các tham số nhận được
