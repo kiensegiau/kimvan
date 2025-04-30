@@ -70,7 +70,7 @@ const DEFAULT_CONFIG = {
   threshold: 0,            // Ngưỡng (0 = giữ màu sắc)
   gamma: 1.4,              // Gamma
   sharpening: 1.3,         // Độ sắc nét
-  processCenter: true,     // Xử lý vùng trung tâm
+  processCenter: false,    // Xử lý vùng trung tâm
   centerSize: 0.8,         // Kích thước vùng trung tâm (80% của trang)
   keepColors: true,        // Giữ màu sắc
   cleanupTempFiles: false, // Có xóa file tạm không
