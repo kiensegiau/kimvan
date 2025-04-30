@@ -85,7 +85,7 @@ const DEFAULT_CONFIG = {
   cleanupTempFiles: false, // Có xóa file tạm không
   maxWorkers: Math.max(1, os.cpus().length - 1), // Số lượng worker tối đa (số lượng CPU - 1)
   backgroundImage: null,   // Đường dẫn đến hình nền tùy chỉnh
-  backgroundOpacity: 0.4,  // Giảm xuống 0.4 (40% đục)
+  backgroundOpacity: 0.3,  // Giảm xuống 0.3 (30% đục)
 };
 
 // Đọc token từ file
@@ -1003,10 +1003,10 @@ async function addImageToPdf(pdfDoc, pngPath, index, totalPages, config = DEFAUL
           y: yOffset,
           width: bgWidth,
           height: bgHeight,
-          opacity: config.backgroundOpacity || 0.4,
+          opacity: config.backgroundOpacity || 0.3,
         });
         
-        console.log(`- Đã thêm hình nền lớn ở trung tâm vào trang ${index + 1} với độ đục ${config.backgroundOpacity || 0.4}`);
+        console.log(`- Đã thêm hình nền lớn ở trung tâm vào trang ${index + 1} với độ đục ${config.backgroundOpacity || 0.3}`);
       } else {
         console.warn(`- Không thể nhúng hình nền vào trang ${index + 1}`);
       }
@@ -1244,7 +1244,7 @@ export async function POST(request) {
       console.log('Sử dụng hình nền mặc định:', backgroundImage);
     }
     if (backgroundOpacity === undefined) {
-      backgroundOpacity = 0.4; // Giảm xuống 0.4
+      backgroundOpacity = 0.3; // Giảm xuống 0.3
       console.log('Sử dụng độ đục mặc định giảm xuống:', backgroundOpacity);
     }
 
