@@ -85,7 +85,7 @@ const DEFAULT_CONFIG = {
   cleanupTempFiles: false, // Có xóa file tạm không
   maxWorkers: Math.max(1, os.cpus().length - 1), // Số lượng worker tối đa (số lượng CPU - 1)
   backgroundImage: null,   // Đường dẫn đến hình nền tùy chỉnh
-  backgroundOpacity: 1.0,  // Tăng lên 1.0 (100% đục)
+  backgroundOpacity: 0.4,  // Giảm xuống 0.4 (40% đục)
 };
 
 // Đọc token từ file
@@ -977,36 +977,36 @@ async function addImageToPdf(pdfDoc, pngPath, index, totalPages, config = DEFAUL
         console.log(`- Kích thước hình nền: ${bgDimensions.width}x${bgDimensions.height}`);
         console.log(`- Kích thước trang PDF: ${pngDimensions.width}x${pngDimensions.height}`);
         
-        // TẠO HÌNH CHÌM TÙY CHỈNH (lặp lại cho toàn bộ trang)
-        const tileSize = Math.min(pngDimensions.width, pngDimensions.height) * 0.3; // 30% kích thước trang
-        const colCount = Math.ceil(pngDimensions.width / tileSize);
-        const rowCount = Math.ceil(pngDimensions.height / tileSize);
+        // CHỈ THÊM MỘT HÌNH NỀN LỚN Ở GIỮA TRANG
+        // Tính toán để hình nền chiếm khoảng 70% diện tích trang
+        const targetWidth = pngDimensions.width * 0.7;
+        const targetHeight = pngDimensions.height * 0.7;
         
-        console.log(`- Tạo hình chìm lặp lại: ${colCount}x${rowCount} ô, mỗi ô ${tileSize.toFixed(0)}px`);
+        // Tính tỷ lệ phù hợp để giữ nguyên tỷ lệ hình ảnh
+        const scaleWidth = targetWidth / bgDimensions.width;
+        const scaleHeight = targetHeight / bgDimensions.height;
+        const scale = Math.min(scaleWidth, scaleHeight);
         
-        // Lặp qua toàn bộ trang theo lưới
-        for (let row = 0; row < rowCount; row++) {
-          for (let col = 0; col < colCount; col++) {
-            const x = col * tileSize + (tileSize / 2); // Cách đều
-            const y = row * tileSize + (tileSize / 2); // Cách đều
-            
-            // Tính kích thước để vừa với ô lưới
-            const bgWidth = tileSize * 0.8; // 80% kích thước ô
-            const bgHeight = (bgWidth / bgDimensions.width) * bgDimensions.height;
-            
-            // Vẽ 1 ô lưới của hình nền 
-            page.drawImage(backgroundImage, {
-              x: x,
-              y: y,
-              width: bgWidth,
-              height: bgHeight,
-              opacity: config.backgroundOpacity || 1.0,
-              rotate: { type: 'degrees', angle: 45 } // Xoay 45 độ
-            });
-          }
-        }
+        console.log(`- Tỷ lệ co giãn: ${scale.toFixed(2)}`);
         
-        console.log(`- Đã thêm hình chìm lặp lại thành công vào trang ${index + 1}`);
+        // Tính kích thước và vị trí hình nền
+        const bgWidth = bgDimensions.width * scale;
+        const bgHeight = bgDimensions.height * scale;
+        const xOffset = (pngDimensions.width - bgWidth) / 2; // Giữa trang theo chiều ngang
+        const yOffset = (pngDimensions.height - bgHeight) / 2; // Giữa trang theo chiều dọc
+        
+        console.log(`- Vị trí: (${xOffset.toFixed(2)}, ${yOffset.toFixed(2)}), Kích thước: ${bgWidth.toFixed(2)}x${bgHeight.toFixed(2)}`);
+        
+        // Vẽ một hình nền duy nhất ở giữa
+        page.drawImage(backgroundImage, {
+          x: xOffset,
+          y: yOffset,
+          width: bgWidth,
+          height: bgHeight,
+          opacity: config.backgroundOpacity || 0.4,
+        });
+        
+        console.log(`- Đã thêm hình nền lớn ở trung tâm vào trang ${index + 1} với độ đục ${config.backgroundOpacity || 0.4}`);
       } else {
         console.warn(`- Không thể nhúng hình nền vào trang ${index + 1}`);
       }
@@ -1244,8 +1244,8 @@ export async function POST(request) {
       console.log('Sử dụng hình nền mặc định:', backgroundImage);
     }
     if (backgroundOpacity === undefined) {
-      backgroundOpacity = 1.0; // Tăng lên 1.0 (hoàn toàn đục)
-      console.log('Sử dụng độ đục mặc định tối đa:', backgroundOpacity);
+      backgroundOpacity = 0.4; // Giảm xuống 0.4
+      console.log('Sử dụng độ đục mặc định giảm xuống:', backgroundOpacity);
     }
 
     // Thêm log chi tiết về các tham số nhận được
