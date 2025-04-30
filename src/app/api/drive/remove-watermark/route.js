@@ -635,20 +635,20 @@ function findGhostscript() {
     '/opt/homebrew/bin/gs'
   ];
 
-  console.log('Đang kiểm tra Ghostscript trong các đường dẫn cố định...');
+  console.log('Đang kiểm tra GhostScript trong các đường dẫn cố định...');
   
   // Thử tìm trong các đường dẫn có thể
   for (const gsPath of possibleGsPaths) {
     try {
       if (fs.existsSync(gsPath)) {
-        console.log(`Đã tìm thấy Ghostscript tại: ${gsPath}`);
+        console.log(`Đã tìm thấy GhostScript tại: ${gsPath}`);
         // Thử thực thi để kiểm tra
         try {
           const version = execSync(`"${gsPath}" -v`, { stdio: 'pipe', encoding: 'utf8' });
-          console.log(`Ghostscript đã được xác nhận tại ${gsPath} - Phiên bản:`, version.trim().split('\n')[0]);
+          console.log(`GhostScript đã được xác nhận tại ${gsPath} - Phiên bản:`, version.trim().split('\n')[0]);
           return gsPath;
         } catch (error) {
-          console.warn(`Ghostscript tồn tại tại ${gsPath} nhưng không thể thực thi:`, error.message);
+          console.warn(`GhostScript tồn tại tại ${gsPath} nhưng không thể thực thi:`, error.message);
           // Tiếp tục tìm đường dẫn khác
         }
       }
@@ -658,14 +658,14 @@ function findGhostscript() {
     }
   }
 
-  console.log('Đang kiểm tra Ghostscript trong PATH hệ thống...');
+  console.log('Đang kiểm tra GhostScript trong PATH hệ thống...');
   
-  // Thử thực thi các lệnh Ghostscript trực tiếp (sử dụng PATH)
+  // Thử thực thi các lệnh GhostScript trực tiếp (sử dụng PATH)
   // Chú ý: Thử gswin64c trước vì bạn đã xác nhận lệnh này hoạt động
   try {
     const version = execSync('gswin64c -v', { stdio: 'pipe', encoding: 'utf8' });
     console.log('Đã tìm thấy gswin64c trong PATH hệ thống');
-    console.log('Phiên bản Ghostscript:', version.trim().split('\n')[0]);
+    console.log('Phiên bản GhostScript:', version.trim().split('\n')[0]);
     return 'gswin64c';
   } catch (gswin64cError) {
     console.warn('Không tìm thấy gswin64c trong PATH:', gswin64cError.message);
@@ -673,7 +673,7 @@ function findGhostscript() {
     try {
       const version = execSync('gswin32c -v', { stdio: 'pipe', encoding: 'utf8' });
       console.log('Đã tìm thấy gswin32c trong PATH hệ thống');
-      console.log('Phiên bản Ghostscript:', version.trim().split('\n')[0]);
+      console.log('Phiên bản GhostScript:', version.trim().split('\n')[0]);
       return 'gswin32c';
     } catch (gswin32cError) {
       console.warn('Không tìm thấy gswin32c trong PATH:', gswin32cError.message);
@@ -681,7 +681,7 @@ function findGhostscript() {
       try {
         const version = execSync('gs -v', { stdio: 'pipe', encoding: 'utf8' });
         console.log('Đã tìm thấy gs trong PATH hệ thống');
-        console.log('Phiên bản Ghostscript:', version.trim().split('\n')[0]);
+        console.log('Phiên bản GhostScript:', version.trim().split('\n')[0]);
         return 'gs';
       } catch (gsError) {
         console.warn('Không tìm thấy gs trong PATH:', gsError.message);
@@ -695,7 +695,7 @@ function findGhostscript() {
     // Sử dụng đường dẫn bạn đã biết chắc chắn hoạt động
     const knownPath = 'C:\\Program Files\\gs\\gs10.05.0\\bin\\gswin64c.exe';
     if (fs.existsSync(knownPath)) {
-      console.log(`Đã tìm thấy Ghostscript tại đường dẫn đã biết: ${knownPath}`);
+      console.log(`Đã tìm thấy GhostScript tại đường dẫn đã biết: ${knownPath}`);
       return knownPath;
     }
   } catch (error) {
@@ -705,15 +705,15 @@ function findGhostscript() {
   // Hiển thị thông báo lỗi chi tiết
   console.error(`
 ========= LỖI KHÔNG TÌM THẤY GHOSTSCRIPT =========
-Ghostscript không được cài đặt hoặc không thể tìm thấy.
-API này yêu cầu Ghostscript để xử lý PDF.
+GhostScript không được cài đặt hoặc không thể tìm thấy.
+API này yêu cầu GhostScript để xử lý PDF.
 
 Hướng dẫn cài đặt:
 - Windows: Tải và cài đặt từ https://ghostscript.com/releases/gsdnld.html
 - Ubuntu/Debian: sudo apt-get install ghostscript
 - Mac: brew install ghostscript
 
-Sau khi cài đặt, đảm bảo Ghostscript được thêm vào PATH hệ thống hoặc cập nhật đường dẫn trong mã nguồn.
+Sau khi cài đặt, đảm bảo GhostScript được thêm vào PATH hệ thống hoặc cập nhật đường dẫn trong mã nguồn.
 
 HƯỚNG DẪN THÊM VÀO PATH:
 1. Windows:
@@ -721,7 +721,7 @@ HƯỚNG DẪN THÊM VÀO PATH:
    b. Chọn "Advanced system settings"
    c. Nhấp vào "Environment Variables"
    d. Trong phần "System Variables", tìm biến "Path" và nhấp "Edit"
-   e. Nhấp "New" và thêm đường dẫn đến thư mục bin của Ghostscript
+   e. Nhấp "New" và thêm đường dẫn đến thư mục bin của GhostScript
       (Thường là C:\\Program Files\\gs\\gs{version}\\bin)
    f. Nhấp "OK" để lưu các thay đổi
 
@@ -738,15 +738,15 @@ HƯỚNG DẪN THÊM VÀO PATH:
 
 KIỂM TRA CÀI ĐẶT:
 Mở Terminal hoặc Command Prompt và thực hiện lệnh: gswin64c -v (Windows) hoặc gs -v (Mac/Linux)
-Nếu Ghostscript đã được cài đặt đúng, lệnh này sẽ hiển thị phiên bản.
+Nếu GhostScript đã được cài đặt đúng, lệnh này sẽ hiển thị phiên bản.
 
 HOẶC CẬP NHẬT MÃ NGUỒN:
 Thay vì thêm vào PATH, bạn có thể cập nhật hàm findGhostscript() trong file này
-và thêm đường dẫn đầy đủ đến Ghostscript vào biến possibleGsPaths.
+và thêm đường dẫn đầy đủ đến GhostScript vào biến possibleGsPaths.
 ==================================================
   `);
   
-  throw new Error('Ghostscript không được cài đặt hoặc không thể tìm thấy. Vui lòng cài đặt Ghostscript trước khi sử dụng API này.');
+  throw new Error('GhostScript không được cài đặt hoặc không thể tìm thấy. Vui lòng cài đặt GhostScript trước khi sử dụng API này.');
 }
 
 // Hàm tạo worker để chuyển đổi PDF sang PNG
@@ -838,7 +838,7 @@ async function countPdfPagesWithGhostscript(pdfPath, gsPath) {
     return pageCountCache.get(cacheKey);
   }
 
-  console.log(`Đang đếm số trang PDF với Ghostscript: ${pdfPath}`);
+  console.log(`Đang đếm số trang PDF với GhostScript: ${pdfPath}`);
   try {
     // Chuẩn hóa đường dẫn và escape đúng cho cú pháp PostScript
     const normalizedPath = pdfPath.replace(/\\/g, '/');
@@ -938,28 +938,37 @@ async function addImageToPdf(pdfDoc, pngPath, index, totalPages, config = DEFAUL
   // Tạo trang mới với kích thước của hình ảnh
   const page = pdfDoc.addPage([pngDimensions.width, pngDimensions.height]);
   
-  // Nếu có hình nền, thêm vào trước
+  // Thêm hình nền nếu có
   if (config.backgroundImage && fs.existsSync(config.backgroundImage)) {
     try {
-      console.log(`Đang thêm hình nền vào trang ${index + 1}...`);
+      console.log(`==== THÊM HÌNH NỀN - TRANG ${index + 1} ====`);
+      console.log(`- Đang thêm hình nền vào trang ${index + 1}...`);
+      console.log(`- Đường dẫn hình nền: ${config.backgroundImage}`);
+      console.log(`- Độ trong suốt: ${config.backgroundOpacity}`);
       
       // Đọc hình nền
       const backgroundData = fs.readFileSync(config.backgroundImage);
+      console.log(`- Đã đọc file hình nền (${backgroundData.length} bytes)`);
+      
       let backgroundImage;
       
       // Xác định loại file và nhúng phù hợp
       if (config.backgroundImage.toLowerCase().endsWith('.png')) {
+        console.log('- Loại file: PNG');
         backgroundImage = await pdfDoc.embedPng(backgroundData);
       } else if (config.backgroundImage.toLowerCase().endsWith('.jpg') || 
-                config.backgroundImage.toLowerCase().endsWith('.jpeg')) {
+                 config.backgroundImage.toLowerCase().endsWith('.jpeg')) {
+        console.log('- Loại file: JPG/JPEG');
         backgroundImage = await pdfDoc.embedJpg(backgroundData);
       } else {
-        console.warn(`Định dạng file hình nền không được hỗ trợ: ${config.backgroundImage}`);
+        console.warn(`- Định dạng file hình nền không được hỗ trợ: ${config.backgroundImage}`);
       }
       
       if (backgroundImage) {
         // Vẽ hình nền
         const bgDimensions = backgroundImage.size();
+        console.log(`- Kích thước hình nền: ${bgDimensions.width}x${bgDimensions.height}`);
+        console.log(`- Kích thước trang PDF: ${pngDimensions.width}x${pngDimensions.height}`);
         
         // Tính toán tỷ lệ để vừa với trang
         let scale = 1;
@@ -970,12 +979,14 @@ async function addImageToPdf(pdfDoc, pngPath, index, totalPages, config = DEFAUL
         const widthRatio = pngDimensions.width / bgDimensions.width;
         const heightRatio = pngDimensions.height / bgDimensions.height;
         scale = Math.max(widthRatio, heightRatio);
+        console.log(`- Tỷ lệ co giãn: ${scale.toFixed(2)}`);
         
         // Tính toán vị trí để hình nền nằm giữa trang
         const scaledWidth = bgDimensions.width * scale;
         const scaledHeight = bgDimensions.height * scale;
         xOffset = (pngDimensions.width - scaledWidth) / 2;
         yOffset = (pngDimensions.height - scaledHeight) / 2;
+        console.log(`- Vị trí: (${xOffset.toFixed(2)}, ${yOffset.toFixed(2)}), Kích thước: ${scaledWidth.toFixed(2)}x${scaledHeight.toFixed(2)}`);
         
         // Vẽ hình nền với độ trong suốt
         page.drawImage(backgroundImage, {
@@ -985,9 +996,15 @@ async function addImageToPdf(pdfDoc, pngPath, index, totalPages, config = DEFAUL
           height: scaledHeight,
           opacity: config.backgroundOpacity || 0.1
         });
+        console.log(`- Đã thêm hình nền thành công vào trang ${index + 1}`);
+      } else {
+        console.warn(`- Không thể nhúng hình nền vào trang ${index + 1}`);
       }
+      console.log(`==== KẾT THÚC THÊM HÌNH NỀN - TRANG ${index + 1} ====`);
     } catch (backgroundError) {
-      console.warn(`Lỗi khi thêm hình nền: ${backgroundError.message}`);
+      console.warn(`LỖI khi thêm hình nền vào trang ${index + 1}:`, backgroundError);
+      console.warn(`Chi tiết lỗi:`, backgroundError.message);
+      console.warn(`Stack trace:`, backgroundError.stack);
     }
   }
   
@@ -1016,13 +1033,13 @@ async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
     throw new Error('Thư viện xử lý hình ảnh (Sharp) không khả dụng trên máy chủ này. Vui lòng liên hệ quản trị viên.');
   }
   
-  // Tìm Ghostscript một lần và cache kết quả
+  // Tìm GhostScript một lần và cache kết quả
   let gsPath;
   try {
     gsPath = findGhostscript();
-    console.log('Đã tìm thấy Ghostscript tại:', gsPath);
+    console.log('Đã tìm thấy GhostScript tại:', gsPath);
   } catch (gsError) {
-    console.error('CRITICAL ERROR: Không thể tìm thấy Ghostscript:', gsError.message);
+    console.error('CRITICAL ERROR: Không thể tìm thấy GhostScript:', gsError.message);
     throw gsError;
   }
 
@@ -1061,13 +1078,13 @@ async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
     );
     console.log(`Sử dụng ${optimalWorkers} worker cho ${numPages} trang`);
     
-    // Tách PDF thành từng trang - sử dụng tùy chọn tối ưu cho Ghostscript
+    // Tách PDF thành từng trang - sử dụng tùy chọn tối ưu cho GhostScript
     console.log('Đang tách PDF thành từng trang...');
     const gsCommand = `"${gsPath}" -dALLOWPSTRANSPARENCY -dBATCH -dNOPAUSE -q -dNumRenderingThreads=${optimalWorkers} -sDEVICE=pdfwrite -dSAFER ` +
             `-dFirstPage=1 -dLastPage=${numPages} ` +
             `-sOutputFile="${path.join(tempDir, 'page_%d.pdf')}" "${inputPath}"`;
     
-    console.log('Thực thi lệnh Ghostscript:', gsCommand);
+    console.log('Thực thi lệnh GhostScript:', gsCommand);
     execSync(gsCommand, { stdio: 'pipe' });
     
     // Kiểm tra kết quả nhanh hơn bằng cách dựa vào readdir và lọc
@@ -1080,7 +1097,7 @@ async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
     console.log(`Đã tách thành ${pdfFiles.length} trang PDF`);
     
     if (pdfFiles.length === 0) {
-      throw new Error('Không thể tách PDF thành các trang. Ghostscript không tạo ra file nào.');
+      throw new Error('Không thể tách PDF thành các trang. GhostScript không tạo ra file nào.');
     }
     
     // Chuẩn bị danh sách công việc hiệu quả hơn
@@ -1217,8 +1234,29 @@ export async function POST(request) {
     // Parse request body
     console.log('Đang phân tích body request...');
     const requestBody = await request.json();
-    const { token, driveLink, backgroundImage, backgroundOpacity } = requestBody;
-    
+    let { token, driveLink, backgroundImage, backgroundOpacity } = requestBody;
+
+    // Sử dụng "nen.png" làm hình nền mặc định
+    if (!backgroundImage) {
+      backgroundImage = path.join(process.cwd(), "nen.png");
+      console.log('Sử dụng hình nền mặc định:', backgroundImage);
+    }
+    if (backgroundOpacity === undefined) {
+      backgroundOpacity = 0.1;
+    }
+
+    // Thêm log chi tiết về các tham số nhận được
+    console.log('=============================================');
+    console.log('CHI TIẾT REQUEST:');
+    console.log('- Request Body:', JSON.stringify(requestBody));
+    console.log('- token:', token ? '***' : 'undefined');
+    console.log('- driveLink:', driveLink || 'undefined');
+    console.log('- backgroundImage (raw):', backgroundImage);
+    console.log('- backgroundImage (type):', typeof backgroundImage);
+    console.log('- backgroundOpacity (raw):', backgroundOpacity);
+    console.log('- backgroundOpacity (type):', typeof backgroundOpacity);
+    console.log('=============================================');
+
     console.log('Thông tin request:', {
       token: token ? '***' : 'không có',
       driveLink: driveLink || 'không có',
@@ -1303,6 +1341,10 @@ export async function POST(request) {
       
       // Thêm hình nền nếu có
       if (backgroundImage) {
+        console.log('==== DEBUG BACKGROUND ====');
+        console.log('- Phát hiện tham số backgroundImage:', backgroundImage);
+        console.log('- Độ trong suốt backgroundOpacity:', backgroundOpacity);
+        
         // Xử lý đường dẫn hình nền để làm cho nó di động
         let backgroundImagePath = backgroundImage;
         
@@ -1311,21 +1353,41 @@ export async function POST(request) {
             !backgroundImage.includes(':/') && 
             !backgroundImage.includes(':\\')) {
           backgroundImagePath = path.join(process.cwd(), backgroundImage);
-          console.log('Đã chuyển đổi sang đường dẫn tương đối:', backgroundImagePath);
+          console.log('- Đã chuyển đổi sang đường dẫn tương đối:', backgroundImagePath);
         }
         
         // Kiểm tra file có tồn tại không
-        if (fs.existsSync(backgroundImagePath)) {
-          console.log('Sử dụng hình nền:', backgroundImagePath);
+        const fileExists = fs.existsSync(backgroundImagePath);
+        console.log('- File hình nền tồn tại:', fileExists);
+        console.log('- Đường dẫn đầy đủ:', backgroundImagePath);
+        
+        if (fileExists) {
+          console.log('- Sử dụng hình nền:', backgroundImagePath);
+          // Kiểm tra kích thước file
+          const stats = fs.statSync(backgroundImagePath);
+          console.log('- Kích thước file hình nền:', (stats.size / 1024).toFixed(2) + ' KB');
+          
           config.backgroundImage = backgroundImagePath;
           
           if (backgroundOpacity !== undefined) {
             config.backgroundOpacity = parseFloat(backgroundOpacity);
-            console.log('Độ trong suốt của hình nền:', config.backgroundOpacity);
+            console.log('- Độ trong suốt đã cấu hình:', config.backgroundOpacity);
+          } else {
+            console.log('- Sử dụng độ trong suốt mặc định:', config.backgroundOpacity);
           }
         } else {
-          console.warn(`Cảnh báo: Không tìm thấy file hình nền tại đường dẫn: ${backgroundImagePath}`);
+          console.warn(`CẢNH BÁO: Không tìm thấy file hình nền tại đường dẫn: ${backgroundImagePath}`);
+          console.log('- Danh sách file trong thư mục hiện tại:');
+          try {
+            const files = fs.readdirSync(path.dirname(backgroundImagePath));
+            console.log(files);
+          } catch (err) {
+            console.log('- Không thể đọc thư mục:', err.message);
+          }
         }
+        console.log('==== KẾT THÚC DEBUG BACKGROUND ====');
+      } else {
+        console.log('Không có tham số backgroundImage trong request');
       }
       
       cleanResult = await cleanPdf(downloadResult.filePath, outputPath, config);
@@ -1336,9 +1398,9 @@ export async function POST(request) {
       console.error('LỖI XỬ LÝ PDF:', cleanError);
       console.error('Stack trace:', cleanError.stack);
       
-      // Check if error is related to Ghostscript
-      if (cleanError.message.includes('Ghostscript')) {
-        console.error('LỖI LIÊN QUAN ĐẾN GHOSTSCRIPT - Kiểm tra cài đặt Ghostscript trên máy chủ');
+      // Check if error is related to GhostScript
+      if (cleanError.message.includes('GhostScript')) {
+        console.error('LỖI LIÊN QUAN ĐẾN GHOSTSCRIPT - Kiểm tra cài đặt GhostScript trên máy chủ');
       }
       
       // Clean up temp files
@@ -1448,13 +1510,13 @@ export async function GET() {
     console.log('OS:', process.platform, process.arch);
     console.log('Current directory:', process.cwd());
     
-    // Kiểm tra Ghostscript
-    console.log('Kiểm tra Ghostscript...');
+    // Kiểm tra GhostScript
+    console.log('Kiểm tra GhostScript...');
     try {
       const gsPath = findGhostscript();
-      console.log('Ghostscript tìm thấy tại:', gsPath);
+      console.log('GhostScript tìm thấy tại:', gsPath);
     } catch (gsError) {
-      console.warn('Cảnh báo: Không tìm thấy Ghostscript:', gsError.message);
+      console.warn('Cảnh báo: Không tìm thấy GhostScript:', gsError.message);
     }
     
     // Kiểm tra Google Drive token
