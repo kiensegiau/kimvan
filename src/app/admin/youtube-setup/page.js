@@ -355,23 +355,71 @@ export default function DriveSetupPage() {
                 );
               })}
               
-              <div className="bg-blue-50 p-4 rounded-md border border-blue-200">
-                <h3 className="font-medium text-blue-800 mb-2">Thông tin cấu hình</h3>
-                <p className="text-sm text-blue-700">
-                  Để hoàn tất thiết lập, bạn cần đảm bảo đã cấu hình các thông tin sau trong file <code>.env</code>:
-                </p>
-                <ul className="list-disc list-inside text-sm text-blue-700 mt-2">
-                  <li>GOOGLE_CLIENT_ID</li>
-                  <li>GOOGLE_CLIENT_SECRET</li>
-                  <li>GOOGLE_REDIRECT_URI (mặc định: http://localhost:3000/admin/youtube-setup)</li>
-                </ul>
-              </div>
-              
-              <div className="bg-gray-50 p-4 rounded-md border border-gray-200">
-                <h3 className="font-medium text-gray-800 mb-2">Giới hạn API</h3>
-                <p className="text-sm text-gray-600">
-                  Google Drive API có giới hạn số lượng request mỗi ngày. Quá trình tải lên và tải xuống sẽ tiêu tốn quota theo giới hạn của Google.
-                </p>
+              <div className="space-y-4 mt-8">
+                <div className="bg-blue-50 p-4 rounded-md border border-blue-200">
+                  <h3 className="font-medium text-blue-800 mb-2">Làm mới token tự động</h3>
+                  <p className="text-sm text-blue-700 mb-2">
+                    Hệ thống tự động làm mới token Google Drive mỗi 30 phút để đảm bảo token không bị hết hạn.
+                    Service chạy trực tiếp trên server và không cần cron job bên ngoài.
+                  </p>
+                  <div className="bg-white p-3 rounded-md border border-gray-200">
+                    <p className="text-xs text-gray-700">Service làm mới token tự động:</p>
+                    <code className="text-xs bg-gray-100 p-1 rounded block mt-1 text-blue-800">Kiểm tra token mỗi 30 phút và làm mới nếu sắp hết hạn (5 phút)</code>
+                  </div>
+                  <div className="mt-3 flex items-center">
+                    <button
+                      onClick={async () => {
+                        try {
+                          setLoading(true);
+                          const res = await fetch('/api/drive/refresh-tokens');
+                          const data = await res.json();
+                          if (data.success) {
+                            setSetupSuccess(true);
+                            checkAccountsStatus(); // Cập nhật trạng thái
+                            setError(null);
+                          } else {
+                            setError('Không thể làm mới token: ' + (data.error || 'Lỗi không xác định'));
+                          }
+                        } catch (err) {
+                          setError('Lỗi khi làm mới token: ' + err.message);
+                        } finally {
+                          setLoading(false);
+                        }
+                      }}
+                      className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                      disabled={loading}
+                    >
+                      {loading ? (
+                        <ArrowPathIcon className="animate-spin h-4 w-4 mr-1" />
+                      ) : (
+                        <ArrowPathIcon className="h-4 w-4 mr-1" />
+                      )}
+                      Làm mới token ngay bây giờ
+                    </button>
+                    <span className="ml-2 text-xs text-gray-500">
+                      Dùng khi bạn muốn làm mới token thủ công
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="bg-blue-50 p-4 rounded-md border border-blue-200">
+                  <h3 className="font-medium text-blue-800 mb-2">Thông tin cấu hình</h3>
+                  <p className="text-sm text-blue-700">
+                    Để hoàn tất thiết lập, bạn cần đảm bảo đã cấu hình các thông tin sau trong file <code>.env</code>:
+                  </p>
+                  <ul className="list-disc list-inside text-sm text-blue-700 mt-2">
+                    <li>GOOGLE_CLIENT_ID</li>
+                    <li>GOOGLE_CLIENT_SECRET</li>
+                    <li>GOOGLE_REDIRECT_URI (mặc định: http://localhost:3000/admin/youtube-setup)</li>
+                  </ul>
+                </div>
+                
+                <div className="bg-gray-50 p-4 rounded-md border border-gray-200">
+                  <h3 className="font-medium text-gray-800 mb-2">Giới hạn API</h3>
+                  <p className="text-sm text-gray-600">
+                    Google Drive API có giới hạn số lượng request mỗi ngày. Quá trình tải lên và tải xuống sẽ tiêu tốn quota theo giới hạn của Google.
+                  </p>
+                </div>
               </div>
             </div>
           ) : (

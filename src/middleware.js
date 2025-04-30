@@ -1,5 +1,17 @@
 import { NextResponse } from 'next/server';
 
+// Khởi động service làm mới token (chỉ chạy trên server)
+if (typeof window === 'undefined') {
+  // Tự động khởi động service token refresh
+  import('./app/api/drive/start-refresh-service')
+    .then(() => {
+      console.log('🔄 Token refresh service initialized in middleware');
+    })
+    .catch(err => {
+      console.error('❌ Failed to initialize token refresh service:', err);
+    });
+}
+
 export function middleware(request) {
   // Trong quá trình phát triển, cho phép truy cập tất cả các đường dẫn
   // Khi cần kích hoạt lại việc bảo vệ, chỉ cần bỏ comment các đoạn code bên dưới
@@ -58,9 +70,12 @@ export function middleware(request) {
   */
 }
 
-// Tạm thời không áp dụng middleware cho bất kỳ đường dẫn nào
+// Áp dụng middleware cho tất cả các đường dẫn để đảm bảo service khởi động
 export const config = {
-  matcher: []
+  matcher: [
+    // Áp dụng cho ít nhất một đường dẫn để đảm bảo middleware được chạy
+    '/((?!_next/static|_next/image|favicon.ico).*)',
+  ]
 };
 
 /* BỎ COMMENT PHẦN NÀY KHI CẦN BẢO VỆ LẠI
