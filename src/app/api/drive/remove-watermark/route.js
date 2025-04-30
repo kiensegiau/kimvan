@@ -4,8 +4,17 @@
  * API này sẽ:
  * 1. Tải xuống file PDF từ Google Drive
  * 2. Xử lý để xóa watermark
- * 3. Tải lên file đã xử lý lên Google Drive
- * 4. Trả về link đến file đã xử lý
+ * 3. Tùy chọn thêm hình nền tùy chỉnh
+ * 4. Tải lên file đã xử lý lên Google Drive
+ * 5. Trả về link đến file đã xử lý
+ * 
+ * Tham số:
+ * - token: Token xác thực API
+ * - driveLink: Link đến file PDF trên Google Drive
+ * - backgroundImage (tùy chọn): Tên file hình nền (ví dụ: "nen.png") hoặc đường dẫn đầy đủ
+ *   - Nếu chỉ cung cấp tên file, hệ thống sẽ tìm trong thư mục gốc của ứng dụng
+ *   - Ví dụ: "nen.png" sẽ tự động trỏ đến "[thư mục ứng dụng]/nen.png"
+ * - backgroundOpacity (tùy chọn): Độ trong suốt của hình nền (0.1 = 10%)
  */
 
 import { NextResponse } from 'next/server';
@@ -74,7 +83,9 @@ const DEFAULT_CONFIG = {
   centerSize: 0.8,         // Kích thước vùng trung tâm (80% của trang)
   keepColors: true,        // Giữ màu sắc
   cleanupTempFiles: false, // Có xóa file tạm không
-  maxWorkers: Math.max(1, os.cpus().length - 1) // Số lượng worker tối đa (số lượng CPU - 1)
+  maxWorkers: Math.max(1, os.cpus().length - 1), // Số lượng worker tối đa (số lượng CPU - 1)
+  backgroundImage: null,   // Đường dẫn đến hình nền tùy chỉnh
+  backgroundOpacity: 0.1,  // Độ trong suốt của hình nền (0.1 = 10%)
 };
 
 // Đọc token từ file
@@ -909,7 +920,7 @@ async function processBatches(items, processFunc, maxConcurrent) {
 }
 
 // Tối ưu hàm vẽ hình ảnh vào PDF
-async function addImageToPdf(pdfDoc, pngPath, index, totalPages) {
+async function addImageToPdf(pdfDoc, pngPath, index, totalPages, config = DEFAULT_CONFIG) {
   if (!fs.existsSync(pngPath)) {
     console.warn(`Bỏ qua trang ${index + 1} vì file không tồn tại: ${pngPath}`);
     return false;
@@ -926,6 +937,59 @@ async function addImageToPdf(pdfDoc, pngPath, index, totalPages) {
   
   // Tạo trang mới với kích thước của hình ảnh
   const page = pdfDoc.addPage([pngDimensions.width, pngDimensions.height]);
+  
+  // Nếu có hình nền, thêm vào trước
+  if (config.backgroundImage && fs.existsSync(config.backgroundImage)) {
+    try {
+      console.log(`Đang thêm hình nền vào trang ${index + 1}...`);
+      
+      // Đọc hình nền
+      const backgroundData = fs.readFileSync(config.backgroundImage);
+      let backgroundImage;
+      
+      // Xác định loại file và nhúng phù hợp
+      if (config.backgroundImage.toLowerCase().endsWith('.png')) {
+        backgroundImage = await pdfDoc.embedPng(backgroundData);
+      } else if (config.backgroundImage.toLowerCase().endsWith('.jpg') || 
+                config.backgroundImage.toLowerCase().endsWith('.jpeg')) {
+        backgroundImage = await pdfDoc.embedJpg(backgroundData);
+      } else {
+        console.warn(`Định dạng file hình nền không được hỗ trợ: ${config.backgroundImage}`);
+      }
+      
+      if (backgroundImage) {
+        // Vẽ hình nền
+        const bgDimensions = backgroundImage.size();
+        
+        // Tính toán tỷ lệ để vừa với trang
+        let scale = 1;
+        let xOffset = 0;
+        let yOffset = 0;
+        
+        // Đảm bảo hình nền phủ toàn bộ trang
+        const widthRatio = pngDimensions.width / bgDimensions.width;
+        const heightRatio = pngDimensions.height / bgDimensions.height;
+        scale = Math.max(widthRatio, heightRatio);
+        
+        // Tính toán vị trí để hình nền nằm giữa trang
+        const scaledWidth = bgDimensions.width * scale;
+        const scaledHeight = bgDimensions.height * scale;
+        xOffset = (pngDimensions.width - scaledWidth) / 2;
+        yOffset = (pngDimensions.height - scaledHeight) / 2;
+        
+        // Vẽ hình nền với độ trong suốt
+        page.drawImage(backgroundImage, {
+          x: xOffset,
+          y: yOffset,
+          width: scaledWidth,
+          height: scaledHeight,
+          opacity: config.backgroundOpacity || 0.1
+        });
+      }
+    } catch (backgroundError) {
+      console.warn(`Lỗi khi thêm hình nền: ${backgroundError.message}`);
+    }
+  }
   
   // Vẽ hình ảnh lên trang
   page.drawImage(image, {
@@ -1092,7 +1156,7 @@ async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
       const batch = processedPngPaths.slice(i, i + addImageBatchSize);
       await Promise.all(
         batch.map((pngPath, idx) => 
-          addImageToPdf(pdfDoc, pngPath, i + idx, processedPngPaths.length)
+          addImageToPdf(pdfDoc, pngPath, i + idx, processedPngPaths.length, config)
         )
       );
     }
@@ -1153,11 +1217,13 @@ export async function POST(request) {
     // Parse request body
     console.log('Đang phân tích body request...');
     const requestBody = await request.json();
-    const { token, driveLink } = requestBody;
+    const { token, driveLink, backgroundImage, backgroundOpacity } = requestBody;
     
     console.log('Thông tin request:', {
       token: token ? '***' : 'không có',
-      driveLink: driveLink || 'không có'
+      driveLink: driveLink || 'không có',
+      backgroundImage: backgroundImage ? 'có' : 'không có',
+      backgroundOpacity: backgroundOpacity || 0.1
     });
 
     // Validate API token
@@ -1232,7 +1298,37 @@ export async function POST(request) {
         sizeInMB: (inputStats.size / (1024 * 1024)).toFixed(2) + ' MB'
       });
       
-      cleanResult = await cleanPdf(downloadResult.filePath, outputPath);
+      // Tạo config với tham số từ request
+      const config = { ...DEFAULT_CONFIG };
+      
+      // Thêm hình nền nếu có
+      if (backgroundImage) {
+        // Xử lý đường dẫn hình nền để làm cho nó di động
+        let backgroundImagePath = backgroundImage;
+        
+        // Nếu không phải đường dẫn tuyệt đối, coi như nó là đường dẫn tương đối từ thư mục gốc
+        if (!path.isAbsolute(backgroundImage) && 
+            !backgroundImage.includes(':/') && 
+            !backgroundImage.includes(':\\')) {
+          backgroundImagePath = path.join(process.cwd(), backgroundImage);
+          console.log('Đã chuyển đổi sang đường dẫn tương đối:', backgroundImagePath);
+        }
+        
+        // Kiểm tra file có tồn tại không
+        if (fs.existsSync(backgroundImagePath)) {
+          console.log('Sử dụng hình nền:', backgroundImagePath);
+          config.backgroundImage = backgroundImagePath;
+          
+          if (backgroundOpacity !== undefined) {
+            config.backgroundOpacity = parseFloat(backgroundOpacity);
+            console.log('Độ trong suốt của hình nền:', config.backgroundOpacity);
+          }
+        } else {
+          console.warn(`Cảnh báo: Không tìm thấy file hình nền tại đường dẫn: ${backgroundImagePath}`);
+        }
+      }
+      
+      cleanResult = await cleanPdf(downloadResult.filePath, outputPath, config);
       processedFilePath = outputPath;
       
       console.log('Kết quả xử lý PDF:', cleanResult);
