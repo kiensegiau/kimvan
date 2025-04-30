@@ -1,13 +1,14 @@
 {
-  "access_token": "ya29.a0AZYkNZjO6DAEExfoXIWQBONZaEBRWnRC09Se4YYt2cQ1sS3tWXfTjTZExUcyJY7mQ2WbqStX3ShGicPsRU98z7O__RNH0RfG79vjKy-Qle5eIJA9u3IcOkCsukXGYf3Zpxx1fmXsm626Qju_rWxIDMQS7-zG8MSBzdNjXDteaCgYKASoSARUSFQHGX2MiBo-VR07AmwUNuENN0Y65Rg0175",
-  "refresh_token": "1//0eMhiMolLVZCrCgYIARAAGA4SNwF-L9IrtOakM8xtUXmzvzrrH8n9uHj_oPrry9VlQdJVJc3E5RH1SzpInnPrcLbhe8rRnWgJNbM",
-  "scope": "https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/youtube.upload",
+  "access_token": "ya29.a0AZYkNZhQjuFaKHodI0p-MainbpsTSxNkp1wHCNAHOJnHmrR6Kmcj2wzP4CrFUVjC91lP4WcZy8Z8xXZ6Qm8Wg7K_uZjeUfI6ik4gojRGfDY3xctAeJJ0dxQBuxfLcxmseSL_7yS3sobgT-B3-syA074rqlKBzLC7y01raCz3aCgYKARwSARUSFQHGX2Mia88u4i6vknEQ9RdCwbIgtQ0175",
+  "refresh_token": "1//0evgluWieeYbZCgYIARAAGA4SNwF-L9IrMfmTnSxc-AH04to0FGy6-VM2g0VpwXRKJeDbatcqHaRast1LeVhW9BJPzghfTtiU8Fs",
+  "scope": "https://www.googleapis.com/auth/userinfo.email openid https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/userinfo.profile",
   "token_type": "Bearer",
+  "id_token": "eyJhbGciOiJSUzI1NiIsImtpZCI6IjA3YjgwYTM2NTQyODUyNWY4YmY3Y2QwODQ2ZDc0YThlZTRlZjM2MjUiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20iLCJhenAiOiI4NjE1NTU2MzAxNDgtYjE1dGJ1bzVtNWNmOHV0cDdsdDdpdW5pZG0wYnZiOGguYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJhdWQiOiI4NjE1NTU2MzAxNDgtYjE1dGJ1bzVtNWNmOHV0cDdsdDdpdW5pZG0wYnZiOGguYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJzdWIiOiIxMDU5NTE5MjAyMjYwMjA2OTg1NDEiLCJlbWFpbCI6InBoYW5odXUucGtAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImF0X2hhc2giOiJtVHo0RVRpa3FON2YzaENPVWZXV3hnIiwibmFtZSI6Ikjhu691IFBoYW4iLCJwaWN0dXJlIjoiaHR0cHM6Ly9saDMuZ29vZ2xldXNlcmNvbnRlbnQuY29tL2EvQUNnOG9jTHZUN01qWEwzZUhXb29DOXdLa1JQN09ELVBxdmx5OVd2b0dsbVlOZVh6U05jVVBBPXM5Ni1jIiwiZ2l2ZW5fbmFtZSI6Ikjhu691IiwiZmFtaWx5X25hbWUiOiJQaGFuIiwiaWF0IjoxNzQ2MDI1NDQyLCJleHAiOjE3NDYwMjkwNDJ9.Jq7JwXWWX3CWwQ033Yvh-sp-_gqrhTTEko4c-bE1f55gYk-CcVGUCGYp7BsSnsVnEZQAOc1ttR5tN-p5ykPk57b0dHhk8Hp68F1-MgW-Y87YNSM8IFNR_l2HBdl0SfSydp_DmMWfCdEexS-G9xtQKAR9W7tXj3WAN7-aiaELgLXxlMd_LNQBeT5ef05fJTPxddvhqJZiL-mUL_UnNHjhTQT981rWTyK6mqEFCyVc6DO63c_bcgWIC1wyXWI0c39icgxQvz_7DgsRVRKFupIyBw5c2XlFMVXp_WB8MGs7HFGe5G5hpFGJZj57HS7xxef-w_l6asJsz39Rp2KcLn0k0w",
   "refresh_token_expires_in": 604799,
-  "expiry_date": 1745938948519,
-  "timestamp": 1745935349519,
+  "expiry_date": 1746029041230,
+  "timestamp": 1746025442230,
   "scopes": {
-    "youtube": true,
+    "youtube": false,
     "drive": true
   }
 }

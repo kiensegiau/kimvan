@@ -1,0 +1,19 @@
+{
+  "access_token": "ya29.a0AZYkNZjFx6i0nagVDxDaFkcWlrv0Ok0HzkxTM9rWAzGZF3dqgAKs8_COylK6FzputsJLmZ9-x5G9Hu4t7yawGVRFWk3W6uAD4_jINXj35qSO8kq0_KE-X35uQ3tqm72-Cx3Nf3gWoxGEqYY3qAtqWogLmG-havjg8rwDwCaFaCgYKARsSARQSFQHGX2MiNINlrB_Xeeuzg80N8LkBVg0175",
+  "refresh_token": "1//0eBXjrquZBGd-CgYIARAAGA4SNwF-L9Ir0bIg1r93nN9ZLHcKTJgKpGamwfKPV-1IVzZB_ht_Le17xNkMKKSinVY-BTqDT34TRZg",
+  "scope": "https://www.googleapis.com/auth/userinfo.profile openid https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/drive",
+  "token_type": "Bearer",
+  "id_token": "eyJhbGciOiJSUzI1NiIsImtpZCI6IjA3YjgwYTM2NTQyODUyNWY4YmY3Y2QwODQ2ZDc0YThlZTRlZjM2MjUiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20iLCJhenAiOiI4NjE1NTU2MzAxNDgtYjE1dGJ1bzVtNWNmOHV0cDdsdDdpdW5pZG0wYnZiOGguYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJhdWQiOiI4NjE1NTU2MzAxNDgtYjE1dGJ1bzVtNWNmOHV0cDdsdDdpdW5pZG0wYnZiOGguYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJzdWIiOiIxMDUxMjUxNDUyNTA1NDYwNzg2NjYiLCJlbWFpbCI6InBoYW5odXVraWVuMjAwMUBnbWFpbC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiYXRfaGFzaCI6IlVhc0V4d28zMlY0blZneTJ4MU5XVGciLCJuYW1lIjoiS2nDqm4gUGhhbiIsInBpY3R1cmUiOiJodHRwczovL2xoMy5nb29nbGV1c2VyY29udGVudC5jb20vYS9BQ2c4b2NLQ09ZSkNncTB6ZHpKYkprRmpQUU80enBiMWZLb3NhUElpWGhEVC1QRVloaDBrc0E9czk2LWMiLCJnaXZlbl9uYW1lIjoiS2nDqm4iLCJmYW1pbHlfbmFtZSI6IlBoYW4iLCJpYXQiOjE3NDYwMjU1NjYsImV4cCI6MTc0NjAyOTE2Nn0.HsWiG8AYALYA7v-D_KCcyUdTL2x5xqhI1Q5SsYJv6c8bv0Th_XP4bh5G83xBpTguJAxUWwOypYW5YVBc5LlyRiUXBQZuTwpYuAFkmP84PZUpCZHTpl619ILYf3ouV_Av_f-2-wx3gyxRk1Cbv5H1YlbHOKjUI-IMQ-pOro_9JIS4VwMPFQ1uGqr4zCRIJB81aI58y2GC_gl92P1-LCLf8SgBE4nGh3pH_5Zh5HOCTLfQUaJ0QNh8ma9E3sbavbm_zCQbsx-Op0EtUL8nGui6xnBbWnGQ9osRjDmdO43evCSnu1B9sixh0NIoqJjuZ_HD3pqyWmnRDrTKO7-OTl-b2A",
+  "refresh_token_expires_in": 604799,
+  "expiry_date": 1746029165542,
+  "timestamp": 1746025567676,
+  "scopes": {
+    "youtube": false,
+    "drive": true
+  },
+  "accountInfo": {
+    "email": null,
+    "name": null
+  },
+  "accountIndex": 0
+}
