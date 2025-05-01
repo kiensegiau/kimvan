@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { google } from 'googleapis';
 import fs from 'fs';
 import path from 'path';
+import { startTokenRefreshService } from '../token-refresh-service';
 
 // File paths to store tokens
 const TOKEN_PATHS = [
@@ -11,6 +12,10 @@ const TOKEN_PATHS = [
 
 // Thời gian buffer trước khi cần làm mới (5 phút)
 const REFRESH_BUFFER_MS = 5 * 60 * 1000;
+
+// Khởi động service token refresh ngay khi file được import
+console.log('🔄 Starting Google Drive token refresh service from API route handler');
+startTokenRefreshService();
 
 // Đọc token từ file
 function getStoredToken(accountIndex) {
