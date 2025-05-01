@@ -4,7 +4,7 @@
 import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
-import { TOKEN_PATH, TOKEN_PATHS } from './config';
+import { TOKEN_PATH, TOKEN_PATHS } from './config.js';
 
 // Đọc token từ file
 export function getStoredToken() {

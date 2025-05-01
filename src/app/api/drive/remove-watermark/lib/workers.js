@@ -6,6 +6,8 @@ import { promisify } from 'util';
 import { exec } from 'child_process';
 import fs from 'fs';
 import path from 'path';
+import sharp from 'sharp';
+import { DEFAULT_CONFIG } from './config.js';
 
 const execPromise = promisify(exec);
 
@@ -98,16 +100,6 @@ export async function processPage(data) {
   const { pngPath, processedPngPath, page, numPages, config } = data;
   
   try {
-    // Đảm bảo sharp được import
-    let sharp;
-    try {
-      sharp = require('sharp');
-    } catch (error) {
-      return { success: false, page, error: 'Không thể tải thư viện Sharp' };
-    }
-
-    // Xử lý hình ảnh với Sharp
-    
     // Đọc hình ảnh
     const image = sharp(pngPath);
     const metadata = await image.metadata();

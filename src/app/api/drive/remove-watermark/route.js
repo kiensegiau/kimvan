@@ -23,20 +23,22 @@ import path from 'path';
 import { Worker, isMainThread, parentPort, workerData } from 'worker_threads';
 import { v4 as uuidv4 } from 'uuid';
 import os from 'os';
+import google from 'googleapis';
 
 // Import các module đã tách
-import { API_TOKEN, DEFAULT_CONFIG } from './lib/config';
-import { downloadFromGoogleDrive } from './lib/drive-service';
-import { uploadToDrive } from './lib/drive-service';
-import { cleanPdf } from './lib/watermark';
-import { cleanupTempFiles, getTokenByType, findGhostscript } from './lib/utils';
-import { processPage, convertPage } from './lib/workers';
+import { API_TOKEN, DEFAULT_CONFIG } from './lib/config.js';
+import { downloadFromGoogleDrive } from './lib/drive-service.js';
+import { uploadToDrive } from './lib/drive-service.js';
+import { cleanPdf } from './lib/watermark.js';
+import { cleanupTempFiles, getTokenByType, findGhostscript } from './lib/utils.js';
+import { processPage, convertPage } from './lib/workers.js';
 import { 
   processDriveFolder, 
   createDriveFolder, 
   uploadFileToDriveFolder,
   downloadFileFromDrive 
-} from './lib/drive-service';
+} from './lib/drive-service.js';
+import { downloadBlockedPDF } from './lib/drive-fix-blockdown.js';
 
 // Suppress Node.js deprecation warnings for punycode module
 process.noDeprecation = true;
@@ -193,10 +195,117 @@ async function handleDriveFile(driveLink, backgroundImage, backgroundOpacity) {
       downloadResult = await downloadFileFromDrive(driveLink);
       tempDir = downloadResult.outputDir;
     } catch (downloadError) {
-      return NextResponse.json(
-        { error: `Không thể tải file từ Google Drive: ${downloadError.message}` },
-        { status: 500 }
-      );
+      console.log(`⚠️ Lỗi tải file từ Drive API: ${downloadError.message}`);
+      
+      // Kiểm tra xem có phải lỗi "cannot be downloaded" không
+      if (downloadError.message.includes('cannot be downloaded') || 
+          downloadError.message.includes('cannotDownloadFile') ||
+          downloadError.message.includes('403')) {
+        console.log(`🔄 Thử tải file bằng phương pháp chụp PDF...`);
+        
+        // Trích xuất fileId từ driveLink
+        let fileId;
+        if (driveLink.includes('drive.google.com')) {
+          try {
+            const result = extractGoogleDriveFileId(driveLink);
+            fileId = result.fileId;
+          } catch (error) {
+            throw new Error(`Không thể trích xuất ID từ link Google Drive: ${error.message}`);
+          }
+        } else {
+          fileId = driveLink;
+        }
+        
+        // Tạo thư mục tạm
+        const tempDirName = uuidv4();
+        tempDir = path.join(os.tmpdir(), tempDirName);
+        fs.mkdirSync(tempDir, { recursive: true });
+        
+        // Lấy thông tin file để biết tên
+        try {
+          const downloadToken = getTokenByType('download');
+          if (!downloadToken) {
+            throw new Error('Không tìm thấy token Google Drive.');
+          }
+          
+          const oauth2Client = new google.auth.OAuth2(
+            process.env.GOOGLE_CLIENT_ID,
+            process.env.GOOGLE_CLIENT_SECRET,
+            process.env.GOOGLE_REDIRECT_URI
+          );
+          
+          oauth2Client.setCredentials(downloadToken);
+          const drive = google.drive({ version: 'v3', auth: oauth2Client });
+          
+          // Lấy metadata của file
+          const fileMetadata = await drive.files.get({
+            fileId: fileId,
+            supportsAllDrives: true,
+            includeItemsFromAllDrives: true,
+            fields: 'name,mimeType,size'
+          });
+          
+          const fileName = fileMetadata.data.name;
+          const mimeType = fileMetadata.data.mimeType;
+          
+          // Kiểm tra nếu là PDF thì dùng giải pháp tải file bị chặn
+          if (mimeType === 'application/pdf' || fileName.toLowerCase().endsWith('.pdf')) {
+            console.log(`📑 Sử dụng giải pháp tải file PDF bị chặn...`);
+            // Tạo config cho xử lý watermark
+            const watermarkConfig = { ...DEFAULT_CONFIG };
+            
+            // Thêm hình nền nếu có
+            if (backgroundImage) {
+              let backgroundImagePath = backgroundImage;
+              
+              if (!path.isAbsolute(backgroundImage) && 
+                  !backgroundImage.includes(':/') && 
+                  !backgroundImage.includes(':\\')) {
+                backgroundImagePath = path.join(process.cwd(), backgroundImage);
+              }
+              
+              const fileExists = fs.existsSync(backgroundImagePath);
+              
+              if (fileExists) {
+                watermarkConfig.backgroundImage = backgroundImagePath;
+                
+                if (backgroundOpacity !== undefined) {
+                  watermarkConfig.backgroundOpacity = parseFloat(backgroundOpacity);
+                }
+              }
+            }
+            
+            const unblockResult = await downloadBlockedPDF(fileId, fileName, tempDir, watermarkConfig);
+            
+            if (unblockResult.success) {
+              downloadResult = {
+                success: true,
+                filePath: unblockResult.filePath,
+                fileName: fileName,
+                contentType: 'application/pdf',
+                outputDir: tempDir,
+                size: fs.statSync(unblockResult.filePath).size,
+                isImage: false,
+                isPdf: true,
+                originalSize: unblockResult.originalSize || 0,
+                processedSize: unblockResult.processedSize || fs.statSync(unblockResult.filePath).size,
+                processingTime: unblockResult.processingTime || 0
+              };
+            } else {
+              throw new Error(`Không thể tải file bị chặn: ${unblockResult.error}`);
+            }
+          } else {
+            throw new Error(`Loại file ${mimeType} không hỗ trợ tải xuống khi bị chặn`);
+          }
+        } catch (unblockError) {
+          throw new Error(`Không thể tải file bị chặn: ${unblockError.message}`);
+        }
+      } else {
+        return NextResponse.json(
+          { error: `Không thể tải file từ Google Drive: ${downloadError.message}` },
+          { status: 500 }
+        );
+      }
     }
     
     // Kiểm tra loại file
@@ -392,8 +501,89 @@ async function handleDriveFolder(driveFolderLink, backgroundImage, backgroundOpa
       try {
         // Tải file từ Drive
         console.log(`Đang tải file: ${file.name} (ID: ${file.id})`);
-        const downloadResult = await downloadFileFromDrive(file.id);
-        console.log(`Đã tải xong file: ${file.name}, kích thước: ${downloadResult.size} bytes`);
+        let downloadResult;
+        try {
+          downloadResult = await downloadFileFromDrive(file.id);
+          console.log(`Đã tải xong file: ${file.name}, kích thước: ${downloadResult.size} bytes`);
+        } catch (downloadError) {
+          console.log(`⚠️ Lỗi tải file ${file.name}: ${downloadError.message}`);
+          
+          // Kiểm tra xem có phải lỗi "cannot be downloaded" không
+          if (downloadError.message.includes('cannot be downloaded') || 
+              downloadError.message.includes('cannotDownloadFile') ||
+              downloadError.message.includes('403')) {
+            console.log(`🔄 Thử tải file ${file.name} bằng phương pháp chụp PDF...`);
+            
+            // Tạo thư mục tạm cho file này
+            const tempDirName = uuidv4();
+            const fileOutputDir = path.join(os.tmpdir(), tempDirName);
+            fs.mkdirSync(fileOutputDir, { recursive: true });
+            processingFolders.push(fileOutputDir);
+            
+            // Kiểm tra nếu là PDF thì dùng giải pháp tải file bị chặn
+            if (file.mimeType === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+              console.log(`📑 Sử dụng giải pháp tải file PDF bị chặn...`);
+              
+              // Tạo config cho xử lý watermark
+              const watermarkConfig = { ...DEFAULT_CONFIG };
+              
+              // Thêm hình nền nếu có
+              if (backgroundImage) {
+                let backgroundImagePath = backgroundImage;
+                
+                if (!path.isAbsolute(backgroundImage) && 
+                    !backgroundImage.includes(':/') && 
+                    !backgroundImage.includes(':\\')) {
+                  backgroundImagePath = path.join(process.cwd(), backgroundImage);
+                }
+                
+                const fileExists = fs.existsSync(backgroundImagePath);
+                
+                if (fileExists) {
+                  watermarkConfig.backgroundImage = backgroundImagePath;
+                  
+                  if (backgroundOpacity !== undefined) {
+                    watermarkConfig.backgroundOpacity = parseFloat(backgroundOpacity);
+                  }
+                }
+              }
+              
+              const unblockResult = await downloadBlockedPDF(file.id, file.name, fileOutputDir, watermarkConfig);
+              
+              if (unblockResult.success) {
+                downloadResult = {
+                  success: true,
+                  filePath: unblockResult.filePath,
+                  fileName: file.name,
+                  contentType: 'application/pdf',
+                  outputDir: fileOutputDir,
+                  size: fs.statSync(unblockResult.filePath).size,
+                  isImage: false,
+                  isPdf: true,
+                  originalSize: unblockResult.originalSize || 0,
+                  processedSize: unblockResult.processedSize || fs.statSync(unblockResult.filePath).size,
+                  processingTime: unblockResult.processingTime || 0
+                };
+                console.log(`✅ Đã tải và xử lý thành công file ${file.name} bằng phương pháp chụp PDF`);
+              } else {
+                throw new Error(`Không thể tải file bị chặn: ${unblockResult.error}`);
+              }
+            } else {
+              folderResults.push({
+                originalFile: file.name,
+                skipped: true,
+                reason: `Loại file ${file.mimeType} không hỗ trợ tải xuống khi bị chặn`
+              });
+              continue;
+            }
+          } else {
+            folderResults.push({
+              originalFile: file.name,
+              error: downloadError.message
+            });
+            continue;
+          }
+        }
         
         // Xử lý tùy theo loại file
         if (downloadResult.isPdf) {

@@ -6,8 +6,8 @@ import path from 'path';
 import os from 'os';
 import { google } from 'googleapis';
 import { v4 as uuidv4 } from 'uuid';
-import { getTokenByType, getExtensionFromMimeType, cleanupTempFiles } from './utils';
-import { TOKEN_PATHS } from './config';
+import { getTokenByType, getExtensionFromMimeType, cleanupTempFiles } from './utils.js';
+import { TOKEN_PATHS } from './config.js';
 
 // Thay thế hàm extractGoogleDriveFileId bằng phiên bản mới
 export function extractGoogleDriveFileId(url) {
