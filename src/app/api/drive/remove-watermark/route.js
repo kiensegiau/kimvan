@@ -71,6 +71,12 @@ const API_TOKEN = 'api@test-watermark';
 // Đường dẫn file lưu token
 const TOKEN_PATH = path.join(process.cwd(), 'youtube_token.json');
 
+// Thêm đường dẫn cho token upload và download
+const TOKEN_PATHS = [
+  path.join(process.cwd(), 'drive_token_upload.json'),   // Token tải lên - Upload
+  path.join(process.cwd(), 'drive_token_download.json')  // Token tải xuống - Download
+];
+
 // Thông số xử lý mặc định
 const DEFAULT_CONFIG = {
   dpi: 350,                // Độ phân giải
@@ -114,6 +120,41 @@ function getStoredToken() {
     console.error('Lỗi đọc file token:', error);
   }
   return null;
+}
+
+// Thêm hàm đọc token tải lên/tải xuống
+function getTokenByType(type = 'upload') {
+  try {
+    const tokenIndex = type === 'upload' ? 0 : 1;
+    const tokenPath = TOKEN_PATHS[tokenIndex];
+    
+    if (fs.existsSync(tokenPath)) {
+      const tokenContent = fs.readFileSync(tokenPath, 'utf8');
+      console.log(`Đọc token ${type} từ file:`, tokenPath);
+      
+      if (tokenContent.length === 0) {
+        console.error(`File token ${type} tồn tại nhưng trống`);
+        return null;
+      }
+      
+      try {
+        const parsedToken = JSON.parse(tokenContent);
+        console.log(`Phân tích token ${type} thành công. Trường có sẵn:`, Object.keys(parsedToken).join(', '));
+        return parsedToken;
+      } catch (parseError) {
+        console.error(`Lỗi phân tích JSON token ${type}:`, parseError);
+        return null;
+      }
+    } else {
+      console.error(`File token ${type} không tồn tại tại đường dẫn:`, tokenPath);
+      // Fallback to old token file
+      return getStoredToken();
+    }
+  } catch (error) {
+    console.error(`Lỗi đọc file token ${type}:`, error);
+    // Fallback to old token file
+    return getStoredToken();
+  }
 }
 
 // Thay thế hàm extractGoogleDriveFileId bằng phiên bản mới
@@ -213,159 +254,125 @@ async function findFileByNameOrId(drive, nameOrId) {
 async function downloadFromGoogleDrive(fileIdOrLink) {
   let fileId, resourceKey;
   
-  // Kiểm tra xem input là file ID hay link
-  if (typeof fileIdOrLink === 'string' && (fileIdOrLink.includes('drive.google.com') || fileIdOrLink.includes('docs.google.com'))) {
-    console.log(`Đang trích xuất file ID từ link: ${fileIdOrLink}`);
-    const extracted = extractGoogleDriveFileId(fileIdOrLink);
-    fileId = extracted.fileId;
-    resourceKey = extracted.resourceKey;
-  } else {
-    fileId = fileIdOrLink;
-  }
-  
-  console.log(`Đang tải xuống file từ Google Drive với ID: ${fileId}`);
-  if (resourceKey) {
-    console.log(`Sử dụng resource key: ${resourceKey}`);
-  }
-  
-  // Create temp directory if it doesn't exist
-  const tempDir = path.join(os.tmpdir(), 'drive-download-');
-  const outputDir = fs.mkdtempSync(tempDir);
-  
   try {
-    // Get stored token
-    const storedToken = getStoredToken();
-    if (!storedToken) {
-      throw new Error('Không tìm thấy token Google Drive. Vui lòng cấu hình API trong cài đặt.');
+    // Create temp directory
+    console.log('Tạo thư mục tạm để lưu file tải xuống...');
+    const tempDirName = uuidv4();
+    const outputDir = path.join(os.tmpdir(), tempDirName);
+    fs.mkdirSync(outputDir, { recursive: true });
+    
+    // Extract file ID from link if needed
+    if (typeof fileIdOrLink === 'string' && fileIdOrLink.includes('drive.google.com')) {
+      try {
+        const result = extractGoogleDriveFileId(fileIdOrLink);
+        fileId = result.fileId;
+        resourceKey = result.resourceKey;
+        console.log(`Đã trích xuất ID file từ link: ${fileId}`);
+        if (resourceKey) {
+          console.log(`Với resource key: ${resourceKey}`);
+        }
+      } catch (error) {
+        throw new Error(`Không thể trích xuất ID từ link Google Drive: ${error.message}`);
+      }
+    } else {
+      fileId = fileIdOrLink;
+      console.log(`Sử dụng ID file đã cung cấp: ${fileId}`);
     }
     
-    // Create OAuth2 client and Drive API
-    const oauth2Client = new google.auth.OAuth2(
-      process.env.GOOGLE_CLIENT_ID,
-      process.env.GOOGLE_CLIENT_SECRET,
-      process.env.GOOGLE_REDIRECT_URI
-    );
-    
-    oauth2Client.setCredentials(storedToken);
-    
-    // Thiết lập hàm làm mới token nếu cần
-    if (storedToken.refresh_token) {
+    try {
+      // Get stored token for download
+      const downloadToken = getTokenByType('download');
+      if (!downloadToken) {
+        throw new Error('Không tìm thấy token Google Drive. Vui lòng cấu hình API trong cài đặt.');
+      }
+      
+      // Create OAuth2 client
+      const oauth2Client = new google.auth.OAuth2(
+        process.env.GOOGLE_CLIENT_ID,
+        process.env.GOOGLE_CLIENT_SECRET,
+        process.env.GOOGLE_REDIRECT_URI
+      );
+      
+      // Set credentials
+      oauth2Client.setCredentials(downloadToken);
+      
+      // Handle token refresh if needed
       oauth2Client.on('tokens', (tokens) => {
-        console.log('Token đã được làm mới tự động');
-        // Lưu token mới nếu cần
+        console.log('Token refreshed by Google API client');
         if (tokens.refresh_token) {
-          const newToken = {...storedToken, ...tokens};
-          fs.writeFileSync(TOKEN_PATH, JSON.stringify(newToken));
+          const newToken = {...downloadToken, ...tokens};
+          fs.writeFileSync(TOKEN_PATHS[1], JSON.stringify(newToken));
           console.log('Đã lưu token mới');
         }
       });
-    }
-    
-    const drive = google.drive({ version: 'v3', auth: oauth2Client });
-    
-    console.log('Kiểm tra quyền truy cập Drive...');
-    
-    // Check if token has Drive access
-    const aboutResponse = await drive.about.get({
-      fields: 'user'
-    });
-    
-    console.log(`Token Drive hợp lệ. Người dùng: ${aboutResponse.data.user?.displayName || 'Không xác định'}`);
-    console.log(`Email người dùng: ${aboutResponse.data.user?.emailAddress || 'Không xác định'}`);
-    
-    // Tìm file bằng ID hoặc tên
-    console.log(`Đang tìm kiếm file Google Drive: ${fileId}`);
-    const foundFile = await findFileByNameOrId(drive, fileId);
-    
-    if (!foundFile) {
-      throw new Error(`Không tìm thấy file với ID: ${fileId}`);
-    }
-    
-    console.log('Thông tin file Google Drive:');
-    console.log(`- Tên: ${foundFile.name}`);
-    console.log(`- Loại: ${foundFile.mimeType}`);
-    console.log(`- Kích thước: ${foundFile.size || 'Không xác định'}`);
-    
-    // Cập nhật fileId nếu cần
-    if (foundFile.id !== fileId) {
-      console.log(`Sử dụng ID tìm được: ${foundFile.id} (thay cho ${fileId})`);
-      fileId = foundFile.id;
-    }
-    
-    const fileName = foundFile.name || `google-drive-${fileId}`;
-    const contentType = foundFile.mimeType || 'application/octet-stream';
-    
-    // Check if can download
-    if (foundFile.capabilities && !foundFile.capabilities.canDownload) {
-      console.warn('CẢNH BÁO: Bạn không có quyền tải xuống file này!');
-      throw new Error('Bạn không có quyền tải xuống file này. Hãy yêu cầu chủ sở hữu chia sẻ file với quyền chỉnh sửa.');
-    }
-    
-    // Download file
-    console.log(`Đang tải xuống file Google Drive: ${fileId}`);
-    let fileBuffer;
-    
-    // Nếu là Google Workspace file (Docs, Sheets, Slides...)
-    if (contentType.includes('google-apps')) {
-      console.log('File là Google Workspace, xuất ra PDF...');
       
-      try {
-        const exportResponse = await drive.files.export({
-          fileId: fileId,
-          mimeType: 'application/pdf',
-          supportsAllDrives: true
-        }, {
-          responseType: 'arraybuffer'
-        });
-        
-        fileBuffer = Buffer.from(exportResponse.data);
-      } catch (exportError) {
-        console.error('Lỗi khi xuất file Google Workspace:', exportError.message);
-        throw new Error(`Không thể xuất file Google Workspace: ${exportError.message}`);
-      }
-    } else {
-      // File thông thường
-      // Tạo options cho việc tải xuống
-      const downloadOptions = {
+      // Initialize Google Drive API
+      const drive = google.drive({ version: 'v3', auth: oauth2Client });
+      
+      // Get file metadata
+      console.log(`Lấy thông tin metadata của file ${fileId}...`);
+      const fileMetadata = await drive.files.get({
         fileId: fileId,
-        alt: 'media',
         supportsAllDrives: true,
-        acknowledgeAbuse: true
-      };
-      
-      // Thêm resource key nếu có
-      if (resourceKey) {
-        downloadOptions.resourceKey = resourceKey;
-      }
-      
-      const response = await drive.files.get(downloadOptions, {
-        responseType: 'arraybuffer'
+        includeItemsFromAllDrives: true,
+        fields: 'name,mimeType,size'
       });
       
-      fileBuffer = Buffer.from(response.data);
+      console.log('Metadata file:', fileMetadata.data);
+      
+      // Check if file is a PDF (for watermark removal)
+      const mimeType = fileMetadata.data.mimeType;
+      if (mimeType !== 'application/pdf') {
+        throw new Error(`File không phải là PDF. Loại file: ${mimeType}`);
+      }
+      
+      // Download file content
+      console.log('Đang tải xuống file...');
+      const response = await drive.files.get(
+        {
+          fileId: fileId,
+          alt: 'media',
+          supportsAllDrives: true,
+          includeItemsFromAllDrives: true,
+          ...(resourceKey ? { resourceKey } : {})
+        },
+        { responseType: 'arraybuffer' }
+      );
+      
+      // Convert response to buffer
+      const fileBuffer = Buffer.from(response.data);
+      console.log(`Đã tải xuống ${fileBuffer.length} bytes`);
+      
+      if (fileBuffer.length === 0) {
+        throw new Error('File tải xuống rỗng (0 byte)');
+      }
+      
+      const fileName = fileMetadata.data.name;
+      const contentType = mimeType;
+      
+      // Create unique filename
+      const fileExtension = path.extname(fileName) || getExtensionFromMimeType(contentType);
+      const uniqueFileName = `${uuidv4()}${fileExtension}`;
+      const filePath = path.join(outputDir, uniqueFileName);
+      
+      // Save file to temp directory
+      fs.writeFileSync(filePath, fileBuffer);
+      
+      return {
+        success: true,
+        filePath: filePath,
+        fileName: fileName,
+        contentType: contentType,
+        outputDir: outputDir,
+        size: fileBuffer.length
+      };
+    } catch (error) {
+      // Clean up temp directory on error
+      cleanupTempFiles(outputDir);
+      throw error;
     }
-    
-    console.log(`Đã tải xuống file Google Drive thành công (${fileBuffer.length} bytes)`);
-    
-    // Create unique filename
-    const fileExtension = path.extname(fileName) || getExtensionFromMimeType(contentType);
-    const uniqueFileName = `${uuidv4()}${fileExtension}`;
-    const filePath = path.join(outputDir, uniqueFileName);
-    
-    // Save file to temp directory
-    fs.writeFileSync(filePath, fileBuffer);
-    
-    return {
-      success: true,
-      filePath: filePath,
-      fileName: fileName,
-      contentType: contentType,
-      outputDir: outputDir,
-      size: fileBuffer.length
-    };
   } catch (error) {
-    // Clean up temp directory on error
-    cleanupTempFiles(outputDir);
+    console.error('Lỗi khi tải xuống từ Google Drive:', error);
     throw error;
   }
 }
@@ -387,10 +394,10 @@ async function uploadToDrive(filePath, fileName, mimeType) {
     
     console.log(`File hợp lệ: ${filePath}, kích thước: ${fileSize} bytes`);
     
-    // Lấy token đã lưu
-    const storedToken = getStoredToken();
-    if (!storedToken) {
-      throw new Error('Không tìm thấy token Google Drive. Vui lòng thiết lập lại.');
+    // Lấy token tải lên (upload)
+    const uploadToken = getTokenByType('upload');
+    if (!uploadToken) {
+      throw new Error('Không tìm thấy token tải lên Google Drive. Vui lòng thiết lập lại tài khoản tải lên.');
     }
     
     // Tạo OAuth2 client
@@ -401,7 +408,7 @@ async function uploadToDrive(filePath, fileName, mimeType) {
     );
     
     // Thiết lập credentials
-    oauth2Client.setCredentials(storedToken);
+    oauth2Client.setCredentials(uploadToken);
     
     // Khởi tạo Google Drive API
     const drive = google.drive({ version: 'v3', auth: oauth2Client });
@@ -1504,46 +1511,44 @@ export async function POST(request) {
 
 // Test endpoint
 export async function GET() {
-  console.log('GET request đến API xóa watermark');
-  
-  // Kiểm tra môi trường
+  console.log('Kiểm tra API tích hợp...');
   try {
-    console.log('Kiểm tra môi trường...');
-    console.log('Node.js version:', process.version);
-    console.log('OS:', process.platform, process.arch);
-    console.log('Current directory:', process.cwd());
-    
-    // Kiểm tra GhostScript
-    console.log('Kiểm tra GhostScript...');
-    try {
-      const gsPath = findGhostscript();
-      console.log('GhostScript tìm thấy tại:', gsPath);
-    } catch (gsError) {
-      console.warn('Cảnh báo: Không tìm thấy GhostScript:', gsError.message);
-    }
-    
     // Kiểm tra Google Drive token
     console.log('Kiểm tra Google Drive token...');
-    const storedToken = getStoredToken();
-    if (storedToken) {
-      console.log('Token Google Drive khả dụng');
+    const uploadToken = getTokenByType('upload');
+    const downloadToken = getTokenByType('download');
+    
+    const tokenStatus = {
+      upload: uploadToken ? true : false,
+      download: downloadToken ? true : false
+    };
+    
+    if (uploadToken && downloadToken) {
+      console.log('Token tải lên và tải xuống Google Drive khả dụng');
+    } else if (!uploadToken && !downloadToken) {
+      console.log('Không tìm thấy token Google Drive');
     } else {
-      console.warn('Cảnh báo: Không tìm thấy token Google Drive');
+      console.log('Thiếu token:', !uploadToken ? 'tải lên' : 'tải xuống');
     }
-  } catch (checkError) {
-    console.error('Lỗi khi kiểm tra môi trường:', checkError);
-  }
-  
-  return NextResponse.json(
-    { 
-      message: 'API xóa watermark cho file Google Drive đang hoạt động.',
-      usage: 'Gửi yêu cầu POST với tham số token và driveLink',
-      environment: {
-        nodejs: process.version,
-        platform: process.platform,
-        arch: process.arch
+    
+    // Kiểm tra Ghostscript
+    const gsPath = findGhostscript();
+    const gsStatus = gsPath ? true : false;
+    
+    return NextResponse.json({
+      success: true,
+      status: {
+        drive: tokenStatus,
+        ghostscript: gsStatus,
+        gsPath: gsPath || null,
+        sharp: sharp ? true : false
       }
-    },
-    { status: 200 }
-  );
+    });
+  } catch (error) {
+    console.error('Lỗi khi kiểm tra API:', error);
+    return NextResponse.json({
+      success: false,
+      error: error.message || 'Lỗi không xác định khi kiểm tra API'
+    }, { status: 500 });
+  }
 } 
