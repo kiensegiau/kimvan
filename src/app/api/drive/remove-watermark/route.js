@@ -77,9 +77,9 @@ const TOKEN_PATHS = [
   path.join(process.cwd(), 'drive_token_download.json')  // Token tải xuống - Download
 ];
 
-// Thông số xử lý mặc định
+// Cập nhật config để giảm số lượng worker, tránh tràn bộ nhớ
 const DEFAULT_CONFIG = {
-  dpi: 350,                // Độ phân giải
+  dpi: 350,                // Giảm độ phân giải xuống
   brightness: 20,          // Độ sáng
   contrast: 35,            // Độ tương phản
   threshold: 0,            // Ngưỡng (0 = giữ màu sắc)
@@ -89,9 +89,10 @@ const DEFAULT_CONFIG = {
   centerSize: 0.8,         // Kích thước vùng trung tâm (80% của trang)
   keepColors: true,        // Giữ màu sắc
   cleanupTempFiles: false, // Có xóa file tạm không
-  maxWorkers: Math.max(1, os.cpus().length - 1), // Số lượng worker tối đa (số lượng CPU - 1)
+  maxWorkers: Math.max(1, Math.min(2, os.cpus().length - 1)), // Giảm worker xuống tối đa 2 luồng
   backgroundImage: null,   // Đường dẫn đến hình nền tùy chỉnh
-  backgroundOpacity: 0.3,  // Giảm xuống 0.3 (30% đục)
+  backgroundOpacity: 0.3,  // Giảm xuống 0.3 (30% đục),
+  batchSize: 3,            // Số lượng trang xử lý cùng lúc
 };
 
 // Đọc token từ file
@@ -905,22 +906,30 @@ async function countPdfPagesWithGhostscript(pdfPath, gsPath) {
   }
 }
 
-// Tối ưu xử lý song song để cải thiện hiệu suất
+// Tối ưu xử lý song song để cải thiện hiệu suất và tránh tràn bộ nhớ
 async function processBatches(items, processFunc, maxConcurrent) {
   const results = [];
   
-  // Sử dụng Promise.all thay vì Promise.allSettled khi có thể
-  for (let i = 0; i < items.length; i += maxConcurrent) {
-    const batch = items.slice(i, i + maxConcurrent).map(processFunc);
+  // Giảm kích thước batch để tránh sử dụng quá nhiều bộ nhớ cùng lúc
+  const safeBatchSize = Math.min(maxConcurrent, 3); // Tối đa 3 item cùng lúc
+  
+  console.log(`Xử lý ${items.length} items theo batch, mỗi batch ${safeBatchSize} item`);
+  
+  for (let i = 0; i < items.length; i += safeBatchSize) {
+    // Xử lý theo batch nhỏ
+    const currentBatch = items.slice(i, i + safeBatchSize);
+    console.log(`Xử lý batch ${Math.floor(i/safeBatchSize) + 1}/${Math.ceil(items.length/safeBatchSize)}, items ${i+1}-${Math.min(i+safeBatchSize, items.length)}`);
+    
+    // Bắt đầu xử lý batch hiện tại
+    const batch = currentBatch.map(processFunc);
     const batchResults = await Promise.allSettled(batch);
     
-    // Tối ưu để giảm overhead khi nối mảng lớn
+    // Thêm kết quả vào mảng kết quả
     results.push(...batchResults);
     
-    // Tạm dừng ngắn để cho phép GC chạy và tránh OOM
-    if (items.length > 50 && i % 50 === 0) {
-      await new Promise(resolve => setTimeout(resolve, 10));
-    }
+    // Đợi GC chạy sau mỗi batch
+    global.gc && global.gc();
+    await new Promise(resolve => setTimeout(resolve, 100));
   }
   
   return results;
@@ -1053,7 +1062,7 @@ async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
   }
 
   console.log('=== XỬ LÝ XÓA WATERMARK ===');
-  console.log(`Thông số: DPI=${config.dpi}, Brightness=${config.brightness}, Contrast=${config.contrast}, KeepColors=${config.keepColors}, Workers=${config.maxWorkers}`);
+  console.log(`Thông số: DPI=${config.dpi}, Brightness=${config.brightness}, Contrast=${config.contrast}, KeepColors=${config.keepColors}, Workers=${config.maxWorkers}, BatchSize=${config.batchSize}`);
   
   if (!inputPath) {
     throw new Error('Không có đường dẫn file đầu vào');
@@ -1130,12 +1139,30 @@ async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
       throw new Error('Không có trang PDF nào để chuyển đổi!');
     }
 
-    // Chuyển đổi PDF sang PNG song song với số lượng worker tối ưu
-    console.log(`Đang chuyển đổi song song ${conversionTasks.length} trang PDF sang PNG...`);
-    const convertResults = await processBatches(conversionTasks, 
-      (task) => createConvertWorker(gsPath, task.pdfPath, task.pngPath, task.page, numPages, config.dpi),
-      optimalWorkers
-    );
+    // Chuyển đổi PDF sang PNG theo batch nhỏ, không phải song song toàn bộ
+    console.log(`Đang chuyển đổi ${conversionTasks.length} trang PDF sang PNG theo batch...`);
+    const batchSize = config.batchSize || 3; // Xử lý tối đa 3 trang cùng lúc để tránh tràn bộ nhớ
+    
+    // Chia trang thành các batch nhỏ hơn để xử lý
+    const convertResults = [];
+    for (let i = 0; i < conversionTasks.length; i += batchSize) {
+      const currentBatch = conversionTasks.slice(i, i + batchSize);
+      console.log(`Đang chuyển đổi batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(conversionTasks.length/batchSize)}, trang ${i+1}-${Math.min(i+batchSize, conversionTasks.length)}`);
+      
+      // Xử lý batch hiện tại
+      const batchPromises = currentBatch.map(task => 
+        createConvertWorker(gsPath, task.pdfPath, task.pngPath, task.page, numPages, config.dpi)
+      );
+      
+      const batchResults = await Promise.allSettled(batchPromises);
+      convertResults.push(...batchResults);
+      
+      // Thúc đẩy GC sau mỗi batch
+      global.gc && global.gc();
+      
+      // Tạm dừng để cho GC có cơ hội chạy và giải phóng bộ nhớ
+      await new Promise(resolve => setTimeout(resolve, 200));
+    }
     
     // Lọc và giải phóng bộ nhớ sớm hơn
     const successfulConversions = convertResults
@@ -1148,12 +1175,28 @@ async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
       throw new Error('Không có trang nào được chuyển đổi thành công!');
     }
     
-    // Xử lý các PNG song song hiệu quả hơn
-    console.log(`Đang xử lý song song ${successfulConversions.length} trang...`);
-    const processResults = await processBatches(successfulConversions,
-      (conversion) => createProcessWorker(conversion.pngPath, conversion.page, numPages, config),
-      optimalWorkers
-    );
+    // Xử lý các PNG theo từng batch nhỏ
+    console.log(`Đang xử lý ${successfulConversions.length} trang theo batch...`);
+    const processResults = [];
+    
+    for (let i = 0; i < successfulConversions.length; i += batchSize) {
+      const currentBatch = successfulConversions.slice(i, i + batchSize);
+      console.log(`Đang xử lý batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(successfulConversions.length/batchSize)}, trang ${i+1}-${Math.min(i+batchSize, successfulConversions.length)}`);
+      
+      // Xử lý batch hiện tại
+      const batchPromises = currentBatch.map(conversion => 
+        createProcessWorker(conversion.pngPath, conversion.page, numPages, config)
+      );
+      
+      const batchResults = await Promise.allSettled(batchPromises);
+      processResults.push(...batchResults);
+      
+      // Thúc đẩy GC sau mỗi batch
+      global.gc && global.gc();
+      
+      // Tạm dừng để cho GC có cơ hội chạy và giải phóng bộ nhớ
+      await new Promise(resolve => setTimeout(resolve, 200));
+    }
     
     // Lọc và sắp xếp hiệu quả hơn
     const successfulProcessing = processResults
@@ -1176,15 +1219,21 @@ async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
     // Tạo PDF hiệu quả hơn
     const pdfDoc = await PDFDocument.create();
     
-    // Xử lý song song việc thêm hình ảnh vào PDF (tối đa 3 trang cùng lúc để tránh OOM)
-    const addImageBatchSize = 3;
-    for (let i = 0; i < processedPngPaths.length; i += addImageBatchSize) {
-      const batch = processedPngPaths.slice(i, i + addImageBatchSize);
-      await Promise.all(
-        batch.map((pngPath, idx) => 
-          addImageToPdf(pdfDoc, pngPath, i + idx, processedPngPaths.length, config)
-        )
-      );
+    // Xử lý từng trang một để tránh tràn bộ nhớ - thay vì song song
+    for (let i = 0; i < processedPngPaths.length; i++) {
+      console.log(`Đang thêm trang ${i+1}/${processedPngPaths.length} vào PDF kết quả...`);
+      await addImageToPdf(pdfDoc, processedPngPaths[i], i, processedPngPaths.length, config);
+      
+      // Xóa file PNG đã xử lý để giải phóng bộ nhớ
+      try {
+        fs.unlinkSync(processedPngPaths[i]);
+        fs.unlinkSync(processedPngPaths[i].replace('_processed.png', '.png'));
+      } catch (error) {
+        console.warn(`Không thể xóa file tạm: ${error.message}`);
+      }
+      
+      // Thúc đẩy GC sau mỗi trang
+      global.gc && global.gc();
     }
     
     // Lưu PDF với tùy chọn nén tối ưu
