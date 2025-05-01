@@ -43,8 +43,10 @@ function getChromePath() {
 
 // Tạo thư mục hồ sơ người dùng Chrome
 function createChromeUserProfile() {
-  const profilePath = path.join(os.tmpdir(), `puppeteer_profile_${uuidv4()}`);
+  // Sử dụng thư mục cố định thay vì tạo mới mỗi lần
+  const profilePath = path.join(os.homedir(), 'drive-pdf-watermark-profile');
   fs.mkdirSync(profilePath, { recursive: true });
+  console.log(`🔑 Sử dụng hồ sơ Chrome tại: ${profilePath}`);
   return profilePath;
 }
 
@@ -183,7 +185,10 @@ export async function downloadBlockedPDF(fileId, fileName, tempDir, watermarkCon
     
     // Xử lý watermark trên từng ảnh - sử dụng hàm từ module watermark
     console.log(`🔧 Xử lý watermark trên ${downloadedImages.length} ảnh...`);
-    processedImages = await processAllImages(downloadedImages, processedDir, config);
+    // Chuyển đổi ảnh webp sang png trước khi xử lý watermark
+    const pngImages = await convertAllImagesToPng(downloadedImages, imagesDir);
+    // Sau đó xử lý watermark trên các ảnh đã chuyển đổi
+    processedImages = await processAllImages(pngImages, processedDir, config);
     
     // Tạo file PDF từ các ảnh đã xử lý
     console.log(`📄 Tạo file PDF từ ${processedImages.length} ảnh đã xử lý...`);
@@ -247,7 +252,9 @@ export async function downloadBlockedPDF(fileId, fileName, tempDir, watermarkCon
     
     // Dọn dẹp thư mục hồ sơ Chrome
     try {
-      cleanupTempFiles(profilePath);
+      // Không xóa thư mục hồ sơ Chrome nữa để giữ lại dữ liệu đăng nhập
+      console.log(`✅ Giữ lại hồ sơ Chrome để lưu đăng nhập cho lần sau: ${profilePath}`);
+      // cleanupTempFiles(profilePath);
     } catch (cleanupError) {
       console.warn(`⚠️ Lỗi khi dọn dẹp thư mục hồ sơ Chrome: ${cleanupError.message}`);
     }
@@ -399,6 +406,58 @@ async function downloadAllPageImages(pageRequests, cookies, userAgent, imagesDir
 }
 
 /**
+ * Chuyển đổi tất cả ảnh sang định dạng PNG
+ * @param {Array<string>} images - Mảng đường dẫn đến ảnh
+ * @param {string} outputDir - Thư mục để lưu ảnh đã chuyển đổi
+ * @returns {Promise<Array<string>>} - Mảng các đường dẫn đến ảnh đã chuyển đổi
+ */
+async function convertAllImagesToPng(images, outputDir) {
+  const convertedImages = [];
+  
+  // Sắp xếp ảnh theo thứ tự trang
+  const sortedImages = images.sort((a, b) => {
+    try {
+      const pageA = parseInt(path.basename(a).match(/page_(\d+)/)[1]);
+      const pageB = parseInt(path.basename(b).match(/page_(\d+)/)[1]);
+      return pageA - pageB;
+    } catch (error) {
+      return 0;
+    }
+  });
+  
+  // Chuyển đổi từng ảnh sang png nếu cần
+  for (let i = 0; i < sortedImages.length; i++) {
+    const imagePath = sortedImages[i];
+    const pageNum = parseInt(path.basename(imagePath).match(/page_(\d+)/)[1]);
+    const extension = path.extname(imagePath);
+    
+    // Nếu đã là png, không cần chuyển đổi
+    if (extension.toLowerCase() === '.png') {
+      convertedImages.push(imagePath);
+      continue;
+    }
+    
+    // Chuyển đổi sang png
+    const pngPath = path.join(outputDir, `page_${String(pageNum).padStart(3, '0')}.png`);
+    
+    try {
+      console.log(`🔄 Chuyển đổi trang ${pageNum} từ ${extension} sang png...`);
+      await sharp(imagePath)
+        .toFormat('png')
+        .toFile(pngPath);
+      console.log(`✅ Đã chuyển đổi trang ${pageNum} sang png`);
+      convertedImages.push(pngPath);
+    } catch (error) {
+      console.error(`❌ Lỗi chuyển đổi trang ${pageNum} sang png: ${error.message}`);
+      // Nếu không chuyển đổi được, giữ ảnh gốc
+      convertedImages.push(imagePath);
+    }
+  }
+  
+  return convertedImages;
+}
+
+/**
  * Xử lý tất cả các ảnh bằng cách sử dụng hàm processImage từ module watermark
  * @param {Array<string>} images - Mảng đường dẫn đến ảnh
  * @param {string} outputDir - Thư mục để lưu ảnh đã xử lý
@@ -419,12 +478,13 @@ async function processAllImages(images, outputDir, config) {
     }
   });
   
-  // Xử lý từng ảnh bằng hàm processImage từ module watermark
+  // Xử lý từng ảnh
   for (let i = 0; i < sortedImages.length; i++) {
     const imagePath = sortedImages[i];
     const pageNum = parseInt(path.basename(imagePath).match(/page_(\d+)/)[1]);
-    const extension = path.extname(imagePath);
-    const processedPath = path.join(outputDir, `page_${String(pageNum).padStart(3, '0')}_processed${extension}`);
+    
+    // Luôn sử dụng .png cho file đã xử lý để đảm bảo tương thích
+    const processedPath = path.join(outputDir, `page_${String(pageNum).padStart(3, '0')}_processed.png`);
     
     try {
       console.log(`🔍 Xử lý watermark trang ${pageNum}...`);

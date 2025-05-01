@@ -289,7 +289,8 @@ async function handleDriveFile(driveLink, backgroundImage, backgroundOpacity) {
                 isPdf: true,
                 originalSize: unblockResult.originalSize || 0,
                 processedSize: unblockResult.processedSize || fs.statSync(unblockResult.filePath).size,
-                processingTime: unblockResult.processingTime || 0
+                processingTime: unblockResult.processingTime || 0,
+                alreadyProcessed: true // Đánh dấu đã xử lý watermark
               };
             } else {
               throw new Error(`Không thể tải file bị chặn: ${unblockResult.error}`);
@@ -312,48 +313,85 @@ async function handleDriveFile(driveLink, backgroundImage, backgroundOpacity) {
     if (downloadResult.isPdf) {
       // Xử lý nếu là PDF
       let cleanResult;
-      try {
-        const outputPath = path.join(tempDir, `${path.basename(downloadResult.fileName, '.pdf')}_clean.pdf`);
-        
-        // Tạo config với tham số từ request
-        const config = { ...DEFAULT_CONFIG };
-        
-        // Thêm hình nền nếu có
-        if (backgroundImage) {
-          // Xử lý đường dẫn hình nền để làm cho nó di động
-          let backgroundImagePath = backgroundImage;
+      
+      // Kiểm tra xem file đã được xử lý watermark chưa
+      if (downloadResult.alreadyProcessed) {
+        console.log(`✅ File PDF đã được xử lý watermark trong quá trình tải xuống, bỏ qua bước xử lý watermark`);
+        cleanResult = {
+          success: true,
+          filePath: downloadResult.filePath,
+          originalSize: downloadResult.originalSize,
+          processedSize: downloadResult.processedSize,
+          processingTime: downloadResult.processingTime
+        };
+        processedFilePath = downloadResult.filePath;
+      } else {
+        try {
+          const outputPath = path.join(tempDir, `${path.basename(downloadResult.fileName, '.pdf')}_clean.pdf`);
           
-          // Nếu không phải đường dẫn tuyệt đối, coi như nó là đường dẫn tương đối từ thư mục gốc
-          if (!path.isAbsolute(backgroundImage) && 
-              !backgroundImage.includes(':/') && 
-              !backgroundImage.includes(':\\')) {
-            backgroundImagePath = path.join(process.cwd(), backgroundImage);
-          }
+          // Tạo config với tham số từ request
+          const config = { ...DEFAULT_CONFIG };
           
-          // Kiểm tra file có tồn tại không
-          const fileExists = fs.existsSync(backgroundImagePath);
-          
-          if (fileExists) {
-            config.backgroundImage = backgroundImagePath;
+          // Thêm hình nền nếu có
+          if (backgroundImage) {
+            // Xử lý đường dẫn hình nền để làm cho nó di động
+            let backgroundImagePath = backgroundImage;
             
-            if (backgroundOpacity !== undefined) {
-              config.backgroundOpacity = parseFloat(backgroundOpacity);
+            // Nếu không phải đường dẫn tuyệt đối, coi như nó là đường dẫn tương đối từ thư mục gốc
+            if (!path.isAbsolute(backgroundImage) && 
+                !backgroundImage.includes(':/') && 
+                !backgroundImage.includes(':\\')) {
+              backgroundImagePath = path.join(process.cwd(), backgroundImage);
+            }
+            
+            // Kiểm tra file có tồn tại không
+            const fileExists = fs.existsSync(backgroundImagePath);
+            
+            if (fileExists) {
+              config.backgroundImage = backgroundImagePath;
+              
+              if (backgroundOpacity !== undefined) {
+                config.backgroundOpacity = parseFloat(backgroundOpacity);
+              }
             }
           }
+          
+          // Xử lý PDF để xóa watermark
+          console.log(`Bắt đầu xóa watermark cho file: ${downloadResult.fileName}`);
+          
+          // Kiểm tra xem file đã được xử lý watermark chưa
+          if (downloadResult.alreadyProcessed) {
+            console.log(`✅ File PDF đã được xử lý watermark trong quá trình tải xuống, bỏ qua bước xử lý watermark lần hai`);
+            
+            // Chỉ cần copy file đã xử lý
+            fs.copyFileSync(downloadResult.filePath, outputPath);
+            
+            cleanResult = {
+              success: true,
+              filePath: outputPath,
+              originalSize: downloadResult.originalSize, 
+              processedSize: downloadResult.processedSize,
+              processingTime: downloadResult.processingTime
+            };
+            console.log(`✅ Đã sao chép file đã xử lý thành công: ${downloadResult.fileName}`);
+          } else {
+            // Thực hiện xử lý watermark nếu chưa được xử lý trước đó
+            cleanResult = await cleanPdf(downloadResult.filePath, outputPath, config);
+            console.log(`Đã xóa watermark xong cho file: ${downloadResult.fileName}`);
+          }
+          
+          processedFilePath = outputPath;
+        } catch (cleanError) {
+          // Clean up temp files
+          if (tempDir && fs.existsSync(tempDir)) {
+            cleanupTempFiles(tempDir);
+          }
+          
+          return NextResponse.json(
+            { error: `Không thể xử lý PDF: ${cleanError.message}` },
+            { status: 500 }
+          );
         }
-        
-        cleanResult = await cleanPdf(downloadResult.filePath, outputPath, config);
-        processedFilePath = outputPath;
-      } catch (cleanError) {
-        // Clean up temp files
-        if (tempDir && fs.existsSync(tempDir)) {
-          cleanupTempFiles(tempDir);
-        }
-        
-        return NextResponse.json(
-          { error: `Không thể xử lý PDF: ${cleanError.message}` },
-          { status: 500 }
-        );
       }
       
       // Upload processed file back to Drive
@@ -562,7 +600,8 @@ async function handleDriveFolder(driveFolderLink, backgroundImage, backgroundOpa
                   isPdf: true,
                   originalSize: unblockResult.originalSize || 0,
                   processedSize: unblockResult.processedSize || fs.statSync(unblockResult.filePath).size,
-                  processingTime: unblockResult.processingTime || 0
+                  processingTime: unblockResult.processingTime || 0,
+                  alreadyProcessed: true // Đánh dấu đã xử lý watermark
                 };
                 console.log(`✅ Đã tải và xử lý thành công file ${file.name} bằng phương pháp chụp PDF`);
               } else {
@@ -617,8 +656,28 @@ async function handleDriveFolder(driveFolderLink, backgroundImage, backgroundOpa
           
           // Xử lý PDF để xóa watermark
           console.log(`Bắt đầu xóa watermark cho file: ${file.name}`);
-          const cleanResult = await cleanPdf(downloadResult.filePath, outputPath, config);
-          console.log(`Đã xóa watermark xong cho file: ${file.name}`);
+          
+          let cleanResult;
+          // Kiểm tra xem file đã được xử lý watermark chưa
+          if (downloadResult.alreadyProcessed) {
+            console.log(`✅ File PDF đã được xử lý watermark trong quá trình tải xuống, bỏ qua bước xử lý watermark lần hai`);
+            
+            // Chỉ cần copy file đã xử lý
+            fs.copyFileSync(downloadResult.filePath, outputPath);
+            
+            cleanResult = {
+              success: true,
+              filePath: outputPath,
+              originalSize: downloadResult.originalSize, 
+              processedSize: downloadResult.processedSize,
+              processingTime: downloadResult.processingTime
+            };
+            console.log(`✅ Đã sao chép file đã xử lý thành công: ${file.name}`);
+          } else {
+            // Thực hiện xử lý watermark nếu chưa được xử lý trước đó
+            cleanResult = await cleanPdf(downloadResult.filePath, outputPath, config);
+            console.log(`Đã xóa watermark xong cho file: ${file.name}`);
+          }
           
           // Tải lên Drive vào folder đích
           console.log(`Đang tải lên Drive cho file: ${file.name}`);
