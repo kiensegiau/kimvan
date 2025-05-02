@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeftIcon, PencilIcon, TrashIcon, CloudArrowDownIcon, ExclamationCircleIcon, XMarkIcon, ArrowPathIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
-import { AdjustmentsHorizontalIcon, DocumentArrowUpIcon } from '@heroicons/react/24/outline';
+import { AdjustmentsHorizontalIcon, DocumentArrowUpIcon, DocumentMagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { use } from 'react';
 import YouTubeModal from '../../components/YouTubeModal';
 import PDFModal from '../../components/PDFModal';
@@ -37,6 +37,8 @@ export default function CourseDetailPage({ params }) {
   const [pdfFile, setPdfFile] = useState(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadResult, setUploadResult] = useState(null);
+  const [processingAllDrive, setProcessingAllDrive] = useState(false);
+  const [processAllDriveResult, setProcessAllDriveResult] = useState(null);
   
   // Hàm lấy tiêu đề của sheet
   const getSheetTitle = (index, sheets) => {
@@ -367,6 +369,68 @@ export default function CourseDetailPage({ params }) {
     }
   };
 
+  // Hàm xử lý tất cả các link Drive trong khóa học
+  const handleProcessAllDrive = async () => {
+    if (!course) return;
+    
+    if (window.confirm(`Bạn có muốn xử lý tất cả các link Drive trong khóa học "${course.name}" không?`)) {
+      try {
+        setProcessingAllDrive(true);
+        setProcessAllDriveResult({
+          success: true,
+          message: `Đang xử lý tất cả các link Drive trong khóa học "${course.name}"...`,
+          inProgress: true
+        });
+        
+        const response = await fetch(`/api/courses/${course._id}/process-all-drive`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+        
+        const result = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(result.message || 'Không thể xử lý các link Drive');
+        }
+        
+        // Hiển thị kết quả xử lý
+        setProcessAllDriveResult({
+          success: true,
+          message: result.message || 'Xử lý tất cả các link Drive thành công',
+          details: result.details || null,
+          inProgress: false
+        });
+        
+        // Tải lại thông tin khóa học
+        await fetchCourseDetail();
+      } catch (err) {
+        console.error('Lỗi khi xử lý các link Drive:', err);
+        setProcessAllDriveResult({
+          success: false,
+          message: `Lỗi xử lý: ${err.message}`,
+          inProgress: false
+        });
+      } finally {
+        setProcessingAllDrive(false);
+      }
+    }
+  };
+
+  // Hàm kiểm tra và lấy URL đã xử lý
+  const getProcessedDriveFile = (originalUrl) => {
+    if (!course?.processedDriveFiles || !originalUrl) return null;
+    return course.processedDriveFiles.find(file => file.originalUrl === originalUrl);
+  };
+
+  // Hàm kiểm tra xem URL có phải là Google Drive PDF không
+  const isGoogleDrivePdf = (url) => {
+    if (!url) return false;
+    return (url.includes('drive.google.com') || url.includes('docs.google.com')) && 
+           (url.toLowerCase().endsWith('.pdf') || url.includes('pdf'));
+  };
+
   // Tải thông tin khóa học khi component được tạo
   useEffect(() => {
     fetchCourseDetail();
@@ -487,6 +551,24 @@ export default function CourseDetailPage({ params }) {
             </button>
             
             <button
+              onClick={handleProcessAllDrive}
+              disabled={processingAllDrive}
+              className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-amber-600 hover:bg-amber-700 disabled:opacity-50"
+            >
+              {processingAllDrive ? (
+                <>
+                  <ArrowPathIcon className="h-4 w-4 animate-spin mr-2" />
+                  Đang xử lý...
+                </>
+              ) : (
+                <>
+                  <DocumentMagnifyingGlassIcon className="h-4 w-4 mr-2" />
+                  Xử lý tất cả PDF Drive
+                </>
+              )}
+            </button>
+            
+            <button
               onClick={() => setShowUploadModal(true)}
               className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
             >
@@ -511,6 +593,51 @@ export default function CourseDetailPage({ params }) {
             </button>
           </div>
         </div>
+        
+        {/* Kết quả xử lý tất cả link Drive */}
+        {processAllDriveResult && (
+          <div className={`bg-${processAllDriveResult.success ? 'amber' : 'red'}-50 p-4 rounded-md mb-6`}>
+            <div className="flex">
+              <div className="flex-shrink-0">
+                {processAllDriveResult.success ? (
+                  <>
+                    {processAllDriveResult.inProgress ? (
+                      <ArrowPathIcon className="h-5 w-5 text-amber-400 animate-spin" />
+                    ) : (
+                      <svg className="h-5 w-5 text-amber-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </>
+                ) : (
+                  <ExclamationCircleIcon className="h-5 w-5 text-red-400" aria-hidden="true" />
+                )}
+              </div>
+              <div className="ml-3">
+                <p className={`text-sm font-medium text-${processAllDriveResult.success ? 'amber' : 'red'}-800`}>
+                  {processAllDriveResult.message}
+                </p>
+                {processAllDriveResult.details && !processAllDriveResult.inProgress && (
+                  <ul className="mt-2 text-sm text-amber-700 list-disc list-inside">
+                    {processAllDriveResult.details.map((detail, index) => (
+                      <li key={index}>{detail}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <div className="ml-auto pl-3">
+                <div className="-mx-1.5 -my-1.5">
+                  <button
+                    onClick={() => setProcessAllDriveResult(null)}
+                    className={`inline-flex rounded-md p-1.5 text-${processAllDriveResult.success ? 'amber' : 'red'}-500 hover:bg-${processAllDriveResult.success ? 'amber' : 'red'}-100`}
+                  >
+                    <XMarkIcon className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         
         {/* Kết quả xử lý dữ liệu */}
         {processResult && (
@@ -848,38 +975,77 @@ export default function CourseDetailPage({ params }) {
                                         ? (cell.formattedValue || '')
                                         : isLink
                                           ? (
-                                              <a 
-                                                onClick={(e) => {
-                                                  e.preventDefault();
-                                                  handleLinkClick(url, cell.formattedValue);
-                                                }}
-                                                href={url}
-                                                className="inline-flex items-center text-blue-600 font-medium hover:text-blue-800 transition-colors duration-150 group cursor-pointer"
-                                              >
-                                                <span className="break-words line-clamp-2 sm:line-clamp-none">
-                                                  {cell.formattedValue || (linkType === 'youtube' ? 'Xem video' : linkType === 'pdf' ? 'Xem PDF' : 'Xem tài liệu')}
-                                                </span>
-                                                <span className="ml-1.5 p-1 rounded-md group-hover:bg-blue-100 transition-colors duration-150">
-                                                  {linkType === 'youtube' ? (
-                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                    </svg>
-                                                  ) : linkType === 'pdf' ? (
-                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                                    </svg>
-                                                  ) : linkType === 'drive' ? (
-                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
-                                                    </svg>
-                                                  ) : (
-                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                                    </svg>
-                                                  )}
-                                                </span>
-                                              </a>
+                                              <div>
+                                                <a 
+                                                  onClick={(e) => {
+                                                    e.preventDefault();
+                                                    handleLinkClick(url, cell.formattedValue);
+                                                  }}
+                                                  href={url}
+                                                  className="inline-flex items-center text-blue-600 font-medium hover:text-blue-800 transition-colors duration-150 group cursor-pointer"
+                                                >
+                                                  <span className="break-words line-clamp-2 sm:line-clamp-none">
+                                                    {cell.formattedValue || (linkType === 'youtube' ? 'Xem video' : linkType === 'pdf' ? 'Xem PDF' : 'Xem tài liệu')}
+                                                  </span>
+                                                  <span className="ml-1.5 p-1 rounded-md group-hover:bg-blue-100 transition-colors duration-150">
+                                                    {linkType === 'youtube' ? (
+                                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                      </svg>
+                                                    ) : linkType === 'pdf' ? (
+                                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                      </svg>
+                                                    ) : linkType === 'drive' ? (
+                                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
+                                                      </svg>
+                                                    ) : (
+                                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                                      </svg>
+                                                    )}
+                                                  </span>
+                                                </a>
+
+                                                {/* Hiển thị link đã xử lý nếu là Google Drive PDF */}
+                                                {isGoogleDrivePdf(url) && (
+                                                  <div className="mt-1.5">
+                                                    {(() => {
+                                                      const processedFile = getProcessedDriveFile(url);
+                                                      
+                                                      if (processedFile) {
+                                                        return (
+                                                          <div className="flex flex-col space-y-1">
+                                                            <a 
+                                                              onClick={(e) => {
+                                                                e.preventDefault();
+                                                                handleLinkClick(processedFile.processedUrl, `[Đã xử lý] ${cell.formattedValue}`);
+                                                              }}
+                                                              href={processedFile.processedUrl}
+                                                              className="inline-flex items-center text-green-600 text-xs font-medium hover:text-green-800 transition-colors duration-150"
+                                                            >
+                                                              <DocumentMagnifyingGlassIcon className="h-3.5 w-3.5 mr-1" />
+                                                              <span>Bản đã xử lý watermark</span>
+                                                            </a>
+                                                            <div className="text-xs text-gray-500">
+                                                              Xử lý {new Date(processedFile.processedAt).toLocaleDateString('vi-VN')}
+                                                            </div>
+                                                          </div>
+                                                        );
+                                                      } else {
+                                                        return (
+                                                          <div className="text-xs text-amber-600 flex items-center">
+                                                            <ExclamationCircleIcon className="h-3.5 w-3.5 mr-1" />
+                                                            <span>Chưa xử lý watermark</span>
+                                                          </div>
+                                                        );
+                                                      }
+                                                    })()}
+                                                  </div>
+                                                )}
+                                              </div>
                                             ) 
                                           : (
                                               <span className="break-words line-clamp-2 sm:line-clamp-none">

@@ -107,7 +107,12 @@ export async function POST(request) {
   try {
     // Parse request body
     const requestBody = await request.json();
-    let { token, driveLink, backgroundImage, backgroundOpacity } = requestBody;
+    let { token, driveLink, backgroundImage, backgroundOpacity, skipTokenValidation, url } = requestBody;
+
+    // Hỗ trợ cả url và driveLink (để tương thích)
+    if (!driveLink && url) {
+      driveLink = url;
+    }
 
     // Sử dụng "nen.png" làm hình nền mặc định
     if (!backgroundImage) {
@@ -117,8 +122,8 @@ export async function POST(request) {
       backgroundOpacity = 0.15; // Giảm xuống 0.15 để ảnh nền đậm hơn
     }
 
-    // Validate API token
-    if (!token || token !== API_TOKEN) {
+    // Validate API token chỉ khi không có skipTokenValidation
+    if (!skipTokenValidation && (!token || token !== API_TOKEN)) {
       return NextResponse.json(
         { error: 'Không được phép. Token API không hợp lệ.' },
         { status: 401 }
@@ -145,9 +150,17 @@ export async function POST(request) {
     }
     
     if (isFolder) {
+      console.log('Xử lý folder:', driveLink);
       // Xử lý nếu là folder
-      return await handleDriveFolder(driveLink, backgroundImage, backgroundOpacity);
+      const folderResponse = await handleDriveFolder(driveLink, backgroundImage, backgroundOpacity);
+      
+      // Không cần đọc response.json() ở đây vì sẽ làm stream bị khóa
+      // Log được tạo trực tiếp trong hàm handleDriveFolder rồi
+      console.log('Đã xử lý folder thành công, trả về kết quả...');
+      
+      return folderResponse;
     } else {
+      console.log('Xử lý file đơn lẻ:', driveLink);
       // Xử lý nếu là file (PDF hoặc ảnh)
       return await handleDriveFile(driveLink, backgroundImage, backgroundOpacity);
     }
@@ -302,17 +315,17 @@ async function handleDriveFile(driveLink, backgroundImage, backgroundOpacity) {
           throw new Error(`Không thể tải file bị chặn: ${unblockError.message}`);
         }
       } else {
-        return NextResponse.json(
-          { error: `Không thể tải file từ Google Drive: ${downloadError.message}` },
-          { status: 500 }
-        );
-      }
+      return NextResponse.json(
+        { error: `Không thể tải file từ Google Drive: ${downloadError.message}` },
+        { status: 500 }
+      );
+    }
     }
     
     // Kiểm tra loại file
     if (downloadResult.isPdf) {
       // Xử lý nếu là PDF
-      let cleanResult;
+    let cleanResult;
       
       // Kiểm tra xem file đã được xử lý watermark chưa
       if (downloadResult.alreadyProcessed) {
@@ -326,36 +339,36 @@ async function handleDriveFile(driveLink, backgroundImage, backgroundOpacity) {
         };
         processedFilePath = downloadResult.filePath;
       } else {
-        try {
-          const outputPath = path.join(tempDir, `${path.basename(downloadResult.fileName, '.pdf')}_clean.pdf`);
+    try {
+      const outputPath = path.join(tempDir, `${path.basename(downloadResult.fileName, '.pdf')}_clean.pdf`);
+      
+      // Tạo config với tham số từ request
+      const config = { ...DEFAULT_CONFIG };
+      
+      // Thêm hình nền nếu có
+      if (backgroundImage) {
+        // Xử lý đường dẫn hình nền để làm cho nó di động
+        let backgroundImagePath = backgroundImage;
+        
+        // Nếu không phải đường dẫn tuyệt đối, coi như nó là đường dẫn tương đối từ thư mục gốc
+        if (!path.isAbsolute(backgroundImage) && 
+            !backgroundImage.includes(':/') && 
+            !backgroundImage.includes(':\\')) {
+          backgroundImagePath = path.join(process.cwd(), backgroundImage);
+        }
+        
+        // Kiểm tra file có tồn tại không
+        const fileExists = fs.existsSync(backgroundImagePath);
+        
+        if (fileExists) {
+          config.backgroundImage = backgroundImagePath;
           
-          // Tạo config với tham số từ request
-          const config = { ...DEFAULT_CONFIG };
-          
-          // Thêm hình nền nếu có
-          if (backgroundImage) {
-            // Xử lý đường dẫn hình nền để làm cho nó di động
-            let backgroundImagePath = backgroundImage;
-            
-            // Nếu không phải đường dẫn tuyệt đối, coi như nó là đường dẫn tương đối từ thư mục gốc
-            if (!path.isAbsolute(backgroundImage) && 
-                !backgroundImage.includes(':/') && 
-                !backgroundImage.includes(':\\')) {
-              backgroundImagePath = path.join(process.cwd(), backgroundImage);
-            }
-            
-            // Kiểm tra file có tồn tại không
-            const fileExists = fs.existsSync(backgroundImagePath);
-            
-            if (fileExists) {
-              config.backgroundImage = backgroundImagePath;
-              
-              if (backgroundOpacity !== undefined) {
-                config.backgroundOpacity = parseFloat(backgroundOpacity);
-              }
-            }
+          if (backgroundOpacity !== undefined) {
+            config.backgroundOpacity = parseFloat(backgroundOpacity);
           }
-          
+        }
+      }
+      
           // Xử lý PDF để xóa watermark
           console.log(`Bắt đầu xóa watermark cho file: ${downloadResult.fileName}`);
           
@@ -376,62 +389,62 @@ async function handleDriveFile(driveLink, backgroundImage, backgroundOpacity) {
             console.log(`✅ Đã sao chép file đã xử lý thành công: ${downloadResult.fileName}`);
           } else {
             // Thực hiện xử lý watermark nếu chưa được xử lý trước đó
-            cleanResult = await cleanPdf(downloadResult.filePath, outputPath, config);
+      cleanResult = await cleanPdf(downloadResult.filePath, outputPath, config);
             console.log(`Đã xóa watermark xong cho file: ${downloadResult.fileName}`);
           }
           
-          processedFilePath = outputPath;
-        } catch (cleanError) {
-          // Clean up temp files
-          if (tempDir && fs.existsSync(tempDir)) {
-            cleanupTempFiles(tempDir);
-          }
-          
-          return NextResponse.json(
-            { error: `Không thể xử lý PDF: ${cleanError.message}` },
-            { status: 500 }
-          );
-        }
-      }
-      
-      // Upload processed file back to Drive
-      let uploadResult;
-      try {
-        uploadResult = await uploadToDrive(processedFilePath, downloadResult.fileName, 'application/pdf');
-      } catch (uploadError) {
-        // Clean up temp files
-        if (tempDir && fs.existsSync(tempDir)) {
-          cleanupTempFiles(tempDir);
-        }
-        
-        return NextResponse.json(
-          { error: `Không thể tải file lên Google Drive: ${uploadError.message}` },
-          { status: 500 }
-        );
-      }
-      
+      processedFilePath = outputPath;
+    } catch (cleanError) {
       // Clean up temp files
-      try {
+      if (tempDir && fs.existsSync(tempDir)) {
         cleanupTempFiles(tempDir);
-        tempDir = null;
-      } catch (cleanupError) {
-        // Handle cleanup error
       }
       
-      // Return success response with link to processed file
-      return NextResponse.json({
-        success: true,
-        message: 'Đã xử lý xóa watermark thành công.',
-        originalFilename: downloadResult.fileName,
-        processedFilename: uploadResult.fileName,
-        viewLink: uploadResult.webViewLink,
-        downloadLink: uploadResult.downloadLink,
-        processingDetails: {
-          originalSize: cleanResult.originalSize,
-          processedSize: cleanResult.processedSize,
-          processingTime: cleanResult.processingTime + ' giây'
+      return NextResponse.json(
+        { error: `Không thể xử lý PDF: ${cleanError.message}` },
+        { status: 500 }
+      );
         }
-      }, { status: 200 });
+    }
+    
+    // Upload processed file back to Drive
+    let uploadResult;
+    try {
+      uploadResult = await uploadToDrive(processedFilePath, downloadResult.fileName, 'application/pdf');
+    } catch (uploadError) {
+      // Clean up temp files
+      if (tempDir && fs.existsSync(tempDir)) {
+        cleanupTempFiles(tempDir);
+      }
+      
+      return NextResponse.json(
+        { error: `Không thể tải file lên Google Drive: ${uploadError.message}` },
+        { status: 500 }
+      );
+    }
+    
+    // Clean up temp files
+    try {
+      cleanupTempFiles(tempDir);
+      tempDir = null;
+    } catch (cleanupError) {
+      // Handle cleanup error
+    }
+    
+    // Return success response with link to processed file
+    return NextResponse.json({
+      success: true,
+      message: 'Đã xử lý xóa watermark thành công.',
+      originalFilename: downloadResult.fileName,
+      processedFilename: uploadResult.fileName,
+      viewLink: uploadResult.webViewLink,
+      downloadLink: uploadResult.downloadLink,
+      processingDetails: {
+        originalSize: cleanResult.originalSize,
+        processedSize: cleanResult.processedSize,
+        processingTime: cleanResult.processingTime + ' giây'
+      }
+    }, { status: 200 });
       
     } else if (downloadResult.isImage) {
       // Nếu là ảnh, không xử lý, chỉ tải lên Drive
@@ -743,14 +756,27 @@ async function handleDriveFolder(driveFolderLink, backgroundImage, backgroundOpa
     
     console.log(`Đã hoàn thành xử lý tất cả ${folderInfo.files.length} file trong folder "${folderInfo.folderName}"`);
     
+    // Ghi log thông tin về folder kết quả 
+    console.log(`URL folder kết quả: ${destinationFolder.webViewLink}`);
+    console.log(`Tổng số file đã xử lý: ${folderResults.length}`);
+    
     // Trả về kết quả với link đến folder đích
     return NextResponse.json({
       success: true,
       message: `Đã xử lý ${folderResults.length} file trong folder thành công.`,
       folderName: destinationFolder.folderName,
       folderLink: destinationFolder.webViewLink,
+      folderUrl: destinationFolder.webViewLink,
+      driveUrl: destinationFolder.webViewLink,
+      url: destinationFolder.webViewLink,
       totalFiles: folderInfo.files.length,
-      processedFiles: folderResults
+      processedFiles: folderResults,
+      folderInfo: {
+        id: destinationFolderId,
+        name: destinationFolder.folderName,
+        url: destinationFolder.webViewLink,
+        fileCount: folderResults.length
+      }
     }, { status: 200 });
     
   } catch (error) {

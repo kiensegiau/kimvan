@@ -245,13 +245,16 @@ export async function uploadToDrive(filePath, fileName, mimeType) {
     // Khởi tạo Google Drive API
     const drive = google.drive({ version: 'v3', auth: oauth2Client });
     
+    // Tìm hoặc tạo thư mục "tài liệu khoá học"
+    let courseFolderId = await findOrCreateCourseFolder(drive);
+    
     // Tạo metadata cho file
     let outputFileName;
     
     // Xử lý tên file theo loại
     if (mimeType === 'application/pdf') {
-      // Nếu là PDF, thêm "_clean" vào tên
-      outputFileName = `${fileName.replace(/\.pdf$/i, '')}_clean.pdf`;
+      // Giữ nguyên tên file PDF, không thêm "_clean"
+      outputFileName = fileName;
     } else {
       // Nếu là loại file khác, giữ nguyên tên
       outputFileName = fileName;
@@ -260,7 +263,7 @@ export async function uploadToDrive(filePath, fileName, mimeType) {
     const fileMetadata = {
       name: outputFileName,
       description: mimeType === 'application/pdf' ? 'File đã được xử lý xóa watermark bởi API' : 'File được tải lên bởi API',
-      parents: ['root'] // Thêm vào My Drive (root folder)
+      parents: [courseFolderId] // Thêm vào thư mục "tài liệu khoá học"
     };
     
     // Tạo media object
@@ -277,19 +280,7 @@ export async function uploadToDrive(filePath, fileName, mimeType) {
       supportsAllDrives: true
     });
     
-    // Đặt quyền truy cập cho file (nếu cần)
-    try {
-      // Chia sẻ cho bất kỳ ai có link (không yêu cầu đăng nhập)
-      await drive.permissions.create({
-        fileId: driveResponse.data.id,
-        requestBody: {
-          role: 'reader',
-          type: 'anyone'
-        }
-      });
-    } catch (permissionError) {
-      // Không throw lỗi vì việc tải lên đã thành công
-    }
+    // Không đặt quyền chia sẻ, giữ nguyên quyền mặc định
     
     return {
       success: true,
@@ -300,6 +291,45 @@ export async function uploadToDrive(filePath, fileName, mimeType) {
     };
   } catch (error) {
     throw error;
+  }
+}
+
+// Hàm tìm hoặc tạo thư mục "tài liệu khoá học"
+async function findOrCreateCourseFolder(drive) {
+  const folderName = "tài liệu khoá học";
+  
+  try {
+    // Tìm thư mục "tài liệu khoá học" nếu đã tồn tại
+    const response = await drive.files.list({
+      q: `name='${folderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+      fields: 'files(id, name)',
+      spaces: 'drive'
+    });
+    
+    // Nếu thư mục đã tồn tại, sử dụng nó
+    if (response.data.files && response.data.files.length > 0) {
+      console.log(`Đã tìm thấy thư mục "${folderName}" với ID: ${response.data.files[0].id}`);
+      return response.data.files[0].id;
+    }
+    
+    // Nếu không tìm thấy, tạo mới
+    console.log(`Không tìm thấy thư mục "${folderName}", đang tạo mới...`);
+    const folderMetadata = {
+      name: folderName,
+      mimeType: 'application/vnd.google-apps.folder'
+    };
+    
+    const folder = await drive.files.create({
+      resource: folderMetadata,
+      fields: 'id'
+    });
+    
+    console.log(`Đã tạo thư mục "${folderName}" với ID: ${folder.data.id}`);
+    return folder.data.id;
+  } catch (error) {
+    console.error(`Lỗi khi tìm/tạo thư mục "${folderName}": ${error.message}`);
+    // Nếu có lỗi, sử dụng root làm fallback
+    return 'root';
   }
 }
 
@@ -394,11 +424,14 @@ export async function createDriveFolder(folderName) {
     // Khởi tạo Google Drive API
     const drive = google.drive({ version: 'v3', auth: oauth2Client });
     
+    // Tìm hoặc tạo thư mục "tài liệu khoá học"
+    let courseFolderId = await findOrCreateCourseFolder(drive);
+    
     // Tạo metadata cho folder
     const folderMetadata = {
-      name: folderName + '_processed',
+      name: folderName,
       mimeType: 'application/vnd.google-apps.folder',
-      parents: ['root'] // Thêm vào My Drive (root folder)
+      parents: [courseFolderId] // Đặt thư mục cha là "tài liệu khoá học"
     };
     
     // Tạo folder trên Drive
@@ -408,18 +441,7 @@ export async function createDriveFolder(folderName) {
       supportsAllDrives: true
     });
     
-    // Đặt quyền truy cập cho folder
-    try {
-      await drive.permissions.create({
-        fileId: folderResponse.data.id,
-        requestBody: {
-          role: 'reader',
-          type: 'anyone'
-        }
-      });
-    } catch (permissionError) {
-      // Không throw lỗi vì việc tạo folder đã thành công
-    }
+    // Không đặt quyền truy cập cho folder, giữ nguyên mặc định
     
     return {
       success: true,
@@ -499,6 +521,8 @@ export async function uploadFileToDriveFolder(filePath, fileName, destinationFol
       fields: 'id,name,webViewLink,webContentLink',
       supportsAllDrives: true
     });
+    
+    // Không đặt quyền chia sẻ, giữ nguyên quyền mặc định
     
     return {
       success: true,
