@@ -474,6 +474,13 @@ async function processAllImages(images, outputDir, config) {
     }
   });
   
+  // Sử dụng cấu hình tối giản để tránh mất màu
+  const simpleConfig = {
+    backgroundOpacity: config.backgroundOpacity || 0.15
+  };
+  
+  console.log(`🔧 Sử dụng cấu hình tối giản để giữ màu sắc gốc và xử lý nhẹ watermark`);
+  
   // Xử lý từng ảnh
   for (let i = 0; i < sortedImages.length; i++) {
     const imagePath = sortedImages[i];
@@ -485,8 +492,9 @@ async function processAllImages(images, outputDir, config) {
     try {
       console.log(`🔍 Xử lý watermark trang ${pageNum}...`);
       
-      // Sử dụng hàm processImage từ module watermark
-      await processImage(imagePath, processedPath, config);
+      // Sử dụng hàm processImage từ module watermark trực tiếp trên ảnh gốc
+      // Bỏ qua bước tiền xử lý để giữ màu sắc
+      await processImage(imagePath, processedPath, simpleConfig);
       console.log(`✅ Đã xử lý xong trang ${pageNum}`);
       
       // Thêm vào danh sách ảnh đã xử lý

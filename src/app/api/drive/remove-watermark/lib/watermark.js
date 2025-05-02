@@ -272,11 +272,11 @@ export async function processImage(inputPath, outputPath, config = DEFAULT_CONFI
           height: centerHeight
         })
         .modulate({
-          brightness: 1 + (config.brightness / 100)
+          brightness: 1 + (15 / 100),  // Cố định giá trị thấp
         })
         .linear(
-          1 + (config.contrast / 100),
-          -(config.contrast / 2)
+          1 + (25 / 100),  // Cố định giá trị vừa phải
+          -(25 / 3)
         )
         .toBuffer();
       
@@ -295,26 +295,26 @@ export async function processImage(inputPath, outputPath, config = DEFAULT_CONFI
         }])
         .toFile(outputPath);
     } else {
-      // Xử lý toàn bộ hình ảnh
+      // Xử lý toàn bộ hình ảnh với cách tiếp cận đơn giản hơn
+      // Giảm số bước xử lý để tránh mất màu
+      
+      // Cách tiếp cận đơn giản: Chỉ sử dụng brightness và contrast nhẹ
+      // Tránh toàn bộ các biến đổi màu sắc phức tạp
       let processedImage = image
         .modulate({
-          brightness: 1 + (config.brightness / 100)
+          brightness: 1 + (15 / 100),  // Giảm xuống mức nhẹ nhàng (15%)
         })
         .linear(
-          1 + (config.contrast / 100),
-          -(config.contrast / 2)
+          1 + (25 / 100),  // Mức độ tương phản nhẹ (25%)
+          -(25 / 3)
         );
       
-      // Chỉ áp dụng threshold nếu không giữ màu sắc
-      if (config.threshold > 0 && !config.keepColors) {
-        processedImage = processedImage.threshold(config.threshold * 100);
-      }
-      
-      // Nếu giữ màu sắc, áp dụng các phương pháp khác để xóa watermark
-      if (config.keepColors) {
-        processedImage = processedImage.gamma(config.gamma);
-        processedImage = processedImage.sharpen(config.sharpening);
-      }
+      // Chỉ áp dụng sharpen nhẹ nhàng thay vì nhiều bước xử lý
+      processedImage = processedImage.sharpen({
+        sigma: 0.5,  // Sharpen nhẹ
+        m1: 0.3,
+        m2: 0.2
+      });
       
       await processedImage.toFile(outputPath);
     }
