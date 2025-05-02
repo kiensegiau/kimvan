@@ -2,6 +2,39 @@ import { NextResponse } from 'next/server';
 import clientPromise from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
 
+// Hàm trích xuất Google Drive ID đơn giản hóa
+function extractGoogleDriveFileId(url) {
+  if (!url) {
+    throw new Error('URL không hợp lệ');
+  }
+  
+  // Format: https://drive.google.com/file/d/{fileId}/view
+  const filePattern = /\/file\/d\/([^\/\?&]+)/;
+  const fileMatch = url.match(filePattern);
+  
+  if (fileMatch && fileMatch[1]) {
+    return { fileId: fileMatch[1].split('?')[0] };
+  }
+  
+  // Format: https://drive.google.com/open?id={fileId}
+  const openPattern = /[?&]id=([^&]+)/;
+  const openMatch = url.match(openPattern);
+  
+  if (openMatch && openMatch[1]) {
+    return { fileId: openMatch[1].split('&')[0] };
+  }
+  
+  // Format: https://drive.google.com/drive/folders/{folderId}
+  const folderPattern = /\/folders\/([^\/\?&]+)/;
+  const folderMatch = url.match(folderPattern);
+  
+  if (folderMatch && folderMatch[1]) {
+    return { fileId: folderMatch[1].split('?')[0] };
+  }
+  
+  throw new Error('Không thể trích xuất ID từ URL Google Drive');
+}
+
 export async function POST(request, { params }) {
   try {
     // Lấy ID khóa học từ params - đảm bảo await params trước
@@ -139,6 +172,55 @@ export async function POST(request, { params }) {
           continue;
         }
 
+        // Kiểm tra loại nội dung trước khi xử lý
+        console.log(`Kiểm tra loại nội dung của: ${link.url}`);
+        try {
+          // Trích xuất file ID
+          const { fileId } = extractGoogleDriveFileId(link.url);
+          
+          // Gọi API kiểm tra loại nội dung
+          const checkUrl = new URL('/api/drive/check-file-type', request.url).toString();
+          const checkResponse = await fetch(checkUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              token: 'api@test-watermark',
+              fileId: fileId
+            })
+          });
+          
+          const checkData = await checkResponse.json();
+          
+          if (!checkResponse.ok) {
+            throw new Error(checkData.error || 'Không thể kiểm tra loại nội dung');
+          }
+          
+          // Nếu không phải file PDF, bỏ qua
+          if (checkData.mimeType !== 'application/pdf') {
+            console.log(`Bỏ qua: ${link.url} - Không phải PDF (${checkData.mimeType})`);
+            
+            // Nếu là folder, ghi rõ trong thông báo
+            const contentType = checkData.mimeType === 'application/vnd.google-apps.folder' 
+              ? 'Folder/Thư mục' 
+              : checkData.mimeType;
+              
+            results.push({
+              originalUrl: link.url,
+              displayName: link.displayName,
+              sheetTitle: link.sheetTitle,
+              status: `Bỏ qua: ${contentType}`,
+              skipped: true
+            });
+            
+            continue;
+          }
+          
+          console.log(`Xác nhận là PDF: ${link.url}`);
+        } catch (checkError) {
+          console.log(`Không thể kiểm tra loại nội dung: ${checkError.message}`);
+          // Vẫn tiếp tục xử lý - API remove-watermark sẽ xử lý lỗi nếu không phải PDF
+        }
+
         // Gọi API xử lý watermark
         console.log(`Đang xử lý link: ${link.url}`);
         const apiUrl = new URL('/api/drive/remove-watermark', request.url).toString();
@@ -265,6 +347,13 @@ function isGoogleDrivePdf(url) {
     return false;
   }
   
-  // LUÔN XỬ LÝ tất cả URL dạng drive.google.com và không được loại trừ ở trên
-  return true;
+  // Thử trích xuất fileId
+  try {
+    const { fileId } = extractGoogleDriveFileId(url);
+    console.log(`Đã trích xuất thành công fileId: ${fileId}`);
+    return true;
+  } catch (error) {
+    console.log(`Không thể trích xuất fileId: ${error.message}`);
+    return false;
+  }
 } 
