@@ -162,10 +162,6 @@ export async function downloadBlockedPDF(fileId, fileName, tempDir, watermarkCon
       timeout: 300000 // Tăng timeout cho trang để tải trọn vẹn
     });
     
-    // Chờ thời gian dài hơn để người dùng có thể đăng nhập nếu cần
-    console.log(`⏳ Đang chờ 30 giây để người dùng đăng nhập nếu cần...`);
-    await new Promise(resolve => setTimeout(resolve, 30000));
-    
     // Scroll để tải tất cả các trang
     console.log(`📜 Bắt đầu scroll để tải trang...`);
     await scrollToLoadAllPages(page, pageRequests);

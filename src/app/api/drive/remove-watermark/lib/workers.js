@@ -146,7 +146,8 @@ export async function processPage(data) {
       // Xử lý toàn bộ hình ảnh
       let processedImage = image
         .modulate({
-          brightness: 1 + (config.brightness / 100)
+          brightness: 1 + (config.brightness / 100),
+          saturation: 1.2  // Tăng độ bão hòa màu để làm rõ nội dung
         })
         .linear(
           1 + (config.contrast / 100),
@@ -160,9 +161,18 @@ export async function processPage(data) {
       
       // Nếu giữ màu sắc, có thể áp dụng các phương pháp khác để xóa watermark
       if (config.keepColors) {
-        // Có thể thêm các phương pháp xử lý màu sắc nâng cao ở đây nếu cần
+        // Thêm xử lý nâng cao để làm mờ watermark
         processedImage = processedImage.gamma(config.gamma);
         processedImage = processedImage.sharpen(config.sharpening);
+        
+        // Thêm xử lý màu sắc nâng cao để giảm thiểu hiệu ứng watermark
+        // Tăng độ tương phản cục bộ để làm rõ nội dung
+        processedImage = processedImage.normalise();
+        
+        // Loại bỏ nhiễu và làm mịn khu vực có watermark
+        if (config.sharpening > 1.4) {
+          processedImage = processedImage.median(3);
+        }
       }
       
       await processedImage.toFile(processedPngPath);

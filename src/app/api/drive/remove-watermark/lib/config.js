@@ -19,17 +19,17 @@ export const TOKEN_PATHS = [
 // Cấu hình mặc định cho việc xử lý watermark
 export const DEFAULT_CONFIG = {
   dpi: 350,                // Giảm độ phân giải xuống
-  brightness: 20,          // Độ sáng
-  contrast: 35,            // Độ tương phản
+  brightness: 30,          // Độ sáng - tăng từ 20 lên 30
+  contrast: 45,            // Độ tương phản - tăng từ 35 lên 45
   threshold: 0,            // Ngưỡng (0 = giữ màu sắc)
-  gamma: 1.4,              // Gamma
-  sharpening: 1.3,         // Độ sắc nét
+  gamma: 1.6,              // Gamma - tăng từ 1.4 lên 1.6
+  sharpening: 1.6,         // Độ sắc nét - tăng từ 1.3 lên 1.6
   processCenter: false,    // Xử lý vùng trung tâm
   centerSize: 0.8,         // Kích thước vùng trung tâm (80% của trang)
   keepColors: true,        // Giữ màu sắc
   cleanupTempFiles: false, // Có xóa file tạm không
   maxWorkers: Math.max(1, Math.min(2, os.cpus().length - 1)), // Giảm worker xuống tối đa 2 luồng
   backgroundImage: null,   // Đường dẫn đến hình nền tùy chỉnh
-  backgroundOpacity: 0.3,  // Giảm xuống 0.3 (30% đục),
+  backgroundOpacity: 0.15, // Giảm xuống 0.15 (15% đục - đậm hơn),
   batchSize: 3,            // Số lượng trang xử lý cùng lúc
 }; 

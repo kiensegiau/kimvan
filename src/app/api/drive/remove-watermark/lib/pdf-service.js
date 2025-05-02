@@ -119,9 +119,9 @@ export async function addImageToPdf(pdfDoc, pngPath, index, totalPages, config) 
         const bgDimensions = backgroundImage.size();
         
         // CHỈ THÊM MỘT HÌNH NỀN LỚN Ở GIỮA TRANG
-        // Tính toán để hình nền chiếm khoảng 70% diện tích trang
-        const targetWidth = pngDimensions.width * 0.7;
-        const targetHeight = pngDimensions.height * 0.7;
+        // Tính toán để hình nền chiếm khoảng 85% diện tích trang (tăng từ 70%)
+        const targetWidth = pngDimensions.width * 0.85;
+        const targetHeight = pngDimensions.height * 0.85;
         
         // Tính tỷ lệ phù hợp để giữ nguyên tỷ lệ hình ảnh
         const scaleWidth = targetWidth / bgDimensions.width;
@@ -134,13 +134,13 @@ export async function addImageToPdf(pdfDoc, pngPath, index, totalPages, config) 
         const xOffset = (pngDimensions.width - bgWidth) / 2; // Giữa trang theo chiều ngang
         const yOffset = (pngDimensions.height - bgHeight) / 2; // Giữa trang theo chiều dọc
         
-        // Vẽ một hình nền duy nhất ở giữa
+        // Vẽ một hình nền duy nhất ở giữa với độ trong suốt được cấu hình
         page.drawImage(backgroundImage, {
           x: xOffset,
           y: yOffset,
           width: bgWidth,
           height: bgHeight,
-          opacity: config.backgroundOpacity || 0.3,
+          opacity: config.backgroundOpacity || 0.15, // Mặc định 0.15 nếu không có giá trị
         });
       }
     } catch (backgroundError) {

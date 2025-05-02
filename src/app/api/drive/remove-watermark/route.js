@@ -114,7 +114,7 @@ export async function POST(request) {
       backgroundImage = path.join(process.cwd(), "nen.png");
     }
     if (backgroundOpacity === undefined) {
-      backgroundOpacity = 0.3; // Giảm xuống 0.3
+      backgroundOpacity = 0.15; // Giảm xuống 0.15 để ảnh nền đậm hơn
     }
 
     // Validate API token
