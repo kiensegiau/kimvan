@@ -340,7 +340,7 @@ async function handleDriveFile(driveLink, backgroundImage, backgroundOpacity) {
         processedFilePath = downloadResult.filePath;
       } else {
     try {
-      const outputPath = path.join(tempDir, `${path.basename(downloadResult.fileName, '.pdf')}_clean.pdf`);
+      const outputPath = path.join(tempDir, `${path.basename(downloadResult.fileName, '.pdf')}.pdf`);
       
       // Tạo config với tham số từ request
       const config = { ...DEFAULT_CONFIG };
@@ -641,7 +641,7 @@ async function handleDriveFolder(driveFolderLink, backgroundImage, backgroundOpa
         if (downloadResult.isPdf) {
           console.log(`Xử lý file PDF: ${file.name}`);
           // Xử lý PDF
-          const outputPath = path.join(outputDir, `${path.basename(downloadResult.fileName, '.pdf')}_clean.pdf`);
+          const outputPath = path.join(outputDir, `${path.basename(downloadResult.fileName, '.pdf')}.pdf`);
           
           // Tạo config cho xử lý PDF
           const config = { ...DEFAULT_CONFIG };
@@ -694,7 +694,7 @@ async function handleDriveFolder(driveFolderLink, backgroundImage, backgroundOpa
           
           // Tải lên Drive vào folder đích
           console.log(`Đang tải lên Drive cho file: ${file.name}`);
-          const uploadResult = await uploadFileToDriveFolder(outputPath, `${downloadResult.fileName.replace(/\.pdf$/i, '')}_clean.pdf`, destinationFolderId);
+          const uploadResult = await uploadFileToDriveFolder(outputPath, `${downloadResult.fileName}`, destinationFolderId);
           console.log(`Đã tải lên Drive thành công cho file: ${file.name}`);
           
           folderResults.push({

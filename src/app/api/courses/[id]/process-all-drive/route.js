@@ -165,8 +165,9 @@ export async function POST(request, { params }) {
             originalUrl: link.url,
             displayName: link.displayName,
             sheetTitle: link.sheetTitle,
-            status: 'Đã xử lý trước đó',
-            processedUrl: existingProcessed.processedUrl
+            status: existingProcessed.isFolder ? 'Thư mục đã xử lý trước đó' : 'File đã xử lý trước đó',
+            processedUrl: existingProcessed.processedUrl,
+            isFolder: existingProcessed.isFolder || false
           });
           successCount++;
           continue;
@@ -199,7 +200,31 @@ export async function POST(request, { params }) {
           if (checkData.mimeType !== 'application/pdf') {
             // Nếu là folder, xử lý đặc biệt
             if (checkData.mimeType === 'application/vnd.google-apps.folder') {
-              console.log(`Phát hiện thư mục: ${link.url} - Đang chuyển qua xử lý thư mục`);
+              console.log(`Phát hiện thư mục: ${link.url} - Đang kiểm tra tồn tại...`);
+              
+              // Kiểm tra xem folder này đã được xử lý trước đó trong database hay chưa
+              // (đã kiểm tra ở trên với existingProcessed, nhưng kiểm tra kỹ lại bằng ID)
+              const folderIdToCheck = fileId;
+              
+              const existingProcessedById = course.processedDriveFiles.find(
+                file => file.originalUrl && file.originalUrl.includes(folderIdToCheck)
+              );
+              
+              if (existingProcessedById) {
+                console.log(`Thư mục với ID ${folderIdToCheck} đã được xử lý trước đó`);
+                results.push({
+                  originalUrl: link.url,
+                  displayName: link.displayName,
+                  sheetTitle: link.sheetTitle,
+                  status: 'Thư mục đã xử lý trước đó',
+                  processedUrl: existingProcessedById.processedUrl,
+                  isFolder: true
+                });
+                successCount++;
+                continue;
+              }
+              
+              console.log(`Đang xử lý thư mục: ${link.url}`);
               
               // Gọi API xử lý folder
               console.log(`Đang xử lý thư mục: ${link.url}`);

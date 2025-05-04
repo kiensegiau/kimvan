@@ -248,10 +248,8 @@ export async function uploadToDrive(filePath, fileName, mimeType) {
     // Tìm hoặc tạo thư mục "tài liệu khoá học"
     let courseFolderId = await findOrCreateCourseFolder(drive);
     
-    // Tạo metadata cho file
-    let outputFileName;
-    
     // Xử lý tên file theo loại
+    let outputFileName;
     if (mimeType === 'application/pdf') {
       // Giữ nguyên tên file PDF, không thêm "_clean"
       outputFileName = fileName;
@@ -260,6 +258,33 @@ export async function uploadToDrive(filePath, fileName, mimeType) {
       outputFileName = fileName;
     }
     
+    // Kiểm tra xem file đã tồn tại trong thư mục chưa
+    console.log(`Đang kiểm tra xem file "${outputFileName}" đã tồn tại trong thư mục đích chưa...`);
+    const searchQuery = `name='${outputFileName}' and '${courseFolderId}' in parents and trashed=false`;
+    const existingFileResponse = await drive.files.list({
+      q: searchQuery,
+      fields: 'files(id, name, webViewLink, webContentLink)',
+      spaces: 'drive'
+    });
+    
+    // Nếu file đã tồn tại, trả về thông tin
+    if (existingFileResponse.data.files && existingFileResponse.data.files.length > 0) {
+      const existingFile = existingFileResponse.data.files[0];
+      console.log(`File "${outputFileName}" đã tồn tại trong folder với ID: ${existingFile.id}`);
+      
+      return {
+        success: true,
+        fileId: existingFile.id,
+        fileName: existingFile.name,
+        webViewLink: existingFile.webViewLink,
+        downloadLink: existingFile.webContentLink || null,
+        isExisting: true
+      };
+    }
+    
+    console.log(`File "${outputFileName}" chưa tồn tại, đang tải lên...`);
+    
+    // Tạo metadata cho file
     const fileMetadata = {
       name: outputFileName,
       description: mimeType === 'application/pdf' ? 'File đã được xử lý xóa watermark bởi API' : 'File được tải lên bởi API',
@@ -287,7 +312,8 @@ export async function uploadToDrive(filePath, fileName, mimeType) {
       fileId: driveResponse.data.id,
       fileName: driveResponse.data.name,
       webViewLink: driveResponse.data.webViewLink,
-      downloadLink: driveResponse.data.webContentLink || null
+      downloadLink: driveResponse.data.webContentLink || null,
+      isNew: true
     };
   } catch (error) {
     throw error;
@@ -427,6 +453,28 @@ export async function createDriveFolder(folderName) {
     // Tìm hoặc tạo thư mục "tài liệu khoá học"
     let courseFolderId = await findOrCreateCourseFolder(drive);
     
+    // Kiểm tra xem folder đã tồn tại trong thư mục cha chưa
+    console.log(`Đang kiểm tra xem folder "${folderName}" đã tồn tại trong thư mục cha chưa...`);
+    const existingFolderResponse = await drive.files.list({
+      q: `name='${folderName}' and mimeType='application/vnd.google-apps.folder' and '${courseFolderId}' in parents and trashed=false`,
+      fields: 'files(id, name, webViewLink)',
+      spaces: 'drive'
+    });
+    
+    // Nếu folder đã tồn tại, trả về thông tin
+    if (existingFolderResponse.data.files && existingFolderResponse.data.files.length > 0) {
+      const existingFolder = existingFolderResponse.data.files[0];
+      console.log(`Folder "${folderName}" đã tồn tại với ID: ${existingFolder.id}`);
+      
+      return {
+        success: true,
+        folderId: existingFolder.id,
+        folderName: existingFolder.name,
+        webViewLink: existingFolder.webViewLink,
+        isExisting: true
+      };
+    }
+    
     // Tạo metadata cho folder
     const folderMetadata = {
       name: folderName,
@@ -435,6 +483,7 @@ export async function createDriveFolder(folderName) {
     };
     
     // Tạo folder trên Drive
+    console.log(`Folder "${folderName}" chưa tồn tại, đang tạo mới...`);
     const folderResponse = await drive.files.create({
       resource: folderMetadata,
       fields: 'id,name,webViewLink',
@@ -447,7 +496,8 @@ export async function createDriveFolder(folderName) {
       success: true,
       folderId: folderResponse.data.id,
       folderName: folderResponse.data.name,
-      webViewLink: folderResponse.data.webViewLink
+      webViewLink: folderResponse.data.webViewLink,
+      isNew: true
     };
   } catch (error) {
     throw error;
@@ -502,13 +552,39 @@ export async function uploadFileToDriveFolder(filePath, fileName, destinationFol
     // Khởi tạo Google Drive API
     const drive = google.drive({ version: 'v3', auth: oauth2Client });
     
-    // Tạo metadata cho file
+    // Kiểm tra xem file đã tồn tại trong folder chưa
+    console.log(`Đang kiểm tra xem file "${fileName}" đã tồn tại trong thư mục đích chưa...`);
+    const searchQuery = `name='${fileName}' and '${destinationFolderId}' in parents and trashed=false`;
+    const existingFileResponse = await drive.files.list({
+      q: searchQuery,
+      fields: 'files(id, name, webViewLink, webContentLink)',
+      spaces: 'drive'
+    });
+    
+    // Nếu file đã tồn tại, trả về thông tin
+    if (existingFileResponse.data.files && existingFileResponse.data.files.length > 0) {
+      const existingFile = existingFileResponse.data.files[0];
+      console.log(`File "${fileName}" đã tồn tại trong folder với ID: ${existingFile.id}`);
+      
+      return {
+        success: true,
+        fileId: existingFile.id,
+        fileName: existingFile.name,
+        webViewLink: existingFile.webViewLink,
+        downloadLink: existingFile.webContentLink,
+        isExisting: true
+      };
+    }
+    
+    console.log(`File "${fileName}" chưa tồn tại, đang tải lên...`);
+    
+    // Tạo metadata của file
     const fileMetadata = {
       name: fileName,
       parents: [destinationFolderId]
     };
     
-    // Tạo media object
+    // Tạo media
     const media = {
       mimeType: mimeType,
       body: fs.createReadStream(filePath)
@@ -518,18 +594,17 @@ export async function uploadFileToDriveFolder(filePath, fileName, destinationFol
     const driveResponse = await drive.files.create({
       resource: fileMetadata,
       media: media,
-      fields: 'id,name,webViewLink,webContentLink',
+      fields: 'id, name, webViewLink, webContentLink',
       supportsAllDrives: true
     });
-    
-    // Không đặt quyền chia sẻ, giữ nguyên quyền mặc định
     
     return {
       success: true,
       fileId: driveResponse.data.id,
       fileName: driveResponse.data.name,
       webViewLink: driveResponse.data.webViewLink,
-      downloadLink: driveResponse.data.webContentLink || null
+      downloadLink: driveResponse.data.webContentLink,
+      isNew: true
     };
   } catch (error) {
     throw error;
