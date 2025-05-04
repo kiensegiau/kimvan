@@ -761,4 +761,97 @@ export async function downloadFileFromDrive(fileIdOrLink, allowedMimeTypes = [])
   } catch (error) {
     throw error;
   }
+}
+
+// Hàm kiểm tra trạng thái của link Google Drive
+export async function checkDriveLinkStatus(driveUrl) {
+  try {
+    // Trích xuất file ID từ URL
+    let fileId, resourceKey;
+    try {
+      const result = extractGoogleDriveFileId(driveUrl);
+      fileId = result.fileId;
+      resourceKey = result.resourceKey;
+    } catch (error) {
+      console.error(`Không thể trích xuất ID từ link: ${error.message}`);
+      return { 
+        exists: false, 
+        error: `Không thể trích xuất ID: ${error.message}` 
+      };
+    }
+    
+    // Lấy token cho việc kiểm tra - sử dụng token upload thay vì download
+    const uploadToken = getTokenByType('upload');
+    if (!uploadToken) {
+      console.error('Không tìm thấy token Google Drive Upload');
+      return { 
+        exists: false, 
+        error: 'Không tìm thấy token Google Drive Upload' 
+      };
+    }
+    
+    // Tạo OAuth2 client
+    const oauth2Client = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET,
+      process.env.GOOGLE_REDIRECT_URI
+    );
+    
+    // Thiết lập credentials
+    oauth2Client.setCredentials(uploadToken);
+    
+    // Khởi tạo Google Drive API
+    const drive = google.drive({ version: 'v3', auth: oauth2Client });
+    
+    // Thử lấy thông tin file từ Drive API
+    try {
+      const fileMetadata = await drive.files.get({
+        fileId: fileId,
+        supportsAllDrives: true,
+        includeItemsFromAllDrives: true,
+        fields: 'id,name,mimeType'
+      });
+      
+      // Nếu có dữ liệu trả về, file tồn tại
+      return {
+        exists: true,
+        fileId: fileId,
+        fileName: fileMetadata.data.name,
+        mimeType: fileMetadata.data.mimeType,
+        isFolder: fileMetadata.data.mimeType === 'application/vnd.google-apps.folder'
+      };
+    } catch (apiError) {
+      // Nếu lỗi 404, file không tồn tại
+      if (apiError.code === 404 || 
+          (apiError.response && apiError.response.status === 404) || 
+          apiError.message.includes('File not found')) {
+        return { 
+          exists: false, 
+          error: 'File không tồn tại hoặc đã bị xóa'
+        };
+      }
+      
+      // Các lỗi khác có thể là do quyền truy cập
+      if (apiError.code === 403 || 
+          (apiError.response && apiError.response.status === 403) || 
+          apiError.message.includes('permission')) {
+        return { 
+          exists: true, 
+          error: 'Không có quyền truy cập file' 
+        };
+      }
+      
+      // Các lỗi khác
+      return { 
+        exists: false, 
+        error: apiError.message
+      };
+    }
+  } catch (error) {
+    // Lỗi không xác định
+    return { 
+      exists: false, 
+      error: `Lỗi không xác định: ${error.message}`
+    };
+  }
 } 

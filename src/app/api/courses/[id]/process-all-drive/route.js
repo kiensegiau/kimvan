@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import clientPromise from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
+import { checkDriveLinkStatus } from '@/app/api/drive/remove-watermark/lib/drive-service';
 
 // Hàm trích xuất Google Drive ID đơn giản hóa
 function extractGoogleDriveFileId(url) {
@@ -159,18 +160,50 @@ export async function POST(request, { params }) {
         );
 
         if (existingProcessed) {
-          // Link đã được xử lý trước đó
+          // Link đã được xử lý trước đó, kiểm tra xem link mới còn tồn tại không
           console.log(`Link đã xử lý trước đó: ${link.url}`);
-          results.push({
-            originalUrl: link.url,
-            displayName: link.displayName,
-            sheetTitle: link.sheetTitle,
-            status: existingProcessed.isFolder ? 'Thư mục đã xử lý trước đó' : 'File đã xử lý trước đó',
-            processedUrl: existingProcessed.processedUrl,
-            isFolder: existingProcessed.isFolder || false
-          });
-          successCount++;
-          continue;
+          console.log(`Kiểm tra trạng thái link đã xử lý: ${existingProcessed.processedUrl}`);
+          
+          let needReprocess = false;
+          
+          // Kiểm tra link đã xử lý còn tồn tại không
+          try {
+            const linkStatus = await checkDriveLinkStatus(existingProcessed.processedUrl);
+            
+            if (!linkStatus.exists) {
+              console.log(`Link đã xử lý không còn tồn tại: ${existingProcessed.processedUrl}`);
+              console.log(`Lỗi: ${linkStatus.error}`);
+              needReprocess = true;
+            } else {
+              console.log(`Link đã xử lý vẫn còn tồn tại, bỏ qua xử lý lại`);
+            }
+          } catch (statusError) {
+            console.error(`Lỗi khi kiểm tra trạng thái link: ${statusError.message}`);
+            // Nếu không kiểm tra được, vẫn giả định link tồn tại để tránh xử lý lại không cần thiết
+          }
+          
+          if (!needReprocess) {
+            // Link vẫn còn hoạt động, bỏ qua xử lý lại
+            results.push({
+              originalUrl: link.url,
+              displayName: link.displayName,
+              sheetTitle: link.sheetTitle,
+              status: existingProcessed.isFolder ? 'Thư mục đã xử lý trước đó' : 'File đã xử lý trước đó',
+              processedUrl: existingProcessed.processedUrl,
+              isFolder: existingProcessed.isFolder || false
+            });
+            successCount++;
+            continue;
+          }
+          
+          // Nếu cần xử lý lại, xóa khỏi danh sách đã xử lý
+          console.log(`Chuẩn bị xử lý lại file: ${link.displayName}`);
+          const processedIndex = course.processedDriveFiles.findIndex(
+            file => file.originalUrl === link.url
+          );
+          if (processedIndex !== -1) {
+            course.processedDriveFiles.splice(processedIndex, 1);
+          }
         }
 
         // Kiểm tra loại nội dung trước khi xử lý
@@ -213,22 +246,53 @@ export async function POST(request, { params }) {
               
               if (existingProcessedById) {
                 console.log(`Thư mục với ID ${folderIdToCheck} đã được xử lý trước đó`);
-                results.push({
-                  originalUrl: link.url,
-                  displayName: link.displayName,
-                  sheetTitle: link.sheetTitle,
-                  status: 'Thư mục đã xử lý trước đó',
-                  processedUrl: existingProcessedById.processedUrl,
-                  isFolder: true
-                });
-                successCount++;
-                continue;
+                
+                // Kiểm tra xem thư mục đã xử lý còn tồn tại không
+                console.log(`Kiểm tra trạng thái thư mục đã xử lý: ${existingProcessedById.processedUrl}`);
+                let needReprocessFolder = false;
+                
+                try {
+                  const folderStatus = await checkDriveLinkStatus(existingProcessedById.processedUrl);
+                  
+                  if (!folderStatus.exists) {
+                    console.log(`Thư mục đã xử lý không còn tồn tại: ${existingProcessedById.processedUrl}`);
+                    console.log(`Lỗi: ${folderStatus.error}`);
+                    needReprocessFolder = true;
+                  } else {
+                    console.log(`Thư mục đã xử lý vẫn còn tồn tại, bỏ qua xử lý lại`);
+                  }
+                } catch (statusError) {
+                  console.error(`Lỗi khi kiểm tra trạng thái thư mục: ${statusError.message}`);
+                  // Nếu không kiểm tra được, vẫn giả định thư mục tồn tại để tránh xử lý lại không cần thiết
+                }
+                
+                if (!needReprocessFolder) {
+                  // Thư mục vẫn còn hoạt động, bỏ qua xử lý lại
+                  results.push({
+                    originalUrl: link.url,
+                    displayName: link.displayName,
+                    sheetTitle: link.sheetTitle,
+                    status: 'Thư mục đã xử lý trước đó',
+                    processedUrl: existingProcessedById.processedUrl,
+                    isFolder: true
+                  });
+                  successCount++;
+                  continue;
+                }
+                
+                // Nếu cần xử lý lại thư mục, xóa khỏi danh sách đã xử lý
+                console.log(`Chuẩn bị xử lý lại thư mục: ${link.displayName}`);
+                const folderProcessedIndex = course.processedDriveFiles.findIndex(
+                  file => file.originalUrl && file.originalUrl.includes(folderIdToCheck)
+                );
+                if (folderProcessedIndex !== -1) {
+                  course.processedDriveFiles.splice(folderProcessedIndex, 1);
+                }
               }
               
               console.log(`Đang xử lý thư mục: ${link.url}`);
               
               // Gọi API xử lý folder
-              console.log(`Đang xử lý thư mục: ${link.url}`);
               const folderApiUrl = new URL('/api/drive/remove-watermark', request.url).toString();
               
               const folderResponse = await fetch(folderApiUrl, {

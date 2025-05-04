@@ -557,15 +557,20 @@ async function handleDriveFile(driveLink, backgroundImage, backgroundOpacity, co
             const emptyImageContent = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64'); // GIF 1x1
             fs.writeFileSync(imagePath, emptyImageContent);
             
+            const imageFileSize = fs.statSync(imagePath).size;
+            
             downloadResult = {
               success: true,
               filePath: imagePath,
               fileName: fileName,
               contentType: mimeType,
               outputDir: tempDir,
-              size: fs.statSync(imagePath).size,
+              size: imageFileSize,
               isImage: true,
-              isPdf: false
+              isPdf: false,
+              originalSize: imageFileSize,
+              processedSize: imageFileSize,
+              processingTime: 0
             };
             
             console.log(`✅ Đã xử lý thông tin ảnh: ${fileName}`);
