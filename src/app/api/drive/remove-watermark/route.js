@@ -212,7 +212,7 @@ export async function POST(request) {
       try {
         cleanupTempFiles(tempDir);
       } catch (cleanupError) {
-        // Handle cleanup error
+        console.error(`Lỗi khi dọn dẹp thư mục tạm: ${cleanupError.message}`);
       }
     }
     
@@ -227,10 +227,20 @@ export async function POST(request) {
       }
     }
     
+    // Log chi tiết lỗi để debug
+    console.error(`*** CHI TIẾT LỖI XỬ LÝ FILE ***`);
+    console.error(`- Message: ${error.message}`);
+    console.error(`- Stack: ${error.stack}`);
+    if (error.cause) {
+      console.error(`- Cause: ${JSON.stringify(error.cause)}`);
+    }
+    console.error(`********************************`);
+    
     return NextResponse.json(
       { 
         success: false,
-        error: `Không thể xử lý: ${error.message}` 
+        error: `Không thể xử lý: ${error.message}`,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
       },
       { status: 500 }
     );
@@ -251,6 +261,7 @@ async function handleDriveFile(driveLink, backgroundImage, backgroundOpacity) {
         const result = extractGoogleDriveFileId(driveLink);
         fileId = result.fileId;
       } catch (error) {
+        console.error(`Lỗi trích xuất ID: ${error.message}`);
         throw new Error(`Không thể trích xuất ID từ link Google Drive: ${error.message}`);
       }
     } else {
@@ -260,6 +271,7 @@ async function handleDriveFile(driveLink, backgroundImage, backgroundOpacity) {
     // Lấy thông tin cơ bản về file trước khi tải
     const downloadToken = getTokenByType('download');
     if (!downloadToken) {
+      console.error('Token Google Drive không tìm thấy');
       throw new Error('Không tìm thấy token Google Drive.');
     }
     
@@ -273,63 +285,90 @@ async function handleDriveFile(driveLink, backgroundImage, backgroundOpacity) {
     const drive = google.drive({ version: 'v3', auth: oauth2Client });
     
     // Lấy metadata của file
-    const fileMetadata = await drive.files.get({
-      fileId: fileId,
-      supportsAllDrives: true,
-      includeItemsFromAllDrives: true,
-      fields: 'name,mimeType,size'
-    });
+    let fileMetadata;
+    try {
+      fileMetadata = await drive.files.get({
+        fileId: fileId,
+        supportsAllDrives: true,
+        includeItemsFromAllDrives: true,
+        fields: 'name,mimeType,size'
+      });
+    } catch (metadataError) {
+      console.error(`Lỗi lấy metadata: ${metadataError.message}`);
+      throw new Error(`Không thể lấy thông tin file: ${metadataError.message}`);
+    }
     
     fileName = fileMetadata.data.name;
     const mimeType = fileMetadata.data.mimeType;
+    console.log(`Đã lấy thông tin file: ${fileName} (${mimeType})`);
     
     // Kiểm tra xem file đã tồn tại trong thư mục đích chưa
     console.log(`Kiểm tra trước xem file "${fileName}" đã tồn tại trong thư mục đích chưa...`);
     
-    // Lấy token upload
-    const uploadToken = getTokenByType('upload');
-    if (!uploadToken) {
-      throw new Error('Không tìm thấy token tải lên Google Drive.');
-    }
-    
-    const uploadOAuth2Client = new google.auth.OAuth2(
-      process.env.GOOGLE_CLIENT_ID,
-      process.env.GOOGLE_CLIENT_SECRET,
-      process.env.GOOGLE_REDIRECT_URI
-    );
-    
-    uploadOAuth2Client.setCredentials(uploadToken);
-    const uploadDrive = google.drive({ version: 'v3', auth: uploadOAuth2Client });
-    
-    // Tìm hoặc tạo thư mục "tài liệu khoá học"
-    const courseFolderId = await findOrCreateCourseFolder(uploadDrive);
-    
-    // Kiểm tra xem file đã tồn tại trong thư mục đích chưa
-    const searchQuery = `name='${fileName}' and '${courseFolderId}' in parents and trashed=false`;
-    const existingFileResponse = await uploadDrive.files.list({
-      q: searchQuery,
-      fields: 'files(id, name, webViewLink, webContentLink)',
-      spaces: 'drive'
-    });
-    
-    // Nếu file đã tồn tại, trả về thông tin
-    if (existingFileResponse.data.files && existingFileResponse.data.files.length > 0) {
-      const existingFile = existingFileResponse.data.files[0];
-      console.log(`⏩ File "${fileName}" đã tồn tại trong thư mục đích, bỏ qua xử lý.`);
+    try {
+      // Lấy token upload
+      const uploadToken = getTokenByType('upload');
+      if (!uploadToken) {
+        console.error('Token upload không tìm thấy');
+        throw new Error('Không tìm thấy token tải lên Google Drive.');
+      }
       
-      return NextResponse.json({
-        success: true,
-        message: `File "${fileName}" đã tồn tại, không cần xử lý lại.`,
-        originalFilename: fileName,
-        processedFilename: existingFile.name,
-        viewLink: existingFile.webViewLink,
-        downloadLink: existingFile.webContentLink,
-        skipped: true,
-        reason: 'File đã tồn tại trong thư mục đích'
-      }, { status: 200 });
+      const uploadOAuth2Client = new google.auth.OAuth2(
+        process.env.GOOGLE_CLIENT_ID,
+        process.env.GOOGLE_CLIENT_SECRET,
+        process.env.GOOGLE_REDIRECT_URI
+      );
+      
+      uploadOAuth2Client.setCredentials(uploadToken);
+      const uploadDrive = google.drive({ version: 'v3', auth: uploadOAuth2Client });
+      
+      // Tìm hoặc tạo thư mục "tài liệu khoá học"
+      let courseFolderId;
+      try {
+        courseFolderId = await findOrCreateCourseFolder(uploadDrive);
+        console.log(`Folder ID đích: ${courseFolderId}`);
+      } catch (folderError) {
+        console.error(`Lỗi tìm/tạo thư mục đích: ${folderError.message}`);
+        throw new Error(`Không thể tìm hoặc tạo thư mục đích: ${folderError.message}`);
+      }
+      
+      // Kiểm tra xem file đã tồn tại trong thư mục đích chưa
+      try {
+        const searchQuery = `name='${fileName}' and '${courseFolderId}' in parents and trashed=false`;
+        const existingFileResponse = await uploadDrive.files.list({
+          q: searchQuery,
+          fields: 'files(id, name, webViewLink, webContentLink)',
+          spaces: 'drive'
+        });
+        
+        // Nếu file đã tồn tại, trả về thông tin
+        if (existingFileResponse.data.files && existingFileResponse.data.files.length > 0) {
+          const existingFile = existingFileResponse.data.files[0];
+          console.log(`⏩ File "${fileName}" đã tồn tại trong thư mục đích, bỏ qua xử lý.`);
+          
+          return NextResponse.json({
+            success: true,
+            message: `File "${fileName}" đã tồn tại, không cần xử lý lại.`,
+            originalFilename: fileName,
+            processedFilename: existingFile.name,
+            viewLink: existingFile.webViewLink,
+            downloadLink: existingFile.webContentLink || existingFile.webViewLink,
+            skipped: true,
+            reason: 'File đã tồn tại trong thư mục đích'
+          }, { status: 200 });
+        }
+      } catch (checkError) {
+        // Log lỗi nhưng vẫn tiếp tục xử lý - không throw error
+        console.error(`Lỗi kiểm tra file tồn tại: ${checkError.message}`, checkError.stack);
+        console.log(`Tiếp tục xử lý file dù có lỗi kiểm tra tồn tại`);
+      }
+    } catch (existCheckError) {
+      // Log lỗi nhưng vẫn tiếp tục xử lý file - không dừng lại
+      console.error(`Lỗi kiểm tra tồn tại: ${existCheckError.message}`, existCheckError.stack);
+      console.log(`Bỏ qua kiểm tra file tồn tại, tiếp tục xử lý file`);
     }
     
-    console.log(`File "${fileName}" chưa tồn tại trong thư mục đích, bắt đầu xử lý...`);
+    console.log(`File "${fileName}" chưa tồn tại hoặc không thể kiểm tra, bắt đầu xử lý...`);
     
     // Tải file từ Drive (hỗ trợ nhiều định dạng)
     let downloadResult;
@@ -719,14 +758,24 @@ async function handleDriveFile(driveLink, backgroundImage, backgroundOpacity) {
       try {
         cleanupTempFiles(tempDir);
       } catch (cleanupError) {
-        // Handle cleanup error
+        console.error(`Lỗi khi dọn dẹp thư mục tạm: ${cleanupError.message}`);
       }
     }
+    
+    // Log chi tiết lỗi để debug
+    console.error(`*** CHI TIẾT LỖI XỬ LÝ FILE ***`);
+    console.error(`- Message: ${error.message}`);
+    console.error(`- Stack: ${error.stack}`);
+    if (error.cause) {
+      console.error(`- Cause: ${JSON.stringify(error.cause)}`);
+    }
+    console.error(`********************************`);
     
     return NextResponse.json(
       { 
         success: false,
-        error: `Không thể xử lý file: ${error.message}` 
+        error: `Không thể xử lý file: ${error.message}`,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
       },
       { status: 500 }
     );

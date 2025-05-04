@@ -321,7 +321,7 @@ export async function uploadToDrive(filePath, fileName, mimeType) {
 }
 
 // Hàm tìm hoặc tạo thư mục "tài liệu khoá học"
-async function findOrCreateCourseFolder(drive) {
+export async function findOrCreateCourseFolder(drive) {
   const folderName = "tài liệu khoá học";
   
   try {
