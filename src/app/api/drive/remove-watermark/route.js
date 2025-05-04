@@ -23,7 +23,7 @@ import path from 'path';
 import { Worker, isMainThread, parentPort, workerData } from 'worker_threads';
 import { v4 as uuidv4 } from 'uuid';
 import os from 'os';
-import google from 'googleapis';
+import { google } from 'googleapis';
 
 // Import các module đã tách
 import { API_TOKEN, DEFAULT_CONFIG } from './lib/config.js';

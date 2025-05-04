@@ -197,18 +197,72 @@ export async function POST(request, { params }) {
           
           // Nếu không phải file PDF, bỏ qua
           if (checkData.mimeType !== 'application/pdf') {
-            console.log(`Bỏ qua: ${link.url} - Không phải PDF (${checkData.mimeType})`);
-            
-            // Nếu là folder, ghi rõ trong thông báo
-            const contentType = checkData.mimeType === 'application/vnd.google-apps.folder' 
-              ? 'Folder/Thư mục' 
-              : checkData.mimeType;
+            // Nếu là folder, xử lý đặc biệt
+            if (checkData.mimeType === 'application/vnd.google-apps.folder') {
+              console.log(`Phát hiện thư mục: ${link.url} - Đang chuyển qua xử lý thư mục`);
               
+              // Gọi API xử lý folder
+              console.log(`Đang xử lý thư mục: ${link.url}`);
+              const folderApiUrl = new URL('/api/drive/remove-watermark', request.url).toString();
+              
+              const folderResponse = await fetch(folderApiUrl, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ 
+                  token: 'api@test-watermark',
+                  driveLink: link.url
+                })
+              });
+              
+              const folderData = await folderResponse.json();
+              
+              if (!folderResponse.ok) {
+                throw new Error(folderData.message || 'Không thể xử lý thư mục');
+              }
+              
+              console.log(`Xử lý thư mục thành công, URL mới: ${folderData.folderLink || folderData.url || folderData.driveUrl || folderData.folderUrl || 'không xác định'}`);
+              
+              // Lấy URL đã xử lý cho folder
+              const folderProcessedUrl = folderData.folderLink || folderData.url || folderData.driveUrl || folderData.folderUrl;
+              
+              // Chuẩn bị đối tượng xử lý để lưu
+              const processedFolder = {
+                originalUrl: link.url,
+                processedUrl: folderProcessedUrl,
+                processedAt: new Date(),
+                fileName: link.displayName,
+                sheetIndex: link.sheetIndex,
+                rowIndex: link.rowIndex,
+                isFolder: true,
+                folderInfo: folderData.folderInfo || null
+              };
+              
+              // Thêm vào danh sách cục bộ
+              course.processedDriveFiles.push(processedFolder);
+              
+              results.push({
+                originalUrl: link.url,
+                displayName: link.displayName,
+                sheetTitle: link.sheetTitle,
+                status: 'Xử lý thành công thư mục',
+                processedUrl: folderProcessedUrl,
+                isFolder: true
+              });
+              
+              successCount++;
+              continue;
+            }
+            // Nếu không phải folder và không phải PDF, bỏ qua
+            console.log(`Bỏ qua: ${link.url} - Không phải PDF hoặc thư mục (${checkData.mimeType})`);
+            
+            // Ghi rõ loại nội dung trong thông báo
             results.push({
               originalUrl: link.url,
               displayName: link.displayName,
               sheetTitle: link.sheetTitle,
-              status: `Bỏ qua: ${contentType}`,
+              status: `Bỏ qua: ${checkData.mimeType}`,
               skipped: true
             });
             
@@ -242,12 +296,15 @@ export async function POST(request, { params }) {
           throw new Error(data.message || 'Không thể xử lý file PDF');
         }
 
-        console.log(`Xử lý thành công, URL mới: ${data.webViewLink}`);
+        console.log(`Xử lý thành công, URL mới: ${data.webViewLink || data.viewLink || data.folderLink || data.url || data.driveUrl || 'không xác định'}`);
 
+        // Lấy URL đã xử lý (ưu tiên các trường khác nhau tùy theo loại nội dung)
+        const processedUrl = data.webViewLink || data.viewLink || data.folderLink || data.url || data.driveUrl;
+        
         // Chuẩn bị đối tượng xử lý để lưu
         const processedFile = {
           originalUrl: link.url,
-          processedUrl: data.webViewLink,
+          processedUrl: processedUrl,
           processedAt: new Date(),
           fileName: link.displayName,
           sheetIndex: link.sheetIndex,
@@ -262,7 +319,7 @@ export async function POST(request, { params }) {
           displayName: link.displayName,
           sheetTitle: link.sheetTitle,
           status: 'Xử lý thành công',
-          processedUrl: data.webViewLink
+          processedUrl: processedUrl
         });
 
         successCount++;
@@ -306,7 +363,7 @@ export async function POST(request, { params }) {
     // Trả về kết quả
     return NextResponse.json({
       success: true,
-      message: `Đã xử lý ${successCount}/${drivePdfLinks.length} link PDF. ${errorCount > 0 ? `${errorCount} lỗi.` : ''}`,
+      message: `Đã xử lý ${successCount}/${drivePdfLinks.length} link. ${errorCount > 0 ? `${errorCount} lỗi.` : ''}`,
       totalLinks: drivePdfLinks.length,
       processedLinks: successCount,
       errorLinks: errorCount,
