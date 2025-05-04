@@ -238,7 +238,8 @@ export async function POST(request, { params }) {
                 },
                 body: JSON.stringify({ 
                   token: 'api@test-watermark',
-                  driveLink: link.url
+                  driveLink: link.url,
+                  courseName: course.name || 'Khóa học không tên'
                 })
               });
               
@@ -312,7 +313,8 @@ export async function POST(request, { params }) {
           },
           body: JSON.stringify({ 
             token: 'api@test-watermark',
-            driveLink: link.url
+            driveLink: link.url,
+            courseName: course.name || 'Khóa học không tên'
           })
         });
 

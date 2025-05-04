@@ -109,7 +109,7 @@ export async function POST(request) {
   try {
     // Parse request body
     const requestBody = await request.json();
-    let { token, driveLink, backgroundImage, backgroundOpacity, skipTokenValidation, url } = requestBody;
+    let { token, driveLink, backgroundImage, backgroundOpacity, skipTokenValidation, url, courseName } = requestBody;
 
     // Hỗ trợ cả url và driveLink (để tương thích)
     if (!driveLink && url) {
@@ -193,7 +193,7 @@ export async function POST(request) {
     if (isFolder) {
       console.log('Xử lý folder:', driveLink);
       // Xử lý nếu là folder
-      const folderResponse = await handleDriveFolder(driveLink, backgroundImage, backgroundOpacity);
+      const folderResponse = await handleDriveFolder(driveLink, backgroundImage, backgroundOpacity, courseName);
       
       // Không cần đọc response.json() ở đây vì sẽ làm stream bị khóa
       // Log được tạo trực tiếp trong hàm handleDriveFolder rồi
@@ -203,7 +203,7 @@ export async function POST(request) {
     } else {
       console.log('Xử lý file đơn lẻ:', driveLink);
       // Xử lý nếu là file (PDF hoặc ảnh)
-      return await handleDriveFile(driveLink, backgroundImage, backgroundOpacity);
+      return await handleDriveFile(driveLink, backgroundImage, backgroundOpacity, courseName);
     }
     
   } catch (error) {
@@ -248,7 +248,7 @@ export async function POST(request) {
 }
 
 // Hàm xử lý một file đơn lẻ (PDF hoặc ảnh)
-async function handleDriveFile(driveLink, backgroundImage, backgroundOpacity) {
+async function handleDriveFile(driveLink, backgroundImage, backgroundOpacity, courseName) {
   let tempDir = null;
   let processedFilePath = null;
   let fileName = null;
@@ -425,7 +425,7 @@ async function handleDriveFile(driveLink, backgroundImage, backgroundOpacity) {
             console.log(`🔍 Đã phát hiện link là thư mục, chuyển hướng xử lý...`);
             
             // Gọi hàm xử lý thư mục
-            return await handleDriveFolder(driveLink, backgroundImage, backgroundOpacity);
+            return await handleDriveFolder(driveLink, backgroundImage, backgroundOpacity, courseName);
           } else if (mimeType.startsWith('image/')) {
             console.log(`🖼️ Đã phát hiện link là ảnh (${mimeType}), được phép xử lý...`);
             // Cho phép tiếp tục xử lý nếu là ảnh
@@ -671,7 +671,7 @@ async function handleDriveFile(driveLink, backgroundImage, backgroundOpacity) {
     // Upload processed file back to Drive
     let uploadResult;
     try {
-      uploadResult = await uploadToDrive(processedFilePath, downloadResult.fileName, 'application/pdf');
+      uploadResult = await uploadToDrive(processedFilePath, downloadResult.fileName, 'application/pdf', courseName);
     } catch (uploadError) {
       // Clean up temp files
       if (tempDir && fs.existsSync(tempDir)) {
@@ -711,7 +711,7 @@ async function handleDriveFile(driveLink, backgroundImage, backgroundOpacity) {
       // Nếu là ảnh, không xử lý, chỉ tải lên Drive
       let uploadResult;
       try {
-        uploadResult = await uploadToDrive(downloadResult.filePath, downloadResult.fileName, downloadResult.contentType);
+        uploadResult = await uploadToDrive(downloadResult.filePath, downloadResult.fileName, downloadResult.contentType, courseName);
       } catch (uploadError) {
         // Clean up temp files
         if (tempDir && fs.existsSync(tempDir)) {
@@ -783,7 +783,7 @@ async function handleDriveFile(driveLink, backgroundImage, backgroundOpacity) {
 }
 
 // Hàm xử lý folder từ Google Drive
-async function handleDriveFolder(driveFolderLink, backgroundImage, backgroundOpacity) {
+async function handleDriveFolder(driveFolderLink, backgroundImage, backgroundOpacity, courseName) {
   let folderResults = [];
   let processingFolders = [];
   let destinationFolderId = null;
@@ -803,8 +803,10 @@ async function handleDriveFolder(driveFolderLink, backgroundImage, backgroundOpa
     
     console.log(`Đã tìm thấy ${folderInfo.files.length} file trong folder "${folderInfo.folderName}"`);
     
-    // Tạo folder đích trên Drive để lưu kết quả
-    const destinationFolder = await createDriveFolder(folderInfo.folderName);
+    // Tạo một thư mục trên Drive để lưu các file đã xử lý
+    console.log(`Tạo thư mục đích trên Drive...`);
+    
+    const destinationFolder = await createDriveFolder(folderInfo.folderName, courseName);
     destinationFolderId = destinationFolder.folderId;
     
     console.log(`Đã tạo folder đích: ${destinationFolder.folderName} (ID: ${destinationFolderId})`);
