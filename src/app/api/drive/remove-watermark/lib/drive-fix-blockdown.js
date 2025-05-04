@@ -124,6 +124,8 @@ export async function downloadBlockedPDF(fileId, fileName, tempDir, watermarkCon
   // Kết hợp config mặc định với config được truyền vào
   const config = { ...DEFAULT_CONFIG, ...watermarkConfig };
   
+  let fileSize = 0; // Khai báo fileSize ở phạm vi rộng hơn
+  
   try {
     console.log(`🔍 Bắt đầu xử lý file bị chặn: ${fileName}`);
     
@@ -298,7 +300,7 @@ export async function downloadBlockedPDF(fileId, fileName, tempDir, watermarkCon
         throw new Error('Không thể tạo file PDF');
       }
       
-      const fileSize = fs.statSync(outputPath).size;
+      fileSize = fs.statSync(outputPath).size; // Sử dụng biến đã khai báo bên ngoài
       if (fileSize === 0) {
         throw new Error('File PDF được tạo nhưng kích thước bằng 0');
       }
