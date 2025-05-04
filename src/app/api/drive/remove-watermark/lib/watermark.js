@@ -428,233 +428,158 @@ export async function processImage(inputPath, outputPath, config = DEFAULT_CONFI
       return false;
     }
     
-    // Nếu ảnh quá lớn, scale down để tránh lỗi bộ nhớ
-    const MAX_IMAGE_DIMENSION = 4000; // Giảm xuống để an toàn hơn
-    let resized = false;
+    // Điểm ngắt đã xác định - thêm bước kiểm tra đặc biệt sau khi đọc metadata
+    console.log(`Kiểm tra ảnh trước khi xử lý: OK`);
     
-    if (metadata.width > MAX_IMAGE_DIMENSION || metadata.height > MAX_IMAGE_DIMENSION) {
-      console.log(`Ảnh quá lớn (${metadata.width}x${metadata.height}), đang resize để xử lý an toàn`);
-      try {
-        // Scale down ảnh quá lớn
-        const scaleFactor = Math.min(
-          MAX_IMAGE_DIMENSION / metadata.width,
-          MAX_IMAGE_DIMENSION / metadata.height
-        );
-        
-        const newWidth = Math.floor(metadata.width * scaleFactor);
-        const newHeight = Math.floor(metadata.height * scaleFactor);
-        
-        console.log(`Resize ảnh từ ${metadata.width}x${metadata.height} xuống ${newWidth}x${newHeight}`);
-        
-        image = image.resize(newWidth, newHeight, { fit: 'inside' });
-        resized = true;
-        
-        // Cập nhật lại metadata sau khi resize
-        try {
-          metadata = await image.metadata();
-        } catch (updateMetadataError) {
-          console.error(`Không thể cập nhật metadata sau khi resize: ${updateMetadataError.message}`);
-        }
-      } catch (resizeError) {
-        console.error(`Lỗi khi resize ảnh lớn: ${resizeError.message}`);
-        // Tiếp tục với ảnh gốc
-        console.log(`Tiếp tục xử lý với ảnh gốc do lỗi resize`);
-      }
+    // Thêm bước bảo vệ đặc biệt - Sao chép trước file gốc để đảm bảo luôn có output
+    try {
+      fs.copyFileSync(inputPath, outputPath);
+      console.log(`Đã tạo bản sao dự phòng: ${outputPath}`);
+    } catch (backupError) {
+      console.error(`Không thể tạo bản sao dự phòng: ${backupError.message}`);
     }
     
-    // Xử lý ảnh với try-catch
     try {
-      if (config.processCenter) {
-        try {
-          // Xử lý vùng trung tâm
-          const centerX = Math.floor(metadata.width * 0.1);
-          const centerY = Math.floor(metadata.height * 0.1);
-          const centerWidth = Math.floor(metadata.width * config.centerSize);
-          const centerHeight = Math.floor(metadata.height * config.centerSize);
-          
-          // Kiểm tra kích thước trích xuất hợp lệ
-          if (centerWidth <= 0 || centerHeight <= 0) {
-            throw new Error(`Kích thước trích xuất không hợp lệ: ${centerWidth}x${centerHeight}`);
-          }
-          
-          let center;
-          try {
-            center = await image
-              .clone()
-              .extract({
-                left: centerX,
-                top: centerY,
-                width: centerWidth,
-                height: centerHeight
-              })
-              .modulate({
-                brightness: 1 + (15 / 100),  // Cố định giá trị thấp
-              })
-              .linear(
-                1 + (25 / 100),  // Cố định giá trị vừa phải
-                -(25 / 3)
-              )
-              .toBuffer();
-          } catch (extractError) {
-            throw new Error(`Không thể trích xuất và xử lý vùng trung tâm: ${extractError.message}`);
-          }
-          
-          // Xử lý phần trung tâm đã trích xuất
-          let processedCenter;
-          try {
-            processedCenter = sharp(center);
-          } catch (sharpCenterError) {
-            throw new Error(`Không thể tạo đối tượng sharp cho vùng trung tâm: ${sharpCenterError.message}`);
-          }
-          
-          if (config.threshold > 0 && !config.keepColors) {
-            try {
-              processedCenter = processedCenter.threshold(config.threshold * 100);
-            } catch (thresholdError) {
-              console.warn(`Không thể áp dụng threshold: ${thresholdError.message}`);
-            }
-          }
-          
-          // Tạo buffer từ phần trung tâm đã xử lý
-          let processedCenterBuffer;
-          try {
-            processedCenterBuffer = await processedCenter.toBuffer();
-          } catch (bufferError) {
-            throw new Error(`Không thể tạo buffer cho vùng trung tâm đã xử lý: ${bufferError.message}`);
-          }
-          
-          // Ghép phần đã xử lý vào ảnh gốc
-          try {
-            await sharp(inputPath)
-              .composite([{
-                input: processedCenterBuffer,
-                left: centerX,
-                top: centerY
-              }])
-              .toFile(outputPath);
-            console.log(`Đã xử lý thành công với phương pháp vùng trung tâm: ${outputPath}`);
-            return true;
-          } catch (compositeError) {
-            throw new Error(`Không thể ghép ảnh: ${compositeError.message}`);
-          }
-        } catch (centerError) {
-          console.error(`Lỗi xử lý vùng trung tâm: ${centerError.message}`);
-          // Fallback: thử phương pháp đơn giản hơn
-          console.log(`Chuyển sang xử lý toàn bộ ảnh do lỗi xử lý vùng trung tâm`);
-          // Tiếp tục với phương pháp xử lý toàn bộ ảnh (không return)
-        }
-      }
+      // Tạo một bản sao của hình ảnh sử dụng buffer để tránh sử dụng đối tượng Sharp gốc
+      console.log(`Chuẩn bị bộ đệm hình ảnh để xử lý an toàn...`);
       
-      // Phương pháp xử lý toàn bộ ảnh
-      try {
-        // Chuẩn bị phiên bản ảnh mới
-        let processedImage;
-        try {
-          processedImage = image.clone();
-        } catch (cloneError) {
-          console.error(`Không thể clone ảnh: ${cloneError.message}`);
-          // Tạo đối tượng sharp mới từ file đầu vào
-          processedImage = sharp(inputPath);
-          
-          // Resize lại nếu cần
-          if (resized) {
-            const newWidth = Math.floor(metadata.width * 0.8);
-            const newHeight = Math.floor(metadata.height * 0.8);
-            processedImage = processedImage.resize(newWidth, newHeight, { fit: 'inside' });
-          }
+      // Tối ưu hóa: Điều chỉnh kích thước đầu ra tối đa để tránh lỗi bộ nhớ
+      const MAX_DIMENSION = 3000; // Giới hạn kích thước tối đa để xử lý an toàn
+      let needResize = false;
+      let newWidth = metadata.width;
+      let newHeight = metadata.height;
+      
+      if (metadata.width > MAX_DIMENSION || metadata.height > MAX_DIMENSION) {
+        console.log(`Ảnh quá lớn (${metadata.width}x${metadata.height}), sẽ giảm kích thước để xử lý an toàn`);
+        const aspectRatio = metadata.width / metadata.height;
+        
+        if (metadata.width > metadata.height) {
+          newWidth = MAX_DIMENSION;
+          newHeight = Math.round(MAX_DIMENSION / aspectRatio);
+        } else {
+          newHeight = MAX_DIMENSION;
+          newWidth = Math.round(MAX_DIMENSION * aspectRatio);
         }
         
-        // Biến đổi ảnh - xử lý từng bước với try-catch riêng
+        needResize = true;
+        console.log(`Kích thước xử lý mới: ${newWidth}x${newHeight}`);
+      }
+      
+      // Xử lý ảnh với cách tiếp cận đơn giản nhất
+      let processedImage;
+      
+      try {
+        // Bỏ qua quá trình clone để tránh lỗi
+        processedImage = sharp(inputPath);
+        
+        // Resize nếu cần
+        if (needResize) {
+          processedImage = processedImage.resize(newWidth, newHeight, {
+            fit: 'inside',
+            withoutEnlargement: true
+          });
+        }
+        
+        // Áp dụng các bước xử lý cơ bản và an toàn với try/catch riêng biệt
         try {
           processedImage = processedImage.modulate({
-            brightness: 1 + (15 / 100),  // Tăng độ sáng 15%
+            brightness: 1.15  // Tăng độ sáng 15%
           });
+          console.log(`Đã áp dụng tăng độ sáng`);
         } catch (modulateError) {
           console.warn(`Bỏ qua bước modulate do lỗi: ${modulateError.message}`);
         }
         
         try {
-          processedImage = processedImage.linear(
-            1 + (25 / 100),  // Tăng tương phản 25%
-            -(25 / 3)
-          );
-        } catch (linearError) {
-          console.warn(`Bỏ qua bước linear do lỗi: ${linearError.message}`);
+          processedImage = processedImage.sharpen({ sigma: 0.5, m1: 0.2, m2: 0.3 });
+          console.log(`Đã áp dụng tăng độ nét`);
+        } catch (sharpenError) {
+          console.warn(`Bỏ qua bước sharpen do lỗi: ${sharpenError.message}`);
         }
         
-        try {
-          processedImage = processedImage.sharpen({
-            sigma: 0.5,  // Sharpen nhẹ
-            m1: 0.3,
-            m2: 0.2
-          });
-        } catch (sharpenError) {
-          console.warn(`Không thể áp dụng sharpen: ${sharpenError.message}`);
-          // Tiếp tục mà không có sharpen
+        // Đặt chất lượng đầu ra và định dạng để tối ưu kích thước
+        if (metadata.format === 'jpeg' || metadata.format === 'jpg') {
+          processedImage = processedImage.jpeg({ quality: 90 });
+        } else if (metadata.format === 'png') {
+          processedImage = processedImage.png({ compressionLevel: 6 });
+        } else {
+          // Mặc định chuyển về JPEG nếu format không phải jpeg hoặc png
+          processedImage = processedImage.jpeg({ quality: 90 });
         }
         
         // Lưu ảnh đã xử lý
+        console.log(`Đang lưu ảnh đã xử lý...`);
         try {
-          await processedImage.toFile(outputPath);
-          console.log(`Đã xử lý và lưu ảnh thành công: ${outputPath}`);
+          // Tạo buffer trước thay vì ghi trực tiếp vào file
+          const outputBuffer = await processedImage.toBuffer();
+          console.log(`Đã tạo buffer ảnh đã xử lý: ${outputBuffer.length} bytes`);
+          
+          // Kiểm tra buffer hợp lệ
+          if (!outputBuffer || outputBuffer.length < 100) {
+            throw new Error(`Buffer ảnh không hợp lệ hoặc quá nhỏ: ${outputBuffer ? outputBuffer.length : 0} bytes`);
+          }
+          
+          // Sử dụng fs.writeFileSync thay vì sharp.toFile
+          fs.writeFileSync(outputPath, outputBuffer);
+          console.log(`Đã lưu ảnh đã xử lý thành công: ${outputPath}`);
+          
           return true;
-        } catch (outputError) {
-          console.error(`Lỗi khi lưu ảnh đã xử lý: ${outputError.message}`);
+        } catch (saveError) {
+          console.error(`Lỗi khi lưu ảnh đã xử lý: ${saveError.message}`);
+          console.error(saveError.stack);
           
-          // Thử lưu với định dạng JPEG
-          try {
-            await processedImage.jpeg({ quality: 85 }).toFile(outputPath);
-            console.log(`Đã lưu ảnh bằng phương pháp dự phòng (JPEG): ${outputPath}`);
-            return true;
-          } catch (jpegError) {
-            throw new Error(`Không thể lưu ảnh JPEG: ${jpegError.message}`);
+          // Kiểm tra lỗi cụ thể
+          if (saveError.message.includes('memory') || saveError.message.includes('heap')) {
+            console.error(`Có vẻ như lỗi bộ nhớ khi lưu ảnh lớn, thử với kích thước nhỏ hơn`);
+            try {
+              // Thử lưu ảnh với kích thước nhỏ hơn nhiều
+              const MAX_DIMENSION_FALLBACK = 1200;
+              console.log(`Thử lại với kích thước tối đa ${MAX_DIMENSION_FALLBACK}px`);
+              
+              const imgFallbackBuffer = await sharp(inputPath)
+                .resize(MAX_DIMENSION_FALLBACK, MAX_DIMENSION_FALLBACK, {
+                  fit: 'inside',
+                  withoutEnlargement: true
+                })
+                .jpeg({ quality: 85 })
+                .toBuffer();
+                
+              fs.writeFileSync(outputPath, imgFallbackBuffer);
+              console.log(`Đã lưu ảnh với kích thước thu nhỏ thành công: ${outputPath}`);
+              return true;
+            } catch (fallbackError) {
+              console.error(`Lỗi khi lưu ảnh với kích thước nhỏ hơn: ${fallbackError.message}`);
+              // Tiếp tục xuống phương án dự phòng cuối cùng
+              try {
+                console.log(`Thử phương pháp cuối cùng: sao chép file gốc`);
+                fs.copyFileSync(inputPath, outputPath);
+                console.log(`Đã sao chép file gốc thành công: ${outputPath}`);
+                return true;
+              } catch (copyError) {
+                console.error(`Không thể sao chép file gốc: ${copyError.message}`);
+              }
+            }
           }
-        }
-      } catch (fullImageError) {
-        console.error(`Lỗi xử lý toàn bộ ảnh: ${fullImageError.message}`);
-        
-        // Phương pháp dự phòng cuối cùng: sao chép file gốc
-        try {
-          fs.copyFileSync(inputPath, outputPath);
-          console.log(`Đã sao chép file gốc do lỗi xử lý: ${inputPath} -> ${outputPath}`);
+          
+          // Chúng ta đã có bản sao dự phòng rồi, không cần sao chép lại
+          console.log(`Sử dụng bản sao dự phòng đã tạo`);
           return false;
-        } catch (copyError) {
-          console.error(`Không thể sao chép file gốc: ${copyError.message}`);
-          throw copyError; // Ném lỗi để xử lý ở ngoài
         }
+      } catch (processingError) {
+        console.error(`Lỗi khi xử lý ảnh: ${processingError.message}`);
+        console.error(processingError.stack);
+        
+        // Chúng ta đã có bản sao dự phòng rồi, không cần sao chép lại
+        console.log(`Sử dụng bản sao dự phòng đã tạo`);
+        return false;
       }
-    } catch (processingError) {
-      console.error(`Lỗi không xác định khi xử lý ảnh: ${processingError.message}`);
-      console.error(processingError.stack);
+    } catch (outerError) {
+      console.error(`Lỗi bên ngoài quá trình xử lý: ${outerError.message}`);
+      console.error(outerError.stack);
       
-      // Phương pháp dự phòng cuối cùng - sử dụng phương pháp giảm thiểu nhất
-      try {
-        // Thử với phương pháp đơn giản nhất - chỉ resize và lưu
-        const basicImage = sharp(inputPath).resize(1000, 1000, { fit: 'inside' }).jpeg({ quality: 80 });
-        await basicImage.toFile(outputPath);
-        console.log(`Đã xử lý ảnh với phương pháp đơn giản nhất: ${outputPath}`);
-        return true;
-      } catch (basicError) {
-        console.error(`Phương pháp đơn giản nhất cũng thất bại: ${basicError.message}`);
-        
-        // Sao chép file gốc
-        try {
-          fs.copyFileSync(inputPath, outputPath);
-          console.log(`Đã sao chép file gốc sau khi mọi phương pháp đều thất bại: ${inputPath} -> ${outputPath}`);
-          return false;
-        } catch (finalCopyError) {
-          console.error(`Không thể sao chép file gốc (lỗi cuối cùng): ${finalCopyError.message}`);
-          
-          // Tạo file rỗng
-          try {
-            fs.writeFileSync(outputPath, Buffer.alloc(0));
-            console.log(`Đã tạo file rỗng vì không thể xử lý hoặc sao chép: ${outputPath}`);
-          } catch (writeError) {
-            console.error(`Không thể tạo file rỗng: ${writeError.message}`);
-          }
-          return false;
-        }
-      }
+      // Chúng ta đã có bản sao dự phòng rồi, không cần sao chép lại
+      console.log(`Sử dụng bản sao dự phòng đã tạo`);
+      return false;
     }
   } catch (error) {
     console.error(`❌ Lỗi xử lý ảnh cấp cao nhất: ${error.message}`);

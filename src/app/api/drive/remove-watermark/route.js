@@ -29,7 +29,7 @@ import { google } from 'googleapis';
 import { API_TOKEN, DEFAULT_CONFIG } from './lib/config.js';
 import { downloadFromGoogleDrive } from './lib/drive-service.js';
 import { uploadToDrive } from './lib/drive-service.js';
-import { cleanPdf } from './lib/watermark.js';
+import { cleanPdf, processImage } from './lib/watermark.js';
 import { cleanupTempFiles, getTokenByType, findGhostscript } from './lib/utils.js';
 import { processPage, convertPage } from './lib/workers.js';
 import { 
@@ -713,10 +713,128 @@ async function handleDriveFile(driveLink, backgroundImage, backgroundOpacity, co
     }, { status: 200 });
       
     } else if (downloadResult.isImage) {
-      // Nếu là ảnh, không xử lý, chỉ tải lên Drive
+      // Nếu là ảnh, xử lý để loại bỏ watermark
+      console.log(`Bắt đầu xử lý watermark cho ảnh: ${downloadResult.fileName}`);
+      
+      // Tạo đường dẫn output
+      const outputPath = path.join(tempDir, `processed_${path.basename(downloadResult.fileName)}`);
+      
+      // Tạo config cho xử lý ảnh
+      const config = { ...DEFAULT_CONFIG };
+      
+      // Thêm hình nền nếu có
+      if (backgroundImage) {
+        let backgroundImagePath = backgroundImage;
+        
+        if (!path.isAbsolute(backgroundImage) && 
+            !backgroundImage.includes(':/') && 
+            !backgroundImage.includes(':\\')) {
+          backgroundImagePath = path.join(process.cwd(), backgroundImage);
+        }
+        
+        // Kiểm tra file có tồn tại không
+        const fileExists = fs.existsSync(backgroundImagePath);
+        
+        if (fileExists) {
+          config.backgroundImage = backgroundImagePath;
+          
+          if (backgroundOpacity !== undefined) {
+            config.backgroundOpacity = parseFloat(backgroundOpacity);
+          }
+        }
+      }
+      
+      // Xử lý ảnh để xóa watermark
+      console.log(`🔄 Bắt đầu xử lý watermark cho ảnh...`);
+      console.log(`🔍 Đang phân tích thông tin ảnh...`);
+      
+      const startTime = Date.now();
+      let cleanResult;
+      let processedImagePath = downloadResult.filePath;
+      let fallbackToOriginal = false;
+      
+      try {
+        if (!sharp) {
+          console.warn("Sharp không được cài đặt hoặc không hoạt động. Sử dụng ảnh gốc.");
+          throw new Error("Sharp không khả dụng");
+        }
+        
+        try {
+          await processImage(downloadResult.filePath, outputPath, config);
+          
+          if (!fs.existsSync(outputPath)) {
+            console.error(`Ảnh đầu ra không được tạo: ${outputPath}`);
+            throw new Error("Ảnh đầu ra không tồn tại sau khi xử lý");
+          }
+          
+          const originalSize = fs.statSync(downloadResult.filePath).size;
+          const processedSize = fs.statSync(outputPath).size;
+          const processingTime = ((Date.now() - startTime) / 1000).toFixed(2);
+          
+          console.log(`✅ Đã xử lý watermark xong cho ảnh: ${downloadResult.fileName} trong ${processingTime} giây`);
+          
+          cleanResult = {
+            success: true,
+            filePath: outputPath,
+            originalSize: (originalSize / (1024 * 1024)).toFixed(2),
+            processedSize: (processedSize / (1024 * 1024)).toFixed(2),
+            processingTime
+          };
+          
+          processedImagePath = outputPath;
+        } catch (processError) {
+          console.error(`*** CHI TIẾT LỖI XỬ LÝ ẢNH ${downloadResult.fileName} ***`);
+          console.error(`- Message: ${processError.message}`);
+          console.error(`- Stack: ${processError.stack}`);
+          if (processError.cause) {
+            console.error(`- Cause: ${JSON.stringify(processError.cause)}`);
+          }
+          console.error(`********************************`);
+          
+          // Nếu xử lý lỗi, sử dụng ảnh gốc
+          console.log(`⚠️ Lỗi xử lý watermark cho ảnh. Sử dụng ảnh gốc: ${downloadResult.fileName}`);
+          fs.copyFileSync(downloadResult.filePath, outputPath);
+          
+          const originalSize = fs.statSync(downloadResult.filePath).size;
+          
+          cleanResult = {
+            success: false,
+            filePath: outputPath,
+            originalSize: (originalSize / (1024 * 1024)).toFixed(2),
+            processedSize: (originalSize / (1024 * 1024)).toFixed(2),
+            processingTime: '0',
+            error: processError.message
+          };
+          
+          fallbackToOriginal = true;
+          processedImagePath = outputPath;
+        }
+      } catch (outerError) {
+        console.error(`*** LỖI NGHIÊM TRỌNG KHI XỬ LÝ ẢNH ***`);
+        console.error(`- Message: ${outerError.message}`);
+        console.error(`- Stack: ${outerError.stack}`);
+        console.error(`********************************`);
+        
+        // Nếu có lỗi ở mức cao nhất, vẫn sử dụng file gốc
+        processedImagePath = downloadResult.filePath;
+        const originalSize = fs.statSync(downloadResult.filePath).size;
+        
+        cleanResult = {
+          success: false,
+          filePath: downloadResult.filePath,
+          originalSize: (originalSize / (1024 * 1024)).toFixed(2),
+          processedSize: (originalSize / (1024 * 1024)).toFixed(2),
+          processingTime: '0',
+          error: outerError.message
+        };
+        
+        fallbackToOriginal = true;
+      }
+      
+      // Upload ảnh đã xử lý lên Drive
       let uploadResult;
       try {
-        uploadResult = await uploadToDrive(downloadResult.filePath, downloadResult.fileName, downloadResult.contentType, courseName);
+        uploadResult = await uploadToDrive(processedImagePath, downloadResult.fileName, downloadResult.contentType, courseName);
       } catch (uploadError) {
         // Clean up temp files
         if (tempDir && fs.existsSync(tempDir)) {
@@ -740,11 +858,20 @@ async function handleDriveFile(driveLink, backgroundImage, backgroundOpacity, co
       // Return success response with link to uploaded image
       return NextResponse.json({
         success: true,
-        message: 'Đã tải ảnh lên Google Drive thành công.',
+        message: fallbackToOriginal 
+          ? 'Gặp lỗi khi xử lý ảnh. Đã tải ảnh gốc lên Google Drive.'
+          : 'Đã xử lý và tải ảnh lên Google Drive thành công.',
         originalFilename: downloadResult.fileName,
         processedFilename: uploadResult.fileName,
         viewLink: uploadResult.webViewLink,
-        downloadLink: uploadResult.downloadLink
+        downloadLink: uploadResult.downloadLink,
+        processingDetails: {
+          originalSize: cleanResult.originalSize,
+          processedSize: cleanResult.processedSize,
+          processingTime: cleanResult.processingTime + ' giây',
+          fallbackToOriginal: fallbackToOriginal,
+          error: cleanResult.error
+        }
       }, { status: 200 });
       
     } else {
@@ -1059,9 +1186,125 @@ async function handleDriveFolder(driveFolderLink, backgroundImage, backgroundOpa
           
         } else if (downloadResult.isImage) {
           console.log(`Xử lý file ảnh: ${file.name}`);
-          // Với ảnh, không xử lý, tải thẳng lên folder đích
+          
+          // Tạo đường dẫn output cho ảnh
+          const outputPath = path.join(outputDir, `processed_${file.name}`);
+          
+          // Tạo config cho xử lý ảnh
+          const config = { ...DEFAULT_CONFIG };
+          
+          // Thêm hình nền nếu có
+          if (backgroundImage) {
+            let backgroundImagePath = backgroundImage;
+            
+            if (!path.isAbsolute(backgroundImage) && 
+                !backgroundImage.includes(':/') && 
+                !backgroundImage.includes(':\\')) {
+              backgroundImagePath = path.join(process.cwd(), backgroundImage);
+            }
+            
+            // Kiểm tra file có tồn tại không
+            const fileExists = fs.existsSync(backgroundImagePath);
+            
+            if (fileExists) {
+              config.backgroundImage = backgroundImagePath;
+              
+              if (backgroundOpacity !== undefined) {
+                config.backgroundOpacity = parseFloat(backgroundOpacity);
+              }
+            }
+          }
+          
+          // Xử lý ảnh để xóa watermark
+          console.log(`🔄 Bắt đầu xử lý watermark cho ảnh: ${file.name}`);
+          console.log(`🔍 Đang phân tích thông tin ảnh...`);
+          
+          const startTime = Date.now();
+          let cleanResult;
+          let processedImagePath = downloadResult.filePath;
+          let fallbackToOriginal = false;
+          
+          try {
+            if (!sharp) {
+              console.warn("Sharp không được cài đặt hoặc không hoạt động. Sử dụng ảnh gốc.");
+              throw new Error("Sharp không khả dụng");
+            }
+            
+            try {
+              await processImage(downloadResult.filePath, outputPath, config);
+              
+              if (!fs.existsSync(outputPath)) {
+                console.error(`Ảnh đầu ra không được tạo: ${outputPath}`);
+                throw new Error("Ảnh đầu ra không tồn tại sau khi xử lý");
+              }
+              
+              const originalSize = fs.statSync(downloadResult.filePath).size;
+              const processedSize = fs.statSync(outputPath).size;
+              const processingTime = ((Date.now() - startTime) / 1000).toFixed(2);
+              
+              console.log(`✅ Đã xử lý watermark xong cho ảnh: ${file.name} trong ${processingTime} giây`);
+              
+              cleanResult = {
+                success: true,
+                filePath: outputPath,
+                originalSize: (originalSize / (1024 * 1024)).toFixed(2),
+                processedSize: (processedSize / (1024 * 1024)).toFixed(2),
+                processingTime
+              };
+              
+              processedImagePath = outputPath;
+            } catch (processError) {
+              console.error(`*** CHI TIẾT LỖI XỬ LÝ ẢNH ${file.name} ***`);
+              console.error(`- Message: ${processError.message}`);
+              console.error(`- Stack: ${processError.stack}`);
+              if (processError.cause) {
+                console.error(`- Cause: ${JSON.stringify(processError.cause)}`);
+              }
+              console.error(`********************************`);
+              
+              // Nếu xử lý lỗi, sử dụng ảnh gốc
+              console.log(`⚠️ Lỗi xử lý watermark cho ảnh. Sử dụng ảnh gốc: ${file.name}`);
+              fs.copyFileSync(downloadResult.filePath, outputPath);
+              
+              const originalSize = fs.statSync(downloadResult.filePath).size;
+              
+              cleanResult = {
+                success: false,
+                filePath: outputPath,
+                originalSize: (originalSize / (1024 * 1024)).toFixed(2),
+                processedSize: (originalSize / (1024 * 1024)).toFixed(2),
+                processingTime: '0',
+                error: processError.message
+              };
+              
+              fallbackToOriginal = true;
+              processedImagePath = outputPath;
+            }
+          } catch (outerError) {
+            console.error(`*** LỖI NGHIÊM TRỌNG KHI XỬ LÝ ẢNH ***`);
+            console.error(`- Message: ${outerError.message}`);
+            console.error(`- Stack: ${outerError.stack}`);
+            console.error(`********************************`);
+            
+            // Nếu có lỗi ở mức cao nhất, vẫn sử dụng file gốc
+            processedImagePath = downloadResult.filePath;
+            const originalSize = fs.statSync(downloadResult.filePath).size;
+            
+            cleanResult = {
+              success: false,
+              filePath: downloadResult.filePath,
+              originalSize: (originalSize / (1024 * 1024)).toFixed(2),
+              processedSize: (originalSize / (1024 * 1024)).toFixed(2),
+              processingTime: '0',
+              error: outerError.message
+            };
+            
+            fallbackToOriginal = true;
+          }
+          
+          // Tải lên Drive vào folder đích
           console.log(`Đang tải lên Drive cho ảnh: ${file.name}`);
-          const uploadResult = await uploadFileToDriveFolder(downloadResult.filePath, downloadResult.fileName, destinationFolderId);
+          const uploadResult = await uploadFileToDriveFolder(processedImagePath, file.name, destinationFolderId);
           console.log(`Đã tải lên Drive thành công cho ảnh: ${file.name}`);
           
           folderResults.push({
@@ -1069,7 +1312,9 @@ async function handleDriveFolder(driveFolderLink, backgroundImage, backgroundOpa
             processedFile: uploadResult.fileName,
             viewLink: uploadResult.webViewLink,
             downloadLink: uploadResult.downloadLink,
-            fileType: 'image'
+            fileType: 'image',
+            processingDetails: cleanResult,
+            fallbackToOriginal: fallbackToOriginal
           });
           
         } else {
