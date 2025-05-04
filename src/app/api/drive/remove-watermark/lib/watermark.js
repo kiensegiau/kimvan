@@ -46,17 +46,33 @@ export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
   }
   
   // Kiểm tra kích thước file
-  const stats = fs.statSync(inputPath);
+  let stats;
+  try {
+    stats = fs.statSync(inputPath);
+  } catch (statError) {
+    throw new Error(`Không thể đọc thông tin file: ${statError.message}`);
+  }
+  
   const fileSizeInMB = stats.size / (1024 * 1024);
   
   // Tạo thư mục temp hiệu quả hơn
   const tempDir = path.join(os.tmpdir(), `pdf-watermark-removal-${Date.now()}`);
-  fs.mkdirSync(tempDir, { recursive: true });
+  try {
+    fs.mkdirSync(tempDir, { recursive: true });
+  } catch (mkdirError) {
+    throw new Error(`Không thể tạo thư mục tạm: ${mkdirError.message}`);
+  }
   
   try {
     // Đếm số trang với cache
     console.log('🔍 Đang phân tích số trang của PDF...');
-    const numPages = await countPdfPagesWithGhostscript(inputPath, gsPath);
+    let numPages;
+    try {
+      numPages = await countPdfPagesWithGhostscript(inputPath, gsPath);
+    } catch (countError) {
+      throw new Error(`Không thể đếm số trang PDF: ${countError.message}`);
+    }
+    
     console.log(`📄 Phát hiện ${numPages} trang, đang tách PDF...`);
     
     // Tối ưu biến cho số lượng công nhân
@@ -70,14 +86,23 @@ export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
             `-dFirstPage=1 -dLastPage=${numPages} ` +
             `-sOutputFile="${path.join(tempDir, 'page_%d.pdf')}" "${inputPath}"`;
     
-    execSync(gsCommand, { stdio: 'pipe' });
+    try {
+      execSync(gsCommand, { stdio: 'pipe' });
+    } catch (gsError) {
+      throw new Error(`Lỗi khi tách PDF: ${gsError.message}`);
+    }
     
     // Kiểm tra kết quả nhanh hơn bằng cách dựa vào readdir và lọc
-    const pdfFiles = fs.readdirSync(tempDir, { 
-      withFileTypes: true 
-    })
-    .filter(entry => entry.isFile() && entry.name.endsWith('.pdf'))
-    .map(entry => entry.name);
+    let pdfFiles;
+    try {
+      pdfFiles = fs.readdirSync(tempDir, { 
+        withFileTypes: true 
+      })
+      .filter(entry => entry.isFile() && entry.name.endsWith('.pdf'))
+      .map(entry => entry.name);
+    } catch (readError) {
+      throw new Error(`Không thể đọc các file PDF đã tách: ${readError.message}`);
+    }
     
     if (pdfFiles.length === 0) {
       throw new Error('Không thể tách PDF thành các trang. GhostScript không tạo ra file nào.');
@@ -109,23 +134,40 @@ export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
     // Chia trang thành các batch nhỏ hơn để xử lý
     const convertResults = [];
     for (let i = 0; i < conversionTasks.length; i += batchSize) {
-      const currentBatch = conversionTasks.slice(i, i + batchSize);
-      const progress = Math.round((i / conversionTasks.length) * 100);
-      console.log(`🔄 Chuyển đổi PDF sang hình ảnh: ${progress}% (${i}/${conversionTasks.length} trang)`);
+      try {
+        const currentBatch = conversionTasks.slice(i, i + batchSize);
+        const progress = Math.round((i / conversionTasks.length) * 100);
+        console.log(`🔄 Chuyển đổi PDF sang hình ảnh: ${progress}% (${i}/${conversionTasks.length} trang)`);
       
-      // Xử lý batch hiện tại
-      const batchPromises = currentBatch.map(task => 
-        createConvertWorker(gsPath, task.pdfPath, task.pngPath, task.page, numPages, config.dpi)
-      );
+        // Xử lý batch hiện tại
+        const batchPromises = currentBatch.map(task => 
+          createConvertWorker(gsPath, task.pdfPath, task.pngPath, task.page, numPages, config.dpi)
+        );
       
-      const batchResults = await Promise.allSettled(batchPromises);
-      convertResults.push(...batchResults);
+        let batchResults;
+        try {
+          batchResults = await Promise.allSettled(batchPromises);
+        } catch (batchError) {
+          console.error(`Lỗi xử lý batch chuyển đổi: ${batchError.message}`);
+          continue;
+        }
+        
+        convertResults.push(...batchResults);
       
-      // Thúc đẩy GC sau mỗi batch
-      global.gc && global.gc();
+        // Thúc đẩy GC sau mỗi batch
+        try {
+          if (typeof global.gc === 'function') {
+            global.gc();
+          }
+        } catch (gcError) {
+          console.debug(`Lỗi gọi GC: ${gcError.message}`);
+        }
       
-      // Tạm dừng để cho GC có cơ hội chạy và giải phóng bộ nhớ
-      await new Promise(resolve => setTimeout(resolve, 200));
+        // Tạm dừng để cho GC có cơ hội chạy và giải phóng bộ nhớ
+        await new Promise(resolve => setTimeout(resolve, 200));
+      } catch (batchProcessError) {
+        console.error(`Lỗi xử lý batch chuyển đổi tại vị trí ${i}: ${batchProcessError.message}`);
+      }
     }
     console.log(`🔄 Chuyển đổi PDF sang hình ảnh: 100% (${conversionTasks.length}/${conversionTasks.length} trang)`);
     
@@ -143,23 +185,40 @@ export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
     const processResults = [];
     
     for (let i = 0; i < successfulConversions.length; i += batchSize) {
-      const currentBatch = successfulConversions.slice(i, i + batchSize);
-      const progress = Math.round((i / successfulConversions.length) * 100);
-      console.log(`🔄 Xử lý xóa watermark: ${progress}% (${i}/${successfulConversions.length} trang)`);
-      
-      // Xử lý batch hiện tại
-      const batchPromises = currentBatch.map(conversion => 
-        createProcessWorker(conversion.pngPath, conversion.page, numPages, config)
-      );
-      
-      const batchResults = await Promise.allSettled(batchPromises);
-      processResults.push(...batchResults);
-      
-      // Thúc đẩy GC sau mỗi batch
-      global.gc && global.gc();
-      
-      // Tạm dừng để cho GC có cơ hội chạy và giải phóng bộ nhớ
-      await new Promise(resolve => setTimeout(resolve, 200));
+      try {
+        const currentBatch = successfulConversions.slice(i, i + batchSize);
+        const progress = Math.round((i / successfulConversions.length) * 100);
+        console.log(`🔄 Xử lý xóa watermark: ${progress}% (${i}/${successfulConversions.length} trang)`);
+        
+        // Xử lý batch hiện tại
+        const batchPromises = currentBatch.map(conversion => 
+          createProcessWorker(conversion.pngPath, conversion.page, numPages, config)
+        );
+        
+        let batchResults;
+        try {
+          batchResults = await Promise.allSettled(batchPromises);
+        } catch (batchError) {
+          console.error(`Lỗi xử lý batch xóa watermark: ${batchError.message}`);
+          continue;
+        }
+        
+        processResults.push(...batchResults);
+        
+        // Thúc đẩy GC sau mỗi batch
+        try {
+          if (typeof global.gc === 'function') {
+            global.gc();
+          }
+        } catch (gcError) {
+          console.debug(`Lỗi gọi GC: ${gcError.message}`);
+        }
+        
+        // Tạm dừng để cho GC có cơ hội chạy và giải phóng bộ nhớ
+        await new Promise(resolve => setTimeout(resolve, 200));
+      } catch (batchProcessError) {
+        console.error(`Lỗi xử lý batch xóa watermark tại vị trí ${i}: ${batchProcessError.message}`);
+      }
     }
     console.log(`🔄 Xử lý xóa watermark: 100% (${successfulConversions.length}/${successfulConversions.length} trang)`);
     
@@ -180,41 +239,76 @@ export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
     console.log('🔄 Bước 3/3: Ghép các trang thành PDF kết quả...');
     
     // Tạo PDF hiệu quả hơn
-    const pdfDoc = await PDFDocument.create();
+    let pdfDoc;
+    try {
+      pdfDoc = await PDFDocument.create();
+    } catch (createError) {
+      throw new Error(`Không thể tạo tài liệu PDF: ${createError.message}`);
+    }
     
     // Xử lý từng trang một để tránh tràn bộ nhớ - thay vì song song
     for (let i = 0; i < processedPngPaths.length; i++) {
-      const progress = Math.round((i / processedPngPaths.length) * 100);
-      if (i % 5 === 0 || i === processedPngPaths.length - 1) { // Log every 5 pages to reduce output
-        console.log(`🔄 Tạo PDF: ${progress}% (${i}/${processedPngPaths.length} trang)`);
-      }
-      
-      await addImageToPdf(pdfDoc, processedPngPaths[i], i, processedPngPaths.length, config);
-      
-      // Xóa file PNG đã xử lý để giải phóng bộ nhớ
       try {
-        fs.unlinkSync(processedPngPaths[i]);
-        fs.unlinkSync(processedPngPaths[i].replace('_processed.png', '.png'));
-      } catch (error) {
-        // Ignore error
+        const progress = Math.round((i / processedPngPaths.length) * 100);
+        if (i % 5 === 0 || i === processedPngPaths.length - 1) { // Log every 5 pages to reduce output
+          console.log(`🔄 Tạo PDF: ${progress}% (${i}/${processedPngPaths.length} trang)`);
+        }
+        
+        const success = await addImageToPdf(pdfDoc, processedPngPaths[i], i, processedPngPaths.length, config);
+        if (!success) {
+          console.warn(`⚠️ Không thể thêm trang ${i+1} vào PDF`);
+        }
+        
+        // Xóa file PNG đã xử lý để giải phóng bộ nhớ
+        try {
+          fs.unlinkSync(processedPngPaths[i]);
+          const originalPng = processedPngPaths[i].replace('_processed.png', '.png');
+          if (fs.existsSync(originalPng)) {
+            fs.unlinkSync(originalPng);
+          }
+        } catch (unlinkError) {
+          // Ignore error
+          console.debug(`Không thể xóa file PNG tạm: ${unlinkError.message}`);
+        }
+        
+        // Thúc đẩy GC sau mỗi trang
+        try {
+          if (typeof global.gc === 'function') {
+            global.gc();
+          }
+        } catch (gcError) {
+          console.debug(`Lỗi gọi GC: ${gcError.message}`);
+        }
+      } catch (pageError) {
+        console.error(`Lỗi khi thêm trang ${i+1} vào PDF: ${pageError.message}`);
       }
-      
-      // Thúc đẩy GC sau mỗi trang
-      global.gc && global.gc();
     }
     
     // Lưu PDF với tùy chọn nén tối ưu
     console.log('💾 Lưu file PDF kết quả...');
-    const pdfBytes = await pdfDoc.save({
-      useObjectStreams: true,
-      addDefaultPage: false
-    });
+    let pdfBytes;
+    try {
+      pdfBytes = await pdfDoc.save({
+        useObjectStreams: true,
+        addDefaultPage: false
+      });
+    } catch (saveError) {
+      throw new Error(`Không thể lưu nội dung PDF: ${saveError.message}`);
+    }
     
-    fs.writeFileSync(outputPath, pdfBytes);
+    try {
+      fs.writeFileSync(outputPath, pdfBytes);
+    } catch (writeError) {
+      throw new Error(`Không thể ghi file PDF: ${writeError.message}`);
+    }
     
     // Dọn dẹp file tạm ngay khi có thể để tiết kiệm bộ nhớ
     if (config.cleanupTempFiles) {
-      cleanupTempFiles(tempDir);
+      try {
+        cleanupTempFiles(tempDir);
+      } catch (cleanupError) {
+        console.warn(`⚠️ Lỗi khi dọn dẹp thư mục tạm: ${cleanupError.message}`);
+      }
     }
     
     // Sau khi hoàn thành
@@ -222,12 +316,19 @@ export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
     const processingTime = ((endTime - startTime) / 1000).toFixed(2);
     console.log(`✅ Hoàn thành xử lý trong ${processingTime} giây`);
     
+    let processedSize;
+    try {
+      processedSize = fs.existsSync(outputPath) ? (fs.statSync(outputPath).size / (1024 * 1024)).toFixed(2) + ' MB' : 'Unknown';
+    } catch (statError) {
+      processedSize = 'Unknown (error reading file size)';
+    }
+    
     return { 
       success: true, 
       outputPath, 
       processingTime,
       originalSize: fileSizeInMB.toFixed(2) + ' MB',
-      processedSize: fs.existsSync(outputPath) ? (fs.statSync(outputPath).size / (1024 * 1024)).toFixed(2) + ' MB' : 'Unknown'
+      processedSize: processedSize
     };
   } catch (error) {
     console.log(`❌ Lỗi: ${error.message}`);
@@ -253,70 +354,121 @@ export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
 export async function processImage(inputPath, outputPath, config = DEFAULT_CONFIG) {
   try {
     // Đọc hình ảnh
-    const image = sharp(inputPath);
-    const metadata = await image.metadata();
+    let image;
+    try {
+      image = sharp(inputPath);
+    } catch (sharpError) {
+      throw new Error(`Không thể tạo đối tượng sharp từ ${inputPath}: ${sharpError.message}`);
+    }
+    
+    let metadata;
+    try {
+      metadata = await image.metadata();
+    } catch (metadataError) {
+      throw new Error(`Không thể đọc metadata của ảnh: ${metadataError.message}`);
+    }
     
     if (config.processCenter) {
-      // Xử lý vùng trung tâm
-      const centerX = Math.floor(metadata.width * 0.1);
-      const centerY = Math.floor(metadata.height * 0.1);
-      const centerWidth = Math.floor(metadata.width * config.centerSize);
-      const centerHeight = Math.floor(metadata.height * config.centerSize);
-      
-      const center = await image
-        .clone()
-        .extract({
-          left: centerX,
-          top: centerY,
-          width: centerWidth,
-          height: centerHeight
-        })
-        .modulate({
-          brightness: 1 + (15 / 100),  // Cố định giá trị thấp
-        })
-        .linear(
-          1 + (25 / 100),  // Cố định giá trị vừa phải
-          -(25 / 3)
-        )
-        .toBuffer();
-      
-      let processedCenter = sharp(center);
-      if (config.threshold > 0 && !config.keepColors) {
-        processedCenter = processedCenter.threshold(config.threshold * 100);
+      try {
+        // Xử lý vùng trung tâm
+        const centerX = Math.floor(metadata.width * 0.1);
+        const centerY = Math.floor(metadata.height * 0.1);
+        const centerWidth = Math.floor(metadata.width * config.centerSize);
+        const centerHeight = Math.floor(metadata.height * config.centerSize);
+        
+        let center;
+        try {
+          center = await image
+            .clone()
+            .extract({
+              left: centerX,
+              top: centerY,
+              width: centerWidth,
+              height: centerHeight
+            })
+            .modulate({
+              brightness: 1 + (15 / 100),  // Cố định giá trị thấp
+            })
+            .linear(
+              1 + (25 / 100),  // Cố định giá trị vừa phải
+              -(25 / 3)
+            )
+            .toBuffer();
+        } catch (extractError) {
+          throw new Error(`Không thể trích xuất và xử lý vùng trung tâm: ${extractError.message}`);
+        }
+        
+        let processedCenter = sharp(center);
+        if (config.threshold > 0 && !config.keepColors) {
+          try {
+            processedCenter = processedCenter.threshold(config.threshold * 100);
+          } catch (thresholdError) {
+            console.warn(`Không thể áp dụng threshold: ${thresholdError.message}`);
+          }
+        }
+        
+        let processedCenterBuffer;
+        try {
+          processedCenterBuffer = await processedCenter.toBuffer();
+        } catch (bufferError) {
+          throw new Error(`Không thể tạo buffer cho vùng trung tâm đã xử lý: ${bufferError.message}`);
+        }
+        
+        try {
+          await sharp(inputPath)
+            .composite([{
+              input: processedCenterBuffer,
+              left: centerX,
+              top: centerY
+            }])
+            .toFile(outputPath);
+        } catch (compositeError) {
+          throw new Error(`Không thể ghép ảnh: ${compositeError.message}`);
+        }
+      } catch (centerError) {
+        throw new Error(`Lỗi xử lý vùng trung tâm: ${centerError.message}`);
       }
-      
-      const processedCenterBuffer = await processedCenter.toBuffer();
-      
-      await sharp(inputPath)
-        .composite([{
-          input: processedCenterBuffer,
-          left: centerX,
-          top: centerY
-        }])
-        .toFile(outputPath);
     } else {
-      // Xử lý toàn bộ hình ảnh với cách tiếp cận đơn giản hơn
-      // Giảm số bước xử lý để tránh mất màu
-      
-      // Cách tiếp cận đơn giản: Chỉ sử dụng brightness và contrast nhẹ
-      // Tránh toàn bộ các biến đổi màu sắc phức tạp
-      let processedImage = image
-        .modulate({
-          brightness: 1 + (15 / 100),  // Giảm xuống mức nhẹ nhàng (15%)
-        })
-        .linear(
-          1 + (25 / 100),  // Mức độ tương phản nhẹ (25%)
-          -(25 / 3)
-        );
-      
-      // Chỉ áp dụng sharpen nhẹ nhàng thay vì nhiều bước xử lý
-      processedImage = processedImage.sharpen({
-        sigma: 0.5,  // Sharpen nhẹ
-        m1: 0.3,
-        m2: 0.2
-      });
-      
-      await processedImage.toFile(outputPath);
+      try {
+        // Xử lý toàn bộ hình ảnh với cách tiếp cận đơn giản hơn
+        // Giảm số bước xử lý để tránh mất màu
+        
+        // Cách tiếp cận đơn giản: Chỉ sử dụng brightness và contrast nhẹ
+        // Tránh toàn bộ các biến đổi màu sắc phức tạp
+        let processedImage;
+        try {
+          processedImage = image
+            .modulate({
+              brightness: 1 + (15 / 100),  // Giảm xuống mức nhẹ nhàng (15%)
+            })
+            .linear(
+              1 + (25 / 100),  // Mức độ tương phản nhẹ (25%)
+              -(25 / 3)
+            );
+        } catch (modulateError) {
+          throw new Error(`Không thể áp dụng biến đổi cơ bản: ${modulateError.message}`);
+        }
+          
+        // Chỉ áp dụng sharpen nhẹ nhàng thay vì nhiều bước xử lý
+        try {
+          processedImage = processedImage.sharpen({
+            sigma: 0.5,  // Sharpen nhẹ
+            m1: 0.3,
+            m2: 0.2
+          });
+        } catch (sharpenError) {
+          console.warn(`Không thể áp dụng sharpen: ${sharpenError.message}`);
+          // Tiếp tục mà không có sharpen
+        }
+        
+        try {
+          await processedImage.toFile(outputPath);
+        } catch (saveError) {
+          throw new Error(`Không thể lưu ảnh đã xử lý: ${saveError.message}`);
+        }
+      } catch (fullImageError) {
+        throw new Error(`Lỗi xử lý toàn bộ ảnh: ${fullImageError.message}`);
+      }
     }
     
     return true;
@@ -346,51 +498,85 @@ export async function addCustomBackground(pdfPath, backgroundPath, config = DEFA
     const outputPath = pdfPath.replace('.pdf', '_with_bg.pdf');
     
     // Đọc PDF gốc
-    const pdfBytes = fs.readFileSync(pdfPath);
-    const pdfDoc = await PDFDocument.load(pdfBytes);
+    let pdfBytes;
+    try {
+      pdfBytes = fs.readFileSync(pdfPath);
+    } catch (readError) {
+      throw new Error(`Không thể đọc file PDF: ${readError.message}`);
+    }
+    
+    let pdfDoc;
+    try {
+      pdfDoc = await PDFDocument.load(pdfBytes);
+    } catch (loadError) {
+      throw new Error(`Không thể tải file PDF: ${loadError.message}`);
+    }
     
     // Đọc hình nền
     let backgroundImage;
-    if (backgroundPath.toLowerCase().endsWith('.png')) {
-      const backgroundData = fs.readFileSync(backgroundPath);
-      backgroundImage = await pdfDoc.embedPng(backgroundData);
-    } else if (backgroundPath.toLowerCase().endsWith('.jpg') || backgroundPath.toLowerCase().endsWith('.jpeg')) {
-      const backgroundData = fs.readFileSync(backgroundPath);
-      backgroundImage = await pdfDoc.embedJpg(backgroundData);
-    } else {
-      throw new Error('Định dạng hình nền không được hỗ trợ. Vui lòng sử dụng PNG hoặc JPG.');
+    try {
+      let backgroundData;
+      try {
+        backgroundData = fs.readFileSync(backgroundPath);
+      } catch (readBgError) {
+        throw new Error(`Không thể đọc file hình nền: ${readBgError.message}`);
+      }
+      
+      if (backgroundPath.toLowerCase().endsWith('.png')) {
+        backgroundImage = await pdfDoc.embedPng(backgroundData);
+      } else if (backgroundPath.toLowerCase().endsWith('.jpg') || backgroundPath.toLowerCase().endsWith('.jpeg')) {
+        backgroundImage = await pdfDoc.embedJpg(backgroundData);
+      } else {
+        throw new Error('Định dạng hình nền không được hỗ trợ. Vui lòng sử dụng PNG hoặc JPG.');
+      }
+    } catch (embedError) {
+      throw new Error(`Không thể nhúng hình nền: ${embedError.message}`);
     }
     
     // Lấy kích thước hình nền
     const bgDimensions = backgroundImage.size();
     
     // Xử lý từng trang PDF
-    const pages = pdfDoc.getPages();
-    for (const page of pages) {
-      const { width, height } = page.getSize();
+    try {
+      const pages = pdfDoc.getPages();
       
-      // Tính kích thước và vị trí để hình nền vừa với trang
-      const scale = Math.min(width / bgDimensions.width, height / bgDimensions.height);
-      const bgWidth = bgDimensions.width * scale;
-      const bgHeight = bgDimensions.height * scale;
-      
-      // Đặt hình nền ở giữa trang
-      const xOffset = (width - bgWidth) / 2;
-      const yOffset = (height - bgHeight) / 2;
-      
-      // Vẽ hình nền
-      page.drawImage(backgroundImage, {
-        x: xOffset,
-        y: yOffset,
-        width: bgWidth,
-        height: bgHeight,
-        opacity: config.backgroundOpacity || 0.3
-      });
+      for (const page of pages) {
+        try {
+          const { width, height } = page.getSize();
+          
+          // Tính kích thước và vị trí để hình nền vừa với trang
+          const scale = Math.min(width / bgDimensions.width, height / bgDimensions.height);
+          const bgWidth = bgDimensions.width * scale;
+          const bgHeight = bgDimensions.height * scale;
+          
+          // Đặt hình nền ở giữa trang
+          const xOffset = (width - bgWidth) / 2;
+          const yOffset = (height - bgHeight) / 2;
+          
+          // Vẽ hình nền
+          page.drawImage(backgroundImage, {
+            x: xOffset,
+            y: yOffset,
+            width: bgWidth,
+            height: bgHeight,
+            opacity: config.backgroundOpacity || 0.3
+          });
+        } catch (pageError) {
+          console.warn(`Lỗi xử lý hình nền trên một trang: ${pageError.message}`);
+          // Tiếp tục với trang tiếp theo
+        }
+      }
+    } catch (pagesError) {
+      throw new Error(`Không thể xử lý các trang PDF: ${pagesError.message}`);
     }
     
     // Lưu PDF đã xử lý
-    const modifiedPdfBytes = await pdfDoc.save();
-    fs.writeFileSync(outputPath, modifiedPdfBytes);
+    try {
+      const modifiedPdfBytes = await pdfDoc.save();
+      fs.writeFileSync(outputPath, modifiedPdfBytes);
+    } catch (saveError) {
+      throw new Error(`Không thể lưu PDF đã xử lý: ${saveError.message}`);
+    }
     
     return outputPath;
   } catch (error) {
@@ -411,27 +597,43 @@ export async function createPDFFromProcessedImages(images, outputPath, config = 
     console.log(`📑 Bắt đầu tạo PDF với hình nền từ ${images.length} ảnh...`);
     
     // Tạo PDF mới
-    const pdfDoc = await PDFDocument.create();
+    let pdfDoc;
+    try {
+      pdfDoc = await PDFDocument.create();
+    } catch (createError) {
+      throw new Error(`Không thể tạo tài liệu PDF: ${createError.message}`);
+    }
     
     // Xử lý từng ảnh
     for (let i = 0; i < images.length; i++) {
-      const imagePath = images[i];
-      
-      if (i % 5 === 0 || i === images.length - 1) {
-        console.log(`🔄 Tạo PDF: ${Math.round((i / images.length) * 100)}% (${i}/${images.length} trang)`);
+      try {
+        const imagePath = images[i];
+        
+        if (i % 5 === 0 || i === images.length - 1) {
+          console.log(`🔄 Tạo PDF: ${Math.round((i / images.length) * 100)}% (${i}/${images.length} trang)`);
+        }
+        
+        // Thêm ảnh vào PDF với hình nền
+        const success = await addImageToPdf(pdfDoc, imagePath, i, images.length, config);
+        if (!success) {
+          console.warn(`⚠️ Không thể thêm ảnh ${imagePath} vào PDF`);
+        }
+      } catch (pageError) {
+        console.error(`Lỗi khi thêm ảnh thứ ${i+1} vào PDF: ${pageError.message}`);
       }
-      
-      // Thêm ảnh vào PDF với hình nền
-      await addImageToPdf(pdfDoc, imagePath, i, images.length, config);
     }
     
     // Lưu PDF
-    const pdfBytes = await pdfDoc.save({
-      useObjectStreams: true,
-      addDefaultPage: false
-    });
-    
-    fs.writeFileSync(outputPath, pdfBytes);
+    try {
+      const pdfBytes = await pdfDoc.save({
+        useObjectStreams: true,
+        addDefaultPage: false
+      });
+      
+      fs.writeFileSync(outputPath, pdfBytes);
+    } catch (saveError) {
+      throw new Error(`Không thể lưu file PDF: ${saveError.message}`);
+    }
     
     console.log(`✅ Đã tạo PDF thành công: ${outputPath}`);
     
@@ -460,7 +662,13 @@ export async function createPDFFromRawImages(images, outputPath) {
     });
     
     // Tạo write stream và promise để theo dõi khi nào hoàn thành
-    const writeStream = fs.createWriteStream(outputPath);
+    let writeStream;
+    try {
+      writeStream = fs.createWriteStream(outputPath);
+    } catch (streamError) {
+      throw new Error(`Không thể tạo write stream: ${streamError.message}`);
+    }
+    
     const streamFinished = new Promise((resolve, reject) => {
       writeStream.on('finish', resolve);
       writeStream.on('error', reject);
@@ -469,7 +677,7 @@ export async function createPDFFromRawImages(images, outputPath) {
     doc.pipe(writeStream);
     
     // Xử lý từng ảnh
-    for (const imagePath of images.sort((a, b) => {
+    const sortedImages = images.sort((a, b) => {
       try {
         const pageA = parseInt(path.basename(a).match(/page_(\d+)/)[1]);
         const pageB = parseInt(path.basename(b).match(/page_(\d+)/)[1]);
@@ -477,28 +685,49 @@ export async function createPDFFromRawImages(images, outputPath) {
       } catch (error) {
         return 0;
       }
-    })) {
+    });
+    
+    for (const imagePath of sortedImages) {
       try {
-        let imageBuffer = fs.readFileSync(imagePath);
+        let imageBuffer;
+        try {
+          imageBuffer = fs.readFileSync(imagePath);
+        } catch (readError) {
+          console.warn(`⚠️ Không thể đọc file ảnh ${imagePath}: ${readError.message}`);
+          continue;
+        }
         
         // Nếu là WebP, chuyển sang PNG
         if (imagePath.endsWith('.webp')) {
-          console.log(`🔄 Chuyển đổi WebP sang PNG...`);
-          imageBuffer = await sharp(imageBuffer).png().toBuffer();
+          try {
+            console.log(`🔄 Chuyển đổi WebP sang PNG...`);
+            imageBuffer = await sharp(imageBuffer).png().toBuffer();
+          } catch (convertError) {
+            console.warn(`⚠️ Không thể chuyển đổi WebP sang PNG: ${convertError.message}`);
+            continue;
+          }
         }
         
-        const img = doc.openImage(imageBuffer);
-        doc.addPage({ size: [img.width, img.height] });
-        doc.image(img, 0, 0);
-        console.log(`✅ Đã thêm trang ${path.basename(imagePath)}`);
+        try {
+          const img = doc.openImage(imageBuffer);
+          doc.addPage({ size: [img.width, img.height] });
+          doc.image(img, 0, 0);
+          console.log(`✅ Đã thêm trang ${path.basename(imagePath)}`);
+        } catch (imageError) {
+          console.warn(`⚠️ Không thể thêm ảnh vào PDF: ${imageError.message}`);
+        }
       } catch (error) {
         console.warn(`⚠️ Lỗi xử lý ảnh ${imagePath}: ${error.message}`);
       }
     }
     
     // Kết thúc document và đợi stream hoàn thành
-    doc.end();
-    await streamFinished;
+    try {
+      doc.end();
+      await streamFinished;
+    } catch (finishError) {
+      throw new Error(`Không thể hoàn thành tạo PDF: ${finishError.message}`);
+    }
     
     console.log(`✅ Đã tạo PDF thành công: ${outputPath}`);
     return true;

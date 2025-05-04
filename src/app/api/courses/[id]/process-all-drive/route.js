@@ -197,7 +197,8 @@ export async function POST(request, { params }) {
           }
           
           // Nếu không phải file PDF, bỏ qua
-          if (checkData.mimeType !== 'application/pdf') {
+          if (checkData.mimeType !== 'application/pdf' && 
+              !checkData.mimeType.startsWith('image/')) {
             // Nếu là folder, xử lý đặc biệt
             if (checkData.mimeType === 'application/vnd.google-apps.folder') {
               console.log(`Phát hiện thư mục: ${link.url} - Đang kiểm tra tồn tại...`);
@@ -279,8 +280,8 @@ export async function POST(request, { params }) {
               successCount++;
               continue;
             }
-            // Nếu không phải folder và không phải PDF, bỏ qua
-            console.log(`Bỏ qua: ${link.url} - Không phải PDF hoặc thư mục (${checkData.mimeType})`);
+            // Nếu không phải folder, PDF hoặc hình ảnh, bỏ qua
+            console.log(`Bỏ qua: ${link.url} - Không phải PDF, hình ảnh hoặc thư mục (${checkData.mimeType})`);
             
             // Ghi rõ loại nội dung trong thông báo
             results.push({
@@ -294,7 +295,7 @@ export async function POST(request, { params }) {
             continue;
           }
           
-          console.log(`Xác nhận là PDF: ${link.url}`);
+          console.log(`Xác nhận là PDF hoặc hình ảnh: ${link.url} (${checkData.mimeType})`);
         } catch (checkError) {
           console.log(`Không thể kiểm tra loại nội dung: ${checkError.message}`);
           // Vẫn tiếp tục xử lý - API remove-watermark sẽ xử lý lỗi nếu không phải PDF
@@ -318,7 +319,7 @@ export async function POST(request, { params }) {
         const data = await response.json();
 
         if (!response.ok) {
-          throw new Error(data.message || 'Không thể xử lý file PDF');
+          throw new Error(data.message || 'Không thể xử lý file');
         }
 
         console.log(`Xử lý thành công, URL mới: ${data.webViewLink || data.viewLink || data.folderLink || data.url || data.driveUrl || 'không xác định'}`);

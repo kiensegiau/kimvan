@@ -16,6 +16,15 @@ export const TOKEN_PATHS = [
   path.join(process.cwd(), 'drive_token_download.json')  // Token tải xuống - Download
 ];
 
+// Tính toán maxWorkers trong try-catch để tránh lỗi
+let maxWorkers = 1;
+try {
+  maxWorkers = Math.max(1, Math.min(2, os.cpus().length - 1));
+} catch (error) {
+  console.error('Lỗi khi tính maxWorkers:', error);
+  maxWorkers = 1; // Giá trị mặc định an toàn
+}
+
 // Cấu hình mặc định cho việc xử lý watermark
 export const DEFAULT_CONFIG = {
   dpi: 350,                // Giảm độ phân giải xuống
@@ -28,7 +37,7 @@ export const DEFAULT_CONFIG = {
   centerSize: 0.8,         // Kích thước vùng trung tâm (80% của trang)
   keepColors: true,        // Giữ màu sắc
   cleanupTempFiles: false, // Có xóa file tạm không
-  maxWorkers: Math.max(1, Math.min(2, os.cpus().length - 1)), // Giảm worker xuống tối đa 2 luồng
+  maxWorkers: maxWorkers,  // Giảm worker xuống tối đa 2 luồng
   backgroundImage: null,   // Đường dẫn đến hình nền tùy chỉnh
   backgroundOpacity: 0.15, // Giảm xuống 0.15 (15% đục - đậm hơn),
   batchSize: 3,            // Số lượng trang xử lý cùng lúc

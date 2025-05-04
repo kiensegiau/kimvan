@@ -6,7 +6,7 @@ import { ObjectId } from 'mongodb';
 export async function GET(request, { params }) {
   try {
     // Đảm bảo params được awaited trước khi sử dụng
-    const id = params.id;
+    const { id } = await params;
     const mongoClient = await clientPromise;
     const db = mongoClient.db('kimvan');
     const collection = db.collection('courses');
@@ -70,7 +70,7 @@ export async function GET(request, { params }) {
 // PUT: Cập nhật một khóa học
 export async function PUT(request, { params }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const mongoClient = await clientPromise;
     const db = mongoClient.db('kimvan');
     const collection = db.collection('courses');
@@ -151,7 +151,7 @@ export async function PUT(request, { params }) {
 // DELETE: Xóa một khóa học
 export async function DELETE(request, { params }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     
     // Kết nối MongoDB
     const mongoClient = await clientPromise;
@@ -186,7 +186,7 @@ export async function DELETE(request, { params }) {
 // PATCH: Đồng bộ một khóa học từ Kimvan
 export async function PATCH(request, { params }) {
   try {
-    const id = params.id; // Lấy ID từ params mà không cần destructuring
+    const { id } = await params; // Lấy ID từ params
     
     const mongoClient = await clientPromise;
     const db = mongoClient.db('kimvan');

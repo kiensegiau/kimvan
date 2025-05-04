@@ -20,11 +20,13 @@ export function getStoredToken() {
         const parsedToken = JSON.parse(tokenContent);
         return parsedToken;
       } catch (parseError) {
+        console.error(`Lỗi phân tích token: ${parseError.message}`);
         return null;
       }
     }
   } catch (error) {
-    // Handle error
+    console.error(`Lỗi đọc token: ${error.message}`);
+    return null;
   }
   return null;
 }
@@ -46,6 +48,7 @@ export function getTokenByType(type = 'upload') {
         const parsedToken = JSON.parse(tokenContent);
         return parsedToken;
       } catch (parseError) {
+        console.error(`Lỗi phân tích token ${type}: ${parseError.message}`);
         // Fallback to old token file
         return getStoredToken();
       }
@@ -54,6 +57,7 @@ export function getTokenByType(type = 'upload') {
       return getStoredToken();
     }
   } catch (error) {
+    console.error(`Lỗi đọc token ${type}: ${error.message}`);
     // Fallback to old token file
     return getStoredToken();
   }
@@ -61,132 +65,187 @@ export function getTokenByType(type = 'upload') {
 
 // Get file extension from MIME type
 export function getExtensionFromMimeType(mimeType) {
-  if (!mimeType) return '.bin';
-  
-  const mimeToExt = {
-    'application/pdf': '.pdf',
-    'image/jpeg': '.jpg',
-    'image/png': '.png',
-    'image/gif': '.gif',
-    'video/mp4': '.mp4',
-    'audio/mpeg': '.mp3',
-    'text/plain': '.txt',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': '.xlsx',
-    'application/vnd.openxmlformats-officedocument.presentationml.presentation': '.pptx'
-  };
-  
-  for (const [mime, ext] of Object.entries(mimeToExt)) {
-    if (mimeType.includes(mime)) return ext;
+  try {
+    if (!mimeType) return '.bin';
+    
+    const mimeToExt = {
+      'application/pdf': '.pdf',
+      'image/jpeg': '.jpg',
+      'image/png': '.png',
+      'image/gif': '.gif',
+      'video/mp4': '.mp4',
+      'audio/mpeg': '.mp3',
+      'text/plain': '.txt',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': '.xlsx',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation': '.pptx'
+    };
+    
+    for (const [mime, ext] of Object.entries(mimeToExt)) {
+      if (mimeType.includes(mime)) return ext;
+    }
+    
+    return '.bin';
+  } catch (error) {
+    console.error(`Lỗi xác định phần mở rộng từ MIME: ${error.message}`);
+    return '.bin'; // Giá trị mặc định an toàn
   }
-  
-  return '.bin';
 }
 
 // Clean up temporary files
 export function cleanupTempFiles(tempDir) {
-  if (fs.existsSync(tempDir)) {
-    const files = fs.readdirSync(tempDir);
-    for (const file of files) {
-      fs.unlinkSync(path.join(tempDir, file));
+  try {
+    if (fs.existsSync(tempDir)) {
+      try {
+        const files = fs.readdirSync(tempDir);
+        for (const file of files) {
+          try {
+            fs.unlinkSync(path.join(tempDir, file));
+          } catch (unlinkError) {
+            console.warn(`Không thể xóa file ${file}: ${unlinkError.message}`);
+            // Tiếp tục với file tiếp theo
+          }
+        }
+        try {
+          fs.rmdirSync(tempDir, { recursive: true });
+        } catch (rmdirError) {
+          console.warn(`Không thể xóa thư mục ${tempDir}: ${rmdirError.message}`);
+        }
+      } catch (readError) {
+        console.error(`Không thể đọc thư mục ${tempDir}: ${readError.message}`);
+      }
     }
-    fs.rmdirSync(tempDir, { recursive: true });
+  } catch (error) {
+    console.error(`Lỗi khi dọn dẹp tệp tạm: ${error.message}`);
   }
 }
 
 // Kiểm tra và tìm GhostScript với thông tin chi tiết hơn
 export function findGhostscript() {
-  const possibleGsPaths = [
-    // Đường dẫn Windows phổ biến
-    'C:\\Program Files\\gs\\gs10.05.0\\bin\\gswin64c.exe', // Thêm phiên bản 10.05.0 vào đầu danh sách
-    'C:\\Program Files\\gs\\gs10.02.0\\bin\\gswin64c.exe',
-    'C:\\Program Files\\gs\\gs10.01.2\\bin\\gswin64c.exe',
-    'C:\\Program Files\\gs\\gs10.00.0\\bin\\gswin64c.exe',
-    'C:\\Program Files\\gs\\gs9.56.1\\bin\\gswin64c.exe',
-    'C:\\Program Files\\gs\\gs9.55.0\\bin\\gswin64c.exe',
-    'C:\\Program Files\\gs\\gs9.54.0\\bin\\gswin64c.exe',
-    'C:\\Program Files\\gs\\gs9.53.3\\bin\\gswin64c.exe',
-    // Đường dẫn 32-bit
-    'C:\\Program Files (x86)\\gs\\gs10.05.0\\bin\\gswin32c.exe', // Thêm phiên bản 10.05.0
-    'C:\\Program Files (x86)\\gs\\gs10.02.0\\bin\\gswin32c.exe',
-    'C:\\Program Files (x86)\\gs\\gs9.56.1\\bin\\gswin32c.exe',
-    // Đường dẫn Linux/Mac
-    '/usr/bin/gs',
-    '/usr/local/bin/gs',
-    '/opt/homebrew/bin/gs'
-  ];
+  try {
+    const possibleGsPaths = [
+      // Đường dẫn Windows phổ biến
+      'C:\\Program Files\\gs\\gs10.05.0\\bin\\gswin64c.exe', // Thêm phiên bản 10.05.0 vào đầu danh sách
+      'C:\\Program Files\\gs\\gs10.02.0\\bin\\gswin64c.exe',
+      'C:\\Program Files\\gs\\gs10.01.2\\bin\\gswin64c.exe',
+      'C:\\Program Files\\gs\\gs10.00.0\\bin\\gswin64c.exe',
+      'C:\\Program Files\\gs\\gs9.56.1\\bin\\gswin64c.exe',
+      'C:\\Program Files\\gs\\gs9.55.0\\bin\\gswin64c.exe',
+      'C:\\Program Files\\gs\\gs9.54.0\\bin\\gswin64c.exe',
+      'C:\\Program Files\\gs\\gs9.53.3\\bin\\gswin64c.exe',
+      // Đường dẫn 32-bit
+      'C:\\Program Files (x86)\\gs\\gs10.05.0\\bin\\gswin32c.exe', // Thêm phiên bản 10.05.0
+      'C:\\Program Files (x86)\\gs\\gs10.02.0\\bin\\gswin32c.exe',
+      'C:\\Program Files (x86)\\gs\\gs9.56.1\\bin\\gswin32c.exe',
+      // Đường dẫn Linux/Mac
+      '/usr/bin/gs',
+      '/usr/local/bin/gs',
+      '/opt/homebrew/bin/gs'
+    ];
 
-  // Thử tìm trong các đường dẫn có thể
-  for (const gsPath of possibleGsPaths) {
+    // Thử tìm trong các đường dẫn có thể
+    for (const gsPath of possibleGsPaths) {
+      try {
+        if (fs.existsSync(gsPath)) {
+          // Thử thực thi để kiểm tra
+          try {
+            const version = execSync(`"${gsPath}" -v`, { stdio: 'pipe', encoding: 'utf8' });
+            return gsPath;
+          } catch (execError) {
+            // Tiếp tục tìm đường dẫn khác
+            console.debug(`Đường dẫn ${gsPath} tồn tại nhưng không thể thực thi: ${execError.message}`);
+          }
+        }
+      } catch (existsError) {
+        // Bỏ qua lỗi khi kiểm tra tồn tại
+      }
+    }
+
+    // Thử thực thi các lệnh GhostScript trực tiếp (sử dụng PATH)
     try {
-      if (fs.existsSync(gsPath)) {
-        // Thử thực thi để kiểm tra
+      const version = execSync('gswin64c -v', { stdio: 'pipe', encoding: 'utf8' });
+      return 'gswin64c';
+    } catch (gswin64cError) {
+      try {
+        const version = execSync('gswin32c -v', { stdio: 'pipe', encoding: 'utf8' });
+        return 'gswin32c';
+      } catch (gswin32cError) {
         try {
-          const version = execSync(`"${gsPath}" -v`, { stdio: 'pipe', encoding: 'utf8' });
-          return gsPath;
-        } catch (error) {
-          // Tiếp tục tìm đường dẫn khác
+          const version = execSync('gs -v', { stdio: 'pipe', encoding: 'utf8' });
+          return 'gs';
+        } catch (gsError) {
+          // No GS in PATH
         }
       }
-    } catch (error) {
-      // Bỏ qua lỗi khi kiểm tra tồn tại
     }
-  }
 
-  // Thử thực thi các lệnh GhostScript trực tiếp (sử dụng PATH)
-  try {
-    const version = execSync('gswin64c -v', { stdio: 'pipe', encoding: 'utf8' });
-    return 'gswin64c';
-  } catch (gswin64cError) {
+    // Thử truy cập trực tiếp đường dẫn đã biết hoạt động
     try {
-      const version = execSync('gswin32c -v', { stdio: 'pipe', encoding: 'utf8' });
-      return 'gswin32c';
-    } catch (gswin32cError) {
-      try {
-        const version = execSync('gs -v', { stdio: 'pipe', encoding: 'utf8' });
-        return 'gs';
-      } catch (gsError) {
-        // No GS in PATH
+      // Sử dụng đường dẫn bạn đã biết chắc chắn hoạt động
+      const knownPath = 'C:\\Program Files\\gs\\gs10.05.0\\bin\\gswin64c.exe';
+      if (fs.existsSync(knownPath)) {
+        return knownPath;
       }
+    } catch (knownPathError) {
+      // Handle error
+      console.debug(`Không thể truy cập đường dẫn đã biết: ${knownPathError.message}`);
     }
-  }
-
-  // Thử truy cập trực tiếp đường dẫn đã biết hoạt động
-  try {
-    // Sử dụng đường dẫn bạn đã biết chắc chắn hoạt động
-    const knownPath = 'C:\\Program Files\\gs\\gs10.05.0\\bin\\gswin64c.exe';
-    if (fs.existsSync(knownPath)) {
-      return knownPath;
-    }
+    
+    throw new Error('GhostScript không được cài đặt hoặc không thể tìm thấy. Vui lòng cài đặt GhostScript trước khi sử dụng API này.');
   } catch (error) {
-    // Handle error
+    console.error(`Lỗi khi tìm GhostScript: ${error.message}`);
+    throw error; // Ném lại lỗi vì đây là một hàm quan trọng
   }
-  
-  throw new Error('GhostScript không được cài đặt hoặc không thể tìm thấy. Vui lòng cài đặt GhostScript trước khi sử dụng API này.');
 }
 
 // Tối ưu xử lý song song để cải thiện hiệu suất và tránh tràn bộ nhớ
 export async function processBatches(items, processFunc, maxConcurrent) {
-  const results = [];
-  
-  // Giảm kích thước batch để tránh sử dụng quá nhiều bộ nhớ cùng lúc
-  const safeBatchSize = Math.min(maxConcurrent, 3); // Tối đa 3 item cùng lúc
-  
-  for (let i = 0; i < items.length; i += safeBatchSize) {
-    // Xử lý theo batch nhỏ
-    const currentBatch = items.slice(i, i + safeBatchSize);
+  try {
+    const results = [];
     
-    // Bắt đầu xử lý batch hiện tại
-    const batch = currentBatch.map(processFunc);
-    const batchResults = await Promise.allSettled(batch);
+    // Giảm kích thước batch để tránh sử dụng quá nhiều bộ nhớ cùng lúc
+    const safeBatchSize = Math.min(maxConcurrent, 3); // Tối đa 3 item cùng lúc
     
-    // Thêm kết quả vào mảng kết quả
-    results.push(...batchResults);
+    for (let i = 0; i < items.length; i += safeBatchSize) {
+      try {
+        // Xử lý theo batch nhỏ
+        const currentBatch = items.slice(i, i + safeBatchSize);
+        
+        // Bắt đầu xử lý batch hiện tại
+        const batch = currentBatch.map(processFunc);
+        
+        let batchResults;
+        try {
+          batchResults = await Promise.allSettled(batch);
+        } catch (batchError) {
+          console.error(`Lỗi khi xử lý batch ${Math.floor(i / safeBatchSize) + 1}: ${batchError.message}`);
+          batchResults = currentBatch.map(item => ({
+            status: 'rejected',
+            reason: batchError
+          }));
+        }
+        
+        // Thêm kết quả vào mảng kết quả
+        results.push(...batchResults);
+        
+        // Đợi GC chạy sau mỗi batch
+        if (typeof global.gc === 'function') {
+          try {
+            global.gc();
+          } catch (gcError) {
+            console.debug(`Lỗi khi gọi GC: ${gcError.message}`);
+          }
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, 100));
+      } catch (batchProcessError) {
+        console.error(`Lỗi xử lý batch tại vị trí ${i}: ${batchProcessError.message}`);
+      }
+    }
     
-    // Đợi GC chạy sau mỗi batch
-    global.gc && global.gc();
-    await new Promise(resolve => setTimeout(resolve, 100));
+    return results;
+  } catch (error) {
+    console.error(`Lỗi xử lý batches: ${error.message}`);
+    throw error;
   }
-  
-  return results;
 } 
