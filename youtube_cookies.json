@@ -1,0 +1,106 @@
+[
+  {
+    "name": "__Secure-ROLLOUT_TOKEN",
+    "value": "CJDbyYmGlYDC4QEQ89TRo8mMjQMYz9PGpMmMjQM%3D",
+    "domain": ".youtube.com",
+    "path": "/",
+    "expires": 1762008365.672816,
+    "size": 64,
+    "httpOnly": true,
+    "secure": true,
+    "session": false,
+    "sameSite": "None",
+    "sameParty": false,
+    "sourceScheme": "Secure",
+    "sourcePort": 443,
+    "partitionKey": {
+      "topLevelSite": "https://youtube.com",
+      "hasCrossSiteAncestor": false
+    }
+  },
+  {
+    "name": "PREF",
+    "value": "f4=4000000&tz=Etc.GMT-7",
+    "domain": ".youtube.com",
+    "path": "/",
+    "expires": 1781016365.867409,
+    "size": 27,
+    "httpOnly": false,
+    "secure": true,
+    "session": false,
+    "sameParty": false,
+    "sourceScheme": "Secure",
+    "sourcePort": 443
+  },
+  {
+    "name": "VISITOR_PRIVACY_METADATA",
+    "value": "CgJWThIEGgAgEA%3D%3D",
+    "domain": ".youtube.com",
+    "path": "/",
+    "expires": 1762008366.322146,
+    "size": 44,
+    "httpOnly": true,
+    "secure": true,
+    "session": false,
+    "sameSite": "None",
+    "sameParty": false,
+    "sourceScheme": "Secure",
+    "sourcePort": 443,
+    "partitionKey": {
+      "topLevelSite": "https://youtube.com",
+      "hasCrossSiteAncestor": false
+    }
+  },
+  {
+    "name": "VISITOR_INFO1_LIVE",
+    "value": "0J5KyAdqXvo",
+    "domain": ".youtube.com",
+    "path": "/",
+    "expires": 1762008366.322054,
+    "size": 29,
+    "httpOnly": true,
+    "secure": true,
+    "session": false,
+    "sameSite": "None",
+    "sameParty": false,
+    "sourceScheme": "Secure",
+    "sourcePort": 443,
+    "partitionKey": {
+      "topLevelSite": "https://youtube.com",
+      "hasCrossSiteAncestor": false
+    }
+  },
+  {
+    "name": "YSC",
+    "value": "Ulfxqn_XOnM",
+    "domain": ".youtube.com",
+    "path": "/",
+    "expires": -1,
+    "size": 14,
+    "httpOnly": true,
+    "secure": true,
+    "session": true,
+    "sameSite": "None",
+    "sameParty": false,
+    "sourceScheme": "Secure",
+    "sourcePort": 443,
+    "partitionKey": {
+      "topLevelSite": "https://youtube.com",
+      "hasCrossSiteAncestor": false
+    }
+  },
+  {
+    "name": "GPS",
+    "value": "1",
+    "domain": ".youtube.com",
+    "path": "/",
+    "expires": 1746458163.784754,
+    "size": 4,
+    "httpOnly": true,
+    "secure": true,
+    "session": false,
+    "sameParty": false,
+    "sourceScheme": "Secure",
+    "sourcePort": 443
+  }
+]
