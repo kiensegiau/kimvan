@@ -24,7 +24,27 @@ async function createYouTubeCookies() {
   const browser = await puppeteer.launch({
     headless: false, // Hiển thị trình duyệt để người dùng có thể thao tác
     defaultViewport: null,
-    args: ['--start-maximized'] // Mở cửa sổ toàn màn hình
+    args: [
+      '--start-maximized', // Mở cửa sổ toàn màn hình
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-web-security',
+      '--disable-features=IsolateOrigins',
+      '--disable-site-isolation-trials',
+      '--disable-blink-features=AutomationControlled',
+      '--use-fake-ui-for-media-stream',
+      '--use-fake-device-for-media-stream',
+      '--allow-file-access-from-files',
+      '--allow-insecure-localhost',
+      '--no-first-run',
+      '--no-default-browser-check',
+      '--disable-popup-blocking',
+      '--disable-notifications',
+      '--disable-infobars',
+      '--disable-translate',
+      '--allow-running-insecure-content'
+    ],
+    ignoreDefaultArgs: ['--enable-automation']
   });
   
   const page = await browser.newPage();

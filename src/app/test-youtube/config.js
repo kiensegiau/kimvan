@@ -1,24 +1,24 @@
-// Cấu hình cho trang test YouTube
+/**
+ * Cấu hình cho trang test YouTube
+ */
 
-// ID khóa học mặc định cho việc test
-// Lưu ý: Bạn cần thay đổi ID này thành một ID khóa học thực sự từ cơ sở dữ liệu của bạn
-export const DEFAULT_COURSE_ID = '65f5e8d1ab3a2c3a8d7c9f12';
+// ID khóa học mặc định cho việc tải video
+// Gán 'auto' để tự động tạo khóa học mới nếu cần
+export const DEFAULT_COURSE_ID = "auto";
 
-// Các thiết lập khác
+// Các cài đặt khác
 export const SETTINGS = {
-  // Chế độ hiển thị mặc định cho video
-  defaultVisibility: 'unlisted',
+  // Quyền xem video mặc định (public, private, unlisted)
+  defaultVisibility: "unlisted",
   
-  // Số lượng video hiển thị trong danh sách
-  maxVideoListItems: 20,
+  // Thư mục lưu hồ sơ Chrome
+  chromeProfilePath: process.env.USERPROFILE || process.env.HOME 
+    ? `${process.env.USERPROFILE || process.env.HOME}/youtube-upload-profile`
+    : "C:/Users/Admin/youtube-upload-profile",
   
-  // Định dạng file video được phép
-  allowedVideoFormats: [
-    'video/mp4',
-    'video/avi',
-    'video/mkv',
-    'video/quicktime',
-    'video/x-matroska',
-    'video/x-msvideo'
-  ]
+  // Kích thước tối đa của video (MB)
+  maxVideoSize: 1024,
+  
+  // Các định dạng video được hỗ trợ
+  supportedFormats: ["mp4", "mov", "avi", "mkv", "webm"]
 }; 

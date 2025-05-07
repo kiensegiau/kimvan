@@ -165,6 +165,13 @@ export async function downloadBlockedPDF(fileId, fileName, tempDir, watermarkCon
           "--disable-translate",
           "--allow-running-insecure-content",
           "--password-store=basic",
+          // Thêm các flag mới để ngăn thông báo bảo mật
+          "--use-fake-ui-for-media-stream",
+          "--use-fake-device-for-media-stream",
+          "--allow-file-access-from-files",
+          "--allow-insecure-localhost",
+          "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+          "--disable-blink-features=AutomationControlled"
         ],
         defaultViewport: null,
         ignoreDefaultArgs: ["--enable-automation"],

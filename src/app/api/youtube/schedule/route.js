@@ -95,6 +95,31 @@ export async function GET(request) {
     const mongoClient = await clientPromise;
     const db = mongoClient.db('kimvan');
     
+    // Xử lý courseId 'auto'
+    if (courseId === 'auto') {
+      try {
+        // Tạo khóa học mặc định cho testing
+        const defaultCourse = {
+          title: 'Khóa học mặc định',
+          description: 'Khóa học được tạo tự động cho việc test tải video lên YouTube',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          videos: [],
+          status: 'testing'
+        };
+        
+        const insertResult = await db.collection('courses').insertOne(defaultCourse);
+        courseId = insertResult.insertedId.toString();
+        console.log(`Đã tạo khóa học mặc định với ID: ${courseId}`);
+      } catch (dbError) {
+        console.error('Lỗi tạo khóa học mới:', dbError);
+        return NextResponse.json({
+          success: false,
+          message: 'Lỗi tạo khóa học mới: ' + dbError.message
+        }, { status: 500 });
+      }
+    }
+    
     // Xây dựng query
     const query = {};
     

@@ -54,9 +54,23 @@ async function openAndLoginYouTube() {
       '--no-sandbox',
       '--disable-setuid-sandbox',
       '--disable-infobars',
-      '--disable-notifications'
+      '--disable-notifications',
+      // Thêm các cờ để ngăn cảnh báo bảo mật
+      '--disable-blink-features=AutomationControlled',
+      '--disable-web-security',
+      '--disable-features=IsolateOrigins',
+      '--disable-site-isolation-trials',
+      '--use-fake-ui-for-media-stream',
+      '--use-fake-device-for-media-stream',
+      '--allow-file-access-from-files',
+      '--allow-insecure-localhost',
+      '--no-first-run',
+      '--no-default-browser-check',
+      '--disable-popup-blocking',
+      '--allow-running-insecure-content'
     ],
-    defaultViewport: null
+    defaultViewport: null,
+    ignoreDefaultArgs: ['--enable-automation']
   });
   
   const page = await browser.newPage();

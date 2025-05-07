@@ -28,37 +28,19 @@ export default function TestYoutubePage() {
       setMessage('Đang kiểm tra trạng thái đăng nhập YouTube...');
       setMessageType('info');
       
-      // Mở trang tự động đăng nhập
-      const win = window.open('/api/youtube/auth/check', '_blank', 'width=800,height=600');
+      // Gọi API kiểm tra đăng nhập trực tiếp
+      const response = await fetch('/api/youtube/auth/check');
+      const data = await response.json();
       
-      // Nếu popup bị chặn, hiển thị thông báo
-      if (!win) {
-        setMessage('Popup bị chặn. Vui lòng cho phép popup để kiểm tra đăng nhập.');
+      if (data.success && data.loggedIn) {
+        setLoginStatus('logged-in');
+        setMessage('✅ Đã đăng nhập YouTube. Bạn có thể tải video lên.');
+        setMessageType('success');
+      } else {
+        setLoginStatus('logged-out');
+        setMessage('❌ Chưa đăng nhập YouTube. Vui lòng đăng nhập trước khi sử dụng.');
         setMessageType('error');
-        return;
       }
-      
-      // Đặt timeout để đóng cửa sổ sau 30 giây nếu không hoàn thành
-      const timeout = setTimeout(() => {
-        if (!win.closed) {
-          win.close();
-          setMessage('Không thể kiểm tra trạng thái đăng nhập. Quá thời gian chờ.');
-          setMessageType('error');
-        }
-      }, 30000);
-      
-      // Kiểm tra cửa sổ đã đóng
-      const checkClosed = setInterval(() => {
-        if (win.closed) {
-          clearInterval(checkClosed);
-          clearTimeout(timeout);
-          
-          // Giả định đã đăng nhập thành công sau khi đóng
-          setLoginStatus('logged-in');
-          setMessage('Đã đăng nhập YouTube. Bạn có thể tải video lên.');
-          setMessageType('success');
-        }
-      }, 1000);
     } catch (error) {
       console.error('Lỗi kiểm tra đăng nhập:', error);
       setMessage('Lỗi kiểm tra đăng nhập: ' + error.message);
@@ -73,11 +55,17 @@ export default function TestYoutubePage() {
       setMessage('Đang mở trình duyệt để đăng nhập YouTube...');
       setMessageType('info');
       
-      // Chạy script YouTube Persistent Login
-      window.open('/api/youtube/auth/login', '_blank', 'width=800,height=600');
+      // Gọi API đăng nhập
+      const response = await fetch('/api/youtube/auth/login');
+      const data = await response.json();
       
-      setMessage('Đã mở trang đăng nhập YouTube. Vui lòng đăng nhập trong cửa sổ vừa mở.');
-      setMessageType('info');
+      if (data.success) {
+        setMessage('Đã mở trình duyệt để đăng nhập YouTube. Vui lòng tiếp tục quá trình đăng nhập trong cửa sổ trình duyệt vừa mở.');
+        setMessageType('success');
+      } else {
+        setMessage(data.message || 'Không thể mở trình duyệt đăng nhập YouTube');
+        setMessageType('error');
+      }
     } catch (error) {
       console.error('Lỗi đăng nhập YouTube:', error);
       setMessage('Lỗi đăng nhập YouTube: ' + error.message);
