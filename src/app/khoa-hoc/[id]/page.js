@@ -27,6 +27,32 @@ export default function CourseDetailPage({ params }) {
     return sheet?.properties?.title || `Khóa ${index + 1}`;
   };
 
+  // Hàm xử lý và thay thế link drive cũ bằng link mới từ processedDriveFiles
+  const getUpdatedUrl = (originalUrl) => {
+    if (!originalUrl) {
+      return originalUrl;
+    }
+    
+    // Kiểm tra xem processedDriveFiles ở đâu trong cấu trúc dữ liệu
+    const processedFiles = course?.processedDriveFiles || [];
+    
+    if (processedFiles.length === 0) {
+      return originalUrl;
+    }
+
+    // Tìm trong danh sách các file đã xử lý
+    const processedFile = processedFiles.find(file => 
+      file.originalUrl === originalUrl && file.processedUrl
+    );
+
+    if (processedFile) {
+      console.log(`Thay thế URL: ${originalUrl} -> ${processedFile.processedUrl}`);
+      return processedFile.processedUrl;
+    }
+
+    return originalUrl;
+  };
+
   // Lấy thông tin chi tiết của khóa học
   const fetchCourseDetail = async () => {
     setLoading(true);
@@ -109,12 +135,15 @@ export default function CourseDetailPage({ params }) {
 
   // Hàm xử lý click vào link
   const handleLinkClick = (url, title) => {
-    if (isYoutubeLink(url)) {
-      openYoutubeModal(url, title);
-    } else if (isPdfLink(url) || isGoogleDriveLink(url)) {
-      openPdfModal(url, title);
+    // Thay thế link cũ bằng link mới nếu có
+    const updatedUrl = getUpdatedUrl(url);
+    
+    if (isYoutubeLink(updatedUrl)) {
+      openYoutubeModal(updatedUrl, title);
+    } else if (isPdfLink(updatedUrl) || isGoogleDriveLink(updatedUrl)) {
+      openPdfModal(updatedUrl, title);
     } else {
-      window.open(url, '_blank');
+      window.open(updatedUrl, '_blank');
     }
   };
 
@@ -387,7 +416,8 @@ export default function CourseDetailPage({ params }) {
                                 >
                                   {row.values && row.values.map((cell, cellIndex) => {
                                     // Xác định loại link nếu có
-                                    const url = cell.userEnteredFormat?.textFormat?.link?.uri || cell.hyperlink;
+                                    const originalUrl = cell.userEnteredFormat?.textFormat?.link?.uri || cell.hyperlink;
+                                    const url = getUpdatedUrl(originalUrl);
                                     const isLink = url ? true : false;
                                     const linkType = isLink 
                                       ? isYoutubeLink(url) 
@@ -417,7 +447,7 @@ export default function CourseDetailPage({ params }) {
                                                 <a 
                                                   onClick={(e) => {
                                                     e.preventDefault();
-                                                    handleLinkClick(url, cell.formattedValue);
+                                                    handleLinkClick(originalUrl, cell.formattedValue);
                                                   }}
                                                   href={url}
                                                   className="inline-flex items-center text-indigo-600 font-medium hover:text-indigo-800 transition-colors duration-150 group cursor-pointer hover:underline"
@@ -475,8 +505,8 @@ export default function CourseDetailPage({ params }) {
                                           );
                                           
                                           if (firstLink) {
-                                            const url = firstLink.userEnteredFormat?.textFormat?.link?.uri || firstLink.hyperlink;
-                                            handleLinkClick(url, firstLink.formattedValue);
+                                            const originalUrl = firstLink.userEnteredFormat?.textFormat?.link?.uri || firstLink.hyperlink;
+                                            handleLinkClick(originalUrl, firstLink.formattedValue);
                                           }
                                         }}
                                         className="inline-flex items-center justify-center bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-xs font-medium hover:bg-indigo-200 transition-colors duration-150 shadow-sm"
