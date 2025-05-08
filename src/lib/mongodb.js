@@ -21,7 +21,7 @@ let client;
 let clientPromise;
 
 // Hàm để tạo kết nối MongoDB
-const connectToDatabase = async () => {
+export const connectToDatabase = async () => {
   try {
     if (!client) {
       client = new MongoClient(uri, options);

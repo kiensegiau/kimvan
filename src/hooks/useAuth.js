@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { onAuthStateChanged, getCurrentUser } from '@/utils/auth';
+import { onAuthStateChanged, getCurrentUser } from '@/utils/auth-client';
 import { routes, cookieConfig } from '@/config/env-config';
 import { useRouter } from 'next/navigation';
 

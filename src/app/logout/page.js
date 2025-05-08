@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { logout } from '@/utils/auth';
+import { logout } from '@/utils/auth-client';
 import { routes, cookieConfig } from '@/config/env-config';
 
 export default function LogoutPage() {
