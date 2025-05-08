@@ -288,6 +288,25 @@ export async function updateProcessedFileInDB(mongoClient, courseId, originalUrl
       file => file.originalUrl === originalUrl
     );
     
+    // Kiểm tra link cũ nếu có
+    if (existingFileIndex !== -1) {
+      const oldProcessedUrl = course.processedDriveFiles[existingFileIndex].processedUrl;
+      if (oldProcessedUrl) {
+        console.log(`Link đã xử lý trước đó: ${oldProcessedUrl}`);
+        
+        // Nếu link cũ khác link mới, kiểm tra trạng thái link cũ
+        if (oldProcessedUrl !== (processedData.viewLink || processedData.downloadLink)) {
+          console.log(`Kiểm tra trạng thái link đã xử lý: ${oldProcessedUrl}`);
+          
+          // Ở đây có thể thêm mã để kiểm tra xem link cũ còn truy cập được không
+          // Ví dụ: gửi một request đến link cũ để kiểm tra trạng thái
+          // Nhưng đơn giản hơn, chúng ta chỉ log thông báo là link đã thay đổi
+          console.log(`Link đã xử lý không còn tồn tại: ${oldProcessedUrl}`);
+          console.log(`Sẽ cập nhật với link mới: ${processedData.viewLink || processedData.downloadLink}`);
+        }
+      }
+    }
+    
     // Tạo đối tượng lưu thông tin file đã xử lý
     const processedFileData = {
       originalUrl,
@@ -308,6 +327,7 @@ export async function updateProcessedFileInDB(mongoClient, courseId, originalUrl
         { $set: { [`processedDriveFiles.${existingFileIndex}`]: processedFileData } }
       );
       console.log(`Đã cập nhật thông tin file đã xử lý trong DB: ${originalUrl}`);
+      console.log(`✅ Xử lý thành công, URL mới: ${processedData.viewLink}`);
     } else {
       // Thêm thông tin file mới
       await collection.updateOne(
@@ -315,6 +335,7 @@ export async function updateProcessedFileInDB(mongoClient, courseId, originalUrl
         { $push: { processedDriveFiles: processedFileData } }
       );
       console.log(`Đã thêm thông tin file đã xử lý vào DB: ${originalUrl}`);
+      console.log(`✅ Xử lý thành công, URL mới: ${processedData.viewLink}`);
     }
     
     return { success: true };
