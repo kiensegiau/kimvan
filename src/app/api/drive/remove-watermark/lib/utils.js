@@ -248,4 +248,78 @@ export async function processBatches(items, processFunc, maxConcurrent) {
     console.error(`Lỗi xử lý batches: ${error.message}`);
     throw error;
   }
+}
+
+// Hàm escape tên file cho truy vấn Google Drive
+export function escapeDriveQueryString(str) {
+  if (!str) return '';
+  // Escape các ký tự đặc biệt trong truy vấn Google Drive
+  return str.replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\\/g, '\\\\');
+}
+
+// Hàm cập nhật thông tin file đã xử lý vào MongoDB
+export async function updateProcessedFileInDB(mongoClient, courseId, originalUrl, processedData) {
+  try {
+    if (!mongoClient || !courseId || !originalUrl || !processedData) {
+      console.error('Thiếu thông tin cần thiết để cập nhật DB');
+      return { success: false, error: 'Thiếu thông tin cần thiết' };
+    }
+
+    console.log(`Cập nhật thông tin file đã xử lý vào DB: ${originalUrl} -> ${processedData.downloadLink}`);
+    
+    const db = mongoClient.db('kimvan');
+    const collection = db.collection('courses');
+    
+    // Tìm khóa học theo ID
+    const course = await collection.findOne({ _id: courseId });
+    
+    if (!course) {
+      console.error(`Không tìm thấy khóa học với ID: ${courseId}`);
+      return { success: false, error: 'Không tìm thấy khóa học' };
+    }
+    
+    // Khởi tạo processedDriveFiles nếu chưa có
+    if (!course.processedDriveFiles) {
+      course.processedDriveFiles = [];
+    }
+    
+    // Kiểm tra xem file đã được xử lý trước đó chưa
+    const existingFileIndex = course.processedDriveFiles.findIndex(
+      file => file.originalUrl === originalUrl
+    );
+    
+    // Tạo đối tượng lưu thông tin file đã xử lý
+    const processedFileData = {
+      originalUrl,
+      processedUrl: processedData.viewLink || processedData.downloadLink,
+      downloadUrl: processedData.downloadLink,
+      viewUrl: processedData.viewLink,
+      fileName: processedData.processedFilename || processedData.originalFilename,
+      originalFileName: processedData.originalFilename,
+      updatedAt: new Date(),
+      isSkipped: processedData.skipped || false
+    };
+    
+    // Cập nhật hoặc thêm mới thông tin file
+    if (existingFileIndex !== -1) {
+      // Cập nhật thông tin file đã tồn tại
+      await collection.updateOne(
+        { _id: courseId },
+        { $set: { [`processedDriveFiles.${existingFileIndex}`]: processedFileData } }
+      );
+      console.log(`Đã cập nhật thông tin file đã xử lý trong DB: ${originalUrl}`);
+    } else {
+      // Thêm thông tin file mới
+      await collection.updateOne(
+        { _id: courseId },
+        { $push: { processedDriveFiles: processedFileData } }
+      );
+      console.log(`Đã thêm thông tin file đã xử lý vào DB: ${originalUrl}`);
+    }
+    
+    return { success: true };
+  } catch (error) {
+    console.error(`Lỗi khi cập nhật thông tin file vào DB: ${error.message}`);
+    return { success: false, error: error.message };
+  }
 } 

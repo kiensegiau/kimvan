@@ -6,7 +6,7 @@ import path from 'path';
 import os from 'os';
 import { google } from 'googleapis';
 import { v4 as uuidv4 } from 'uuid';
-import { getTokenByType, getExtensionFromMimeType, cleanupTempFiles } from './utils.js';
+import { getTokenByType, getExtensionFromMimeType, cleanupTempFiles, escapeDriveQueryString } from './utils.js';
 import { TOKEN_PATHS } from './config.js';
 
 // Thay thế hàm extractGoogleDriveFileId bằng phiên bản mới
@@ -326,8 +326,9 @@ export async function findOrCreateCourseFolder(drive, courseName = null) {
   
   try {
     // Tìm thư mục "tài liệu khoá học" nếu đã tồn tại
+    const escapedRootFolderName = escapeDriveQueryString(rootFolderName);
     const response = await drive.files.list({
-      q: `name='${rootFolderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+      q: `name='${escapedRootFolderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
       fields: 'files(id, name)',
       spaces: 'drive'
     });
@@ -365,8 +366,9 @@ export async function findOrCreateCourseFolder(drive, courseName = null) {
       const sanitizedCourseName = courseName.trim().replace(/[/\\?%*:|"<>]/g, '-');
       
       // Tìm thư mục khóa học trong thư mục gốc
+      const escapedCourseName = escapeDriveQueryString(sanitizedCourseName);
       const courseResponse = await drive.files.list({
-        q: `name='${sanitizedCourseName}' and mimeType='application/vnd.google-apps.folder' and '${rootFolderId}' in parents and trashed=false`,
+        q: `name='${escapedCourseName}' and mimeType='application/vnd.google-apps.folder' and '${rootFolderId}' in parents and trashed=false`,
         fields: 'files(id, name)',
         spaces: 'drive'
       });
@@ -500,8 +502,9 @@ export async function createDriveFolder(folderName, courseName = null) {
     
     // Kiểm tra xem folder đã tồn tại trong thư mục cha chưa
     console.log(`Đang kiểm tra xem folder "${folderName}" đã tồn tại trong thư mục cha chưa...`);
+    const escapedFolderName = escapeDriveQueryString(folderName);
     const existingFolderResponse = await drive.files.list({
-      q: `name='${folderName}' and mimeType='application/vnd.google-apps.folder' and '${parentFolderId}' in parents and trashed=false`,
+      q: `name='${escapedFolderName}' and mimeType='application/vnd.google-apps.folder' and '${parentFolderId}' in parents and trashed=false`,
       fields: 'files(id, name, webViewLink)',
       spaces: 'drive'
     });
@@ -599,7 +602,8 @@ export async function uploadFileToDriveFolder(filePath, fileName, destinationFol
     
     // Kiểm tra xem file đã tồn tại trong folder chưa
     console.log(`Đang kiểm tra xem file "${fileName}" đã tồn tại trong thư mục đích chưa...`);
-    const searchQuery = `name='${fileName}' and '${destinationFolderId}' in parents and trashed=false`;
+    const escapedFileName = escapeDriveQueryString(fileName);
+    const searchQuery = `name='${escapedFileName}' and '${destinationFolderId}' in parents and trashed=false`;
     const existingFileResponse = await drive.files.list({
       q: searchQuery,
       fields: 'files(id, name, webViewLink, webContentLink)',

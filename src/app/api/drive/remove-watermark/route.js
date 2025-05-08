@@ -15,6 +15,7 @@
  *   - Nếu chỉ cung cấp tên file, hệ thống sẽ tìm trong thư mục gốc của ứng dụng
  *   - Ví dụ: "nen.png" sẽ tự động trỏ đến "[thư mục ứng dụng]/nen.png"
  * - backgroundOpacity (tùy chọn): Độ trong suốt của hình nền (0.1 = 10%)
+ * - courseId (tùy chọn): ID của khóa học trong MongoDB để cập nhật thông tin file đã xử lý
  */
 
 import { NextResponse } from 'next/server';
@@ -24,13 +25,15 @@ import { Worker, isMainThread, parentPort, workerData } from 'worker_threads';
 import { v4 as uuidv4 } from 'uuid';
 import os from 'os';
 import { google } from 'googleapis';
+import clientPromise from '@/lib/mongodb';
+import { ObjectId } from 'mongodb';
 
 // Import các module đã tách
 import { API_TOKEN, DEFAULT_CONFIG } from './lib/config.js';
 import { downloadFromGoogleDrive } from './lib/drive-service.js';
 import { uploadToDrive } from './lib/drive-service.js';
 import { cleanPdf, processImage } from './lib/watermark.js';
-import { cleanupTempFiles, getTokenByType, findGhostscript } from './lib/utils.js';
+import { cleanupTempFiles, getTokenByType, findGhostscript, escapeDriveQueryString, updateProcessedFileInDB } from './lib/utils.js';
 import { processPage, convertPage } from './lib/workers.js';
 import { 
   processDriveFolder, 
@@ -109,7 +112,7 @@ export async function POST(request) {
   try {
     // Parse request body
     const requestBody = await request.json();
-    let { token, driveLink, backgroundImage, backgroundOpacity, skipTokenValidation, url, courseName } = requestBody;
+    let { token, driveLink, backgroundImage, backgroundOpacity, skipTokenValidation, url, courseName, courseId } = requestBody;
 
     // Hỗ trợ cả url và driveLink (để tương thích)
     if (!driveLink && url) {
@@ -193,7 +196,7 @@ export async function POST(request) {
     if (isFolder) {
       console.log('Xử lý folder:', driveLink);
       // Xử lý nếu là folder
-      const folderResponse = await handleDriveFolder(driveLink, backgroundImage, backgroundOpacity, courseName);
+      const folderResponse = await handleDriveFolder(driveLink, backgroundImage, backgroundOpacity, courseName, courseId);
       
       // Không cần đọc response.json() ở đây vì sẽ làm stream bị khóa
       // Log được tạo trực tiếp trong hàm handleDriveFolder rồi
@@ -203,7 +206,7 @@ export async function POST(request) {
     } else {
       console.log('Xử lý file đơn lẻ:', driveLink);
       // Xử lý nếu là file (PDF hoặc ảnh)
-      return await handleDriveFile(driveLink, backgroundImage, backgroundOpacity, courseName);
+      return await handleDriveFile(driveLink, backgroundImage, backgroundOpacity, courseName, courseId);
     }
     
   } catch (error) {
@@ -248,7 +251,7 @@ export async function POST(request) {
 }
 
 // Hàm xử lý một file đơn lẻ (PDF hoặc ảnh)
-async function handleDriveFile(driveLink, backgroundImage, backgroundOpacity, courseName) {
+async function handleDriveFile(driveLink, backgroundImage, backgroundOpacity, courseName, courseId) {
   let tempDir = null;
   let processedFilePath = null;
   let fileName = null;
@@ -325,7 +328,8 @@ async function handleDriveFile(driveLink, backgroundImage, backgroundOpacity, co
       // Tìm hoặc tạo thư mục "tài liệu khoá học"
       let courseFolderId;
       try {
-        courseFolderId = await findOrCreateCourseFolder(uploadDrive);
+        // Tìm hoặc tạo thư mục gốc và thư mục khóa học (nếu có)
+        courseFolderId = await findOrCreateCourseFolder(uploadDrive, courseName);
         console.log(`Folder ID đích: ${courseFolderId}`);
       } catch (folderError) {
         console.error(`Lỗi tìm/tạo thư mục đích: ${folderError.message}`);
@@ -334,7 +338,8 @@ async function handleDriveFile(driveLink, backgroundImage, backgroundOpacity, co
       
       // Kiểm tra xem file đã tồn tại trong thư mục đích chưa
       try {
-        const searchQuery = `name='${fileName}' and '${courseFolderId}' in parents and trashed=false`;
+        const escapedFileName = escapeDriveQueryString(fileName);
+        const searchQuery = `name='${escapedFileName}' and '${courseFolderId}' in parents and trashed=false`;
         const existingFileResponse = await uploadDrive.files.list({
           q: searchQuery,
           fields: 'files(id, name, webViewLink, webContentLink)',
@@ -346,7 +351,8 @@ async function handleDriveFile(driveLink, backgroundImage, backgroundOpacity, co
           const existingFile = existingFileResponse.data.files[0];
           console.log(`⏩ File "${fileName}" đã tồn tại trong thư mục đích, bỏ qua xử lý.`);
           
-          return NextResponse.json({
+          // Nếu có courseId, cập nhật thông tin file vào DB
+          const processedFileData = {
             success: true,
             message: `File "${fileName}" đã tồn tại, không cần xử lý lại.`,
             originalFilename: fileName,
@@ -355,7 +361,40 @@ async function handleDriveFile(driveLink, backgroundImage, backgroundOpacity, co
             downloadLink: existingFile.webContentLink || existingFile.webViewLink,
             skipped: true,
             reason: 'File đã tồn tại trong thư mục đích'
-          }, { status: 200 });
+          };
+          
+          try {
+            if (courseId) {
+              // Chuẩn bị courseId
+              let dbCourseId;
+              try {
+                dbCourseId = new ObjectId(courseId);
+              } catch (idError) {
+                console.error(`CourseId không hợp lệ: ${courseId}`);
+                // Vẫn tiếp tục luồng xử lý ngay cả khi ID không hợp lệ
+              }
+              
+              if (dbCourseId) {
+                console.log(`Cập nhật file đã tồn tại vào DB cho courseId: ${courseId}`);
+                
+                // Kết nối MongoDB
+                const mongoClient = await clientPromise;
+                
+                // Cập nhật thông tin file đã xử lý vào DB
+                await updateProcessedFileInDB(
+                  mongoClient,
+                  dbCourseId,
+                  driveLink,
+                  processedFileData
+                );
+              }
+            }
+          } catch (dbError) {
+            console.error(`Lỗi khi cập nhật DB: ${dbError.message}`);
+            // Vẫn tiếp tục luồng xử lý ngay cả khi có lỗi DB
+          }
+          
+          return NextResponse.json(processedFileData, { status: 200 });
         }
       } catch (checkError) {
         // Log lỗi nhưng vẫn tiếp tục xử lý - không throw error
@@ -425,7 +464,7 @@ async function handleDriveFile(driveLink, backgroundImage, backgroundOpacity, co
             console.log(`🔍 Đã phát hiện link là thư mục, chuyển hướng xử lý...`);
             
             // Gọi hàm xử lý thư mục
-            return await handleDriveFolder(driveLink, backgroundImage, backgroundOpacity, courseName);
+            return await handleDriveFolder(driveLink, backgroundImage, backgroundOpacity, courseName, courseId);
           } else if (mimeType.startsWith('image/')) {
             console.log(`🖼️ Đã phát hiện link là ảnh (${mimeType}), được phép xử lý...`);
             // Cho phép tiếp tục xử lý nếu là ảnh
@@ -697,8 +736,8 @@ async function handleDriveFile(driveLink, backgroundImage, backgroundOpacity, co
       // Handle cleanup error
     }
     
-    // Return success response with link to processed file
-    return NextResponse.json({
+    // Chuẩn bị dữ liệu trả về
+    const responseData = {
       success: true,
       message: 'Đã xử lý xóa watermark thành công.',
       originalFilename: downloadResult.fileName,
@@ -710,7 +749,42 @@ async function handleDriveFile(driveLink, backgroundImage, backgroundOpacity, co
         processedSize: cleanResult.processedSize,
         processingTime: cleanResult.processingTime + ' giây'
       }
-    }, { status: 200 });
+    };
+    
+    // Nếu có courseId, cập nhật thông tin file vào DB
+    try {
+      if (courseId) {
+        // Chuẩn bị courseId
+        let dbCourseId;
+        try {
+          dbCourseId = new ObjectId(courseId);
+        } catch (idError) {
+          console.error(`CourseId không hợp lệ: ${courseId}`);
+          // Vẫn tiếp tục luồng xử lý ngay cả khi ID không hợp lệ
+        }
+        
+        if (dbCourseId) {
+          console.log(`Cập nhật file đã xử lý thành công vào DB cho courseId: ${courseId}`);
+          
+          // Kết nối MongoDB
+          const mongoClient = await clientPromise;
+          
+          // Cập nhật thông tin file đã xử lý vào DB
+          await updateProcessedFileInDB(
+            mongoClient,
+            dbCourseId,
+            driveLink,
+            responseData
+          );
+        }
+      }
+    } catch (dbError) {
+      console.error(`Lỗi khi cập nhật DB: ${dbError.message}`);
+      // Vẫn tiếp tục luồng xử lý ngay cả khi có lỗi DB
+    }
+    
+    // Return success response with link to processed file
+    return NextResponse.json(responseData, { status: 200 });
       
     } else if (downloadResult.isImage) {
       // Nếu là ảnh, xử lý để loại bỏ watermark
@@ -855,8 +929,8 @@ async function handleDriveFile(driveLink, backgroundImage, backgroundOpacity, co
         // Handle cleanup error
       }
       
-      // Return success response with link to uploaded image
-      return NextResponse.json({
+      // Chuẩn bị dữ liệu trả về
+      const responseData = {
         success: true,
         message: fallbackToOriginal 
           ? 'Gặp lỗi khi xử lý ảnh. Đã tải ảnh gốc lên Google Drive.'
@@ -872,7 +946,42 @@ async function handleDriveFile(driveLink, backgroundImage, backgroundOpacity, co
           fallbackToOriginal: fallbackToOriginal,
           error: cleanResult.error
         }
-      }, { status: 200 });
+      };
+      
+      // Nếu có courseId, cập nhật thông tin file vào DB
+      try {
+        if (courseId) {
+          // Chuẩn bị courseId
+          let dbCourseId;
+          try {
+            dbCourseId = new ObjectId(courseId);
+          } catch (idError) {
+            console.error(`CourseId không hợp lệ: ${courseId}`);
+            // Vẫn tiếp tục luồng xử lý ngay cả khi ID không hợp lệ
+          }
+          
+          if (dbCourseId) {
+            console.log(`Cập nhật thông tin ảnh đã xử lý vào DB cho courseId: ${courseId}`);
+            
+            // Kết nối MongoDB
+            const mongoClient = await clientPromise;
+            
+            // Cập nhật thông tin file đã xử lý vào DB
+            await updateProcessedFileInDB(
+              mongoClient,
+              dbCourseId,
+              driveLink,
+              responseData
+            );
+          }
+        }
+      } catch (dbError) {
+        console.error(`Lỗi khi cập nhật DB: ${dbError.message}`);
+        // Vẫn tiếp tục luồng xử lý ngay cả khi có lỗi DB
+      }
+      
+      // Return success response with link to uploaded image
+      return NextResponse.json(responseData, { status: 200 });
       
     } else {
       // Loại file không được hỗ trợ
@@ -915,11 +1024,31 @@ async function handleDriveFile(driveLink, backgroundImage, backgroundOpacity, co
 }
 
 // Hàm xử lý folder từ Google Drive
-async function handleDriveFolder(driveFolderLink, backgroundImage, backgroundOpacity, courseName) {
+async function handleDriveFolder(driveFolderLink, backgroundImage, backgroundOpacity, courseName, courseId) {
   let folderResults = [];
   let processingFolders = [];
   let destinationFolderId = null;
+  let dbCourseId = null;
+  let mongoClient = null;
   
+  // Chuẩn bị kết nối MongoDB và courseId nếu có
+  try {
+    if (courseId) {
+      try {
+        dbCourseId = new ObjectId(courseId);
+        mongoClient = await clientPromise;
+        console.log(`Sẽ cập nhật DB cho courseId: ${courseId} sau khi xử lý folder`);
+      } catch (idError) {
+        console.error(`CourseId không hợp lệ: ${courseId}`);
+        // Vẫn tiếp tục luồng xử lý ngay cả khi ID không hợp lệ
+        dbCourseId = null;
+      }
+    }
+  } catch (dbConnectError) {
+    console.error(`Lỗi kết nối DB: ${dbConnectError.message}`);
+    // Vẫn tiếp tục xử lý folder ngay cả khi kết nối DB thất bại
+  }
+
   try {
     // Lấy thông tin folder và danh sách files
     const folderInfo = await processDriveFolder(driveFolderLink);
@@ -972,7 +1101,8 @@ async function handleDriveFolder(driveFolderLink, backgroundImage, backgroundOpa
         const drive = google.drive({ version: 'v3', auth: oauth2Client });
         
         // Kiểm tra sự tồn tại của file
-        const searchQuery = `name='${file.name}' and '${destinationFolderId}' in parents and trashed=false`;
+        const escapedFileName = escapeDriveQueryString(file.name);
+        const searchQuery = `name='${escapedFileName}' and '${destinationFolderId}' in parents and trashed=false`;
         const existingFileResponse = await drive.files.list({
           q: searchQuery,
           fields: 'files(id, name, webViewLink, webContentLink)',
@@ -1360,8 +1490,8 @@ async function handleDriveFolder(driveFolderLink, backgroundImage, backgroundOpa
     console.log(`URL folder kết quả: ${destinationFolder.webViewLink}`);
     console.log(`Tổng số file đã xử lý: ${folderResults.length}`);
     
-    // Trả về kết quả với link đến folder đích
-    return NextResponse.json({
+    // Chuẩn bị dữ liệu phản hồi
+    const responseData = {
       success: true,
       message: `Đã xử lý ${folderResults.length} file trong folder thành công.`,
       folderName: destinationFolder.folderName,
@@ -1377,7 +1507,56 @@ async function handleDriveFolder(driveFolderLink, backgroundImage, backgroundOpa
         url: destinationFolder.webViewLink,
         fileCount: folderResults.length
       }
-    }, { status: 200 });
+    };
+    
+    // Cập nhật thông tin vào DB nếu có courseId
+    if (dbCourseId && mongoClient) {
+      try {
+        console.log(`Cập nhật thông tin folder đã xử lý vào DB cho courseId: ${courseId}`);
+        
+        // Cập nhật từng file trong folder vào DB
+        for (const processedFile of folderResults) {
+          // Chỉ cập nhật các file đã xử lý thành công và có link
+          if (processedFile.viewLink && !processedFile.error) {
+            // Tạo đối tượng dữ liệu file đã xử lý
+            const fileData = {
+              success: true,
+              originalFilename: processedFile.originalFile,
+              processedFilename: processedFile.processedFile || processedFile.originalFile,
+              viewLink: processedFile.viewLink,
+              downloadLink: processedFile.downloadLink || processedFile.viewLink,
+              skipped: processedFile.skipped || false
+            };
+            
+            // Tạo URL gốc từ file ID trong folder
+            // Lấy file info từ danh sách files gốc
+            const originalFile = folderInfo.files.find(f => f.name === processedFile.originalFile);
+            if (originalFile) {
+              const originalUrl = `https://drive.google.com/file/d/${originalFile.id}/view`;
+              
+              // Cập nhật vào DB
+              await updateProcessedFileInDB(
+                mongoClient,
+                dbCourseId,
+                originalUrl,
+                fileData
+              );
+              console.log(`Đã cập nhật DB cho file: ${processedFile.originalFile}`);
+            } else {
+              console.log(`Không tìm thấy thông tin file gốc cho: ${processedFile.originalFile}`);
+            }
+          }
+        }
+        
+        console.log(`Đã hoàn thành cập nhật DB cho ${folderResults.length} file`);
+      } catch (dbError) {
+        console.error(`Lỗi khi cập nhật DB cho folder: ${dbError.message}`);
+        // Vẫn tiếp tục luồng xử lý ngay cả khi có lỗi DB
+      }
+    }
+    
+    // Trả về kết quả với link đến folder đích
+    return NextResponse.json(responseData, { status: 200 });
     
   } catch (error) {
     console.error(`Lỗi khi xử lý folder: ${error.message}`);
