@@ -1,0 +1,148 @@
+import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import { registerWithEmailPassword } from '@/utils/auth';
+import { cookieConfig } from '@/config/env-config';
+import { rateLimit } from '@/utils/rate-limit';
+
+// Hằng số CSRF
+const CSRF_COOKIE_NAME = 'csrf-token';
+const CSRF_FORM_FIELD = '_csrf';
+const CSRF_HEADER_NAME = 'X-CSRF-Token';
+
+/**
+ * Kiểm tra CSRF token
+ */
+async function validateCsrfToken(providedToken) {
+  if (!providedToken) return false;
+  
+  const cookieStore = cookies();
+  const storedToken = (await cookieStore.get(CSRF_COOKIE_NAME))?.value;
+  if (!storedToken) return false;
+  
+  // So sánh token một cách an toàn, tránh timing attacks
+  return timingSafeEqual(providedToken, storedToken);
+}
+
+/**
+ * So sánh hai string một cách an toàn, tránh timing attacks
+ */
+function timingSafeEqual(a, b) {
+  if (a.length !== b.length) return false;
+  
+  let result = 0;
+  for (let i = 0; i < a.length; i++) {
+    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  
+  return result === 0;
+}
+
+/**
+ * API route xử lý đăng ký người dùng mới
+ */
+export async function POST(request) {
+  try {
+    const body = await request.json();
+    const { email, password, [CSRF_FORM_FIELD]: csrfToken } = body;
+    
+    // Lấy IP của client để áp dụng rate limiting
+    const ip = request.headers.get('x-forwarded-for') || 'unknown-ip';
+    
+    // Giới hạn số lần đăng ký
+    const rateLimitInfo = rateLimit(ip, 3, 60 * 60 * 1000); // 3 lần/giờ
+    
+    // Nếu quá giới hạn, trả về lỗi 429
+    if (rateLimitInfo.isLimited) {
+      return NextResponse.json(
+        { error: 'Quá nhiều lần đăng ký, vui lòng thử lại sau.' },
+        { 
+          status: 429,
+          headers: {
+            'Retry-After': rateLimitInfo.retryAfter,
+            'X-RateLimit-Limit': rateLimitInfo.limit,
+            'X-RateLimit-Remaining': rateLimitInfo.remaining,
+            'X-RateLimit-Reset': rateLimitInfo.resetTime,
+          }
+        }
+      );
+    }
+    
+    // Xác thực CSRF token
+    if (!await validateCsrfToken(csrfToken)) {
+      return NextResponse.json(
+        { error: 'CSRF token không hợp lệ. Vui lòng thử lại.' },
+        { status: 403 }
+      );
+    }
+    
+    // Kiểm tra dữ liệu đầu vào
+    if (!email || !password) {
+      return NextResponse.json(
+        { error: 'Email và mật khẩu là bắt buộc' },
+        { status: 400 }
+      );
+    }
+    
+    // Kiểm tra độ mạnh mật khẩu
+    if (password.length < 6) {
+      return NextResponse.json(
+        { error: 'Mật khẩu phải có ít nhất 6 ký tự' },
+        { status: 400 }
+      );
+    }
+    
+    try {
+      // Đăng ký với Firebase
+      const userCredential = await registerWithEmailPassword(email, password);
+      
+      // Lấy token từ người dùng đã đăng ký
+      const token = await userCredential.user.getIdToken();
+      
+      // Thiết lập cookie token
+      const cookieStore = cookies();
+      await cookieStore.set(cookieConfig.authCookieName, token, {
+        path: '/',
+        maxAge: cookieConfig.defaultMaxAge,
+        httpOnly: true,
+        secure: cookieConfig.secure,
+        sameSite: cookieConfig.sameSite,
+      });
+      
+      // Trả về thông tin người dùng (không bao gồm thông tin nhạy cảm)
+      return NextResponse.json({
+        success: true,
+        user: {
+          uid: userCredential.user.uid,
+          email: userCredential.user.email,
+          emailVerified: userCredential.user.emailVerified,
+        }
+      });
+    } catch (error) {
+      console.error('Lỗi đăng ký:', error);
+      
+      // Xử lý lỗi Firebase Auth
+      let message = 'Đã xảy ra lỗi khi đăng ký';
+      let status = 500;
+      
+      if (error.code === 'auth/email-already-in-use') {
+        message = 'Email đã được sử dụng';
+        status = 400;
+      } else if (error.code === 'auth/invalid-email') {
+        message = 'Email không hợp lệ';
+        status = 400;
+      } else if (error.code === 'auth/weak-password') {
+        message = 'Mật khẩu quá yếu. Vui lòng sử dụng ít nhất 6 ký tự';
+        status = 400;
+      }
+      
+      return NextResponse.json({ error: message }, { status });
+    }
+  } catch (error) {
+    console.error('Lỗi server khi đăng ký:', error);
+    
+    return NextResponse.json(
+      { error: 'Đã xảy ra lỗi máy chủ. Vui lòng thử lại sau.' },
+      { status: 500 }
+    );
+  }
+} 

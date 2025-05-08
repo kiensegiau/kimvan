@@ -1,26 +1,21 @@
 import * as admin from 'firebase-admin';
+import { firebaseAdminConfig, isDevelopment } from '@/config/env-config';
 
 // Kiểm tra xem app đã được khởi tạo chưa
 let firebaseAdmin;
 
 if (!admin.apps.length) {
-  // Lấy biến môi trường với fallback để đảm bảo tính linh hoạt
-  const projectId = process.env.FIREBASE_ADMIN_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
-  const clientEmail = process.env.FIREBASE_ADMIN_CLIENT_EMAIL || process.env.NEXT_PUBLIC_FIREBASE_CLIENT_EMAIL;
-  const privateKey = process.env.FIREBASE_ADMIN_PRIVATE_KEY || process.env.NEXT_PUBLIC_FIREBASE_PRIVATE_KEY;
-  const databaseURL = process.env.FIREBASE_DATABASE_URL || process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL;
-
   try {
     // Nếu có cấu hình đầy đủ, khởi tạo Firebase Admin
-    if (projectId && clientEmail && privateKey) {
+    if (firebaseAdminConfig.projectId && firebaseAdminConfig.clientEmail && firebaseAdminConfig.privateKey) {
       firebaseAdmin = admin.initializeApp({
         credential: admin.credential.cert({
-          projectId,
-          clientEmail,
+          projectId: firebaseAdminConfig.projectId,
+          clientEmail: firebaseAdminConfig.clientEmail,
           // Thay thế ký tự xuống dòng trong private key
-          privateKey: privateKey.replace(/\\n/g, '\n'),
+          privateKey: firebaseAdminConfig.privateKey.replace(/\\n/g, '\n'),
         }),
-        databaseURL: databaseURL || `https://${projectId}.firebaseio.com`,
+        databaseURL: firebaseAdminConfig.databaseURL || `https://${firebaseAdminConfig.projectId}.firebaseio.com`,
       });
       console.log('Firebase Admin SDK đã được khởi tạo thành công');
     } else {
@@ -124,6 +119,42 @@ if (!admin.apps.length) {
           throw new Error('User not found');
         },
         deleteUser: async (uid) => true,
+        verifyIdToken: async (token) => {
+          // Giả lập trả về thông tin token nếu là môi trường phát triển
+          if (!token) throw new Error('Token không hợp lệ');
+          
+          if (token === 'test-admin-token') {
+            return {
+              uid: 'admin1',
+              email: 'admin@example.com',
+              email_verified: true,
+              name: 'Quản trị viên',
+              picture: 'https://example.com/admin.jpg',
+              role: 'admin',
+            };
+          } else if (token === 'test-user-token') {
+            return {
+              uid: 'user1',
+              email: 'user1@example.com',
+              email_verified: true,
+              name: 'Người dùng 1',
+              picture: 'https://example.com/photo.jpg',
+              role: 'user',
+            };
+          }
+          
+          // Mặc định trả về token hợp lệ cho môi trường phát triển
+          return {
+            uid: 'dev-user',
+            email: 'dev@example.com',
+            email_verified: true,
+            name: 'Người dùng phát triển',
+            picture: null,
+            role: 'user',
+            iat: Math.floor(Date.now() / 1000),
+            exp: Math.floor(Date.now() / 1000) + 3600,
+          };
+        },
       }),
     };
   }
