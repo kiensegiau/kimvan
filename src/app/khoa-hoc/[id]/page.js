@@ -6,6 +6,10 @@ import { ArrowLeftIcon, CloudArrowDownIcon, ExclamationCircleIcon, XMarkIcon, Ar
 import { use } from 'react';
 import YouTubeModal from '../components/YouTubeModal';
 import PDFModal from '../components/PDFModal';
+import CryptoJS from 'crypto-js';
+
+// Khóa mã hóa - phải giống với khóa ở phía server
+const ENCRYPTION_KEY = 'kimvan-secure-key-2024';
 
 export default function CourseDetailPage({ params }) {
   const router = useRouter();
@@ -20,6 +24,31 @@ export default function CourseDetailPage({ params }) {
   const [pdfModal, setPdfModal] = useState({ isOpen: false, fileUrl: null, title: '' });
   const [isLoaded, setIsLoaded] = useState(false);
   
+  // Hàm giải mã dữ liệu với xử lý lỗi tốt hơn
+  const decryptData = (encryptedData) => {
+    try {
+      if (!encryptedData) {
+        throw new Error("Không có dữ liệu được mã hóa");
+      }
+      
+      // Giải mã dữ liệu
+      const decryptedBytes = CryptoJS.AES.decrypt(encryptedData, ENCRYPTION_KEY);
+      if (!decryptedBytes) {
+        throw new Error("Giải mã không thành công");
+      }
+      
+      const decryptedText = decryptedBytes.toString(CryptoJS.enc.Utf8);
+      if (!decryptedText || decryptedText.length === 0) {
+        throw new Error("Dữ liệu giải mã không hợp lệ");
+      }
+      
+      return JSON.parse(decryptedText);
+    } catch (error) {
+      console.error("Lỗi giải mã:", error);
+      throw new Error(`Không thể giải mã: ${error.message}`);
+    }
+  };
+
   // Hàm lấy tiêu đề của sheet
   const getSheetTitle = (index, sheets) => {
     if (!sheets || !sheets[index]) return `Khóa ${index + 1}`;
@@ -46,7 +75,6 @@ export default function CourseDetailPage({ params }) {
     );
 
     if (processedFile) {
-      console.log(`Thay thế URL: ${originalUrl} -> ${processedFile.processedUrl}`);
       return processedFile.processedUrl;
     }
 
@@ -56,14 +84,59 @@ export default function CourseDetailPage({ params }) {
   // Lấy thông tin chi tiết của khóa học
   const fetchCourseDetail = async () => {
     setLoading(true);
+    setError(null); // Reset error trước khi fetch
+    
     try {
-      const response = await fetch(`/api/courses/${id}?type=_id`);
+      // Sử dụng tham số secure=true để nhận dữ liệu được mã hóa hoàn toàn
+      const response = await fetch(`/api/courses/${id}?type=_id&secure=true`);
+      
       if (!response.ok) {
-        throw new Error(`Lỗi ${response.status}: ${response.statusText}`);
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.error || `Lỗi ${response.status}: ${response.statusText}`;
+        throw new Error(errorMessage);
       }
-      const data = await response.json();
-      console.log('Dữ liệu khóa học đầy đủ:', data);
-      setCourse(data);
+      
+      const encryptedResponse = await response.json();
+      
+      // Kiểm tra nếu nhận được dữ liệu được mã hóa hoàn toàn
+      if (encryptedResponse._secureData) {
+        try {
+          // Giải mã toàn bộ đối tượng
+          const fullCourseData = decryptData(encryptedResponse._secureData);
+          setCourse(fullCourseData);
+        } catch (decryptError) {
+          setError(`Không thể giải mã dữ liệu khóa học: ${decryptError.message}. Vui lòng liên hệ quản trị viên.`);
+          setLoading(false);
+          return;
+        }
+      } else if (encryptedResponse._encryptedData) {
+        // Xử lý trường hợp chỉ mã hóa dữ liệu nhạy cảm
+        try {
+          // Giải mã dữ liệu nhạy cảm
+          const decryptedData = decryptData(encryptedResponse._encryptedData);
+          
+          // Khôi phục dữ liệu gốc
+          const fullCourseData = {
+            ...encryptedResponse,
+            originalData: decryptedData
+          };
+          delete fullCourseData._encryptedData;
+          
+          setCourse(fullCourseData);
+        } catch (decryptError) {
+          setError(`Không thể giải mã dữ liệu khóa học: ${decryptError.message}. Vui lòng liên hệ quản trị viên.`);
+          setLoading(false);
+          return;
+        }
+      } else if (!encryptedResponse.originalData) {
+        // Kiểm tra nếu không có dữ liệu gốc
+        setError("Khóa học không có dữ liệu. Vui lòng liên hệ quản trị viên.");
+        setLoading(false);
+        return;
+      } else {
+        // Trường hợp dữ liệu không được mã hóa
+        setCourse(encryptedResponse);
+      }
       
       // Hiệu ứng fade-in
       setTimeout(() => {
@@ -72,10 +145,14 @@ export default function CourseDetailPage({ params }) {
       
       setLoading(false);
     } catch (error) {
-      console.error("Lỗi khi lấy thông tin khóa học:", error);
       setError(`Không thể lấy thông tin khóa học: ${error.message}`);
       setLoading(false);
     }
+  };
+
+  // Thử lại khi gặp lỗi
+  const handleRetry = () => {
+    fetchCourseDetail();
   };
 
   // Hàm trích xuất YouTube video ID từ URL
@@ -190,7 +267,16 @@ export default function CourseDetailPage({ params }) {
                 <div className="mt-2 text-sm text-red-700 mb-4">
                   <p>{error}</p>
                 </div>
-                <div className="mt-4">
+                <div className="mt-4 flex space-x-3">
+                  <button
+                    onClick={handleRetry}
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-xl text-white bg-gradient-to-r from-red-600 to-red-800 hover:from-red-700 hover:to-red-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200 shadow-md"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="-ml-0.5 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Thử lại
+                  </button>
                   <button
                     onClick={() => router.push('/khoa-hoc')}
                     className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-xl text-white bg-gradient-to-r from-indigo-600 to-indigo-800 hover:from-indigo-700 hover:to-indigo-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 shadow-md"
