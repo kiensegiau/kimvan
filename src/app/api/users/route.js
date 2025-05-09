@@ -2,9 +2,86 @@ import { NextResponse } from 'next/server';
 import admin from '@/lib/firebase-admin';
 import clientPromise from '@/lib/mongodb';
 
+// Hàm kiểm tra quyền quản trị
+async function checkAdminPermission(req) {
+  try {
+    // Lấy token từ header
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return false;
+    }
+
+    const token = authHeader.split(' ')[1];
+    // Xác thực token với Firebase Admin
+    const decodedToken = await admin.auth().verifyIdToken(token);
+    
+    // Kiểm tra xem người dùng có vai trò admin không
+    // Nếu có custom claims trong token
+    if (decodedToken.role === 'admin') {
+      return true;
+    }
+    
+    // Nếu không có trong token, kiểm tra trong MongoDB
+    const client = await clientPromise;
+    const db = client.db(process.env.MONGODB_DB || 'kimvan');
+    const userDoc = await db.collection('users').findOne({ firebaseId: decodedToken.uid });
+    
+    return userDoc && userDoc.role === 'admin';
+  } catch (error) {
+    console.error('Lỗi kiểm tra quyền admin:', error);
+    return false;
+  }
+}
+
+// Hàm xử lý lỗi Firebase Auth
+function handleFirebaseError(error) {
+  const errorCode = error.code || 'unknown-error';
+  let message = 'Đã xảy ra lỗi không xác định';
+  let status = 500;
+  
+  switch (errorCode) {
+    case 'auth/email-already-exists':
+      message = 'Email này đã được sử dụng';
+      status = 409;
+      break;
+    case 'auth/invalid-email':
+      message = 'Email không hợp lệ';
+      status = 400;
+      break;
+    case 'auth/invalid-password':
+      message = 'Mật khẩu phải có ít nhất 6 ký tự';
+      status = 400;
+      break;
+    case 'auth/phone-number-already-exists':
+      message = 'Số điện thoại này đã được sử dụng';
+      status = 409;
+      break;
+    case 'auth/uid-already-exists':
+      message = 'ID người dùng đã tồn tại';
+      status = 409;
+      break;
+    case 'auth/user-not-found':
+      message = 'Không tìm thấy người dùng';
+      status = 404;
+      break;
+    default:
+      message = error.message || 'Lỗi máy chủ nội bộ';
+  }
+  
+  return { message, status };
+}
+
 // GET /api/users - Lấy danh sách người dùng
 export async function GET(request) {
   try {
+    // Kiểm tra quyền admin (bỏ comment nếu muốn bật)
+    // if (!(await checkAdminPermission(request))) {
+    //   return NextResponse.json({ 
+    //     success: false, 
+    //     error: 'Không có quyền truy cập' 
+    //   }, { status: 403 });
+    // }
+    
     // Kết nối đến MongoDB
     const client = await clientPromise;
     const db = client.db(process.env.MONGODB_DB || 'kimvan');
@@ -57,6 +134,14 @@ export async function GET(request) {
 // POST /api/users - Tạo người dùng mới
 export async function POST(request) {
   try {
+    // Kiểm tra quyền admin (bỏ comment nếu muốn bật)
+    // if (!(await checkAdminPermission(request))) {
+    //   return NextResponse.json({ 
+    //     success: false, 
+    //     error: 'Không có quyền truy cập' 
+    //   }, { status: 403 });
+    // }
+    
     // Kết nối đến MongoDB
     const client = await clientPromise;
     const db = client.db(process.env.MONGODB_DB || 'kimvan');
@@ -72,39 +157,56 @@ export async function POST(request) {
         error: 'Email và mật khẩu là bắt buộc' 
       }, { status: 400 });
     }
+    
+    // Kiểm tra độ dài mật khẩu
+    if (password.length < 6) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Mật khẩu phải có ít nhất 6 ký tự' 
+      }, { status: 400 });
+    }
 
     // Tạo người dùng trong Firebase Auth
-    const userRecord = await admin.auth().createUser({
-      email,
-      password,
-      displayName,
-      phoneNumber,
-      disabled: status === 'inactive'
-    });
-
-    // Lưu thông tin bổ sung vào MongoDB
-    await db.collection('users').insertOne({
-      firebaseId: userRecord.uid,
-      email,
-      displayName,
-      phoneNumber,
-      role: role || 'user',
-      status: status || 'active',
-      additionalInfo: additionalInfo || {},
-      createdAt: new Date(),
-      updatedAt: new Date()
-    });
-
-    return NextResponse.json({ 
-      success: true,
-      data: {
-        id: userRecord.uid,
+    try {
+      const userRecord = await admin.auth().createUser({
+        email,
+        password,
+        displayName,
+        phoneNumber,
+        disabled: status === 'inactive'
+      });
+      
+      // Lưu thông tin bổ sung vào MongoDB
+      await db.collection('users').insertOne({
+        firebaseId: userRecord.uid,
         email,
         displayName,
-        role,
-        status
-      }
-    }, { status: 201 });
+        phoneNumber,
+        role: role || 'user',
+        status: status || 'active',
+        additionalInfo: additionalInfo || {},
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+
+      return NextResponse.json({ 
+        success: true,
+        data: {
+          id: userRecord.uid,
+          email,
+          displayName,
+          role,
+          status
+        }
+      }, { status: 201 });
+    } catch (error) {
+      // Xử lý lỗi Firebase Auth
+      const { message, status } = handleFirebaseError(error);
+      return NextResponse.json({ 
+        success: false, 
+        error: message 
+      }, { status });
+    }
   } catch (error) {
     console.error('Lỗi khi tạo người dùng:', error);
     return NextResponse.json({ 
@@ -117,6 +219,14 @@ export async function POST(request) {
 // PATCH /api/users/[id] - Cập nhật thông tin người dùng
 export async function PATCH(request) {
   try {
+    // Kiểm tra quyền admin (bỏ comment nếu muốn bật)
+    // if (!(await checkAdminPermission(request))) {
+    //   return NextResponse.json({ 
+    //     success: false, 
+    //     error: 'Không có quyền truy cập' 
+    //   }, { status: 403 });
+    // }
+    
     // Lấy ID người dùng từ URL
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
@@ -137,57 +247,66 @@ export async function PATCH(request) {
     const { displayName, phoneNumber, role, status, additionalInfo } = body;
     
     // Cập nhật trong Firebase Auth
-    const updateData = {};
-    if (displayName !== undefined) updateData.displayName = displayName;
-    if (phoneNumber !== undefined) updateData.phoneNumber = phoneNumber;
-    if (status !== undefined) updateData.disabled = status === 'inactive';
-    
-    // Chỉ cập nhật Firebase nếu có thông tin cần cập nhật
-    if (Object.keys(updateData).length > 0) {
-      await admin.auth().updateUser(id, updateData);
-    }
-    
-    // Cập nhật trong MongoDB
-    const mongoUpdateData = {
-      updatedAt: new Date()
-    };
-    
-    if (displayName !== undefined) mongoUpdateData.displayName = displayName;
-    if (phoneNumber !== undefined) mongoUpdateData.phoneNumber = phoneNumber;
-    if (role !== undefined) mongoUpdateData.role = role;
-    if (status !== undefined) mongoUpdateData.status = status;
-    if (additionalInfo !== undefined) mongoUpdateData.additionalInfo = additionalInfo;
-    
-    // Kiểm tra xem bản ghi đã tồn tại trong MongoDB chưa
-    const existingUser = await db.collection('users').findOne({ firebaseId: id });
-    
-    if (existingUser) {
-      // Cập nhật bản ghi hiện có
-      await db.collection('users').updateOne(
-        { firebaseId: id },
-        { $set: mongoUpdateData }
-      );
-    } else {
-      // Tạo bản ghi mới nếu chưa tồn tại
-      const userRecord = await admin.auth().getUser(id);
+    try {
+      const updateData = {};
+      if (displayName !== undefined) updateData.displayName = displayName;
+      if (phoneNumber !== undefined) updateData.phoneNumber = phoneNumber;
+      if (status !== undefined) updateData.disabled = status === 'inactive';
       
-      await db.collection('users').insertOne({
-        firebaseId: id,
-        email: userRecord.email,
-        displayName: userRecord.displayName || displayName || '',
-        phoneNumber: userRecord.phoneNumber || phoneNumber || '',
-        role: role || 'user',
-        status: status || 'active',
-        additionalInfo: additionalInfo || {},
-        createdAt: new Date(),
+      // Chỉ cập nhật Firebase nếu có thông tin cần cập nhật
+      if (Object.keys(updateData).length > 0) {
+        await admin.auth().updateUser(id, updateData);
+      }
+      
+      // Cập nhật trong MongoDB
+      const mongoUpdateData = {
         updatedAt: new Date()
-      });
-    }
+      };
+      
+      if (displayName !== undefined) mongoUpdateData.displayName = displayName;
+      if (phoneNumber !== undefined) mongoUpdateData.phoneNumber = phoneNumber;
+      if (role !== undefined) mongoUpdateData.role = role;
+      if (status !== undefined) mongoUpdateData.status = status;
+      if (additionalInfo !== undefined) mongoUpdateData.additionalInfo = additionalInfo;
+      
+      // Kiểm tra xem bản ghi đã tồn tại trong MongoDB chưa
+      const existingUser = await db.collection('users').findOne({ firebaseId: id });
+      
+      if (existingUser) {
+        // Cập nhật bản ghi hiện có
+        await db.collection('users').updateOne(
+          { firebaseId: id },
+          { $set: mongoUpdateData }
+        );
+      } else {
+        // Tạo bản ghi mới nếu chưa tồn tại
+        const userRecord = await admin.auth().getUser(id);
+        
+        await db.collection('users').insertOne({
+          firebaseId: id,
+          email: userRecord.email,
+          displayName: userRecord.displayName || displayName || '',
+          phoneNumber: userRecord.phoneNumber || phoneNumber || '',
+          role: role || 'user',
+          status: status || 'active',
+          additionalInfo: additionalInfo || {},
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
+      }
 
-    return NextResponse.json({ 
-      success: true,
-      message: 'Cập nhật người dùng thành công'
-    });
+      return NextResponse.json({ 
+        success: true,
+        message: 'Cập nhật người dùng thành công'
+      });
+    } catch (error) {
+      // Xử lý lỗi Firebase Auth
+      const { message, status } = handleFirebaseError(error);
+      return NextResponse.json({ 
+        success: false, 
+        error: message 
+      }, { status });
+    }
   } catch (error) {
     console.error('Lỗi khi cập nhật người dùng:', error);
     return NextResponse.json({ 
@@ -200,6 +319,14 @@ export async function PATCH(request) {
 // DELETE /api/users/[id] - Xóa người dùng
 export async function DELETE(request) {
   try {
+    // Kiểm tra quyền admin (bỏ comment nếu muốn bật)
+    // if (!(await checkAdminPermission(request))) {
+    //   return NextResponse.json({ 
+    //     success: false, 
+    //     error: 'Không có quyền truy cập' 
+    //   }, { status: 403 });
+    // }
+    
     // Lấy ID người dùng từ URL
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
@@ -215,21 +342,125 @@ export async function DELETE(request) {
     const client = await clientPromise;
     const db = client.db(process.env.MONGODB_DB || 'kimvan');
     
-    // Xóa người dùng trong Firebase Auth
-    await admin.auth().deleteUser(id);
-    
-    // Xóa thông tin trong MongoDB
-    await db.collection('users').deleteOne({ firebaseId: id });
+    try {
+      // Xóa người dùng trong Firebase Auth
+      await admin.auth().deleteUser(id);
+      
+      // Xóa thông tin trong MongoDB
+      await db.collection('users').deleteOne({ firebaseId: id });
 
-    return NextResponse.json({ 
-      success: true,
-      message: 'Xóa người dùng thành công'
-    });
+      return NextResponse.json({ 
+        success: true,
+        message: 'Xóa người dùng thành công'
+      });
+    } catch (error) {
+      // Xử lý lỗi Firebase Auth
+      if (error.code === 'auth/user-not-found') {
+        // Nếu không tìm thấy trong Firebase, vẫn xóa trong MongoDB
+        await db.collection('users').deleteOne({ firebaseId: id });
+        return NextResponse.json({ 
+          success: true,
+          message: 'Xóa thông tin người dùng thành công'
+        });
+      }
+      
+      const { message, status } = handleFirebaseError(error);
+      return NextResponse.json({ 
+        success: false, 
+        error: message 
+      }, { status });
+    }
   } catch (error) {
     console.error('Lỗi khi xóa người dùng:', error);
     return NextResponse.json({ 
       success: false, 
       error: 'Lỗi khi xóa người dùng: ' + error.message 
+    }, { status: 500 });
+  }
+}
+
+// PUT /api/users/[id]/reset-password - Đặt lại mật khẩu
+export async function PUT(request) {
+  try {
+    // Kiểm tra quyền admin (bỏ comment nếu muốn bật)
+    // if (!(await checkAdminPermission(request))) {
+    //   return NextResponse.json({ 
+    //     success: false, 
+    //     error: 'Không có quyền truy cập' 
+    //   }, { status: 403 });
+    // }
+    
+    // Lấy ID người dùng từ URL
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    const action = searchParams.get('action');
+
+    if (!id) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Thiếu ID người dùng' 
+      }, { status: 400 });
+    }
+
+    // Xử lý các hành động khác nhau
+    if (action === 'reset-password') {
+      // Lấy dữ liệu từ request
+      const body = await request.json();
+      const { newPassword } = body;
+
+      if (!newPassword || newPassword.length < 6) {
+        return NextResponse.json({ 
+          success: false, 
+          error: 'Mật khẩu mới phải có ít nhất 6 ký tự' 
+        }, { status: 400 });
+      }
+
+      try {
+        // Cập nhật mật khẩu
+        await admin.auth().updateUser(id, {
+          password: newPassword
+        });
+
+        return NextResponse.json({ 
+          success: true,
+          message: 'Đặt lại mật khẩu thành công'
+        });
+      } catch (error) {
+        const { message, status } = handleFirebaseError(error);
+        return NextResponse.json({ 
+          success: false, 
+          error: message 
+        }, { status });
+      }
+    } else if (action === 'verify-email') {
+      try {
+        // Đánh dấu email đã xác thực
+        await admin.auth().updateUser(id, {
+          emailVerified: true
+        });
+
+        return NextResponse.json({ 
+          success: true,
+          message: 'Đánh dấu email đã xác thực thành công'
+        });
+      } catch (error) {
+        const { message, status } = handleFirebaseError(error);
+        return NextResponse.json({ 
+          success: false, 
+          error: message 
+        }, { status });
+      }
+    } else {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Hành động không hợp lệ' 
+      }, { status: 400 });
+    }
+  } catch (error) {
+    console.error('Lỗi khi xử lý yêu cầu:', error);
+    return NextResponse.json({ 
+      success: false, 
+      error: 'Lỗi khi xử lý yêu cầu: ' + error.message 
     }, { status: 500 });
   }
 } 
