@@ -75,6 +75,7 @@ export const routes = {
 
 // Các trang không yêu cầu xác thực (public)
 export const publicPaths = [
+  '/', // Thêm trang chủ vào danh sách công khai để tạm thời debug
   routes.login,
   routes.register,
   routes.forgotPassword,
