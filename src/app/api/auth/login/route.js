@@ -20,8 +20,8 @@ const loginRateLimits = new Map();
 async function validateCsrfToken(providedToken) {
   if (!providedToken) return false;
   
-  const cookieStore = cookies();
-  const storedToken = (await cookieStore.get(CSRF_COOKIE_NAME))?.value;
+  const cookieStore = await cookies();
+  const storedToken = cookieStore.get(CSRF_COOKIE_NAME)?.value;
   if (!storedToken) return false;
   
   // So sánh token một cách an toàn, tránh timing attacks
@@ -128,7 +128,7 @@ export async function POST(request) {
           const maxAge = rememberMe ? cookieConfig.extendedMaxAge : cookieConfig.defaultMaxAge;
           
           // Thiết lập cookie token
-          const cookieStore = cookies();
+          const cookieStore = await cookies();
           await cookieStore.set(cookieConfig.authCookieName, customToken, {
             path: '/',
             maxAge,
@@ -178,7 +178,7 @@ export async function POST(request) {
           const maxAge = rememberMe ? cookieConfig.extendedMaxAge : cookieConfig.defaultMaxAge;
           
           // Thiết lập cookie token
-          const cookieStore = cookies();
+          const cookieStore = await cookies();
           await cookieStore.set(cookieConfig.authCookieName, customToken, {
             path: '/',
             maxAge,

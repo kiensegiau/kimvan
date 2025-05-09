@@ -21,13 +21,25 @@ export const firebaseClientConfig = {
   databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL,
 };
 
+// Xử lý private key từ biến môi trường
+const getPrivateKey = () => {
+  const key = process.env.FIREBASE_ADMIN_PRIVATE_KEY;
+  if (!key) return undefined;
+  
+  // Nếu key đã có ký tự xuống dòng thực sự (\n), trả về nguyên bản
+  if (key.includes('\n')) return key;
+  
+  // Nếu key có chuỗi "\n", thay thế bằng ký tự xuống dòng thực sự
+  return key.replace(/\\n/g, '\n');
+};
+
 // Cấu hình Firebase Admin (sử dụng ở phía server)
 export const firebaseAdminConfig = {
   // Ưu tiên sử dụng biến môi trường dành riêng cho server
   projectId: process.env.FIREBASE_ADMIN_PROJECT_ID || 
     (isDevelopment ? process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID : undefined),
   clientEmail: process.env.FIREBASE_ADMIN_CLIENT_EMAIL,
-  privateKey: process.env.FIREBASE_ADMIN_PRIVATE_KEY,
+  privateKey: getPrivateKey(),
   databaseURL: process.env.FIREBASE_DATABASE_URL || 
     (isDevelopment ? process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL : undefined),
 };

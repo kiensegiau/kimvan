@@ -16,7 +16,7 @@ function generateCsrfToken() {
  * Lưu CSRF token vào cookie
  */
 async function setCsrfCookie(token, maxAge = 3600) {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   await cookieStore.set(CSRF_COOKIE_NAME, token, {
     path: '/',
     maxAge,

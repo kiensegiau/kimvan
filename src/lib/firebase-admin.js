@@ -6,6 +6,15 @@ let firebaseAdmin;
 
 if (!admin.apps.length) {
   try {
+    // Log thông tin cấu hình để debug
+    console.log('Firebase Admin Config:', {
+      projectId: firebaseAdminConfig.projectId,
+      clientEmail: firebaseAdminConfig.clientEmail,
+      hasPrivateKey: !!firebaseAdminConfig.privateKey,
+      privateKeyLength: firebaseAdminConfig.privateKey?.length,
+      databaseURL: firebaseAdminConfig.databaseURL,
+    });
+    
     // Nếu có cấu hình đầy đủ, khởi tạo Firebase Admin
     if (firebaseAdminConfig.projectId && firebaseAdminConfig.clientEmail && firebaseAdminConfig.privateKey) {
       firebaseAdmin = admin.initializeApp({
@@ -13,13 +22,19 @@ if (!admin.apps.length) {
           projectId: firebaseAdminConfig.projectId,
           clientEmail: firebaseAdminConfig.clientEmail,
           // Thay thế ký tự xuống dòng trong private key
-          privateKey: firebaseAdminConfig.privateKey.replace(/\\n/g, '\n'),
+          privateKey: firebaseAdminConfig.privateKey,
         }),
         databaseURL: firebaseAdminConfig.databaseURL || `https://${firebaseAdminConfig.projectId}.firebaseio.com`,
       });
       console.log('Firebase Admin SDK đã được khởi tạo thành công');
     } else {
-      throw new Error('Thiếu thông tin cấu hình Firebase Admin. Sử dụng giả lập cho môi trường phát triển.');
+      // Log chi tiết về các giá trị bị thiếu
+      const missingFields = [];
+      if (!firebaseAdminConfig.projectId) missingFields.push('projectId');
+      if (!firebaseAdminConfig.clientEmail) missingFields.push('clientEmail');
+      if (!firebaseAdminConfig.privateKey) missingFields.push('privateKey');
+      
+      throw new Error(`Thiếu thông tin cấu hình Firebase Admin: ${missingFields.join(', ')}. Sử dụng giả lập cho môi trường phát triển.`);
     }
   } catch (error) {
     console.warn('Sử dụng Firebase Admin giả lập cho môi trường phát triển:', error.message);
@@ -155,6 +170,20 @@ if (!admin.apps.length) {
             exp: Math.floor(Date.now() / 1000) + 3600,
           };
         },
+        
+        // Thêm chức năng createCustomToken
+        createCustomToken: async (uid, claims = {}) => {
+          console.log(`Tạo custom token giả lập cho uid: ${uid}`);
+          // Trả về một token giả lập cho môi trường phát triển
+          return `dev-custom-token-${uid}-${Date.now()}`;
+        },
+        
+        // Thêm chức năng generatePasswordResetLink
+        generatePasswordResetLink: async (email) => {
+          console.log(`Tạo link đặt lại mật khẩu giả lập cho email: ${email}`);
+          // Trả về một link giả lập cho môi trường phát triển
+          return `https://example.com/reset-password?email=${encodeURIComponent(email)}&token=dev-reset-token-${Date.now()}`;
+        }
       }),
     };
   }

@@ -141,7 +141,7 @@ export const getCurrentUser = () => {
  */
 export const onAuthStateChanged = (callback) => {
   return auth.onAuthStateChanged(callback);
-};
+}; 
 
 // Hàm lấy token từ cookies (client-side)
 export function getToken() {
