@@ -143,10 +143,41 @@ export async function POST(request) {
         const authResult = await verifyEmailPassword(email, password);
         console.log('✅ Xác thực thành công, uid:', authResult.uid);
         
-        // Tạo custom token cho người dùng
-        console.log('🔑 Đang tạo custom token cho uid:', authResult.uid);
-        const customToken = await firebaseAdmin.auth().createCustomToken(authResult.uid);
-        console.log('✅ Đã tạo custom token thành công');
+        // Tạo ID token cho người dùng thay vì custom token
+        console.log('🔑 Đang tạo ID token cho uid:', authResult.uid);
+        // Tạo ID token với thời gian sống dài hơn (1 giờ là mặc định của Firebase)
+        const idToken = await firebaseAdmin.auth().createCustomToken(authResult.uid);
+        
+        // Đổi custom token thành ID token bằng cách gọi Firebase Auth REST API
+        const firebaseApiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+        if (!firebaseApiKey) {
+          throw new Error('Firebase API Key không được cấu hình');
+        }
+        
+        // Gọi Firebase Auth REST API để đổi custom token thành ID token
+        const tokenResponse = await fetch(
+          `https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=${firebaseApiKey}`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              token: idToken,
+              returnSecureToken: true,
+            }),
+          }
+        );
+        
+        const tokenData = await tokenResponse.json();
+        if (!tokenResponse.ok) {
+          console.error('Lỗi khi đổi custom token thành ID token:', tokenData.error);
+          throw new Error('Không thể tạo ID token');
+        }
+        
+        // Lấy ID token từ kết quả
+        const finalIdToken = tokenData.idToken;
+        console.log('✅ Đã tạo ID token thành công');
         
         // Thiết lập thời gian sống của cookie
         const maxAge = rememberMe ? cookieConfig.extendedMaxAge : cookieConfig.defaultMaxAge;
@@ -155,7 +186,7 @@ export async function POST(request) {
         // Thiết lập cookie token
         console.log('🍪 Đang thiết lập cookie auth token');
         const cookieStore = await cookies();
-        await cookieStore.set(cookieConfig.authCookieName, customToken, {
+        await cookieStore.set(cookieConfig.authCookieName, finalIdToken, {
           path: '/',
           maxAge,
           httpOnly: true,

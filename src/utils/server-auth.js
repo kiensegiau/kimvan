@@ -45,15 +45,47 @@ export async function verifyServerAuthToken(token) {
       }
     }
     
-    // Nếu không có trong cache hoặc đã hết hạn, xác thực token mới
-    const decodedToken = await firebaseAdmin.auth().verifyIdToken(token);
+    // Phân tích token để xác định loại token
+    let decodedToken;
+    let uid;
+    
+    try {
+      // Thử xác thực như ID token trước
+      decodedToken = await firebaseAdmin.auth().verifyIdToken(token);
+      uid = decodedToken.uid;
+    } catch (error) {
+      // Nếu không phải ID token, giả định đây là custom token và lấy uid từ nó
+      try {
+        // Custom token có định dạng JWT, thử phân tích nó
+        const tokenParts = token.split('.');
+        if (tokenParts.length === 3) {
+          const payload = JSON.parse(Buffer.from(tokenParts[1], 'base64').toString());
+          uid = payload.uid || payload.sub;
+          
+          if (!uid) {
+            console.error('Không thể trích xuất uid từ token');
+            return null;
+          }
+        } else {
+          console.error('Token không có định dạng JWT hợp lệ');
+          return null;
+        }
+      } catch (parseError) {
+        console.error('Lỗi khi phân tích token:', parseError.message);
+        return null;
+      }
+    }
+    
+    // Lấy thông tin người dùng từ uid
+    const userRecord = await firebaseAdmin.auth().getUser(uid);
+    
     const user = {
-      uid: decodedToken.uid,
-      email: decodedToken.email,
-      emailVerified: decodedToken.email_verified,
-      displayName: decodedToken.name,
-      photoURL: decodedToken.picture,
-      role: decodedToken.role || 'user',
+      uid: userRecord.uid,
+      email: userRecord.email,
+      emailVerified: userRecord.emailVerified,
+      displayName: userRecord.displayName,
+      photoURL: userRecord.photoURL,
+      role: userRecord.customClaims?.role || 'user',
     };
     
     // Lưu kết quả xác thực vào cache
