@@ -6,6 +6,7 @@ import { ArrowLeftIcon, CloudArrowDownIcon, ExclamationCircleIcon, XMarkIcon, Ar
 import { use } from 'react';
 import YouTubeModal from '../components/YouTubeModal';
 import PDFModal from '../components/PDFModal';
+import LoadingOverlay from '../components/LoadingOverlay';
 import CryptoJS from 'crypto-js';
 
 // Khóa mã hóa - phải giống với khóa ở phía server
@@ -23,6 +24,7 @@ export default function CourseDetailPage({ params }) {
   const [youtubeModal, setYoutubeModal] = useState({ isOpen: false, videoId: null, title: '' });
   const [pdfModal, setPdfModal] = useState({ isOpen: false, fileUrl: null, title: '' });
   const [isLoaded, setIsLoaded] = useState(false);
+  const [processingLink, setProcessingLink] = useState(false);
   
   // Hàm giải mã dữ liệu với xử lý lỗi tốt hơn
   const decryptData = (encryptedData) => {
@@ -211,16 +213,62 @@ export default function CourseDetailPage({ params }) {
   };
 
   // Hàm xử lý click vào link
-  const handleLinkClick = (url, title) => {
-    // Thay thế link cũ bằng link mới nếu có
-    const updatedUrl = getUpdatedUrl(url);
+  const handleLinkClick = async (url, title) => {
+    if (!url) return;
     
-    if (isYoutubeLink(updatedUrl)) {
-      openYoutubeModal(updatedUrl, title);
-    } else if (isPdfLink(updatedUrl) || isGoogleDriveLink(updatedUrl)) {
-      openPdfModal(updatedUrl, title);
-    } else {
-      window.open(updatedUrl, '_blank');
+    try {
+      // Hiển thị loading
+      setProcessingLink(true);
+      
+      // Gọi API để xử lý link
+      const response = await fetch('/api/links', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          url: url,
+          type: isYoutubeLink(url) ? 'youtube' : 
+                isPdfLink(url) ? 'pdf' : 
+                isGoogleDriveLink(url) ? 'drive' : 'external'
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Không thể xử lý link');
+      }
+
+      const data = await response.json();
+      const processedUrl = data.processedUrl;
+      const encryptedOriginalUrl = data.originalUrl; // Lưu URL đã mã hóa
+      
+      // Ẩn loading
+      setProcessingLink(false);
+      
+      // Mở link đã xử lý theo loại
+      if (isYoutubeLink(processedUrl)) {
+        openYoutubeModal(processedUrl, title);
+      } else if (isPdfLink(processedUrl) || isGoogleDriveLink(processedUrl)) {
+        openPdfModal(processedUrl, title);
+      } else {
+        // Sử dụng API để chuyển hướng thay vì mở link trực tiếp
+        window.open(`/api/links?url=${encodeURIComponent(encryptedOriginalUrl)}`, '_blank');
+      }
+    } catch (error) {
+      console.error('Lỗi khi xử lý link:', error);
+      // Ẩn loading
+      setProcessingLink(false);
+      
+      // Fallback: sử dụng URL gốc nếu có lỗi
+      const updatedUrl = getUpdatedUrl(url);
+      
+      if (isYoutubeLink(updatedUrl)) {
+        openYoutubeModal(updatedUrl, title);
+      } else if (isPdfLink(updatedUrl) || isGoogleDriveLink(updatedUrl)) {
+        openPdfModal(updatedUrl, title);
+      } else {
+        window.open(updatedUrl, '_blank');
+      }
     }
   };
 
@@ -320,6 +368,9 @@ export default function CourseDetailPage({ params }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white p-2 sm:p-6">
+      {/* Loading overlay khi đang xử lý link */}
+      <LoadingOverlay isVisible={processingLink} message="Đang xử lý link..." />
+      
       <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-lg relative overflow-hidden">
         {/* Header Banner */}
         <div className="bg-gradient-to-r from-indigo-600 to-purple-700 h-32 sm:h-48 relative">
@@ -535,7 +586,8 @@ export default function CourseDetailPage({ params }) {
                                                     e.preventDefault();
                                                     handleLinkClick(originalUrl, cell.formattedValue);
                                                   }}
-                                                  href={url}
+                                                  href="#"
+                                                  data-type={linkType}
                                                   className="inline-flex items-center text-indigo-600 font-medium hover:text-indigo-800 transition-colors duration-150 group cursor-pointer hover:underline"
                                                 >
                                                   <span className="icon-container mr-2">
@@ -596,6 +648,7 @@ export default function CourseDetailPage({ params }) {
                                           }
                                         }}
                                         className="inline-flex items-center justify-center bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-xs font-medium hover:bg-indigo-200 transition-colors duration-150 shadow-sm"
+                                        data-action="view-details"
                                       >
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
