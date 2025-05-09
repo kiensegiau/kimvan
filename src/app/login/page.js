@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { routes } from '@/config/env-config';
@@ -9,7 +9,8 @@ import { routes } from '@/config/env-config';
 const CSRF_FORM_FIELD = '_csrf';
 const CSRF_HEADER_NAME = 'X-CSRF-Token';
 
-export default function LoginPage() {
+// Component con để sử dụng useSearchParams
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const returnUrl = searchParams.get('returnUrl') || routes.home;
@@ -205,5 +206,23 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+// Component chính với Suspense boundary
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gray-50">
+        <div className="w-full max-w-md space-y-8">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600 mb-4"></div>
+            <p className="text-gray-500">Đang tải...</p>
+          </div>
+        </div>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 } 

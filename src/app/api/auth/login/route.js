@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { loginWithEmailPassword } from '@/utils/auth';
 import { cookieConfig } from '@/config/env-config';
 import { rateLimit } from '@/utils/rate-limit';
 import { trackFailedLogin, trackSuccessfulLogin, isIPBlocked, isEmailLocked } from '@/utils/auth-monitor';
+import firebaseAdmin from '@/lib/firebase-admin';
+import { verifyEmailPassword } from '@/utils/firebase-auth-helper';
 
 // Hằng số CSRF
 const CSRF_COOKIE_NAME = 'csrf-token';
@@ -115,44 +116,120 @@ export async function POST(request) {
     }
     
     try {
-      // Đăng nhập với Firebase
-      const userCredential = await loginWithEmailPassword(email, password);
-      
-      // Lấy token từ người dùng đã đăng nhập
-      const token = await userCredential.user.getIdToken();
-      
-      // Thiết lập thời gian sống của cookie
-      const maxAge = rememberMe ? cookieConfig.extendedMaxAge : cookieConfig.defaultMaxAge;
-      
-      // Thiết lập cookie token
-      const cookieStore = cookies();
-      await cookieStore.set(cookieConfig.authCookieName, token, {
-        path: '/',
-        maxAge,
-        httpOnly: true,
-        secure: cookieConfig.secure,
-        sameSite: cookieConfig.sameSite,
-      });
-      
-      // Reset rate limit counter nếu đăng nhập thành công
-      if (loginRateLimits.has(ip)) {
-        loginRateLimits.delete(ip);
-      }
-      
-      // Ghi nhận đăng nhập thành công
-      trackSuccessfulLogin(email, ip, userCredential.user.uid);
-      
-      // Trả về thông tin người dùng (không bao gồm thông tin nhạy cảm)
-      return NextResponse.json({
-        success: true,
-        user: {
-          uid: userCredential.user.uid,
-          email: userCredential.user.email,
-          emailVerified: userCredential.user.emailVerified,
-          displayName: userCredential.user.displayName,
-          photoURL: userCredential.user.photoURL,
+      // Trong môi trường phát triển, sử dụng giả lập đăng nhập
+      if (process.env.NODE_ENV === 'development') {
+        // Kiểm tra thông tin đăng nhập mặc định
+        if (email === 'user1@example.com' && password === 'password123') {
+          // Tạo custom token cho user
+          const uid = 'user1';
+          const customToken = await firebaseAdmin.auth().createCustomToken(uid);
+          
+          // Thiết lập thời gian sống của cookie
+          const maxAge = rememberMe ? cookieConfig.extendedMaxAge : cookieConfig.defaultMaxAge;
+          
+          // Thiết lập cookie token
+          const cookieStore = cookies();
+          await cookieStore.set(cookieConfig.authCookieName, customToken, {
+            path: '/',
+            maxAge,
+            httpOnly: true,
+            secure: cookieConfig.secure,
+            sameSite: cookieConfig.sameSite,
+          });
+          
+          // Reset rate limit counter nếu đăng nhập thành công
+          if (loginRateLimits.has(ip)) {
+            loginRateLimits.delete(ip);
+          }
+          
+          // Ghi nhận đăng nhập thành công
+          trackSuccessfulLogin(email, ip, uid);
+          
+          // Trả về thông tin người dùng (không bao gồm thông tin nhạy cảm)
+          return NextResponse.json({
+            success: true,
+            user: {
+              uid: uid,
+              email: email,
+              emailVerified: true,
+              displayName: 'Người dùng 1',
+              photoURL: null,
+            }
+          });
+        } else {
+          // Ghi nhận lần đăng nhập thất bại
+          trackFailedLogin(email, ip, 'auth/wrong-password');
+          
+          return NextResponse.json(
+            { error: 'Email hoặc mật khẩu không đúng' },
+            { status: 401 }
+          );
         }
-      });
+      } else {
+        // Trong môi trường production, sử dụng Firebase Auth REST API để xác thực
+        try {
+          // Xác thực người dùng bằng email và mật khẩu
+          const authResult = await verifyEmailPassword(email, password);
+          
+          // Tạo custom token cho người dùng
+          const customToken = await firebaseAdmin.auth().createCustomToken(authResult.uid);
+          
+          // Thiết lập thời gian sống của cookie
+          const maxAge = rememberMe ? cookieConfig.extendedMaxAge : cookieConfig.defaultMaxAge;
+          
+          // Thiết lập cookie token
+          const cookieStore = cookies();
+          await cookieStore.set(cookieConfig.authCookieName, customToken, {
+            path: '/',
+            maxAge,
+            httpOnly: true,
+            secure: cookieConfig.secure,
+            sameSite: cookieConfig.sameSite,
+          });
+          
+          // Reset rate limit counter nếu đăng nhập thành công
+          if (loginRateLimits.has(ip)) {
+            loginRateLimits.delete(ip);
+          }
+          
+          // Ghi nhận đăng nhập thành công
+          trackSuccessfulLogin(email, ip, authResult.uid);
+          
+          // Lấy thông tin chi tiết về người dùng từ Firebase Admin
+          const userRecord = await firebaseAdmin.auth().getUser(authResult.uid);
+          
+          // Trả về thông tin người dùng (không bao gồm thông tin nhạy cảm)
+          return NextResponse.json({
+            success: true,
+            user: {
+              uid: userRecord.uid,
+              email: userRecord.email,
+              emailVerified: userRecord.emailVerified,
+              displayName: userRecord.displayName || null,
+              photoURL: userRecord.photoURL || null,
+            }
+          });
+        } catch (error) {
+          // Ghi nhận lần đăng nhập thất bại
+          trackFailedLogin(email, ip, error.message || 'unknown_error');
+          
+          // Xử lý lỗi Firebase Auth
+          let message = 'Email hoặc mật khẩu không đúng';
+          let status = 401;
+          
+          if (error.message === 'EMAIL_NOT_FOUND' || error.message === 'INVALID_PASSWORD') {
+            message = 'Email hoặc mật khẩu không đúng';
+          } else if (error.message === 'USER_DISABLED') {
+            message = 'Tài khoản đã bị vô hiệu hóa';
+            status = 403;
+          } else if (error.message === 'TOO_MANY_ATTEMPTS_TRY_LATER') {
+            message = 'Quá nhiều lần thử đăng nhập. Vui lòng thử lại sau ít phút';
+            status = 429;
+          }
+          
+          return NextResponse.json({ error: message }, { status });
+        }
+      }
     } catch (error) {
       // Ghi nhận lần đăng nhập thất bại
       trackFailedLogin(email, ip, error.code || 'unknown_error');

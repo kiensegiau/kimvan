@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { resetPassword } from '@/utils/auth';
 import { routes } from '@/config/env-config';
 
 export default function ForgotPasswordPage() {
@@ -21,7 +20,21 @@ export default function ForgotPasswordPage() {
     setLoading(true);
     
     try {
-      await resetPassword(email);
+      // Thay vì sử dụng Firebase Client SDK, gọi API reset password
+      const response = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Không thể gửi email đặt lại mật khẩu');
+      }
+      
       setSuccess(true);
       // Reset email field after successful submission
       setEmail('');

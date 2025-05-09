@@ -5,8 +5,8 @@ import {
   sendPasswordResetEmail
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-import firebaseAdmin from '@/lib/firebase-admin';
-import { cookies } from 'next/headers';
+// Thay thế cookies từ next/headers
+import Cookies from 'js-cookie';
 
 /**
  * Đăng nhập với email và mật khẩu
@@ -143,97 +143,13 @@ export const onAuthStateChanged = (callback) => {
   return auth.onAuthStateChanged(callback);
 };
 
-// Hàm lấy token từ cookies
-export async function getToken() {
-  const cookieStore = cookies();
-  const token = cookieStore.get('auth-token')?.value;
-  return token || null;
-}
-
-// Thêm system cache cho token để tăng hiệu suất
-// Cache theo cặp {token: {user, timestamp}}
-const tokenCache = new Map();
-const TOKEN_CACHE_MAX_AGE = 5 * 60 * 1000; // 5 phút
-
-// Hàm kiểm tra và xóa các token hết hạn trong cache
-function cleanupTokenCache() {
-  const now = Date.now();
-  for (const [token, data] of tokenCache.entries()) {
-    if (now - data.timestamp > TOKEN_CACHE_MAX_AGE) {
-      tokenCache.delete(token);
-    }
+// Hàm lấy token từ cookies (client-side)
+export function getToken() {
+  // Kiểm tra xem có đang chạy ở client-side không
+  if (typeof window !== 'undefined') {
+    return Cookies.get('auth-token') || null;
   }
+  return null;
 }
 
-// Xóa token hết hạn mỗi phút
-setInterval(cleanupTokenCache, 60 * 1000);
-
-// Hàm xác thực token được tối ưu với cache
-export async function verifyAuthToken(token) {
-  if (!token) return null;
-  
-  try {
-    // Kiểm tra cache trước
-    if (tokenCache.has(token)) {
-      const cachedData = tokenCache.get(token);
-      const now = Date.now();
-      
-      // Nếu token trong cache vẫn còn hạn, sử dụng lại
-      if (now - cachedData.timestamp < TOKEN_CACHE_MAX_AGE) {
-        return cachedData.user;
-      } else {
-        // Xóa token hết hạn
-        tokenCache.delete(token);
-      }
-    }
-    
-    // Nếu không có trong cache hoặc đã hết hạn, xác thực token mới
-    const decodedToken = await firebaseAdmin.auth().verifyIdToken(token);
-    const user = {
-      uid: decodedToken.uid,
-      email: decodedToken.email,
-      emailVerified: decodedToken.email_verified,
-      displayName: decodedToken.name,
-      photoURL: decodedToken.picture,
-      role: decodedToken.role || 'user',
-    };
-    
-    // Lưu kết quả xác thực vào cache
-    tokenCache.set(token, {
-      user,
-      timestamp: Date.now()
-    });
-    
-    return user;
-  } catch (error) {
-    console.error('Lỗi xác thực token:', error.message);
-    return null;
-  }
-}
-
-// Kiểm tra xem người dùng đã đăng nhập chưa
-export async function isAuthenticated() {
-  const token = await getToken();
-  if (!token) return false;
-  
-  const user = await verifyAuthToken(token);
-  return !!user;
-}
-
-// Kiểm tra vai trò của người dùng
-export async function hasRole(requiredRole = 'user') {
-  const token = await getToken();
-  if (!token) return false;
-  
-  const user = await verifyAuthToken(token);
-  if (!user) return false;
-  
-  // Nếu role là admin, cho phép truy cập mọi nơi
-  if (user.role === 'admin') return true;
-  
-  // Nếu role là staff, cho phép truy cập quyền staff và user
-  if (user.role === 'staff' && requiredRole === 'user') return true;
-  
-  // Trường hợp khác, so sánh trực tiếp
-  return user.role === requiredRole;
-} 
+// Chỉ cung cấp các phương thức client-side, các phương thức server được chuyển sang server-auth.js 

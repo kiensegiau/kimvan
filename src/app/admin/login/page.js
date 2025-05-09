@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ExclamationCircleIcon } from '@heroicons/react/24/outline';
 
-export default function AdminLoginPage() {
+// Component con để sử dụng useSearchParams
+function AdminLoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectPath = searchParams.get('from') || '/admin';
@@ -124,5 +125,23 @@ export default function AdminLoginPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+// Component chính với Suspense boundary
+export default function AdminLoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow-md">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-600 mb-4"></div>
+            <p className="text-gray-500">Đang tải...</p>
+          </div>
+        </div>
+      </div>
+    }>
+      <AdminLoginForm />
+    </Suspense>
   );
 } 

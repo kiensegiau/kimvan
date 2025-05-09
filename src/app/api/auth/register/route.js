@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { registerWithEmailPassword } from '@/utils/auth';
 import { cookieConfig } from '@/config/env-config';
 import { rateLimit } from '@/utils/rate-limit';
+import firebaseAdmin from '@/lib/firebase-admin';
+import { createUserWithEmailPassword } from '@/utils/firebase-auth-helper';
 
 // Hằng số CSRF
 const CSRF_COOKIE_NAME = 'csrf-token';
@@ -92,31 +93,61 @@ export async function POST(request) {
     }
     
     try {
-      // Đăng ký với Firebase
-      const userCredential = await registerWithEmailPassword(email, password);
-      
-      // Lấy token từ người dùng đã đăng ký
-      const token = await userCredential.user.getIdToken();
-      
-      // Thiết lập cookie token
-      const cookieStore = cookies();
-      await cookieStore.set(cookieConfig.authCookieName, token, {
-        path: '/',
-        maxAge: cookieConfig.defaultMaxAge,
-        httpOnly: true,
-        secure: cookieConfig.secure,
-        sameSite: cookieConfig.sameSite,
-      });
-      
-      // Trả về thông tin người dùng (không bao gồm thông tin nhạy cảm)
-      return NextResponse.json({
-        success: true,
-        user: {
-          uid: userCredential.user.uid,
-          email: userCredential.user.email,
-          emailVerified: userCredential.user.emailVerified,
-        }
-      });
+      // Trong môi trường phát triển, sử dụng giả lập đăng ký
+      if (process.env.NODE_ENV === 'development') {
+        // Giả lập tạo người dùng mới
+        const uid = `new-user-${Date.now()}`;
+        
+        // Tạo custom token cho user mới
+        const customToken = await firebaseAdmin.auth().createCustomToken(uid);
+        
+        // Thiết lập cookie token
+        const cookieStore = cookies();
+        await cookieStore.set(cookieConfig.authCookieName, customToken, {
+          path: '/',
+          maxAge: cookieConfig.defaultMaxAge,
+          httpOnly: true,
+          secure: cookieConfig.secure,
+          sameSite: cookieConfig.sameSite,
+        });
+        
+        // Trả về thông tin người dùng (không bao gồm thông tin nhạy cảm)
+        return NextResponse.json({
+          success: true,
+          user: {
+            uid: uid,
+            email: email,
+            emailVerified: false,
+          }
+        });
+      } else {
+        // Trong môi trường production, sử dụng Firebase Auth REST API
+        // Tạo người dùng mới với Firebase REST API
+        const authResult = await createUserWithEmailPassword(email, password);
+        
+        // Tạo custom token cho người dùng mới
+        const customToken = await firebaseAdmin.auth().createCustomToken(authResult.uid);
+        
+        // Thiết lập cookie token
+        const cookieStore = cookies();
+        await cookieStore.set(cookieConfig.authCookieName, customToken, {
+          path: '/',
+          maxAge: cookieConfig.defaultMaxAge,
+          httpOnly: true,
+          secure: cookieConfig.secure,
+          sameSite: cookieConfig.sameSite,
+        });
+        
+        // Trả về thông tin người dùng (không bao gồm thông tin nhạy cảm)
+        return NextResponse.json({
+          success: true,
+          user: {
+            uid: authResult.uid,
+            email: authResult.email,
+            emailVerified: authResult.emailVerified,
+          }
+        });
+      }
     } catch (error) {
       console.error('Lỗi đăng ký:', error);
       
@@ -124,13 +155,13 @@ export async function POST(request) {
       let message = 'Đã xảy ra lỗi khi đăng ký';
       let status = 500;
       
-      if (error.code === 'auth/email-already-in-use') {
+      if (error.message === 'EMAIL_EXISTS') {
         message = 'Email đã được sử dụng';
         status = 400;
-      } else if (error.code === 'auth/invalid-email') {
+      } else if (error.message === 'INVALID_EMAIL') {
         message = 'Email không hợp lệ';
         status = 400;
-      } else if (error.code === 'auth/weak-password') {
+      } else if (error.message === 'WEAK_PASSWORD') {
         message = 'Mật khẩu quá yếu. Vui lòng sử dụng ít nhất 6 ký tự';
         status = 400;
       }

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { verifyAuthToken } from '@/utils/auth';
+import { verifyServerAuthToken } from '@/utils/server-auth';
 
 /**
  * API route để xác thực token
@@ -18,7 +18,7 @@ export async function POST(request) {
     }
 
     // Xác thực token với Firebase Admin
-    const user = await verifyAuthToken(token);
+    const user = await verifyServerAuthToken(token);
 
     if (!user) {
       return NextResponse.json(
@@ -66,7 +66,7 @@ export async function GET(request) {
     }
 
     // Xác thực token với Firebase Admin
-    const user = await verifyAuthToken(token);
+    const user = await verifyServerAuthToken(token);
 
     if (!user) {
       return NextResponse.json(
