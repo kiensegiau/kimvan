@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { 
   HomeIcon,
   AcademicCapIcon, 
@@ -14,10 +14,13 @@ import {
   Cog6ToothIcon
 } from '@heroicons/react/24/outline';
 import { useState, useEffect } from 'react';
+import { logout } from '@/utils/auth-client';
 
 const Sidebar = ({ closeSidebar }) => {
   const pathname = usePathname();
+  const router = useRouter();
   const [isMobile, setIsMobile] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
     const checkIfMobile = () => {
@@ -35,6 +38,22 @@ const Sidebar = ({ closeSidebar }) => {
   const handleMenuItemClick = () => {
     if (isMobile && closeSidebar) {
       closeSidebar();
+    }
+  };
+  
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+      
+      // Gọi hàm đăng xuất từ auth-client
+      await logout();
+      
+      // Chuyển hướng đến trang đăng nhập
+      router.push('/login');
+    } catch (error) {
+      console.error('Lỗi đăng xuất:', error);
+      setIsLoggingOut(false);
+      alert('Đã xảy ra lỗi khi đăng xuất. Vui lòng thử lại.');
     }
   };
 
@@ -120,11 +139,15 @@ const Sidebar = ({ closeSidebar }) => {
               <ChevronRightIcon className="ml-auto w-4 h-4" />
             )}
           </Link>
-          <button className="w-full flex items-center p-2 rounded-lg hover:bg-indigo-800 transition-colors text-indigo-100">
+          <button 
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            className="w-full flex items-center p-2 rounded-lg hover:bg-indigo-800 transition-colors text-indigo-100 disabled:opacity-50"
+          >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-indigo-300 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
             </svg>
-            <span className="text-sm">Đăng xuất</span>
+            <span className="text-sm">{isLoggingOut ? 'Đang đăng xuất...' : 'Đăng xuất'}</span>
           </button>
         </div>
       </div>
