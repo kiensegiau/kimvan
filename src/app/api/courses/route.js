@@ -3,6 +3,7 @@ import clientPromise from '@/lib/mongodb';
 import CryptoJS from 'crypto-js';
 import mongoose from 'mongoose';
 import Course from '@/models/Course';
+import { authMiddleware } from '@/lib/auth';
 
 // Khóa mã hóa - phải giống với khóa ở phía client
 const ENCRYPTION_KEY = 'kimvan-secure-key-2024';
@@ -40,42 +41,26 @@ const encryptData = (data) => {
 // GET: Lấy tất cả khóa học
 export async function GET(request) {
   try {
-    // Lấy tham số secure từ URL
-    const { searchParams } = new URL(request.url);
-    const secure = searchParams.get('secure') === 'true';
+    // Kiểm tra xác thực người dùng sử dụng Firebase Auth
+    const user = await authMiddleware(request);
     
+    // Luôn mã hóa dữ liệu, bất kể người dùng đã đăng nhập hay chưa
     // Đảm bảo kết nối đến MongoDB trước khi truy vấn
     await connectDB();
     
     // Lấy danh sách khóa học từ MongoDB
     const courses = await Course.find({}).lean().exec();
     
-    if (secure) {
-      // Mã hóa toàn bộ danh sách khóa học nếu yêu cầu bảo mật cao
-      try {
-        const encryptedData = encryptData(courses);
-        return NextResponse.json({ _secureData: encryptedData });
-      } catch (encryptError) {
-        console.error("Lỗi khi mã hóa dữ liệu:", encryptError);
-        return NextResponse.json({ 
-          error: 'Lỗi khi xử lý dữ liệu khóa học',
-          message: encryptError.message 
-        }, { status: 500 });
-      }
-    } else {
-      // Lọc dữ liệu nhạy cảm và chỉ trả về các trường cần thiết
-      const safeCourses = courses.map(course => ({
-        _id: course._id,
-        name: course.name,
-        description: course.description,
-        price: course.price,
-        status: course.status,
-        updatedAt: course.updatedAt,
-        createdAt: course.createdAt,
-        // Không bao gồm originalData và các trường nhạy cảm khác
-      }));
-      
-      return NextResponse.json(safeCourses);
+    // Luôn mã hóa dữ liệu, bất kể tham số secure là gì
+    try {
+      const encryptedData = encryptData(courses);
+      return NextResponse.json({ _secureData: encryptedData });
+    } catch (encryptError) {
+      console.error("Lỗi khi mã hóa dữ liệu:", encryptError);
+      return NextResponse.json({ 
+        error: 'Lỗi khi xử lý dữ liệu khóa học',
+        message: encryptError.message 
+      }, { status: 500 });
     }
   } catch (error) {
     console.error('Lỗi khi lấy dữ liệu khóa học:', error);
@@ -90,6 +75,12 @@ export async function GET(request) {
 // POST: Tạo khóa học mới
 export async function POST(request) {
   try {
+    // Kiểm tra xác thực người dùng sử dụng Firebase Auth
+    const user = await authMiddleware(request);
+    if (!user) {
+      return NextResponse.json({ error: "Bạn cần đăng nhập để thực hiện thao tác này" }, { status: 401 });
+    }
+    
     const body = await request.json();
     
     // Đảm bảo kết nối đến MongoDB trước khi truy vấn
@@ -117,12 +108,15 @@ export async function POST(request) {
       createdAt: createdCourse.createdAt,
     };
     
+    // Mã hóa phản hồi
+    const encryptedResponse = encryptData({
+      success: true,
+      message: 'Khóa học đã được tạo thành công',
+      course: safeResponse
+    });
+    
     return NextResponse.json(
-      { 
-        success: true,
-        message: 'Khóa học đã được tạo thành công', 
-        course: safeResponse
-      }, 
+      { _secureData: encryptedResponse }, 
       { status: 201 }
     );
   } catch (error) {

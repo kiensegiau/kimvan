@@ -50,10 +50,19 @@ export default function CoursesPage() {
       setLoading(true);
       setError(null);
       
-      // Sử dụng tham số secure=true để nhận dữ liệu được mã hóa
-      const response = await fetch('/api/courses?secure=true');
+      // Gọi API không cần tham số secure nữa vì server luôn mã hóa
+      const response = await fetch('/api/courses');
       
       if (!response.ok) {
+        // Xử lý trường hợp lỗi 401 (chưa đăng nhập)
+        if (response.status === 401) {
+          // Chuyển hướng đến trang đăng nhập hoặc hiển thị thông báo
+          setError('Bạn cần đăng nhập để xem danh sách khóa học');
+          setCourses([]);
+          setLoading(false);
+          return;
+        }
+        
         const errorData = await response.json().catch(() => ({}));
         const errorMessage = errorData.error || `Lỗi ${response.status}: ${response.statusText}`;
         throw new Error(errorMessage);
@@ -71,8 +80,8 @@ export default function CoursesPage() {
           throw new Error(`Không thể giải mã dữ liệu khóa học: ${decryptError.message}`);
         }
       } else {
-        // Trường hợp dữ liệu không được mã hóa
-        setCourses(encryptedResponse);
+        // Trường hợp lỗi - không nên xảy ra vì server luôn mã hóa
+        throw new Error('Dữ liệu không được mã hóa đúng định dạng');
       }
     } catch (err) {
       console.error('Lỗi khi tải danh sách khóa học:', err);
