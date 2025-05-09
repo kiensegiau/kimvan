@@ -117,20 +117,25 @@ export const registerWithEmailPassword = async (email, password) => {
  */
 export const logout = async () => {
   try {
+    // Xóa cookie ở phía client
+    document.cookie = `auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; ${location.protocol === 'https:' ? 'Secure;' : ''}`;
+    
     // Trong môi trường phát triển, chỉ cần xóa người dùng giả lập
     if (process.env.NODE_ENV === 'development') {
       mockCurrentUser = null;
       
       // Thông báo cho tất cả listeners
       mockAuthListeners.forEach(callback => callback(null));
-      
-      return;
     }
     
-    // Trong môi trường production, gọi API đăng xuất
+    // Trong mọi môi trường, gọi API đăng xuất
     await fetch('/api/auth/logout', {
       method: 'POST',
+      credentials: 'same-origin' // Đảm bảo gửi cookie hiện tại
     });
+    
+    // Thực hiện hard reload để đảm bảo tất cả state được làm mới
+    window.location.href = '/login';
   } catch (error) {
     console.error('Lỗi đăng xuất:', error);
     throw new Error('Đã xảy ra lỗi khi đăng xuất');

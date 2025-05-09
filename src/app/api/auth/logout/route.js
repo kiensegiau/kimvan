@@ -11,14 +11,32 @@ export async function POST(request) {
     // Lấy cookie store
     const cookieStore = await cookies();
     
-    // Xóa cookie xác thực
-    await cookieStore.delete(cookieConfig.authCookieName);
+    // Xóa cookie xác thực với các tùy chọn đầy đủ
+    await cookieStore.delete(cookieConfig.authCookieName, {
+      path: '/',
+      secure: cookieConfig.secure,
+      httpOnly: cookieConfig.httpOnly,
+      sameSite: cookieConfig.sameSite
+    });
     
     // Log hành động
     console.log('🔒 Người dùng đã đăng xuất thành công');
     
-    // Trả về thành công
-    return NextResponse.json({ success: true });
+    // Trả về thành công với header xóa cookie
+    const response = NextResponse.json({ success: true });
+    
+    // Thêm header Set-Cookie để đảm bảo cookie bị xóa
+    response.cookies.set({
+      name: cookieConfig.authCookieName,
+      value: '',
+      path: '/',
+      expires: new Date(0),
+      secure: cookieConfig.secure,
+      httpOnly: cookieConfig.httpOnly,
+      sameSite: cookieConfig.sameSite
+    });
+    
+    return response;
   } catch (error) {
     console.error('❌ Lỗi khi đăng xuất:', error);
     

@@ -31,7 +31,7 @@ export async function middleware(request) {
   console.log('🚨 MIDDLEWARE EXECUTED FOR:', pathname);
 
   // Bỏ qua middleware cho API verify token để tránh vòng lặp vô hạn
-  if (pathname === TOKEN_VERIFY_API) {
+  if (pathname === TOKEN_VERIFY_API || pathname === '/api/auth/logout') {
     return NextResponse.next();
   }
 
@@ -55,8 +55,10 @@ export async function middleware(request) {
   // Lấy token từ cookie
   const token = request.cookies.get(cookieConfig.authCookieName)?.value;
   
-  // Nếu không có token, chuyển hướng đến trang đăng nhập
-  if (!token) {
+  // Kiểm tra token có tồn tại và không phải là chuỗi rỗng
+  if (!token || token.trim() === '') {
+    console.log('🔒 Token không tồn tại hoặc rỗng, chuyển hướng đến trang đăng nhập');
+    
     const redirectUrl = new URL(routes.login, request.url);
     // Thêm returnUrl để sau khi đăng nhập có thể chuyển hướng về trang ban đầu
     redirectUrl.searchParams.set('returnUrl', pathname);
@@ -64,8 +66,51 @@ export async function middleware(request) {
     return addSecurityHeaders(response);
   }
 
-  // Không xác thực token ở đây, để API routes xử lý
-  // Chỉ cho phép request đi qua với header chỉ ra rằng token cần được xác thực
+  // Xác thực token với server trước khi cho phép truy cập
+  try {
+    // Xác định URL cơ sở
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || request.nextUrl.origin;
+    
+    // Gọi API xác thực token
+    const verifyResponse = await fetch(`${baseUrl}${TOKEN_VERIFY_API}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ token }),
+    });
+
+    const verifyData = await verifyResponse.json();
+    
+    // Nếu token không hợp lệ, chuyển hướng đến trang đăng nhập
+    if (!verifyData.valid) {
+      console.log('🔒 Token không hợp lệ, chuyển hướng đến trang đăng nhập');
+      
+      const redirectUrl = new URL(routes.login, request.url);
+      redirectUrl.searchParams.set('returnUrl', pathname);
+      const response = NextResponse.redirect(redirectUrl);
+      
+      // Xóa cookie token không hợp lệ
+      response.cookies.set({
+        name: cookieConfig.authCookieName,
+        value: '',
+        expires: new Date(0),
+        path: '/',
+      });
+      
+      return addSecurityHeaders(response);
+    }
+  } catch (error) {
+    console.error('❌ Lỗi khi xác thực token:', error);
+    
+    // Trong trường hợp lỗi, chuyển hướng đến trang đăng nhập để an toàn
+    const redirectUrl = new URL(routes.login, request.url);
+    redirectUrl.searchParams.set('returnUrl', pathname);
+    const response = NextResponse.redirect(redirectUrl);
+    return addSecurityHeaders(response);
+  }
+  
+  // Nếu token hợp lệ, cho phép request đi qua
   const response = NextResponse.next();
   response.headers.set('x-middleware-active', 'true');
   response.headers.set('x-auth-token', token);

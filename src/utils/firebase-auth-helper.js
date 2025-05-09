@@ -11,16 +11,23 @@ import firebaseAdmin from '@/lib/firebase-admin';
  */
 export async function verifyEmailPassword(email, password) {
   try {
+    console.log('🔍 Đang xác thực người dùng với email:', email);
+    
     // Lấy API key từ biến môi trường
-    const apiKey = process.env.FIREBASE_API_KEY;
+    const apiKey = process.env.FIREBASE_API_KEY || process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+    
+    console.log('🔑 Firebase API Key có sẵn:', !!apiKey);
     
     if (!apiKey) {
       // Nếu không có API key, sử dụng phương pháp thay thế với Firebase Admin
-      console.warn('FIREBASE_API_KEY không được cấu hình, sử dụng phương pháp thay thế với Firebase Admin');
+      console.warn('⚠️ FIREBASE_API_KEY không được cấu hình, sử dụng phương pháp thay thế với Firebase Admin');
       
       try {
         // Tìm người dùng theo email
+        console.log('👤 Đang tìm người dùng theo email với Firebase Admin...');
         const userRecord = await firebaseAdmin.auth().getUserByEmail(email);
+        
+        console.log('✅ Tìm thấy người dùng:', userRecord.uid);
         
         // Lưu ý: Không thể xác thực mật khẩu trực tiếp với Firebase Admin SDK
         // Đây là một giải pháp tạm thời, không an toàn cho môi trường production
@@ -32,11 +39,13 @@ export async function verifyEmailPassword(email, password) {
           emailVerified: userRecord.emailVerified || false,
         };
       } catch (error) {
+        console.error('❌ Lỗi khi tìm người dùng với Firebase Admin:', error);
         throw new Error('EMAIL_NOT_FOUND');
       }
     }
     
     // Gọi Firebase Auth REST API để xác thực
+    console.log('🔄 Đang gọi Firebase Auth REST API...');
     const response = await fetch(
       `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`,
       {
@@ -56,9 +65,12 @@ export async function verifyEmailPassword(email, password) {
     
     if (!response.ok) {
       // Xử lý lỗi từ Firebase Auth
+      console.error('❌ Lỗi từ Firebase Auth API:', data.error);
       const errorCode = data.error?.message || 'auth/unknown-error';
       throw new Error(errorCode);
     }
+    
+    console.log('✅ Xác thực thành công với Firebase Auth API');
     
     // Trả về thông tin người dùng
     return {
@@ -69,7 +81,7 @@ export async function verifyEmailPassword(email, password) {
       refreshToken: data.refreshToken,
     };
   } catch (error) {
-    console.error('Lỗi xác thực Firebase:', error);
+    console.error('❌ Lỗi xác thực Firebase:', error);
     throw error;
   }
 }

@@ -48,8 +48,8 @@ const Sidebar = ({ closeSidebar }) => {
       // Gọi hàm đăng xuất từ auth-client
       await logout();
       
-      // Chuyển hướng đến trang đăng nhập
-      router.push('/login');
+      // Hard reload để đảm bảo tất cả state được làm mới
+      window.location.href = '/login';
     } catch (error) {
       console.error('Lỗi đăng xuất:', error);
       setIsLoggingOut(false);
