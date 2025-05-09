@@ -47,15 +47,25 @@ function timingSafeEqual(a, b) {
  */
 export async function POST(request) {
   try {
+    console.log('🔒 API đăng nhập được gọi');
+    
     // Lấy thông tin từ request
     const body = await request.json();
     const { email, password, rememberMe, [CSRF_FORM_FIELD]: csrfToken } = body;
+    
+    console.log('📧 Email đăng nhập:', email);
+    console.log('🔐 Mật khẩu có được cung cấp:', !!password);
+    console.log('🔄 Remember me:', !!rememberMe);
+    console.log('🛡️ CSRF token có được cung cấp:', !!csrfToken);
 
     // Lấy IP của client
     const ip = request.headers.get('x-forwarded-for') || 'unknown-ip';
+    console.log('🌐 IP của client:', ip);
     
     // Kiểm tra xem IP có bị chặn không
-    if (isIPBlocked(ip)) {
+    const ipBlocked = isIPBlocked(ip);
+    console.log('🚫 IP có bị chặn:', ipBlocked);
+    if (ipBlocked) {
       return NextResponse.json(
         { error: 'Địa chỉ IP của bạn đã bị tạm thời chặn do quá nhiều lần đăng nhập thất bại. Vui lòng thử lại sau.' },
         { status: 403 }
@@ -63,7 +73,9 @@ export async function POST(request) {
     }
     
     // Kiểm tra xem email có bị tạm khóa không
-    if (email && isEmailLocked(email)) {
+    const emailLocked = email && isEmailLocked(email);
+    console.log('🔒 Email có bị khóa:', emailLocked);
+    if (emailLocked) {
       return NextResponse.json(
         { error: 'Tài khoản này đã bị tạm thời khóa do quá nhiều lần đăng nhập thất bại. Vui lòng thử lại sau hoặc đặt lại mật khẩu.' },
         { status: 403 }
@@ -72,9 +84,11 @@ export async function POST(request) {
     
     // Kiểm tra rate limit
     const rateLimitInfo = rateLimit(ip, 5, 15 * 60 * 1000); // 5 lần/15 phút
+    console.log('⏱️ Rate limit info:', rateLimitInfo);
     
     // Nếu quá giới hạn, trả về lỗi 429
     if (rateLimitInfo.isLimited) {
+      console.log('⚠️ Rate limit exceeded');
       // Ghi nhận lần thất bại do rate limit
       if (email) {
         trackFailedLogin(email, ip, 'rate_limit_exceeded');
@@ -95,7 +109,9 @@ export async function POST(request) {
     }
     
     // Xác thực CSRF token
-    if (!await validateCsrfToken(csrfToken)) {
+    const csrfValid = await validateCsrfToken(csrfToken);
+    console.log('🛡️ CSRF token hợp lệ:', csrfValid);
+    if (!csrfValid) {
       // Ghi nhận lần thất bại do CSRF không hợp lệ
       if (email) {
         trackFailedLogin(email, ip, 'invalid_csrf');
@@ -109,6 +125,7 @@ export async function POST(request) {
     
     // Kiểm tra thông tin đăng nhập
     if (!email || !password) {
+      console.log('⚠️ Thiếu email hoặc mật khẩu');
       return NextResponse.json(
         { error: 'Email và mật khẩu là bắt buộc' },
         { status: 400 }
@@ -117,7 +134,9 @@ export async function POST(request) {
     
     try {
       // Trong môi trường phát triển, sử dụng giả lập đăng nhập
+      console.log('🔧 NODE_ENV:', process.env.NODE_ENV);
       if (process.env.NODE_ENV === 'development') {
+        console.log('🧪 Đang sử dụng chế độ giả lập đăng nhập cho môi trường phát triển');
         // Kiểm tra thông tin đăng nhập mặc định
         if (email === 'user1@example.com' && password === 'password123') {
           // Tạo custom token cho user
@@ -157,6 +176,7 @@ export async function POST(request) {
             }
           });
         } else {
+          console.log('❌ Email hoặc mật khẩu không đúng trong chế độ giả lập');
           // Ghi nhận lần đăng nhập thất bại
           trackFailedLogin(email, ip, 'auth/wrong-password');
           
@@ -166,18 +186,24 @@ export async function POST(request) {
           );
         }
       } else {
-        // Trong môi trường production, sử dụng Firebase Auth REST API để xác thực
+        console.log('🚀 Đang sử dụng Firebase Auth API để xác thực trong môi trường production');
         try {
           // Xác thực người dùng bằng email và mật khẩu
+          console.log('👤 Đang xác thực người dùng với email:', email);
           const authResult = await verifyEmailPassword(email, password);
+          console.log('✅ Xác thực thành công, uid:', authResult.uid);
           
           // Tạo custom token cho người dùng
+          console.log('🔑 Đang tạo custom token cho uid:', authResult.uid);
           const customToken = await firebaseAdmin.auth().createCustomToken(authResult.uid);
+          console.log('✅ Đã tạo custom token thành công');
           
           // Thiết lập thời gian sống của cookie
           const maxAge = rememberMe ? cookieConfig.extendedMaxAge : cookieConfig.defaultMaxAge;
+          console.log('⏱️ Thời gian sống của cookie:', maxAge);
           
           // Thiết lập cookie token
+          console.log('🍪 Đang thiết lập cookie auth token');
           const cookieStore = await cookies();
           await cookieStore.set(cookieConfig.authCookieName, customToken, {
             path: '/',
@@ -186,6 +212,7 @@ export async function POST(request) {
             secure: cookieConfig.secure,
             sameSite: cookieConfig.sameSite,
           });
+          console.log('✅ Đã thiết lập cookie thành công');
           
           // Reset rate limit counter nếu đăng nhập thành công
           if (loginRateLimits.has(ip)) {
@@ -196,7 +223,9 @@ export async function POST(request) {
           trackSuccessfulLogin(email, ip, authResult.uid);
           
           // Lấy thông tin chi tiết về người dùng từ Firebase Admin
+          console.log('👤 Đang lấy thông tin chi tiết về người dùng');
           const userRecord = await firebaseAdmin.auth().getUser(authResult.uid);
+          console.log('✅ Đã lấy thông tin người dùng thành công');
           
           // Trả về thông tin người dùng (không bao gồm thông tin nhạy cảm)
           return NextResponse.json({
@@ -211,6 +240,10 @@ export async function POST(request) {
           });
         } catch (error) {
           // Ghi nhận lần đăng nhập thất bại
+          console.error('❌ Lỗi xác thực:', error);
+          console.error('❌ Error message:', error.message);
+          console.error('❌ Error stack:', error.stack);
+          
           trackFailedLogin(email, ip, error.message || 'unknown_error');
           
           // Xử lý lỗi Firebase Auth
@@ -232,6 +265,11 @@ export async function POST(request) {
       }
     } catch (error) {
       // Ghi nhận lần đăng nhập thất bại
+      console.error('❌ Lỗi ngoài cùng:', error);
+      console.error('❌ Error code:', error.code);
+      console.error('❌ Error message:', error.message);
+      console.error('❌ Error stack:', error.stack);
+      
       trackFailedLogin(email, ip, error.code || 'unknown_error');
       
       // Xử lý lỗi Firebase Auth
@@ -253,7 +291,7 @@ export async function POST(request) {
     }
     
   } catch (error) {
-    console.error('Lỗi server khi đăng nhập:', error);
+    console.error('❌ Lỗi server khi đăng nhập:', error);
     
     return NextResponse.json(
       { error: 'Đã xảy ra lỗi máy chủ. Vui lòng thử lại sau.' },
