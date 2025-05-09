@@ -4,6 +4,10 @@ import { useState, useEffect, useRef } from 'react';
 import { ExclamationCircleIcon, MagnifyingGlassIcon, AcademicCapIcon, CheckCircleIcon, UserCircleIcon, ArrowRightIcon, ClockIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
 import { StarIcon, FireIcon } from '@heroicons/react/24/solid';
 import { useRouter } from 'next/navigation';
+import CryptoJS from 'crypto-js';
+
+// Khóa mã hóa - phải giống với khóa ở phía server
+const ENCRYPTION_KEY = 'kimvan-secure-key-2024';
 
 export default function CoursesPage() {
   const router = useRouter();
@@ -15,20 +19,61 @@ export default function CoursesPage() {
   const [isInView, setIsInView] = useState(false);
   const statsRef = useRef(null);
 
+  // Hàm giải mã dữ liệu với xử lý lỗi tốt hơn
+  const decryptData = (encryptedData) => {
+    try {
+      if (!encryptedData) {
+        throw new Error("Không có dữ liệu được mã hóa");
+      }
+      
+      // Giải mã dữ liệu
+      const decryptedBytes = CryptoJS.AES.decrypt(encryptedData, ENCRYPTION_KEY);
+      if (!decryptedBytes) {
+        throw new Error("Giải mã không thành công");
+      }
+      
+      const decryptedText = decryptedBytes.toString(CryptoJS.enc.Utf8);
+      if (!decryptedText || decryptedText.length === 0) {
+        throw new Error("Dữ liệu giải mã không hợp lệ");
+      }
+      
+      return JSON.parse(decryptedText);
+    } catch (error) {
+      console.error("Lỗi giải mã:", error);
+      throw new Error(`Không thể giải mã: ${error.message}`);
+    }
+  };
+
   // Hàm để tải danh sách khóa học từ API
   const fetchCourses = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      const response = await fetch('/api/courses');
-      const data = await response.json();
+      // Sử dụng tham số secure=true để nhận dữ liệu được mã hóa
+      const response = await fetch('/api/courses?secure=true');
       
       if (!response.ok) {
-        throw new Error(data.message || 'Không thể tải dữ liệu khóa học');
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.error || `Lỗi ${response.status}: ${response.statusText}`;
+        throw new Error(errorMessage);
       }
       
-      setCourses(data);
+      const encryptedResponse = await response.json();
+      
+      // Kiểm tra nếu nhận được dữ liệu được mã hóa
+      if (encryptedResponse._secureData) {
+        try {
+          // Giải mã dữ liệu
+          const coursesData = decryptData(encryptedResponse._secureData);
+          setCourses(coursesData);
+        } catch (decryptError) {
+          throw new Error(`Không thể giải mã dữ liệu khóa học: ${decryptError.message}`);
+        }
+      } else {
+        // Trường hợp dữ liệu không được mã hóa
+        setCourses(encryptedResponse);
+      }
     } catch (err) {
       console.error('Lỗi khi tải danh sách khóa học:', err);
       setError(err.message || 'Đã xảy ra lỗi khi tải dữ liệu khóa học.');
@@ -36,6 +81,11 @@ export default function CoursesPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Thử lại khi gặp lỗi
+  const handleRetry = () => {
+    fetchCourses();
   };
 
   useEffect(() => {
@@ -226,6 +276,17 @@ export default function CoursesPage() {
                   </h3>
                   <div className="mt-2 text-sm text-red-700">
                     <p>{error}</p>
+                  </div>
+                  <div className="mt-3">
+                    <button
+                      onClick={handleRetry}
+                      className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="-ml-0.5 mr-1.5 h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      Thử lại
+                    </button>
                   </div>
                 </div>
               </div>
