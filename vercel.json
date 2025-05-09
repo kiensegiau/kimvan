@@ -1,0 +1,6 @@
+{
+  "buildCommand": "npm install --force && npm run build",
+  "env": {
+    "NEXT_TELEMETRY_DISABLED": "1"
+  }
+} 

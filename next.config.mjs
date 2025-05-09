@@ -6,6 +6,11 @@ const nextConfig = {
   // Basic config options
   poweredByHeader: false,
   reactStrictMode: true,
+  
+  // Tắt tối ưu CSS để tránh lỗi lightningcss
+  experimental: {
+    optimizeCss: false
+  }
 };
 
 export default nextConfig;
