@@ -21,7 +21,7 @@ setInterval(cleanupTokenCache, 60 * 1000);
 
 // Hàm lấy token từ cookies (server-side)
 export async function getServerToken() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const token = cookieStore.get('auth-token')?.value;
   return token || null;
 }
@@ -45,36 +45,9 @@ export async function verifyServerAuthToken(token) {
       }
     }
     
-    // Phân tích token để xác định loại token
-    let decodedToken;
-    let uid;
-    
-    try {
-      // Thử xác thực như ID token trước
-      decodedToken = await firebaseAdmin.auth().verifyIdToken(token);
-      uid = decodedToken.uid;
-    } catch (error) {
-      // Nếu không phải ID token, giả định đây là custom token và lấy uid từ nó
-      try {
-        // Custom token có định dạng JWT, thử phân tích nó
-        const tokenParts = token.split('.');
-        if (tokenParts.length === 3) {
-          const payload = JSON.parse(Buffer.from(tokenParts[1], 'base64').toString());
-          uid = payload.uid || payload.sub;
-          
-          if (!uid) {
-            console.error('Không thể trích xuất uid từ token');
-            return null;
-          }
-        } else {
-          console.error('Token không có định dạng JWT hợp lệ');
-          return null;
-        }
-      } catch (parseError) {
-        console.error('Lỗi khi phân tích token:', parseError.message);
-        return null;
-      }
-    }
+    // Xác thực token với Firebase Admin
+    const decodedToken = await firebaseAdmin.auth().verifyIdToken(token);
+    const uid = decodedToken.uid;
     
     // Lấy thông tin người dùng từ uid
     const userRecord = await firebaseAdmin.auth().getUser(uid);

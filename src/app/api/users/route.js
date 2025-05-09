@@ -165,25 +165,42 @@ export async function POST(request) {
         error: 'Mật khẩu phải có ít nhất 6 ký tự' 
       }, { status: 400 });
     }
+    
+    // Xử lý phoneNumber
+    const userDataForFirebase = {
+      email,
+      password,
+      displayName: displayName || null,
+      disabled: status === 'inactive'
+    };
+    
+    // Chỉ thêm phoneNumber nếu có giá trị hợp lệ
+    if (phoneNumber && phoneNumber.trim() !== '') {
+      // Kiểm tra định dạng E.164
+      if (phoneNumber.startsWith('+') && phoneNumber.length >= 8) {
+        userDataForFirebase.phoneNumber = phoneNumber;
+      } else {
+        // Nếu số điện thoại không đúng định dạng, trả về lỗi
+        return NextResponse.json({
+          success: false,
+          error: 'Số điện thoại phải theo định dạng E.164 (ví dụ: +84xxxxxxxxx)'
+        }, { status: 400 });
+      }
+    }
 
     // Tạo người dùng trong Firebase Auth
     try {
-      const userRecord = await admin.auth().createUser({
-        email,
-        password,
-        displayName,
-        phoneNumber,
-        disabled: status === 'inactive'
-      });
+      const userRecord = await admin.auth().createUser(userDataForFirebase);
       
       // Lưu thông tin bổ sung vào MongoDB
       await db.collection('users').insertOne({
         firebaseId: userRecord.uid,
         email,
-        displayName,
-        phoneNumber,
+        displayName: displayName || null,
+        phoneNumber: phoneNumber || null,
         role: role || 'user',
         status: status || 'active',
+        emailVerified: false,
         additionalInfo: additionalInfo || {},
         createdAt: new Date(),
         updatedAt: new Date()
@@ -200,6 +217,7 @@ export async function POST(request) {
         }
       }, { status: 201 });
     } catch (error) {
+      console.error('Firebase error:', error);
       // Xử lý lỗi Firebase Auth
       const { message, status } = handleFirebaseError(error);
       return NextResponse.json({ 
@@ -227,30 +245,49 @@ export async function PATCH(request) {
     //   }, { status: 403 });
     // }
     
-    // Lấy ID người dùng từ URL
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get('id');
-
+    // Lấy id từ query parameter
+    const url = new URL(request.url);
+    const id = url.searchParams.get('id');
+    
     if (!id) {
       return NextResponse.json({ 
         success: false, 
-        error: 'Thiếu ID người dùng' 
+        error: 'ID người dùng là bắt buộc' 
       }, { status: 400 });
     }
-
-    // Kết nối đến MongoDB
-    const client = await clientPromise;
-    const db = client.db(process.env.MONGODB_DB || 'kimvan');
     
     // Lấy dữ liệu từ request
     const body = await request.json();
     const { displayName, phoneNumber, role, status, additionalInfo } = body;
     
+    // Kết nối đến MongoDB
+    const client = await clientPromise;
+    const db = client.db(process.env.MONGODB_DB || 'kimvan');
+    
     // Cập nhật trong Firebase Auth
     try {
       const updateData = {};
-      if (displayName !== undefined) updateData.displayName = displayName;
-      if (phoneNumber !== undefined) updateData.phoneNumber = phoneNumber;
+      if (displayName !== undefined) updateData.displayName = displayName || null;
+      
+      // Xử lý phoneNumber
+      if (phoneNumber !== undefined) {
+        if (phoneNumber === null || phoneNumber === '') {
+          // Nếu phoneNumber là null hoặc chuỗi rỗng, không thêm vào updateData
+          // Firebase không chấp nhận null/empty cho phoneNumber
+        } else {
+          // Kiểm tra định dạng E.164
+          if (phoneNumber.startsWith('+') && phoneNumber.length >= 8) {
+            updateData.phoneNumber = phoneNumber;
+          } else {
+            // Nếu số điện thoại không đúng định dạng, trả về lỗi
+            return NextResponse.json({
+              success: false,
+              error: 'Số điện thoại phải theo định dạng E.164 (ví dụ: +84xxxxxxxxx)'
+            }, { status: 400 });
+          }
+        }
+      }
+      
       if (status !== undefined) updateData.disabled = status === 'inactive';
       
       // Chỉ cập nhật Firebase nếu có thông tin cần cập nhật
@@ -285,21 +322,23 @@ export async function PATCH(request) {
         await db.collection('users').insertOne({
           firebaseId: id,
           email: userRecord.email,
-          displayName: userRecord.displayName || displayName || '',
-          phoneNumber: userRecord.phoneNumber || phoneNumber || '',
+          displayName: userRecord.displayName || displayName || null,
+          phoneNumber: userRecord.phoneNumber || phoneNumber || null,
           role: role || 'user',
           status: status || 'active',
+          emailVerified: userRecord.emailVerified || false,
           additionalInfo: additionalInfo || {},
           createdAt: new Date(),
           updatedAt: new Date()
         });
       }
-
+      
       return NextResponse.json({ 
         success: true,
-        message: 'Cập nhật người dùng thành công'
+        data: { id }
       });
     } catch (error) {
+      console.error('Firebase error:', error);
       // Xử lý lỗi Firebase Auth
       const { message, status } = handleFirebaseError(error);
       return NextResponse.json({ 

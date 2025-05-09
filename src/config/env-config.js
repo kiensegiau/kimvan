@@ -46,18 +46,12 @@ export const firebaseAdminConfig = {
 
 // Cấu hình Cookie
 export const cookieConfig = {
-  // Thời gian sống của cookie (mặc định 24 giờ)
-  defaultMaxAge: 24 * 60 * 60,
-  // Thời gian sống dài (30 ngày) cho tính năng "Ghi nhớ đăng nhập"
-  extendedMaxAge: 30 * 24 * 60 * 60,
-  // Cookie sử dụng cho xác thực
   authCookieName: 'auth-token',
-  // Đảm bảo cookie chỉ được gửi qua HTTPS trong môi trường sản xuất
-  secure: isProduction,
-  // Ngăn JavaScript truy cập vào cookie (bảo mật hơn)
+  defaultMaxAge: 60 * 60 * 24, // 1 ngày
+  extendedMaxAge: 60 * 60 * 24 * 30, // 30 ngày
+  secure: process.env.NODE_ENV === 'production',
   httpOnly: true,
-  // Giới hạn cookie chỉ được gửi trong các yêu cầu cùng nguồn
-  sameSite: 'lax',
+  sameSite: 'lax'
 };
 
 // Cấu hình đường dẫn

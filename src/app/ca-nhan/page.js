@@ -12,7 +12,8 @@ import {
   ChartBarIcon,
   BellIcon,
   ChevronRightIcon,
-  CalendarIcon
+  CalendarIcon,
+  ExclamationCircleIcon
 } from '@heroicons/react/24/outline';
 import { StarIcon } from '@heroicons/react/24/solid';
 import Image from 'next/image';
@@ -29,121 +30,56 @@ export default function PersonalPage() {
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState('');
   const [isPasswordLoading, setIsPasswordLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [userData, setUserData] = useState(null);
+  const [enrolledCourses, setEnrolledCourses] = useState([]);
+  const [certificates, setCertificates] = useState([]);
+  const [recentActivities, setRecentActivities] = useState([]);
   
-  // Mock user data
-  const userData = {
-    name: "Nguyễn Minh Anh",
-    role: "Học sinh lớp 11A1",
-    email: "minhanh@example.com",
-    avatar: "/placeholder-avatar.jpg",
-    joinDate: "01/09/2022",
-    bio: "Học sinh chăm chỉ, yêu thích môn Toán và Lý. Mục tiêu đạt điểm cao trong kỳ thi đại học sắp tới.",
-    phone: "0912345678",
-    school: "THPT Nguyễn Trãi",
-    progress: 68,
-    courses: 12,
-    certificates: 3,
-    totalHours: 156
-  };
-  
-  // Mock enrolled courses
-  const enrolledCourses = [
-    {
-      id: 1,
-      name: "Toán nâng cao lớp 11",
-      progress: 85,
-      lastAccessed: "Hôm nay",
-      image: "/course-math.jpg",
-      instructor: "Thầy Nguyễn Văn A",
-      completedLessons: 17,
-      totalLessons: 20
-    },
-    {
-      id: 2,
-      name: "Luyện đề Vật lý THPT Quốc gia",
-      progress: 45,
-      lastAccessed: "Hôm qua",
-      image: "/course-physics.jpg",
-      instructor: "Cô Trần Thị B",
-      completedLessons: 9,
-      totalLessons: 20
-    },
-    {
-      id: 3,
-      name: "Hóa học cơ bản lớp 11",
-      progress: 30,
-      lastAccessed: "3 ngày trước",
-      image: "/course-chemistry.jpg",
-      instructor: "Thầy Phạm Văn C",
-      completedLessons: 6,
-      totalLessons: 20
-    }
-  ];
-  
-  // Mock certificates
-  const certificates = [
-    {
-      id: 1,
-      name: "Hoàn thành khóa học Toán Nâng Cao",
-      date: "15/05/2023",
-      issuer: "Kimvan Learning",
-      image: "/cert-math.jpg"
-    },
-    {
-      id: 2,
-      name: "Chứng chỉ Tiếng Anh B1",
-      date: "10/03/2023",
-      issuer: "Trung tâm Ngoại ngữ Việt-Mỹ",
-      image: "/cert-english.jpg"
-    },
-    {
-      id: 3,
-      name: "Hoàn thành khóa Lập trình Cơ bản",
-      date: "20/01/2023",
-      issuer: "Kimvan Learning",
-      image: "/cert-coding.jpg"
-    }
-  ];
-  
-  // Mock recent activities
-  const recentActivities = [
-    {
-      id: 1,
-      action: "Hoàn thành bài học",
-      subject: "Chương 5: Phương trình bậc 2",
-      course: "Toán nâng cao lớp 11",
-      time: "Hôm nay, 10:30"
-    },
-    {
-      id: 2,
-      action: "Đạt điểm cao",
-      subject: "Bài kiểm tra: Chương 4",
-      course: "Luyện đề Vật lý THPT Quốc gia",
-      time: "Hôm qua, 16:45",
-      score: "9.5/10"
-    },
-    {
-      id: 3,
-      action: "Đăng ký khóa học mới",
-      subject: "Tiếng Anh luyện thi THPT Quốc gia",
-      time: "2 ngày trước, 09:15"
-    },
-    {
-      id: 4,
-      action: "Nộp bài tập",
-      subject: "Bài tập: Phản ứng oxi hóa khử",
-      course: "Hóa học cơ bản lớp 11",
-      time: "3 ngày trước, 20:10"
-    }
-  ];
-  
+  // Fetch user data
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('/api/users/me');
+        const result = await response.json();
+
+        if (!result.success) {
+          throw new Error(result.error);
+        }
+
+        setUserData(result.data);
+        setEnrolledCourses(result.data.enrolledCourses);
+        setCertificates(result.data.certificates);
+        setRecentActivities(result.data.recentActivities);
+        
+        // Update form data
+        setFormData({
+          name: result.data.displayName || '',
+          email: result.data.email || '',
+          phone: result.data.phoneNumber || '',
+          school: result.data.additionalInfo?.school || '',
+          bio: result.data.additionalInfo?.bio || ''
+        });
+      } catch (error) {
+        console.error('Lỗi khi lấy thông tin người dùng:', error);
+        setError(error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, []);
+
   // Personal Info form
   const [formData, setFormData] = useState({
-    name: userData.name,
-    email: userData.email,
-    phone: userData.phone,
-    school: userData.school,
-    bio: userData.bio
+    name: '',
+    email: '',
+    phone: '',
+    school: '',
+    bio: ''
   });
   
   const handleChange = (e) => {
@@ -154,10 +90,47 @@ export default function PersonalPage() {
     }));
   };
   
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Save changes logic would go here
-    setIsEditing(false);
+    try {
+      const response = await fetch('/api/users/me', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          displayName: formData.name,
+          phoneNumber: formData.phone,
+          additionalInfo: {
+            school: formData.school,
+            bio: formData.bio
+          }
+        })
+      });
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+
+      // Update local state
+      setUserData(prev => ({
+        ...prev,
+        displayName: formData.name,
+        phoneNumber: formData.phone,
+        additionalInfo: {
+          ...prev.additionalInfo,
+          school: formData.school,
+          bio: formData.bio
+        }
+      }));
+
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Lỗi khi cập nhật thông tin:', error);
+      // Hiển thị thông báo lỗi cho người dùng
+    }
   };
   
   const handlePasswordChange = (e) => {
@@ -172,7 +145,7 @@ export default function PersonalPage() {
     setPasswordSuccess('');
   };
   
-  const handlePasswordSubmit = (e) => {
+  const handlePasswordSubmit = async (e) => {
     e.preventDefault();
     
     // Reset messages
@@ -195,7 +168,7 @@ export default function PersonalPage() {
       return;
     }
     
-    // Password complexity check (at least one uppercase, one lowercase, one number)
+    // Password complexity check
     const hasUpperCase = /[A-Z]/.test(passwordForm.newPassword);
     const hasLowerCase = /[a-z]/.test(passwordForm.newPassword);
     const hasNumber = /[0-9]/.test(passwordForm.newPassword);
@@ -205,34 +178,26 @@ export default function PersonalPage() {
       return;
     }
     
-    // Call API to change password
-    changePassword(passwordForm);
-  };
-  
-  // Function to call API for password change
-  const changePassword = async (passwordData) => {
     try {
-      // Show loading state
-      setPasswordError('');
-      setPasswordSuccess('');
       setIsPasswordLoading(true);
       
-      // In a real app, this would be an API call
-      // await fetch('/api/user/change-password', {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //   },
-      //   body: JSON.stringify(passwordData),
-      // });
-      
-      // Simulate API call with a timeout
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // For demo purposes, we'll simulate success
-      // In a real app, we would check the response status and handle errors
-      
-      // Show success message
+      const response = await fetch('/api/users/me/password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          currentPassword: passwordForm.currentPassword,
+          newPassword: passwordForm.newPassword
+        })
+      });
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+
       setPasswordSuccess('Đổi mật khẩu thành công!');
       
       // Reset form
@@ -242,13 +207,47 @@ export default function PersonalPage() {
         confirmPassword: ''
       });
     } catch (error) {
-      // Handle errors from API
       setPasswordError(error.message || 'Có lỗi xảy ra khi đổi mật khẩu. Vui lòng thử lại.');
     } finally {
       setIsPasswordLoading(false);
     }
   };
-  
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-600 mb-2"></div>
+          <p className="text-gray-500">Đang tải thông tin...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <ExclamationCircleIcon className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Đã có lỗi xảy ra</h3>
+          <p className="text-gray-500">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!userData) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <UserCircleIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Không tìm thấy thông tin</h3>
+          <p className="text-gray-500">Vui lòng đăng nhập để xem thông tin cá nhân</p>
+        </div>
+      </div>
+    );
+  }
+
   // Render different tab contents
   const renderTabContent = () => {
     switch(activeTab) {
