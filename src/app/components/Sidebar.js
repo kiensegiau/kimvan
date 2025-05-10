@@ -21,6 +21,8 @@ const Sidebar = ({ closeSidebar }) => {
   const router = useRouter();
   const [isMobile, setIsMobile] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [userData, setUserData] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const checkIfMobile = () => {
@@ -33,6 +35,31 @@ const Sidebar = ({ closeSidebar }) => {
     return () => {
       window.removeEventListener('resize', checkIfMobile);
     };
+  }, []);
+
+  // Fetch user data
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('/api/users/me');
+        const result = await response.json();
+
+        if (result.success && result.data) {
+          setUserData({
+            name: result.data.displayName || 'Người dùng',
+            email: result.data.email || '',
+            role: result.data.role || 'user'
+          });
+        }
+      } catch (error) {
+        console.error('Lỗi khi lấy thông tin người dùng:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
   }, []);
 
   const handleMenuItemClick = () => {
@@ -63,6 +90,18 @@ const Sidebar = ({ closeSidebar }) => {
     { name: 'Thư viện', path: '/thu-vien', icon: <BookOpenIcon className="w-5 h-5" /> },
     { name: 'Quản trị', path: '/admin', icon: <Cog6ToothIcon className="w-5 h-5" /> },
   ];
+
+  // Hiển thị vai trò người dùng
+  const getRoleDisplay = (role) => {
+    switch (role) {
+      case 'admin':
+        return 'Quản trị viên';
+      case 'teacher':
+        return 'Giảng viên';
+      default:
+        return 'Học viên';
+    }
+  };
 
   return (
     <div className="h-screen w-64 bg-gradient-to-b from-indigo-700 to-indigo-900 text-white fixed left-0 top-0 flex flex-col shadow-xl">
@@ -119,9 +158,18 @@ const Sidebar = ({ closeSidebar }) => {
           <div className="w-9 h-9 rounded-full bg-indigo-500 flex items-center justify-center mr-3">
             <UserCircleIcon className="w-5 h-5 text-white" />
           </div>
-          <div className="flex-1">
-            <p className="font-medium">Học sinh</p>
-            <p className="text-xs text-indigo-300">Lớp 11A1</p>
+          <div className="flex-1 overflow-hidden">
+            {loading ? (
+              <div className="animate-pulse">
+                <div className="h-4 bg-indigo-600 rounded w-3/4 mb-1"></div>
+                <div className="h-3 bg-indigo-700 rounded w-1/2"></div>
+              </div>
+            ) : (
+              <>
+                <p className="font-medium truncate">{userData?.name || 'Người dùng'}</p>
+                <p className="text-xs text-indigo-300 truncate">{userData?.email || 'Chưa đăng nhập'}</p>
+              </>
+            )}
           </div>
         </div>
         <div className="mt-3 space-y-2">
