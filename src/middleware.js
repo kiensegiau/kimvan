@@ -60,7 +60,9 @@ export async function middleware(request) {
   console.log('🚨 MIDDLEWARE EXECUTED FOR:', pathname);
 
   // Bỏ qua middleware cho API verify token để tránh vòng lặp vô hạn
-  if (pathname === TOKEN_VERIFY_API || pathname === '/api/auth/logout') {
+  if (pathname === TOKEN_VERIFY_API || 
+      pathname === '/api/auth/logout' || 
+      pathname === '/api/auth/admin/check-permission') {
     return NextResponse.next();
   }
   
@@ -188,9 +190,59 @@ export async function middleware(request) {
     return addSecurityHeaders(redirectResponse);
   }
   
-  // Nếu token hợp lệ, cho phép request đi qua
+  // Nếu token hợp lệ, đặt header
   response.headers.set('x-middleware-active', 'true');
   response.headers.set('x-auth-token', token);
+
+  // Kiểm tra nếu yêu cầu là cho trang admin
+  if (pathname.startsWith('/admin') && 
+      !pathname.startsWith('/admin/login')) {
+    
+    // Kiểm tra nếu đã có cookie admin_access
+    const adminAccess = request.cookies.get('admin_access')?.value;
+    if (adminAccess === 'true') {
+      console.log('🔒 Middleware - Đã có cookie admin_access, cho phép truy cập');
+      return NextResponse.next();
+    }
+    
+    try {
+      // Xác định URL cơ sở
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || request.nextUrl.origin;
+      
+      // Gọi API kiểm tra quyền admin dựa trên token người dùng thông thường
+      console.log('🔒 Middleware - Gọi API kiểm tra quyền admin');
+      const adminCheckResponse = await fetch(`${baseUrl}/api/auth/admin/check-permission`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token }),
+      });
+
+      const adminCheckData = await adminCheckResponse.json();
+      console.log('🔒 Middleware - Kết quả kiểm tra quyền admin:', adminCheckData);
+      
+      if (!adminCheckData.hasAdminAccess) {
+        // Nếu không có quyền admin, chuyển hướng đến trang chính
+        console.log('⚠️ Middleware - Không có quyền admin, chuyển hướng đến trang chủ');
+        return NextResponse.redirect(new URL('/', request.url));
+      }
+      
+      // Nếu có quyền admin, lưu vào cookie và cho phép tiếp tục
+      console.log('✅ Middleware - Có quyền admin, cho phép truy cập');
+      const adminResponse = NextResponse.next();
+      adminResponse.cookies.set('admin_access', 'true', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 60 * 60 * 24, // 1 ngày
+        path: '/',
+      });
+      return adminResponse;
+    } catch (error) {
+      console.error('❌ Middleware - Lỗi kiểm tra quyền admin:', error);
+      return NextResponse.redirect(new URL('/', request.url));
+    }
+  }
   
   return response;
 }
@@ -199,7 +251,9 @@ export async function middleware(request) {
 export const config = {
   matcher: [
     '/((?!_next/static|_next/image|favicon.ico|images|fonts|assets|api/auth).*)',
-    '/api/courses/:path*'
+    '/api/courses/:path*',
+    '/admin/:path*',
+    '/api/admin/:path*'
   ],
   // Thêm cái này để sửa các vấn đề với edge runtime
   skipMiddlewareUrlNormalize: true

@@ -76,6 +76,7 @@ export const publicPaths = [
   routes.resetPassword,
   '/api/auth',
   '/api/auth/verify',
+  '/api/auth/admin/check-permission',
   '/api/csrf',
   '/_next',
   '/favicon.ico',

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { cookieConfig } from '@/config/env-config';
 import {
   AcademicCapIcon,
   UserGroupIcon,
@@ -25,35 +26,58 @@ export default function AdminDashboard() {
     // Kiểm tra trạng thái đăng nhập admin
     const checkAuthStatus = async () => {
       try {
-        // Thay thế bằng API thực tế kiểm tra quyền admin
-        const response = await fetch('/api/admin/auth-check');
-        const data = await response.json();
+        // Lấy token từ cookie
+        const token = document.cookie
+          .split('; ')
+          .find(row => row.startsWith(cookieConfig.authCookieName + '='))
+          ?.split('=')[1];
         
-        if (data.authenticated) {
-          setIsAuthenticated(true);
-        } else {
-          // Chuyển hướng nếu không có quyền admin
-          router.push('/');
+        console.log('🔍 Admin Page - Token từ cookie:', token ? 'Có token' : 'Không có token');
+        
+        if (!token) {
+          console.log('⚠️ Admin Page - Không có token, đặt isAuthenticated = false');
+          setIsAuthenticated(false);
+          setIsLoading(false);
+          return;
         }
+        
+        // Kiểm tra quyền admin
+        console.log('🔍 Admin Page - Gọi API kiểm tra quyền admin');
+        const response = await fetch('/api/auth/admin/check-permission', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ token }),
+        });
+        
+        const data = await response.json();
+        console.log('🔍 Admin Page - Kết quả kiểm tra quyền admin:', data);
+        
+        setIsAuthenticated(data.hasAdminAccess);
       } catch (error) {
-        console.error('Lỗi kiểm tra xác thực:', error);
+        console.error('❌ Admin Page - Lỗi kiểm tra xác thực:', error);
+        setIsAuthenticated(false);
       } finally {
         setIsLoading(false);
       }
     };
 
     checkAuthStatus();
-  }, [router]);
+  }, []);
 
   useEffect(() => {
-    // Simulate fetching data
-    setStats({
-      courses: 12,
-      users: 45,
-      spreadsheets: 8,
-      analytics: 156,
-    });
-  }, []);
+    // Chỉ tải dữ liệu khi đã xác thực
+    if (isAuthenticated) {
+      // Simulate fetching data
+      setStats({
+        courses: 12,
+        users: 45,
+        spreadsheets: 8,
+        analytics: 156,
+      });
+    }
+  }, [isAuthenticated]);
 
   const statCards = [
     {

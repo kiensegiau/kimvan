@@ -19,25 +19,23 @@ export default function AdminLayout({ children }) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   
-  // Trong quá trình phát triển, luôn coi như đã đăng nhập
-  const [isLoggedIn, setIsLoggedIn] = useState(true);
-  const [isLoading, setIsLoading] = useState(false);
+  // Chuyển sang kiểm tra xác thực thực tế
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   
   // State cho trạng thái token YouTube
   const [youtubeTokenStatus, setYoutubeTokenStatus] = useState(null);
   const [checkingToken, setCheckingToken] = useState(false);
   
-  // Kiểm tra nếu đang ở trang login
-  const isLoginPage = pathname === '/admin/login';
   // Kiểm tra nếu đang ở trang thiết lập YouTube
   const isYoutubeSetupPage = pathname === '/admin/youtube-setup';
   
-  // Kiểm tra token YouTube nếu đang ở trang admin (không kiểm tra ở trang login hoặc trang setup)
+  // Kiểm tra token YouTube nếu đang ở trang admin
   useEffect(() => {
-    if (!isLoginPage && !isYoutubeSetupPage) {
+    if (isLoggedIn) {
       checkYouTubeToken();
     }
-  }, [pathname, isLoginPage, isYoutubeSetupPage]);
+  }, [isLoggedIn]);
   
   // Hàm kiểm tra trạng thái token YouTube
   const checkYouTubeToken = async () => {
@@ -65,46 +63,62 @@ export default function AdminLayout({ children }) {
     }
   };
   
-  // Bỏ kiểm tra xác thực trong quá trình phát triển
-  /*
+  // Bật kiểm tra xác thực
   useEffect(() => {
-    // Kiểm tra cookie để xác định trạng thái đăng nhập
+    // Kiểm tra quyền admin dựa trên token thông thường
     const checkAuth = async () => {
       try {
-        const response = await fetch('/api/auth/admin/check');
+        setIsLoading(true);
+        
+        // Lấy token từ cookie
+        const token = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('auth-token='))
+          ?.split('=')[1];
+        
+        console.log('🔍 Admin Layout - Token từ cookie:', token ? 'Có token' : 'Không có token');
+        
+        if (!token) {
+          console.log('⚠️ Admin Layout - Không có token, đặt isLoggedIn = false');
+          setIsLoggedIn(false);
+          setIsLoading(false);
+          return;
+        }
+        
+        // Kiểm tra quyền admin
+        console.log('🔍 Admin Layout - Gọi API kiểm tra quyền admin');
+        const response = await fetch('/api/auth/admin/check-permission', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ token }),
+        });
+        
         const data = await response.json();
+        console.log('🔍 Admin Layout - Kết quả kiểm tra quyền admin:', data);
         
-        setIsLoggedIn(data.authenticated);
-        
-        // Nếu chưa đăng nhập và không phải trang login, chuyển hướng
-        if (!data.authenticated && !isLoginPage) {
-          router.push(`/admin/login?from=${pathname}`);
-        }
+        setIsLoggedIn(data.hasAdminAccess);
       } catch (error) {
-        console.error('Lỗi kiểm tra xác thực:', error);
+        console.error('❌ Admin Layout - Lỗi kiểm tra xác thực:', error);
         setIsLoggedIn(false);
-        
-        if (!isLoginPage) {
-          router.push('/admin/login');
-        }
       } finally {
         setIsLoading(false);
       }
     };
     
     checkAuth();
-  }, [pathname, isLoginPage, router]);
-  */
+  }, []);
   
   // Xử lý đăng xuất
   const handleLogout = async () => {
     try {
-      const response = await fetch('/api/auth/admin/logout', {
+      const response = await fetch('/api/auth/logout', {
         method: 'POST',
       });
       
       if (response.ok) {
-        router.push('/admin/login');
+        router.push('/login');
       }
     } catch (error) {
       console.error('Lỗi đăng xuất:', error);
@@ -121,7 +135,7 @@ export default function AdminLayout({ children }) {
   ];
   
   // Nếu đang ở trang login, chỉ hiển thị nội dung con
-  if (isLoginPage) {
+  if (pathname === '/login') {
     return children;
   }
   
