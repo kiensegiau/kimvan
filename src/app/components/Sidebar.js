@@ -10,8 +10,7 @@ import {
   DocumentTextIcon,
   InformationCircleIcon,
   UserCircleIcon,
-  ChevronRightIcon,
-  Cog6ToothIcon
+  ChevronRightIcon
 } from '@heroicons/react/24/outline';
 import { useState, useEffect } from 'react';
 import { logout } from '@/utils/auth-client';
@@ -88,7 +87,6 @@ const Sidebar = ({ closeSidebar }) => {
     { name: 'Trang chủ', path: '/', icon: <HomeIcon className="w-5 h-5" /> },
     { name: 'Khóa học', path: '/khoa-hoc', icon: <AcademicCapIcon className="w-5 h-5" /> },
     { name: 'Thư viện', path: '/thu-vien', icon: <BookOpenIcon className="w-5 h-5" /> },
-    { name: 'Quản trị', path: '/admin', icon: <Cog6ToothIcon className="w-5 h-5" /> },
   ];
 
   // Hiển thị vai trò người dùng

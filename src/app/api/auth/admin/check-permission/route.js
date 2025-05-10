@@ -17,6 +17,7 @@ export async function POST(request) {
     
     // Xác thực token và lấy thông tin người dùng từ Firebase
     try {
+      console.log('🔑 Check Admin Permission - Bắt đầu xác thực token');
       const decodedToken = await verifyToken(token);
       console.log('🔑 Check Admin Permission - Decoded token:', decodedToken ? JSON.stringify(decodedToken) : 'Không giải mã được');
       
