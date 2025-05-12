@@ -79,9 +79,10 @@ export default function AdminLayout({ children }) {
         console.log('🔍 Admin Layout - Token từ cookie:', token ? 'Có token' : 'Không có token');
         
         if (!token) {
-          console.log('⚠️ Admin Layout - Không có token, đặt isLoggedIn = false');
+          console.log('⚠️ Admin Layout - Không có token, chuyển hướng đến trang đăng nhập');
           setIsLoggedIn(false);
           setIsLoading(false);
+          router.push('/login');
           return;
         }
         
@@ -98,17 +99,25 @@ export default function AdminLayout({ children }) {
         const data = await response.json();
         console.log('🔍 Admin Layout - Kết quả kiểm tra quyền admin:', data);
         
+        if (!data.hasAdminAccess) {
+          console.log('⚠️ Admin Layout - Không có quyền admin, chuyển hướng đến trang chủ');
+          setIsLoggedIn(false);
+          router.push('/');
+          return;
+        }
+        
         setIsLoggedIn(data.hasAdminAccess);
       } catch (error) {
         console.error('❌ Admin Layout - Lỗi kiểm tra xác thực:', error);
         setIsLoggedIn(false);
+        router.push('/');
       } finally {
         setIsLoading(false);
       }
     };
     
     checkAuth();
-  }, []);
+  }, [router]);
   
   // Xử lý đăng xuất
   const handleLogout = async () => {

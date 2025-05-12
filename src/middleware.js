@@ -198,6 +198,8 @@ export async function middleware(request) {
   if (pathname.startsWith('/admin') && 
       !pathname.startsWith('/admin/login')) {
     
+    console.log('🔒 Middleware - Kiểm tra quyền truy cập trang admin cho:', pathname);
+    
     // Kiểm tra nếu đã có cookie admin_access
     const adminAccess = request.cookies.get('admin_access')?.value;
     if (adminAccess === 'true') {
@@ -242,6 +244,24 @@ export async function middleware(request) {
       console.error('❌ Middleware - Lỗi kiểm tra quyền admin:', error);
       return NextResponse.redirect(new URL('/', request.url));
     }
+  }
+  
+  // Xử lý middleware cho API admin
+  if (pathname.startsWith('/api/admin') || pathname.startsWith('/api/courses/raw')) {
+    console.log('🔒 Middleware - Kiểm tra quyền truy cập API admin cho:', pathname);
+    
+    // Kiểm tra cookie admin_access hoặc token trong header
+    const adminAccess = request.cookies.get('admin_access')?.value;
+    if (adminAccess !== 'true') {
+      console.log('⚠️ Middleware - Không có quyền admin, từ chối truy cập API');
+      return NextResponse.json(
+        { error: 'Không có quyền truy cập API admin' },
+        { status: 403 }
+      );
+    }
+    
+    console.log('✅ Middleware - Có quyền admin, cho phép truy cập API');
+    return NextResponse.next();
   }
   
   return response;

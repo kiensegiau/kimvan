@@ -23,12 +23,25 @@ const connectDB = async () => {
 // GET: Lấy một khóa học theo ID mà không mã hóa dữ liệu - CHỈ CHO ADMIN
 export async function GET(request, { params }) {
   try {
+    console.log('🔒 Raw API - Bắt đầu xử lý yêu cầu tới API không mã hóa');
+    
     // Sử dụng middleware admin để xác thực
+    console.log('🔒 Raw API - Gọi middleware xác thực admin');
     const adminRequest = await adminAuthMiddleware(request);
+    
+    // Kiểm tra kết quả từ middleware
     if (adminRequest instanceof NextResponse) {
+      console.log('❌ Raw API - Xác thực admin thất bại, từ chối truy cập');
+      // Ghi log response để debug
+      const responseClone = adminRequest.clone();
+      const responseBody = await responseClone.json();
+      console.log('❌ Raw API - Chi tiết lỗi:', JSON.stringify(responseBody));
+      
       // Nếu trả về NextResponse, nghĩa là có lỗi xác thực
       return adminRequest;
     }
+    
+    console.log('✅ Raw API - Xác thực admin thành công, tiếp tục xử lý');
     
     // Đảm bảo params được awaited
     const resolvedParams = await Promise.resolve(params);
@@ -62,12 +75,13 @@ export async function GET(request, { params }) {
     }
     
     // Trả về dữ liệu khóa học không mã hóa - CHỈ CHO ADMIN
+    console.log('✅ Raw API - Đã tìm thấy khóa học, trả về dữ liệu không mã hóa');
     return NextResponse.json({
       success: true,
       data: course
     });
   } catch (error) {
-    console.error('Lỗi khi lấy thông tin khóa học:', error);
+    console.error('❌ Raw API - Lỗi khi lấy thông tin khóa học:', error);
     return NextResponse.json({ 
       success: false,
       message: 'Lỗi server',
