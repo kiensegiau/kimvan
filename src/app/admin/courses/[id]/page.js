@@ -47,18 +47,23 @@ export default function CourseDetailPage({ params }) {
     return sheet?.properties?.title || `Khóa ${index + 1}`;
   };
 
-  // Lấy thông tin chi tiết của khóa học
+  // Hàm lấy thông tin chi tiết của khóa học
   const fetchCourseDetail = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/courses/${id}?type=_id`);
+      const response = await fetch(`/api/courses/raw/${id}?type=_id`);
       if (!response.ok) {
         throw new Error(`Lỗi ${response.status}: ${response.statusText}`);
       }
-      const data = await response.json();
-      console.log('Dữ liệu khóa học đầy đủ:', data);
-      setCourse(data);
-      setFormData(data);
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.message || 'Có lỗi xảy ra khi lấy dữ liệu');
+      }
+      
+      console.log('Dữ liệu khóa học đầy đủ:', result.data);
+      setCourse(result.data);
+      setFormData(result.data);
       
       // Hiệu ứng fade-in
       setTimeout(() => {
@@ -70,6 +75,29 @@ export default function CourseDetailPage({ params }) {
       console.error("Lỗi khi lấy thông tin khóa học:", error);
       setError(`Không thể lấy thông tin khóa học: ${error.message}`);
       setLoading(false);
+    }
+  };
+
+  // Hàm làm mới dữ liệu khóa học
+  const refreshCourseData = async () => {
+    try {
+      const response = await fetch(`/api/courses/raw/${id}?type=_id`);
+      if (!response.ok) {
+        throw new Error(`Lỗi ${response.status}: ${response.statusText}`);
+      }
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.message || 'Có lỗi xảy ra khi lấy dữ liệu');
+      }
+      
+      console.log('Dữ liệu khóa học đã được làm mới:', result.data);
+      setCourse(result.data);
+      setFormData(result.data);
+      alert('Đã làm mới dữ liệu khóa học thành công!');
+    } catch (error) {
+      console.error("Lỗi khi làm mới dữ liệu:", error);
+      alert(`Không thể làm mới dữ liệu: ${error.message}`);
     }
   };
 
@@ -582,6 +610,14 @@ export default function CourseDetailPage({ params }) {
             >
               <PencilIcon className="h-4 w-4 mr-2" />
               Chỉnh sửa
+            </button>
+            
+            <button
+              onClick={refreshCourseData}
+              className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-500 hover:bg-blue-600"
+            >
+              <ArrowPathIcon className="h-4 w-4 mr-2" />
+              Làm mới dữ liệu
             </button>
             
             <button
