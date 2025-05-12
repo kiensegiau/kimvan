@@ -371,10 +371,32 @@ export default function CourseDetailPage({ params }) {
       {/* Loading overlay khi đang xử lý link */}
       <LoadingOverlay isVisible={processingLink} message="Đang xử lý link..." />
       
-      <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-lg relative overflow-hidden">
-        
-
-     
+      <div className=" mx-auto bg-white rounded-xl shadow-lg relative overflow-hidden">
+        {/* Tiêu đề và thông tin khóa học */}
+        <div className="pt-6 px-4 sm:px-8 pb-3 border-b border-gray-200 bg-gradient-to-r from-indigo-50 to-indigo-100">
+          <button
+            onClick={() => router.push('/khoa-hoc')}
+            className="inline-flex items-center text-indigo-600 hover:text-indigo-800 mb-4 transition-colors"
+          >
+            <ArrowLeftIcon className="h-4 w-4 mr-1" />
+            <span className="text-sm font-medium">Quay lại</span>
+          </button>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            {course.name || 'Chi tiết khóa học'}
+          </h1>
+          <div className="flex flex-wrap gap-2 items-center text-sm text-gray-600">
+            {course._id && (
+              <div className="bg-indigo-100 text-indigo-700 px-2 py-1 rounded-md">
+                Mã: {course._id}
+              </div>
+            )}
+            {course.createdAt && (
+              <div>
+                Ngày tạo: {new Date(course.createdAt).toLocaleDateString('vi-VN')}
+              </div>
+            )}
+          </div>
+        </div>
         
         {/* Dữ liệu khóa học */}
         {course.originalData && (
@@ -441,25 +463,27 @@ export default function CourseDetailPage({ params }) {
                     
                     {course.originalData.sheets[activeSheet]?.data?.[0]?.rowData && course.originalData.sheets[activeSheet].data[0].rowData.length > 0 ? (
                       <div className="relative">
-                        {/* Chỉ báo cuộn ngang cho điện thoại */}
                         <div className="md:hidden bg-blue-50 p-2 border-b border-blue-100 flex items-center justify-center">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500 mr-2 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                           </svg>
-                          <span className="text-sm text-blue-700">Vuốt ngang để xem đầy đủ nội dung</span>
+                          <span className="text-sm font-bold text-blue-700">Vuốt ngang để xem toàn bộ bảng</span>
                         </div>
                         
-                        <div className="overflow-x-auto">
-                          <table className="min-w-full divide-y divide-gray-200">
+                        <div className="overflow-x-auto pb-2" style={{ WebkitOverflowScrolling: 'touch' }}>
+                          <table className="min-w-full divide-y divide-gray-200 table-fixed md:table-auto">
                             <thead>
                               <tr className="bg-gradient-to-r from-indigo-600 to-indigo-700">
                                 {course.originalData.sheets[activeSheet].data[0].rowData[0]?.values?.map((cell, index) => (
                                   <th 
                                     key={index} 
-                                    className={`px-3 sm:px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider ${
-                                      index === 0 ? 'text-center w-14 sm:w-16' : ''
-                                    } ${index > 2 ? 'hidden sm:table-cell' : ''}`}
+                                    className={`px-2 py-2 text-left text-xs font-medium text-white uppercase tracking-wider whitespace-nowrap ${
+                                      index === 0 
+                                      ? 'text-center w-10 sticky left-0 z-20 bg-indigo-700 shadow-lg border-r-2 border-indigo-500' 
+                                      : index === 1 
+                                        ? 'min-w-[120px]' 
+                                        : 'min-w-[100px]'
+                                    }`}
                                   >
                                     <div className="flex items-center justify-between">
                                       <span>{cell.formattedValue || ''}</span>
@@ -471,8 +495,6 @@ export default function CourseDetailPage({ params }) {
                                     </div>
                                   </th>
                                 ))}
-                                {/* Cột thêm mobile */}
-                                <th className="sm:hidden w-16"></th>
                               </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
@@ -499,11 +521,13 @@ export default function CourseDetailPage({ params }) {
                                     return (
                                       <td 
                                         key={cellIndex} 
-                                        className={`px-3 sm:px-6 py-2.5 sm:py-4 text-sm border-r border-gray-100 last:border-r-0 ${
+                                        className={`px-2 py-2 text-xs sm:text-sm border-r border-gray-100 last:border-r-0 ${
                                           cellIndex === 0 
-                                            ? 'whitespace-nowrap font-semibold text-indigo-700 text-center bg-indigo-50 group-hover:bg-indigo-100' 
-                                            : 'text-gray-700'
-                                        } ${cellIndex > 2 ? 'hidden sm:table-cell' : ''}`}
+                                            ? 'whitespace-nowrap font-semibold text-indigo-700 text-center bg-indigo-100 group-hover:bg-indigo-200 sticky left-0 z-10 w-10 shadow-lg border-r-2 border-gray-200' 
+                                            : cellIndex === 1 
+                                              ? 'text-gray-700 min-w-[120px]'
+                                              : 'text-gray-700 min-w-[100px]'
+                                        }`}
                                       >
                                         {cellIndex === 0 
                                           ? (
@@ -530,7 +554,7 @@ export default function CourseDetailPage({ params }) {
                                                     ) : linkType === 'pdf' ? (
                                                       <span className="flex items-center justify-center h-6 w-6 rounded-full bg-pink-100 text-pink-600">
                                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2h-2M9 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
                                                         </svg>
                                                       </span>
                                                     ) : linkType === 'drive' ? (
@@ -561,33 +585,6 @@ export default function CourseDetailPage({ params }) {
                                       </td>
                                     );
                                   })}
-
-                                  {/* Hiển thị nút "Chi tiết" chỉ trên mobile khi có hơn 3 cột */}
-                                  {row.values && row.values.length > 3 && (
-                                    <td className="px-3 py-3 text-right sm:hidden">
-                                      <button
-                                        onClick={() => {
-                                          // Tìm link đầu tiên trong dòng nếu có
-                                          const firstLink = row.values.find(cell => 
-                                            cell.userEnteredFormat?.textFormat?.link?.uri || cell.hyperlink
-                                          );
-                                          
-                                          if (firstLink) {
-                                            const originalUrl = firstLink.userEnteredFormat?.textFormat?.link?.uri || firstLink.hyperlink;
-                                            handleLinkClick(originalUrl, firstLink.formattedValue);
-                                          }
-                                        }}
-                                        className="inline-flex items-center justify-center bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-xs font-medium hover:bg-indigo-200 transition-colors duration-150 shadow-sm"
-                                        data-action="view-details"
-                                      >
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                        </svg>
-                                        Chi tiết
-                                      </button>
-                                    </td>
-                                  )}
                                 </tr>
                               ))}
                             </tbody>
