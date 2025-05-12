@@ -43,7 +43,7 @@ export default function CoursesPage() {
       setLoading(true);
       setError(null);
       
-      const response = await fetch('/api/courses');
+      const response = await fetch('/api/admin/courses');
       const data = await response.json();
       
       if (!response.ok) {
@@ -87,7 +87,7 @@ export default function CoursesPage() {
     if (window.confirm('Bạn có chắc chắn muốn xóa khóa học này?')) {
       try {
         setError(null);
-        const response = await fetch(`/api/courses/${id}`, {
+        const response = await fetch(`/api/admin/courses/${id}`, {
           method: 'DELETE',
         });
         
@@ -115,7 +115,7 @@ export default function CoursesPage() {
       
       // Nếu có _id, thì cập nhật khóa học hiện có
       if (currentCourse._id) {
-        response = await fetch(`/api/courses/${currentCourse._id}`, {
+        response = await fetch(`/api/admin/courses/${currentCourse._id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -136,7 +136,7 @@ export default function CoursesPage() {
       } 
       // Ngược lại, tạo khóa học mới
       else {
-        response = await fetch('/api/courses', {
+        response = await fetch('/api/admin/courses', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -297,11 +297,11 @@ export default function CoursesPage() {
     setCurrentCourseId(courseId);
     
     try {
-      const response = await fetch(`/api/courses/${courseId}`);
-      if (!response.ok) {
-        throw new Error(`Lỗi: ${response.status} ${response.statusText}`);
+      const courseResponse = await fetch(`/api/admin/courses/${courseId}`);
+      if (!courseResponse.ok) {
+        throw new Error(`Lỗi: ${courseResponse.status} ${courseResponse.statusText}`);
       }
-      const data = await response.json();
+      const data = await courseResponse.json();
       setOriginalData(data.originalData);
     } catch (error) {
       console.error('Lỗi khi lấy dữ liệu gốc:', error);
@@ -319,12 +319,12 @@ export default function CoursesPage() {
     setDownloadError(null);
     
     try {
-      const response = await fetch(`/api/courses/${currentCourseId}`);
-      if (!response.ok) {
-        throw new Error(`Lỗi: ${response.status} ${response.statusText}`);
+      const courseResponse = await fetch(`/api/admin/courses/${currentCourseId}`);
+      if (!courseResponse.ok) {
+        throw new Error(`Lỗi: ${courseResponse.status} ${courseResponse.statusText}`);
       }
       
-      const courseData = await response.json();
+      const courseData = await courseResponse.json();
       
       if (!courseData.originalData) {
         throw new Error('Không tìm thấy dữ liệu gốc cho khóa học này');
@@ -366,7 +366,7 @@ export default function CoursesPage() {
       setError(null);
       setProcessResult(null);
       
-      const response = await fetch('/api/courses/process', {
+      const response = await fetch('/api/admin/courses/process', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
