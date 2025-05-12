@@ -6,8 +6,9 @@ import { cookieConfig } from '@/config/env-config';
 export async function adminAuthMiddleware(request) {
   try {
     // Lấy token từ cookie hoặc header
-    const cookieStore = cookies();
-    const token = cookieStore.get(cookieConfig.authCookieName)?.value || 
+    const cookieStore = await cookies();
+    const authCookie = cookieStore.get(cookieConfig.authCookieName);
+    const token = authCookie?.value || 
                   request.headers.get('authorization')?.split('Bearer ')[1];
     
     if (!token) {

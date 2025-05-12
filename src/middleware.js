@@ -133,7 +133,8 @@ export async function middleware(request) {
   }
 
   // Lấy token từ cookie
-  const token = request.cookies.get(cookieConfig.authCookieName)?.value;
+  const tokenCookie = request.cookies.get(cookieConfig.authCookieName);
+  const token = tokenCookie?.value;
   
   // Kiểm tra token có tồn tại và không phải là chuỗi rỗng
   if (!token || token.trim() === '') {
@@ -201,7 +202,8 @@ export async function middleware(request) {
     console.log('🔒 Middleware - Kiểm tra quyền truy cập trang admin cho:', pathname);
     
     // Kiểm tra nếu đã có cookie admin_access
-    const adminAccess = request.cookies.get('admin_access')?.value;
+    const adminAccessCookie = request.cookies.get('admin_access');
+    const adminAccess = adminAccessCookie?.value;
     if (adminAccess === 'true') {
       console.log('🔒 Middleware - Đã có cookie admin_access, cho phép truy cập');
       return NextResponse.next();
@@ -251,7 +253,8 @@ export async function middleware(request) {
     console.log('🔒 Middleware - Kiểm tra quyền truy cập API admin cho:', pathname);
     
     // Kiểm tra cookie admin_access hoặc token trong header
-    const adminAccess = request.cookies.get('admin_access')?.value;
+    const adminAccessCookie = request.cookies.get('admin_access');
+    const adminAccess = adminAccessCookie?.value;
     if (adminAccess !== 'true') {
       console.log('⚠️ Middleware - Không có quyền admin, từ chối truy cập API');
       return NextResponse.json(
