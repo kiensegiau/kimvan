@@ -401,7 +401,7 @@ export default function CourseDetailPage({ params }) {
       {/* Loading overlay khi đang xử lý link */}
       <LoadingOverlay isVisible={processingLink} message="Đang xử lý link..." />
       
-      <div className=" mx-auto bg-white rounded-xl shadow-lg relative overflow-hidden">
+      <div className="mx-auto bg-white rounded-xl shadow-lg">
         {/* Tiêu đề và thông tin khóa học */}
         <div className="pt-6 px-4 sm:px-8 pb-3 border-b border-gray-200 bg-gradient-to-r from-indigo-50 to-indigo-100">
           <button
