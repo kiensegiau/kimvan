@@ -304,6 +304,11 @@ const YouTubeModal = ({ isOpen, videoId, onClose }) => {
                 iframeContainer.classList.add('iframe-active');
               };
             }
+
+            // Tự động phát video khi trang được tải
+            document.addEventListener('DOMContentLoaded', function() {
+              loadYouTubeVideo();
+            });
           </script>
         </body>
       </html>
@@ -325,7 +330,7 @@ const YouTubeModal = ({ isOpen, videoId, onClose }) => {
       }}>
       <div 
         ref={modalRef} 
-        className="relative w-[90%] rounded-lg overflow-hidden shadow-2xl"
+        className="relative w-[90%] md:w-[80%] rounded-lg overflow-hidden shadow-2xl"
         style={{
           aspectRatio: '16/9'
         }}
