@@ -41,8 +41,21 @@ function extractYoutubeId(url) {
   return (match && match[2].length === 11) ? match[2] : null;
 }
 
+// Hàm kiểm tra xem URL có phải là thư mục Google Drive không
+function isGoogleDriveFolder(url) {
+  if (!url) return false;
+  return url.includes('/folders/') || 
+         url.includes('/drive/folders/') || 
+         url.includes('/drive/u/0/folders/');
+}
+
 // Hàm xử lý link Google Drive
 function processGoogleDriveLink(url) {
+  // Kiểm tra nếu là thư mục thì không xử lý
+  if (isGoogleDriveFolder(url)) {
+    return url;
+  }
+  
   // Nếu là link chia sẻ thông thường
   if (url.includes('drive.google.com/file/d/')) {
     // Trích xuất ID file
@@ -84,6 +97,11 @@ function processGoogleDriveLink(url) {
 function processLink(url, type = 'unknown') {
   if (!url) {
     throw new Error('URL không được cung cấp');
+  }
+
+  // Kiểm tra nếu là thư mục Google Drive
+  if (isGoogleDriveFolder(url)) {
+    return url; // Không xử lý thư mục, trả về URL gốc
   }
 
   // Xử lý link YouTube

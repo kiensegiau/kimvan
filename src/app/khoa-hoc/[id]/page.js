@@ -186,6 +186,14 @@ export default function CourseDetailPage({ params }) {
     if (!url) return false;
     return url.includes('drive.google.com') || url.includes('docs.google.com');
   };
+
+  // Hàm kiểm tra xem URL có phải là thư mục Google Drive không
+  const isGoogleDriveFolder = (url) => {
+    if (!url) return false;
+    return url.includes('/folders/') || 
+           url.includes('/drive/folders/') || 
+           url.includes('/drive/u/0/folders/');
+  };
   
   // Hàm mở modal YouTube
   const openYoutubeModal = (url, title = '') => {
@@ -220,12 +228,18 @@ export default function CourseDetailPage({ params }) {
     // Kiểm tra xem link đã được xử lý chưa
     const processedUrlInfo = getUpdatedUrl(url);
     
+    // Kiểm tra nếu là thư mục Google Drive thì mở link trực tiếp
+    if (isGoogleDriveFolder(processedUrlInfo.url)) {
+      window.open(processedUrlInfo.url, '_blank');
+      return;
+    }
+    
     try {
       // Hiển thị loading
       setProcessingLink(true);
 
       // Nếu là link Google Drive và chưa có URL mới
-      if (isGoogleDriveLink(url) && !processedUrlInfo.isProcessed) {
+      if (isGoogleDriveLink(url) && !processedUrlInfo.isProcessed && !isGoogleDriveFolder(url)) {
         // Hiển thị modal thông báo đang cập nhật tài liệu
         setPdfModal({ 
           isOpen: true, 
@@ -265,7 +279,7 @@ export default function CourseDetailPage({ params }) {
       // Mở link đã xử lý theo loại
       if (isYoutubeLink(processedUrl)) {
         openYoutubeModal(processedUrl, title);
-      } else if (isPdfLink(processedUrl) || isGoogleDriveLink(processedUrl)) {
+      } else if ((isPdfLink(processedUrl) || isGoogleDriveLink(processedUrl)) && !isGoogleDriveFolder(processedUrl)) {
         setPdfModal({ 
           isOpen: true, 
           fileUrl: processedUrl, 
@@ -284,6 +298,8 @@ export default function CourseDetailPage({ params }) {
       // Mở URL với thông tin đã xử lý
       if (isYoutubeLink(processedUrlInfo.url)) {
         openYoutubeModal(processedUrlInfo.url, title);
+      } else if (isGoogleDriveFolder(processedUrlInfo.url)) {
+        window.open(processedUrlInfo.url, '_blank');
       } else if (isPdfLink(processedUrlInfo.url) || isGoogleDriveLink(processedUrlInfo.url)) {
         // Nếu là Google Drive và chưa có URL đã xử lý, hiển thị thông báo đang cập nhật
         if (isGoogleDriveLink(processedUrlInfo.url) && !processedUrlInfo.isProcessed) {
