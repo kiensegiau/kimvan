@@ -119,13 +119,35 @@ export default function YouTubeChromeTokenPage() {
       setError(null);
       
       // Mở trang helper trong cửa sổ mới
-      const helperWindow = window.open('/api/youtube/kimvan-cookie-browser', 'kimvan_cookie_helper', 'width=800,height=700');
+      const response = await fetch('/api/youtube/kimvan-cookie-browser', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
       
-      if (!helperWindow) {
-        throw new Error('Không thể mở cửa sổ trình duyệt. Vui lòng cho phép popup từ trang web này.');
+      if(!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Không thể kết nối đến API');
       }
       
+      const data = await response.json();
+      
+      if(!data.success) {
+        throw new Error(data.message || 'Không thể mở trình duyệt Chrome');
+      }
+      
+      // Hiển thị thông báo cho người dùng
       setCookieHelper(true);
+      
+      // Lắng nghe thông điệp từ trang helper (nếu có cookie được phát hiện)
+      window.addEventListener('message', function cookieMessageHandler(event) {
+        if (event.data && event.data.cookie) {
+          setTokenInput(event.data.cookie);
+          window.removeEventListener('message', cookieMessageHandler);
+        }
+      });
+      
     } catch (err) {
       console.error('Lỗi khi mở trình duyệt KimVan:', err);
       setError(err.message || 'Đã xảy ra lỗi khi mở trình duyệt KimVan');
@@ -334,13 +356,35 @@ export default function YouTubeChromeTokenPage() {
 
             {cookieHelper && (
               <div className="bg-green-50 p-4 rounded-md border border-green-200 mb-4">
-                <h4 className="font-medium text-green-800 mb-2">Công cụ lấy cookie đã được mở</h4>
-                <p className="text-sm text-green-700">
-                  Cửa sổ trình duyệt để lấy cookie KimVan đã được mở. Vui lòng làm theo hướng dẫn trong cửa sổ đó để lấy cookie.
-                </p>
-                <p className="text-sm text-green-700 mt-2">
-                  Sau khi có cookie, hãy quay lại đây và dán vào ô bên dưới.
-                </p>
+                <h4 className="font-medium text-green-800 mb-2">
+                  {tokenInput ? 'Cookie KimVan đã được tự động phát hiện!' : 'Trình duyệt Chrome đã được mở'}
+                </h4>
+                
+                {tokenInput ? (
+                  <div>
+                    <p className="text-sm text-green-700">
+                      Cookie đã được tự động phát hiện và điền vào ô bên dưới. Nhấn nút "Cập nhật Token" để lưu lại.
+                    </p>
+                    <div className="mt-2 bg-white p-2 rounded border border-green-100">
+                      <span className="text-xs font-mono bg-gray-50 px-2 py-1 rounded">
+                        {tokenInput.substring(0, 20)}...{tokenInput.substring(tokenInput.length - 20)}
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-sm text-green-700">
+                      Trình duyệt Chrome đã được mở với trang KimVan. Vui lòng thực hiện các bước sau:
+                    </p>
+                    <ol className="list-decimal list-inside text-sm text-green-700 mt-2 space-y-1">
+                      <li>Đăng nhập vào tài khoản KimVan của bạn</li>
+                      <li>Sau khi đăng nhập, mở DevTools (F12) và chọn tab Console</li>
+                      <li>Sao chép và dán đoạn mã JavaScript được cung cấp trong cửa sổ trình duyệt</li>
+                      <li>Đoạn mã sẽ tự động tìm và sao chép cookie vào clipboard</li>
+                      <li>Quay lại trang này và dán cookie vào ô bên dưới</li>
+                    </ol>
+                  </div>
+                )}
               </div>
             )}
 
@@ -348,18 +392,16 @@ export default function YouTubeChromeTokenPage() {
               <div className="bg-blue-50 p-4 rounded-md border border-blue-200 mb-4">
                 <h4 className="font-medium text-blue-800 mb-2">Hướng dẫn lấy token từ trình duyệt Chrome</h4>
                 <ol className="list-decimal list-inside text-sm text-blue-700 space-y-2">
-                  <li>Mở trình duyệt Chrome và truy cập <code className="bg-blue-100 px-1 rounded">https://accounts.google.com</code></li>
-                  <li>Đăng nhập vào tài khoản Google của bạn (nếu chưa đăng nhập)</li>
-                  <li>Nhấn F12 hoặc chuột phải và chọn "Inspect" để mở DevTools</li>
-                  <li>Chuyển đến tab "Application" (nếu không thấy, hãy nhấp vào &gt;&gt; để tìm)</li>
-                  <li>Ở cột bên trái, mở rộng mục "Cookies" và chọn "https://accounts.google.com"</li>
-                  <li>Tìm cookie có tên "__Secure-3PSID" và sao chép giá trị của nó</li>
-                  <li>Dán giá trị đó vào ô bên dưới và nhấn "Cập nhật Token"</li>
+                  <li>Nhấn vào nút "Mở KimVan trong trình duyệt" bên trên</li>
+                  <li>Đăng nhập vào tài khoản KimVan nếu chưa đăng nhập</li>
+                  <li>Làm theo hướng dẫn trong cửa sổ trình duyệt để lấy cookie</li>
+                  <li>Dán cookie đã lấy được vào ô bên dưới</li>
+                  <li>Nhấn "Cập nhật Token" để lưu cookie</li>
                 </ol>
                 <div className="mt-3 flex items-center bg-yellow-100 p-2 rounded">
                   <ExclamationCircleIcon className="h-5 w-5 text-yellow-600 mr-2" />
                   <p className="text-xs text-yellow-800">
-                    Lưu ý: Token này có thể hết hạn sau một thời gian. Bạn sẽ cần cập nhật lại khi điều đó xảy ra.
+                    Cookie này sẽ được sử dụng để tạo token YouTube, giúp hệ thống duy trì kết nối với API YouTube ngay cả khi OAuth gặp vấn đề.
                   </p>
                 </div>
               </div>

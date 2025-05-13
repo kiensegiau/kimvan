@@ -58,17 +58,17 @@ function getStoredCookie() {
   return null;
 }
 
-// Kiểm tra tính hợp lệ của token bằng cách gọi YouTube API
-async function verifyTokenWithYouTubeAPI(token) {
+// Kiểm tra tính hợp lệ của cookie KimVan
+async function verifyKimVanCookie(cookie) {
   try {
     // Tạo header với cookie
     const headers = {
-      'Cookie': `__Secure-3PSID=${token}`,
+      'Cookie': `__Secure-authjs.session-token=${cookie}`,
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
     };
 
-    // Thử gọi một endpoint của YouTube để kiểm tra
-    const response = await axios.get('https://studio.youtube.com/youtubei/v1/creator/get_creator_channels?alt=json&key=AIzaSyBUPetSUmoZL-OhlxA7wSac5XinrOhjbBg', {
+    // Thử gọi một endpoint của KimVan để kiểm tra
+    const response = await axios.get('https://kimvan.id.vn/api/auth/check-session', {
       headers: headers
     });
 
@@ -77,10 +77,10 @@ async function verifyTokenWithYouTubeAPI(token) {
       data: response.data
     };
   } catch (error) {
-    console.error('Error verifying YouTube token:', error);
+    console.error('Error verifying KimVan cookie:', error);
     return {
       valid: false,
-      error: error.message || 'Không thể xác thực token với YouTube API'
+      error: error.message || 'Không thể xác thực cookie với KimVan API'
     };
   }
 }
@@ -98,19 +98,25 @@ export async function POST(request) {
       }, { status: 400 });
     }
     
-    // Kiểm tra tính hợp lệ của token với YouTube API
-    const verificationResult = await verifyTokenWithYouTubeAPI(token);
+    // Kiểm tra tính hợp lệ của cookie KimVan
+    const verificationResult = await verifyKimVanCookie(token);
     
-    // Nếu token không hợp lệ, báo lỗi
+    // Nếu cookie không hợp lệ, báo lỗi
     if (!verificationResult.valid) {
       return NextResponse.json({ 
-        error: 'Token không hợp lệ: ' + verificationResult.error 
+        error: 'Cookie KimVan không hợp lệ: ' + verificationResult.error 
       }, { status: 400 });
     }
     
     // Tạo token giả lập với thông tin cần thiết
     const now = Date.now();
     const oneWeekLater = now + 7 * 24 * 3600 * 1000; // Thêm 1 tuần
+    
+    // Thông tin kênh YouTube được lấy từ tài khoản KimVan
+    const channelInfo = [{
+      id: "KimVanChannel", // Giá trị giả lập
+      title: "KimVan YouTube" // Giá trị giả lập
+    }];
     
     const tokenData = {
       access_token: token,
@@ -123,16 +129,18 @@ export async function POST(request) {
         youtube: true,
         drive: true
       },
-      channel_info: verificationResult.data?.channels || []
+      channel_info: channelInfo,
+      source: 'kimvan-cookie'
     };
     
     // Lưu cookie riêng biệt với các thông tin bổ sung
     const cookieData = {
-      __Secure_3PSID: token,
+      __Secure_authjs_session_token: token,
       timestamp: now,
       expiry_date: oneWeekLater,
       last_verified: now,
-      user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+      user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+      source: 'kimvan'
     };
     
     // Lưu cả token và cookie vào file riêng
@@ -188,7 +196,8 @@ export async function GET(request) {
         scope: storedToken.scope
       },
       cookieExists: !!storedCookie,
-      timeRemaining: isValid ? Math.floor((storedToken.expiry_date - now) / (1000 * 60 * 60)) + ' giờ' : '0 giờ'
+      timeRemaining: isValid ? Math.floor((storedToken.expiry_date - now) / (1000 * 60 * 60)) + ' giờ' : '0 giờ',
+      source: storedToken.source || 'unknown'
     };
     
     // Nếu có thông tin kênh, thêm vào
