@@ -12,6 +12,7 @@ import {
   ShieldCheckIcon,
   GlobeAltIcon
 } from '@heroicons/react/24/outline';
+import Script from 'next/script';
 
 export default function KimVanCookiePage() {
   const router = useRouter();
@@ -112,33 +113,330 @@ export default function KimVanCookiePage() {
     }
   };
 
-  // Mở trình duyệt để lấy KimVan cookie
+  // Phương pháp mới mở trang KimVan trong tab mới để giữ trang admin
   const openKimVanBrowser = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      // Mở trang KimVan trong cửa sổ pop-up
-      const popupWindow = window.open('/api/youtube/kimvan-cookie-browser', 'kimvan_cookie_helper', 'width=800,height=600');
-      
-      if (!popupWindow) {
-        throw new Error('Không thể mở cửa sổ pop-up. Vui lòng cho phép pop-up từ trang web này.');
-      }
-      
       setCookieHelper(true);
       
-      // Lắng nghe thông điệp từ cửa sổ pop-up (nếu có cookie được phát hiện)
-      window.addEventListener('message', function cookieMessageHandler(event) {
-        if (event.data && event.data.cookie) {
-          setCookieInput(event.data.cookie);
-          setSuccess(true);
-          window.removeEventListener('message', cookieMessageHandler);
-        }
-      });
+      // Log rõ ràng
+      alert('Đang mở trang KimVan. Sau khi đăng nhập, hãy quay lại đây và nhấn nút "Kiểm tra cookie" màu xanh!');
+      console.log('=== HƯỚNG DẪN KIMVAN COOKIE ===');
+      console.log('1. Sau khi đăng nhập vào KimVan trong tab mới');
+      console.log('2. Quay lại tab này và nhấn nút "Kiểm tra cookie" màu xanh');
+      console.log('3. Nếu không tự động phát hiện, mở F12 để xem log');
+      
+      // Mở URL kimvan trong tab mới thay vì chuyển hướng hiện tại
+      const kimvanWindow = window.open('https://kimvan.id.vn/', '_blank');
+      
+      if (!kimvanWindow) {
+        throw new Error('Không thể mở trang KimVan. Vui lòng cho phép popup từ trang web này.');
+      }
+      
+      console.log('Đã mở trang KimVan trong tab mới');
+      
+      // Hiển thị hướng dẫn chi tiết cho người dùng
+      setSuccess(false);
+      setError("BƯỚC TIẾP THEO: Sau khi đăng nhập vào KimVan ở tab mới, quay lại đây và nhấn nút 'Kiểm tra cookie' màu xanh ở trên!");
       
     } catch (err) {
-      console.error('Lỗi khi mở cửa sổ cookie helper:', err);
-      setError(err.message || 'Đã xảy ra lỗi khi mở cửa sổ helper');
+      console.error('Lỗi khi mở trang KimVan:', err);
+      setError(err.message || 'Đã xảy ra lỗi khi mở trang KimVan');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Kiểm tra cookie KimVan từ trình duyệt
+  const checkBrowserCookie = async () => {
+    try {
+      setLoading(true);
+      setError("Đang kiểm tra cookie, vui lòng đợi...");
+      
+      // Log rõ ràng với cờ hiệu
+      console.log('==========================================');
+      console.log('=== BẮT ĐẦU KIỂM TRA COOKIE KIMVAN ===');
+      console.log('==========================================');
+      
+      // Tạo div hiển thị kết quả tìm kiếm
+      const resultDiv = document.createElement('div');
+      resultDiv.style.position = 'fixed';
+      resultDiv.style.top = '10px';
+      resultDiv.style.right = '10px';
+      resultDiv.style.width = '400px';
+      resultDiv.style.padding = '10px';
+      resultDiv.style.backgroundColor = '#f8f9fa';
+      resultDiv.style.border = '1px solid #ddd';
+      resultDiv.style.borderRadius = '5px';
+      resultDiv.style.zIndex = '9999';
+      resultDiv.style.maxHeight = '80vh';
+      resultDiv.style.overflow = 'auto';
+      resultDiv.innerHTML = '<h3>Kết quả kiểm tra cookie</h3><hr>';
+      document.body.appendChild(resultDiv);
+      
+      // 1. Ưu tiên kiểm tra accessToken từ localStorage
+      console.log('KIỂM TRA accessToken TRONG LOCALSTORAGE...');
+      resultDiv.innerHTML += `<p>Kiểm tra localStorage cho accessToken...</p>`;
+      
+      try {
+        const accessToken = localStorage.getItem('accessToken');
+        
+        if (accessToken) {
+          console.log('Đã tìm thấy accessToken trong localStorage!');
+          console.log('Token value (một phần):', accessToken.substring(0, 30) + '...');
+          resultDiv.innerHTML += `<p style="color:green">✓ Đã tìm thấy accessToken trong localStorage!</p>`;
+          
+          // Gửi token lên server
+          const response = await fetch('/api/youtube/kimvan-cookie', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ cookie: accessToken })
+          });
+          
+          const data = await response.json();
+          console.log('Kết quả:', data);
+          
+          if (response.ok) {
+            console.log('accessToken từ localStorage hoạt động!');
+            resultDiv.innerHTML += `<p style="color:green; font-weight:bold">✓ Token đã được cập nhật thành công từ accessToken!</p>`;
+            
+            setCookieInput(accessToken);
+            setSuccess(true);
+            setError(null);
+            setLoading(false);
+            checkCookieStatus();
+            
+            // Đóng kết quả sau 5 giây
+            setTimeout(() => {
+              if (document.body.contains(resultDiv)) {
+                document.body.removeChild(resultDiv);
+              }
+            }, 5000);
+            
+            return;
+          }
+        }
+      } catch (error) {
+        console.error('Lỗi khi truy cập accessToken:', error);
+      }
+      
+      // 2. Tiếp tục kiểm tra cookie __Secure-authjs.session-token trực tiếp
+      console.log('KIỂM TRA COOKIE __Secure-authjs.session-token...');
+      resultDiv.innerHTML += `<p>Kiểm tra cookie __Secure-authjs.session-token...</p>`;
+      
+      // Lấy tất cả cookie
+      console.log('Tất cả cookie trong trình duyệt:', document.cookie);
+      const cookies = document.cookie.split(';');
+      let secureAuthCookie = null;
+      
+      // Tìm cookie cụ thể
+      for (let cookie of cookies) {
+        cookie = cookie.trim();
+        if (cookie.startsWith('__Secure-authjs.session-token=')) {
+          secureAuthCookie = cookie.substring('__Secure-authjs.session-token='.length);
+          console.log('Đã tìm thấy cookie __Secure-authjs.session-token!');
+          resultDiv.innerHTML += `<p style="color:green">✓ Đã tìm thấy cookie __Secure-authjs.session-token!</p>`;
+          break;
+        }
+      }
+      
+      if (secureAuthCookie) {
+        console.log('Cookie value (một phần):', secureAuthCookie.substring(0, 20) + '...');
+        resultDiv.innerHTML += `<p style="color:green; font-weight:bold">✓ ĐÃ TÌM THẤY COOKIE! Đang xử lý...</p>`;
+        
+        // Sử dụng cookie
+        setCookieInput(secureAuthCookie);
+        handleSubmitCookieAuto(secureAuthCookie);
+        
+        // Đóng kết quả sau 5 giây
+        setTimeout(() => {
+          if (document.body.contains(resultDiv)) {
+            document.body.removeChild(resultDiv);
+          }
+        }, 5000);
+        
+        return;
+      } else {
+        console.log('Không tìm thấy cookie __Secure-authjs.session-token trực tiếp');
+        resultDiv.innerHTML += `<p style="color:orange">⚠️ Không tìm thấy cookie __Secure-authjs.session-token trực tiếp</p>`;
+      }
+      
+      // 2. Kiểm tra document.cookie với các cách khác
+      console.log('-----------------------------------');
+      console.log('THỬ CÁC PHƯƠNG PHÁP TRÍCH XUẤT COOKIE KHÁC...');
+      resultDiv.innerHTML += `<hr><p>Thử các phương pháp trích xuất cookie khác...</p>`;
+      
+      // Tạo một chức năng để lấy cookie theo tên
+      function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+      }
+      
+      // Thử lấy cookie theo tên cụ thể
+      const authCookie = getCookie('__Secure-authjs.session-token');
+      
+      if (authCookie) {
+        console.log('Đã tìm thấy cookie qua hàm getCookie!');
+        resultDiv.innerHTML += `<p style="color:green">✓ Đã tìm thấy cookie qua hàm getCookie</p>`;
+        console.log('Cookie value (một phần):', authCookie.substring(0, 20) + '...');
+        
+        // Sử dụng cookie
+        setCookieInput(authCookie);
+        handleSubmitCookieAuto(authCookie);
+        
+        // Đóng kết quả sau 5 giây
+        setTimeout(() => {
+          if (document.body.contains(resultDiv)) {
+            document.body.removeChild(resultDiv);
+          }
+        }, 5000);
+        
+        return;
+      }
+      
+      // 3. Nếu không tìm thấy cookie, thử các phương pháp khác
+      
+      // Kiểm tra localStorage để tìm các key liên quan
+      console.log('-----------------------------------');
+      console.log('THỬ LẤY COOKIE TRỰC TIẾP TỪ LOCAL STORAGE...');
+      resultDiv.innerHTML += `<hr><p>Đang tìm trong localStorage...</p>`;
+      
+      try {
+        const localStorageItems = { ...localStorage };
+        console.log('Nội dung localStorage:', localStorageItems);
+        
+        // Ưu tiên kiểm tra key tokenExpiryTime
+        if (localStorageItems.tokenExpiryTime) {
+          console.log('Tìm thấy tokenExpiryTime trong localStorage');
+          resultDiv.innerHTML += `<p style="color:green">✓ Tìm thấy tokenExpiryTime</p>`;
+          
+          const token = localStorageItems.tokenExpiryTime;
+          
+          // Thử gửi lên server
+          const testResponse = await fetch('/api/youtube/kimvan-cookie', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ cookie: token })
+          });
+          
+          const testResult = await testResponse.json();
+          console.log('Kết quả thử nghiệm:', testResult);
+          
+          if (testResponse.ok) {
+            console.log('Giá trị tokenExpiryTime hoạt động!');
+            resultDiv.innerHTML += `<p style="color:green; font-weight:bold">✓ Cookie đã được cập nhật thành công từ tokenExpiryTime!</p>`;
+            
+            setCookieInput(token);
+            setSuccess(true);
+            setError(null);
+            setLoading(false);
+            checkCookieStatus();
+            
+            // Đóng kết quả sau 5 giây
+            setTimeout(() => {
+              if (document.body.contains(resultDiv)) {
+                document.body.removeChild(resultDiv);
+              }
+            }, 5000);
+            
+            return;
+          }
+        }
+        
+        // 4. Kiểm tra với API server
+        console.log('Không tìm thấy cookie hợp lệ trên client. Kiểm tra trên server...');
+        resultDiv.innerHTML += `<hr><p>Kiểm tra cookie trên server...</p>`;
+        
+        const response = await fetch('/api/youtube/kimvan-cookie', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+        
+        const data = await response.json();
+        console.log('Kết quả API:', data);
+        
+        if (data && data.exists && data.valid) {
+          setSuccess(true);
+          setError(null);
+          setCookieStatus(data);
+          console.log('Cookie đã tồn tại và còn hiệu lực trên server');
+          resultDiv.innerHTML += `<p style="color:green; font-weight:bold">✓ Cookie đã tồn tại trên server và còn hiệu lực!</p>`;
+        } else {
+          resultDiv.innerHTML += `<p style="color:red">Không tìm thấy cookie hợp lệ.</p>`;
+          resultDiv.innerHTML += `<div class="mt-4">
+            <p style="font-weight:bold">Hướng dẫn thủ công:</p>
+            <ol style="margin-left: 20px; margin-top: 10px;">
+              <li>Mở tab KimVan và đảm bảo đã đăng nhập</li>
+              <li>Nhấn F12 để mở Developer Tools</li>
+              <li>Chuyển đến tab Application</li>
+              <li>Xem phần Cookies > https://kimvan.id.vn</li>
+              <li>Tìm cookie có tên <strong>__Secure-authjs.session-token</strong> và sao chép giá trị của nó</li>
+              <li>Dán vào ô nhập cookie bên dưới</li>
+            </ol>
+          </div>`;
+          
+          setError('Không tìm thấy cookie KimVan. Vui lòng nhập thủ công.');
+        }
+      } catch (error) {
+        console.error('Lỗi khi kiểm tra:', error);
+        resultDiv.innerHTML += `<p style="color:red">Lỗi: ${error.message}</p>`;
+        setError(`Lỗi khi kiểm tra: ${error.message}`);
+      }
+      
+      // Đóng kết quả sau 20 giây
+      setTimeout(() => {
+        if (document.body.contains(resultDiv)) {
+          document.body.removeChild(resultDiv);
+        }
+      }, 20000);
+      
+    } catch (err) {
+      console.error('Lỗi khi kiểm tra cookie:', err);
+      setError(err.message || 'Đã xảy ra lỗi khi kiểm tra cookie');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Xử lý khi tự động gửi cookie đã phát hiện
+  const handleSubmitCookieAuto = async (cookieValue) => {
+    if (!cookieValue || !cookieValue.trim()) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await fetch('/api/youtube/kimvan-cookie', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ cookie: cookieValue })
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        setSuccess(true);
+        setCookieInput('');
+        checkCookieStatus(); // Cập nhật trạng thái cookie
+      } else {
+        throw new Error(data.error || 'Không thể cập nhật cookie');
+      }
+    } catch (err) {
+      console.error('Lỗi khi cập nhật cookie:', err);
+      setError(err.message || 'Đã xảy ra lỗi khi cập nhật cookie');
     } finally {
       setLoading(false);
     }
@@ -280,52 +578,70 @@ export default function KimVanCookiePage() {
               <div className="flex space-x-2">
                 <button
                   type="button"
+                  onClick={checkBrowserCookie}
+                  disabled={loading}
+                  className="text-sm text-white hover:bg-blue-700 flex items-center bg-blue-600 px-4 py-2 rounded-md mr-2 font-medium shadow-sm"
+                >
+                  <ArrowPathIcon className="h-5 w-5 mr-1" />
+                  Kiểm tra cookie
+                </button>
+                <button
+                  type="button"
                   onClick={openKimVanBrowser}
                   disabled={loading}
-                  className="text-sm text-green-600 hover:text-green-800 flex items-center bg-green-50 px-3 py-1.5 rounded-md"
+                  className="text-sm text-white hover:bg-green-700 flex items-center bg-green-600 px-4 py-2 rounded-md font-medium shadow-sm"
                 >
                   <GlobeAltIcon className="h-5 w-5 mr-1" />
-                  Mở trình duyệt để lấy cookie
+                  Mở trang KimVan
                 </button>
               </div>
             </div>
 
-            {cookieHelper && (
-              <div className="bg-green-50 p-4 rounded-md border border-green-200 mb-4">
-                <h4 className="font-medium text-green-800 mb-2">
-                  {cookieInput ? 'Cookie KimVan đã được tự động phát hiện!' : 'Trình duyệt Chrome đã được mở'}
-                </h4>
-                
-                {cookieInput ? (
-                  <div>
-                    <p className="text-sm text-green-700">
-                      Cookie đã được tự động phát hiện và điền vào ô bên dưới. Nhấn nút "Cập nhật Cookie" để lưu lại.
-                    </p>
-                    <div className="mt-2 bg-white p-2 rounded border border-green-100">
-                      <span className="text-xs font-mono bg-gray-50 px-2 py-1 rounded">
-                        {cookieInput.substring(0, 20)}...{cookieInput.substring(cookieInput.length - 20)}
-                      </span>
-                    </div>
+            {/* Hướng dẫn thủ công */}
+            <div className="bg-blue-50 p-4 rounded-md border border-blue-200 mb-4">
+              <h4 className="font-medium text-blue-800 mb-2">
+                {cookieInput ? 'Cookie KimVan đã được tự động phát hiện!' : 'Hướng dẫn lấy cookie KimVan'}
+              </h4>
+              
+              {cookieInput ? (
+                <div>
+                  <p className="text-sm text-blue-700">
+                    Cookie đã được tự động phát hiện và đang được lưu lại. Vui lòng đợi trong giây lát...
+                  </p>
+                  <div className="mt-2 bg-white p-2 rounded border border-blue-100">
+                    <span className="text-xs font-mono bg-gray-50 px-2 py-1 rounded">
+                      {cookieInput.substring(0, 20)}...{cookieInput.substring(cookieInput.length - 20)}
+                    </span>
                   </div>
-                ) : (
-                  <div>
-                    <p className="text-sm text-green-700">
-                      Trình duyệt Chrome đã được mở với trang KimVan. Vui lòng thực hiện các bước sau:
+                </div>
+              ) : (
+                <div>
+                  <p className="text-sm text-blue-700 font-medium">
+                    Quy trình lấy cookie KimVan (2 bước đơn giản):
+                  </p>
+                  <ol className="list-decimal list-inside text-sm text-blue-700 mt-2 space-y-2">
+                    <li>
+                      <strong>Bước 1:</strong> Nhấn nút <span className="bg-green-600 text-white px-2 py-1 rounded text-xs">Mở trang KimVan</span> để mở trang KimVan trong tab mới
+                      <div className="ml-6 mt-1 text-xs">Đăng nhập vào tài khoản KimVan của bạn nếu chưa đăng nhập</div>
+                    </li>
+                    <li>
+                      <strong>Bước 2:</strong> Quay lại tab này và nhấn nút <span className="bg-blue-600 text-white px-2 py-1 rounded text-xs">Kiểm tra cookie</span> màu xanh
+                      <div className="ml-6 mt-1 text-xs">Hệ thống sẽ tự động lấy và lưu cookie của bạn</div>
+                    </li>
+                  </ol>
+                  
+                  <div className="bg-yellow-50 p-3 rounded mt-4 border border-yellow-200">
+                    <h5 className="text-yellow-800 font-medium flex items-center">
+                      <InformationCircleIcon className="h-5 w-5 mr-1" /> Phương pháp được xác nhận
+                    </h5>
+                    <p className="text-xs text-yellow-700 mt-1">
+                      Hệ thống sẽ ưu tiên tìm và sử dụng <strong>accessToken</strong> từ localStorage 
+                      của trình duyệt sau khi bạn đăng nhập vào KimVan.
                     </p>
-                    <ol className="list-decimal list-inside text-sm text-green-700 mt-2 space-y-1">
-                      <li>Đăng nhập vào tài khoản KimVan của bạn</li>
-                      <li>Hệ thống sẽ tự động phát hiện cookie sau khi bạn đăng nhập</li>
-                      <li>Nếu không tự động phát hiện được, bạn cần thực hiện thủ công:</li>
-                      <li className="ml-5">- Nhấn F12 hoặc chuột phải và chọn "Inspect" để mở DevTools</li>
-                      <li className="ml-5">- Chuyển đến tab "Application"</li>
-                      <li className="ml-5">- Mở rộng mục "Cookies" và chọn "https://kimvan.id.vn"</li>
-                      <li className="ml-5">- Tìm cookie có tên "__Secure-authjs.session-token"</li>
-                      <li className="ml-5">- Sao chép giá trị cookie và dán vào ô bên dưới</li>
-                    </ol>
                   </div>
-                )}
-              </div>
-            )}
+                </div>
+              )}
+            </div>
 
             <div className="mt-1 flex rounded-md shadow-sm">
               <div className="relative flex items-stretch flex-grow focus-within:z-10">
