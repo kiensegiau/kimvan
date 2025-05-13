@@ -40,10 +40,10 @@ export default function DriveSetupPage() {
     },
     
     {
-      title: 'Cập nhật Cookie KimVan',
-      description: 'Cập nhật cookie KimVan để kết nối với hệ thống KimVan',
+      title: 'Cập nhật Token KimVan',
+      description: 'Cập nhật token KimVan để kết nối với hệ thống KimVan',
       icon: <FontAwesomeIcon icon={faCookie} className="h-6 w-6 text-yellow-600" />,
-      href: '/admin/kimvan-cookie',
+      href: '/admin/kimvan-token',
       disabled: false
     },
   ];

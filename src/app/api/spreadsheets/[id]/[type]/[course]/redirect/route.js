@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
+import { getKimVanAuthHeaders } from '../../../../../helpers/kimvan-token';
 
 // Đường dẫn đến file JSON lưu trữ các liên kết
 const LINKS_FILE = path.join(process.cwd(), 'link-cache.json');
@@ -47,32 +48,22 @@ async function fetchLinkFromKimvan(id, type, course) {
     const encodedCourse = encodeURIComponent(course);
     const kimvanUrl = `https://kimvan.id.vn/api/spreadsheets/${id}/${encodedType}/${encodedCourse}/redirect`;
     
-    // Sử dụng cookie từ biến môi trường
-    const kimvanCookie = process.env.KIMVAN_COOKIE || '';
+    // Lấy header với token Authorization
+    const headers = getKimVanAuthHeaders();
+    
+    // Sửa đổi headers cho redirect
+    headers['accept'] = 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7';
+    headers['sec-fetch-dest'] = 'document';
+    headers['sec-fetch-mode'] = 'navigate';
+    headers['sec-fetch-user'] = '?1';
+    headers['upgrade-insecure-requests'] = '1';
+    headers['authority'] = 'kimvan.id.vn';
     
     console.log('URL API:', kimvanUrl);
     
     const response = await fetch(kimvanUrl, {
       method: 'GET',
-      headers: {
-        'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-        'accept-language': 'vi',
-        'cache-control': 'no-cache',
-        'pragma': 'no-cache',
-        'sec-ch-ua': '"Chromium";v="134", "Not:A-Brand";v="24", "Google Chrome";v="134"',
-        'sec-ch-ua-mobile': '?0',
-        'sec-ch-ua-platform': '"Windows"',
-        'sec-fetch-dest': 'document',
-        'sec-fetch-mode': 'navigate',
-        'sec-fetch-site': 'same-origin',
-        'sec-fetch-user': '?1',
-        'upgrade-insecure-requests': '1',
-        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36',
-        'cookie': kimvanCookie,
-        'authority': 'kimvan.id.vn',
-        'priority': 'u=1, i',
-        'referer': 'https://kimvan.id.vn/'
-      },
+      headers: headers,
       redirect: 'manual' // Quan trọng: Không tự động follow redirect
     });
     

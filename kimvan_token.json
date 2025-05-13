@@ -1,0 +1,16 @@
+{
+  "value": "eyJhbGciOiJIUzI1NiJ9.eyJ1aWQiOiJlUkdaeWw3TVU4WTBROGptblRsZnA2THdYQW4xIiwiZW1haWwiOiJraWVuQGdtYWlsLmNvbSIsImV4cCI6MTc0NDkwNTQ3MH0.YBWZmoZ0n8PY6QC5OIS9A9SmxRwKK7WGdfHOFMLWhQQ",
+  "timestamp": 1747157190683,
+  "expiry_date": 1744647116675,
+  "last_verified": 1747157190683,
+  "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36",
+  "token_type": "jwt",
+  "cookie_string": null,
+  "csrf_token": null,
+  "callback_url": null,
+  "session_token": null,
+  "accessToken": "eyJhbGciOiJIUzI1NiJ9.eyJ1aWQiOiJlUkdaeWw3TVU4WTBROGptblRsZnA2THdYQW4xIiwiZW1haWwiOiJraWVuQGdtYWlsLmNvbSIsImV4cCI6MTc0NDkwNTQ3MH0.YBWZmoZ0n8PY6QC5OIS9A9SmxRwKK7WGdfHOFMLWhQQ",
+  "refreshToken": "eyJhbGciOiJIUzI1NiJ9.eyJ1aWQiOiJlUkdaeWw3TVU4WTBROGptblRsZnA2THdYQW4xIiwiZXhwIjoxNzQ2ODkyNjcwfQ.ayZ6JmK8NySrvxdb_GN4cSTzW8RYrEWjnQlH4CY7S38",
+  "auth_email": "phanhuukien2001@gmail.com",
+  "tokenExpiryTime": "1744647116675"
+}

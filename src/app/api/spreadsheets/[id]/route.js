@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getKimVanAuthHeaders } from '../../helpers/kimvan-token';
 
 export async function GET(request, { params }) {
   try {
@@ -12,31 +13,18 @@ export async function GET(request, { params }) {
     
     console.log('Đang gọi API kimvan với ID:', id);
     
-    // Sử dụng biến môi trường cho URL API và cookie
+    // Sử dụng biến môi trường cho URL API
     const kimvanApiUrl = process.env.KIMVAN_API_URL || 'https://kimvan.id.vn/api/spreadsheets/';
-    const kimvanCookie = process.env.KIMVAN_COOKIE || '';
     const kimvanUrl = `${kimvanApiUrl}${id}`;
     
     console.log('URL đích:', kimvanUrl);
     
+    // Lấy header với token Authorization
+    const headers = getKimVanAuthHeaders();
+    
     const response = await fetch(kimvanUrl, {
       method: 'GET',
-      headers: {
-        'accept': '*/*',
-        'accept-language': 'vi',
-        'cache-control': 'no-cache',
-        'pragma': 'no-cache',
-        'sec-ch-ua': '"Chromium";v="134", "Not:A-Brand";v="24", "Google Chrome";v="134"',
-        'sec-ch-ua-mobile': '?0',
-        'sec-ch-ua-platform': '"Windows"',
-        'sec-fetch-dest': 'empty',
-        'sec-fetch-mode': 'cors',
-        'sec-fetch-site': 'same-origin',
-        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36',
-        'priority': 'u=1, i',
-        'referer': 'https://kimvan.id.vn/',
-        'cookie': kimvanCookie
-      }
+      headers: headers
     });
     
     if (!response.ok) {
