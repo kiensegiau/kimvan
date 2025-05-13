@@ -449,7 +449,7 @@ export default function CourseDetailPage({ params }) {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white p-2 sm:p-6">
       {/* Loading overlay khi đang xử lý link */}
-      <LoadingOverlay isVisible={processingLink} message="Đang xử lý link..." />
+      <LoadingOverlay isVisible={processingLink} message="Đang tải tài nguyên..." />
       
       <div className="mx-auto bg-white rounded-xl shadow-lg">
         {/* Tiêu đề và thông tin khóa học */}
@@ -883,6 +883,17 @@ export default function CourseDetailPage({ params }) {
         }
         .whitespace-normal {
           white-space: normal;
+        }
+        .backdrop-blur-sm {
+          backdrop-filter: blur(4px);
+          -webkit-backdrop-filter: blur(4px);
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: scale(0.95); }
+          to { opacity: 1; transform: scale(1); }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.3s ease-out forwards;
         }
       `}</style>
     </div>
