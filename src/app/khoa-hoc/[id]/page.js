@@ -285,6 +285,35 @@ export default function CourseDetailPage({ params }) {
     }
   }, [course]);
 
+  // Điều chỉnh kích thước cột dựa trên nội dung
+  useEffect(() => {
+    setTimeout(() => {
+      const adjustColumnWidths = () => {
+        const contentCells = document.querySelectorAll('.column-content');
+        
+        contentCells.forEach(cell => {
+          const textLength = cell.textContent?.trim().length || 0;
+          
+          if (textLength < 30) {
+            cell.style.width = 'fit-content';
+            cell.style.minWidth = '100px';
+            cell.style.maxWidth = '150px';
+          } else if (textLength < 100) {
+            cell.style.width = 'fit-content';
+            cell.style.minWidth = '150px';
+            cell.style.maxWidth = '250px';
+          } else {
+            cell.style.width = 'auto';
+            cell.style.minWidth = '200px';
+            cell.style.maxWidth = '350px';
+          }
+        });
+      };
+      
+      adjustColumnWidths();
+    }, 100);
+  }, [activeSheet, course]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white p-6">
@@ -506,7 +535,7 @@ export default function CourseDetailPage({ params }) {
                             <span className="text-sm font-bold text-blue-700">Vuốt ngang để xem toàn bộ bảng</span>
                           </div>
                           <div className="overflow-x-auto pb-2" style={{ WebkitOverflowScrolling: 'touch', scrollbarWidth: 'thin' }}>
-                            <table className="w-full divide-y divide-gray-200 border-collapse" style={{ tableLayout: 'fixed' }}>
+                            <table className="w-full divide-y divide-gray-200 border-collapse" style={{ tableLayout: 'auto' }}>
                               <thead>
                                 <tr className="bg-gradient-to-r from-indigo-600 to-indigo-700">
                                   {course.originalData.sheets[activeSheet].data[0].rowData[0]?.values?.map((cell, index) => (
@@ -514,12 +543,8 @@ export default function CourseDetailPage({ params }) {
                                       key={index} 
                                       className={`px-2 py-3 text-left text-xs font-medium text-white uppercase tracking-wider ${
                                         index === 0 
-                                        ? 'text-center w-24 break-words hyphens-auto word-break-all sticky left-0 z-20 bg-indigo-700 shadow-lg border-r-2 border-indigo-500' 
-                                        : index === 1 
-                                          ? 'w-[220px]' 
-                                          : index === 2
-                                            ? 'w-[110px]'
-                                            : 'w-[120px]'
+                                        ? 'text-center min-w-[90px] w-auto break-words hyphens-auto sticky left-0 z-20 bg-indigo-700 shadow-lg border-r-2 border-indigo-500' 
+                                        : 'content-title min-w-[100px] max-w-[350px]'
                                       }`}
                                     >
                                       <div className="flex items-center justify-between">
@@ -555,28 +580,42 @@ export default function CourseDetailPage({ params }) {
                                               : 'external'
                                         : null;
                                       
+                                      // Hàm format ngày tháng
+                                      const formatDate = (dateStr) => {
+                                        if (!dateStr) return '';
+                                        // Tách ngày/tháng và năm
+                                        const parts = dateStr.match(/^(\d{1,2}\/\d{1,2})\/(\d{4})$/);
+                                        if (parts) {
+                                          return (
+                                            <>
+                                              <div className="font-medium">{parts[1]}</div>
+                                              <div className="text-xs opacity-80">{parts[2]}</div>
+                                            </>
+                                          );
+                                        }
+                                        return dateStr;
+                                      };
+                                      
                                       return (
                                         <td 
                                           key={cellIndex} 
                                           className={`px-2 py-3 border-r border-gray-100 last:border-r-0 ${
                                             cellIndex === 0 
-                                              ? 'font-semibold text-indigo-700 text-center bg-indigo-100 group-hover:bg-indigo-200 sticky left-0 z-10 w-24 shadow-lg border-r-2 border-gray-200 break-words text-sm hyphens-auto word-break-all' 
-                                              : cellIndex === 1 
-                                                ? 'text-gray-700 w-[220px]'
-                                                : cellIndex === 2
-                                                  ? 'text-gray-700 w-[110px]'
-                                                  : 'text-gray-700 w-[120px]'
+                                              ? 'font-semibold text-indigo-700 text-center bg-indigo-100 group-hover:bg-indigo-200 sticky left-0 z-10 min-w-[90px] w-auto shadow-lg border-r-2 border-gray-200 break-words text-sm hyphens-auto' 
+                                              : `text-gray-700 content-cell ${
+                                                  !cell.formattedValue || cell.formattedValue.length < 30 
+                                                    ? 'short-content' 
+                                                    : cell.formattedValue.length < 100 
+                                                      ? 'medium-content' 
+                                                      : 'long-content'
+                                                }`
                                           }`}
                                           title={cell.formattedValue || ''}
                                         >
                                           {cellIndex === 0 
                                             ? (
                                               <div className="break-words hyphens-auto text-center" title={cell.formattedValue || ''}>
-                                                {cell.formattedValue ? (
-                                                  cell.formattedValue.replace(/\/(\d{4})$/, "\n$1").split("\n").map((part, i) => (
-                                                    <div key={i} className={i === 0 ? "mb-1" : ""}>{part}</div>
-                                                  ))
-                                                ) : ''}
+                                                {cell.formattedValue ? formatDate(cell.formattedValue) : ''}
                                               </div>
                                             )
                                             : isLink
@@ -618,13 +657,13 @@ export default function CourseDetailPage({ params }) {
                                                         </span>
                                                       )}
                                                     </span>
-                                                    <span className="break-words line-clamp-3 text-sm" title={cell.formattedValue || ''}>
+                                                    <span className="break-words whitespace-normal no-truncate text-sm" title={cell.formattedValue || ''}>
                                                       {cell.formattedValue || (linkType === 'youtube' ? 'Video' : linkType === 'pdf' ? 'PDF' : 'Tài liệu')}
                                                     </span>
                                                   </a>
                                                 ) 
                                               : (
-                                                  <span className="break-words line-clamp-3 text-sm" title={cell.formattedValue || ''}>
+                                                  <span className="break-words whitespace-normal no-truncate text-sm" title={cell.formattedValue || ''}>
                                                     {cell.formattedValue || ''}
                                                   </span>
                                                 )
@@ -699,12 +738,101 @@ export default function CourseDetailPage({ params }) {
           </div>
         </div>
       </div>
-      <style jsx>{`
+      <style jsx global>{`
         .word-break-all {
           word-break: break-all;
         }
         .word-wrap-breakword {
           word-wrap: break-word;
+        }
+        table {
+          table-layout: auto;
+          width: 100%;
+          border-collapse: collapse;
+        }
+        th, td {
+          width: auto;
+          max-width: 300px;
+          overflow: visible;
+          white-space: normal;
+          word-wrap: break-word;
+          word-break: break-word;
+        }
+        th:first-child, td:first-child {
+          width: auto;
+          min-width: 90px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .content-title {
+          width: auto;
+          white-space: normal;
+          word-break: break-word;
+        }
+        .content-cell {
+          white-space: normal !important;
+          word-break: break-word;
+          overflow: visible !important;
+          text-overflow: clip !important;
+          transition: all 0.3s ease;
+        }
+        .short-content {
+          width: fit-content !important;
+          min-width: 100px !important;
+          max-width: 150px !important;
+        }
+        .medium-content {
+          width: fit-content !important;
+          min-width: 150px !important;
+          max-width: 250px !important;
+        }
+        .long-content {
+          width: auto !important;
+          min-width: 200px !important;
+          max-width: 350px !important;
+        }
+        th:nth-child(3), td:nth-child(3) {
+          min-width: 100px;
+        }
+        th:nth-child(4), td:nth-child(4), th:nth-child(5), td:nth-child(5) {
+          min-width: 120px;
+        }
+        /* Chế độ xem điện thoại */
+        @media (max-width: 640px) {
+          th, td {
+            min-width: 80px !important;
+          }
+          th:first-child, td:first-child {
+            min-width: 85px !important;
+          }
+          .content-cell {
+            min-width: 100px !important;
+            max-width: 200px !important;
+          }
+          .short-content {
+            max-width: 120px !important;
+          }
+          .medium-content, .long-content {
+            max-width: 200px !important;
+          }
+        }
+        .line-clamp-3 {
+          -webkit-line-clamp: 3;
+          -webkit-box-orient: vertical;
+        }
+        .no-truncate {
+          white-space: normal !important;
+          overflow: visible !important;
+          text-overflow: clip !important;
+          display: block !important;
+        }
+        .hyphens-auto {
+          -webkit-hyphens: auto;
+          -moz-hyphens: auto;
+          hyphens: auto;
+        }
+        .whitespace-normal {
+          white-space: normal;
         }
       `}</style>
     </div>
