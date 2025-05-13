@@ -44,6 +44,10 @@ const publicPathCache = new Map();
 // Đường dẫn API xác thực token
 const TOKEN_VERIFY_API = '/api/auth/verify';
 
+// Email được phép truy cập trang admin
+const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'phanhuukien2001@gmail.com';
+console.log('🔧 Middleware - Email admin được cấu hình:', ADMIN_EMAIL);
+
 // This will run when the file is loaded - check terminal for this message
 console.log('🚨 MIDDLEWARE.JS LOADED - CHECK TERMINAL FOR THIS MESSAGE');
 
@@ -201,21 +205,13 @@ export async function middleware(request) {
     
     console.log('🔒 Middleware - Kiểm tra quyền truy cập trang admin cho:', pathname);
     
-    // Kiểm tra nếu đã có cookie admin_access
-    const adminAccessCookie = request.cookies.get('admin_access');
-    const adminAccess = adminAccessCookie?.value;
-    if (adminAccess === 'true') {
-      console.log('🔒 Middleware - Đã có cookie admin_access, cho phép truy cập');
-      return NextResponse.next();
-    }
-    
     try {
       // Xác định URL cơ sở
       const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || request.nextUrl.origin;
       
-      // Gọi API kiểm tra quyền admin dựa trên token người dùng thông thường
-      console.log('🔒 Middleware - Gọi API kiểm tra quyền admin');
-      const adminCheckResponse = await fetch(`${baseUrl}/api/auth/admin/check-permission`, {
+      // Gọi API verify để lấy thông tin người dùng
+      console.log('🔒 Middleware - Gọi API verify để lấy thông tin người dùng');
+      const verifyResponse = await fetch(`${baseUrl}${TOKEN_VERIFY_API}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -223,27 +219,27 @@ export async function middleware(request) {
         body: JSON.stringify({ token }),
       });
 
-      const adminCheckData = await adminCheckResponse.json();
-      console.log('🔒 Middleware - Kết quả kiểm tra quyền admin:', adminCheckData);
+      const verifyData = await verifyResponse.json();
       
-      if (!adminCheckData.hasAdminAccess) {
-        // Nếu không có quyền admin, chuyển hướng đến trang chính
-        console.log('⚠️ Middleware - Không có quyền admin, chuyển hướng đến trang chủ');
+      if (!verifyData.valid) {
+        console.log('⚠️ Middleware - Token không hợp lệ, chuyển hướng đến trang đăng nhập');
+        return NextResponse.redirect(new URL(routes.login, request.url));
+      }
+      
+      // Kiểm tra email có phải là email admin không
+      console.log('🔒 Middleware - Email người dùng:', verifyData.user.email);
+      console.log('🔒 Middleware - Email admin được cấu hình:', ADMIN_EMAIL);
+      
+      if (verifyData.user.email !== ADMIN_EMAIL) {
+        console.log('⚠️ Middleware - Email không phải là admin, chuyển hướng đến trang chủ');
         return NextResponse.redirect(new URL('/', request.url));
       }
       
-      // Nếu có quyền admin, lưu vào cookie và cho phép tiếp tục
-      console.log('✅ Middleware - Có quyền admin, cho phép truy cập');
-      const adminResponse = NextResponse.next();
-      adminResponse.cookies.set('admin_access', 'true', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 60 * 60 * 24, // 1 ngày
-        path: '/',
-      });
-      return adminResponse;
+      // Nếu email hợp lệ, cho phép truy cập
+      console.log('✅ Middleware - Email admin hợp lệ, cho phép truy cập');
+      return NextResponse.next();
     } catch (error) {
-      console.error('❌ Middleware - Lỗi kiểm tra quyền admin:', error);
+      console.error('❌ Middleware - Lỗi kiểm tra email admin:', error);
       return NextResponse.redirect(new URL('/', request.url));
     }
   }

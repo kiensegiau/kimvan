@@ -19,9 +19,9 @@ export default function AdminLayout({ children }) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   
-  // Chuyển sang kiểm tra xác thực thực tế
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  // Không cần kiểm tra xác thực trong layout vì đã xử lý trong middleware
+  const [isLoggedIn, setIsLoggedIn] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   
   // State cho trạng thái token YouTube
   const [youtubeTokenStatus, setYoutubeTokenStatus] = useState(null);
@@ -63,62 +63,6 @@ export default function AdminLayout({ children }) {
     }
   };
   
-  // Bật kiểm tra xác thực
-  useEffect(() => {
-    // Kiểm tra quyền admin dựa trên token thông thường
-    const checkAuth = async () => {
-      try {
-        setIsLoading(true);
-        
-        // Lấy token từ cookie
-        const token = document.cookie
-          .split('; ')
-          .find(row => row.startsWith('auth-token='))
-          ?.split('=')[1];
-        
-        console.log('🔍 Admin Layout - Token từ cookie:', token ? 'Có token' : 'Không có token');
-        
-        if (!token) {
-          console.log('⚠️ Admin Layout - Không có token, chuyển hướng đến trang đăng nhập');
-          setIsLoggedIn(false);
-          setIsLoading(false);
-          router.push('/login');
-          return;
-        }
-        
-        // Kiểm tra quyền admin
-        console.log('🔍 Admin Layout - Gọi API kiểm tra quyền admin');
-        const response = await fetch('/api/auth/admin/check-permission', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ token }),
-        });
-        
-        const data = await response.json();
-        console.log('🔍 Admin Layout - Kết quả kiểm tra quyền admin:', data);
-        
-        if (!data.hasAdminAccess) {
-          console.log('⚠️ Admin Layout - Không có quyền admin, chuyển hướng đến trang chủ');
-          setIsLoggedIn(false);
-          router.push('/');
-          return;
-        }
-        
-        setIsLoggedIn(data.hasAdminAccess);
-      } catch (error) {
-        console.error('❌ Admin Layout - Lỗi kiểm tra xác thực:', error);
-        setIsLoggedIn(false);
-        router.push('/');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    checkAuth();
-  }, [router]);
-  
   // Xử lý đăng xuất
   const handleLogout = async () => {
     try {
@@ -148,7 +92,7 @@ export default function AdminLayout({ children }) {
     return children;
   }
   
-  // Hiển thị loading khi đang kiểm tra xác thực
+  // Hiển thị loading khi đang kiểm tra xác thực - không còn cần thiết nhưng giữ lại cấu trúc
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
