@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeftIcon, CheckCircleIcon, ExclamationCircleIcon, ArrowPathIcon, PlusCircleIcon, CloudArrowUpIcon, CloudArrowDownIcon, CheckBadgeIcon } from '@heroicons/react/24/outline';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faChrome, faCookie } from '@fortawesome/free-brands-svg-icons';
 
 export default function DriveSetupPage() {
   const router = useRouter();
@@ -25,6 +27,25 @@ export default function DriveSetupPage() {
       description: "Tài khoản này được sử dụng để tải xuống các tệp từ Google Drive.", 
       icon: <CloudArrowDownIcon className="h-5 w-5 text-blue-500" /> 
     }
+  ];
+
+  // Tìm phần "Khối các tác vụ với YouTube"
+  const youtubeActions = [
+    {
+      title: 'Cập nhật Token YouTube qua Chrome',
+      description: 'Cập nhật token YouTube thủ công thông qua trình duyệt Chrome',
+      icon: <FontAwesomeIcon icon={faChrome} className="h-6 w-6 text-blue-500" />,
+      href: '/admin/youtube/chrome-token',
+      disabled: false
+    },
+    
+    {
+      title: 'Cập nhật Cookie KimVan',
+      description: 'Cập nhật cookie KimVan để kết nối với hệ thống KimVan',
+      icon: <FontAwesomeIcon icon={faCookie} className="h-6 w-6 text-yellow-600" />,
+      href: '/admin/kimvan-cookie',
+      disabled: false
+    },
   ];
 
   useEffect(() => {
