@@ -229,7 +229,7 @@ const YouTubeModal = ({ isOpen, videoId, onClose }) => {
             }
             
             .logo-overlay {
-              bottom: 80px; /* Để lộ thanh tua */
+              bottom: 0;
               right: 0;
               width: 120px;
               height: 60px;
@@ -240,6 +240,27 @@ const YouTubeModal = ({ isOpen, videoId, onClose }) => {
               left: 0;
               width: 75%;
               height: 40px;
+            }
+            
+            /* Lớp phủ mới chặn tương tác với các nút phía trên */
+            .controls-blocker {
+              position: absolute;
+              top: 0;
+              left: 0;
+              width: 100%;
+              /* Chỉ che phần trên cùng của video */
+              height: 60px;
+              z-index: 15; /* Cao hơn các overlay khác */
+              pointer-events: auto;
+              background: transparent;
+              cursor: default;
+            }
+            
+            /* Đảm bảo thanh điều khiển luôn hiển thị và có thể tương tác */
+            @media (max-width: 768px) {
+              .controls-blocker {
+                height: 70px; /* Cao hơn một chút trên mobile */
+              }
             }
             
             .endscreen-overlay {
@@ -284,6 +305,9 @@ const YouTubeModal = ({ isOpen, videoId, onClose }) => {
               <div class="overlay-protection top-overlay"></div>
               <div class="overlay-protection logo-overlay"></div>
               <div class="overlay-protection title-overlay"></div>
+              
+              <!-- Lớp phủ mới chặn tương tác với toàn bộ video trừ thanh tua -->
+              <div class="controls-blocker" id="controls-blocker"></div>
             </div>
           </div>
           
@@ -372,10 +396,27 @@ const YouTubeModal = ({ isOpen, videoId, onClose }) => {
                 window.onYouTubeIframeAPIReady = function() {
                   player = new YT.Player(youtubeIframe, {
                     events: {
-                      'onStateChange': onPlayerStateChange
+                      'onStateChange': onPlayerStateChange,
+                      'onReady': onPlayerReady
                     }
                   });
                 };
+                
+                // Khi player đã sẵn sàng
+                function onPlayerReady(event) {
+                  // Xử lý lớp phủ
+                  const controlsBlocker = document.getElementById('controls-blocker');
+                  
+                  // Điều chỉnh chiều cao để chỉ che phần trên cùng
+                  controlsBlocker.style.height = '60px';
+                  
+                  // Điều chỉnh kích thước dựa vào kích thước màn hình
+                  if (window.innerWidth <= 768) {
+                    controlsBlocker.style.height = '70px';
+                  }
+                  
+                  // Bỏ xử lý sự kiện click để play/pause vì không cần thiết nữa
+                }
                 
                 function onPlayerStateChange(event) {
                   // Khi video kết thúc (state = 0)
@@ -430,8 +471,28 @@ const YouTubeModal = ({ isOpen, videoId, onClose }) => {
                       visibility: visible !important;
                       pointer-events: auto !important;
                     }
+                    
+                    /* Vô hiệu hóa các liên kết khác */
+                    a, button:not(.ytp-play-button):not(.ytp-mute-button):not(.ytp-volume-panel):not(.ytp-progress-bar-container) {
+                      pointer-events: none !important;
+                    }
                   \`;
                   iframeDocument.head.appendChild(style);
+                  
+                  // Bắt sự kiện click để ngăn chặn các tác vụ mặc định
+                  iframeDocument.addEventListener('click', function(e) {
+                    const target = e.target;
+                    // Nếu click vào liên kết hoặc nút không phải thanh điều khiển
+                    if (target.tagName === 'A' || 
+                        (target.tagName === 'BUTTON' && 
+                         !target.classList.contains('ytp-play-button') && 
+                         !target.classList.contains('ytp-mute-button') &&
+                         !target.classList.contains('ytp-fullscreen-button'))) {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      return false;
+                    }
+                  }, true);
                 }
               } catch (e) {
                 console.log('Không thể chèn CSS vào iframe do hạn chế CORS');
