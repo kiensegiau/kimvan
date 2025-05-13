@@ -62,14 +62,14 @@ export default function CourseDetailPage({ params }) {
   // Hàm xử lý và thay thế link drive cũ bằng link mới từ processedDriveFiles
   const getUpdatedUrl = (originalUrl) => {
     if (!originalUrl) {
-      return originalUrl;
+      return { url: originalUrl, isProcessed: false };
     }
     
     // Kiểm tra xem processedDriveFiles ở đâu trong cấu trúc dữ liệu
     const processedFiles = course?.processedDriveFiles || [];
     
     if (processedFiles.length === 0) {
-      return originalUrl;
+      return { url: originalUrl, isProcessed: false };
     }
 
     // Tìm trong danh sách các file đã xử lý
@@ -78,10 +78,10 @@ export default function CourseDetailPage({ params }) {
     );
 
     if (processedFile) {
-      return processedFile.processedUrl;
+      return { url: processedFile.processedUrl, isProcessed: true };
     }
 
-    return originalUrl;
+    return { url: originalUrl, isProcessed: false };
   };
 
   // Lấy thông tin chi tiết của khóa học
@@ -217,9 +217,25 @@ export default function CourseDetailPage({ params }) {
   const handleLinkClick = async (url, title) => {
     if (!url) return;
     
+    // Kiểm tra xem link đã được xử lý chưa
+    const processedUrlInfo = getUpdatedUrl(url);
+    
     try {
       // Hiển thị loading
       setProcessingLink(true);
+
+      // Nếu là link Google Drive và chưa có URL mới
+      if (isGoogleDriveLink(url) && !processedUrlInfo.isProcessed) {
+        // Hiển thị modal thông báo đang cập nhật tài liệu
+        setPdfModal({ 
+          isOpen: true, 
+          fileUrl: null, 
+          title: title,
+          isUpdating: true
+        });
+        setProcessingLink(false);
+        return;
+      }
       
       // Gọi API để xử lý link
       const response = await fetch('/api/links', {
@@ -228,10 +244,10 @@ export default function CourseDetailPage({ params }) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          url: url,
-          type: isYoutubeLink(url) ? 'youtube' : 
-                isPdfLink(url) ? 'pdf' : 
-                isGoogleDriveLink(url) ? 'drive' : 'external'
+          url: processedUrlInfo.url, // Sử dụng URL đã được xử lý nếu có
+          type: isYoutubeLink(processedUrlInfo.url) ? 'youtube' : 
+                isPdfLink(processedUrlInfo.url) ? 'pdf' : 
+                isGoogleDriveLink(processedUrlInfo.url) ? 'drive' : 'external'
         }),
       });
 
@@ -250,7 +266,12 @@ export default function CourseDetailPage({ params }) {
       if (isYoutubeLink(processedUrl)) {
         openYoutubeModal(processedUrl, title);
       } else if (isPdfLink(processedUrl) || isGoogleDriveLink(processedUrl)) {
-        openPdfModal(processedUrl, title);
+        setPdfModal({ 
+          isOpen: true, 
+          fileUrl: processedUrl, 
+          title: title,
+          isUpdating: false
+        });
       } else {
         // Sử dụng API để chuyển hướng thay vì mở link trực tiếp
         window.open(`/api/links?url=${encodeURIComponent(encryptedOriginalUrl)}`, '_blank');
@@ -260,15 +281,28 @@ export default function CourseDetailPage({ params }) {
       // Ẩn loading
       setProcessingLink(false);
       
-      // Fallback: sử dụng URL gốc nếu có lỗi
-      const updatedUrl = getUpdatedUrl(url);
-      
-      if (isYoutubeLink(updatedUrl)) {
-        openYoutubeModal(updatedUrl, title);
-      } else if (isPdfLink(updatedUrl) || isGoogleDriveLink(updatedUrl)) {
-        openPdfModal(updatedUrl, title);
+      // Mở URL với thông tin đã xử lý
+      if (isYoutubeLink(processedUrlInfo.url)) {
+        openYoutubeModal(processedUrlInfo.url, title);
+      } else if (isPdfLink(processedUrlInfo.url) || isGoogleDriveLink(processedUrlInfo.url)) {
+        // Nếu là Google Drive và chưa có URL đã xử lý, hiển thị thông báo đang cập nhật
+        if (isGoogleDriveLink(processedUrlInfo.url) && !processedUrlInfo.isProcessed) {
+          setPdfModal({ 
+            isOpen: true, 
+            fileUrl: null, 
+            title: title,
+            isUpdating: true
+          });
+        } else {
+          setPdfModal({ 
+            isOpen: true, 
+            fileUrl: processedUrlInfo.url, 
+            title: title,
+            isUpdating: false
+          });
+        }
       } else {
-        window.open(updatedUrl, '_blank');
+        window.open(processedUrlInfo.url, '_blank');
       }
     }
   };
@@ -568,7 +602,7 @@ export default function CourseDetailPage({ params }) {
                                     {row.values && row.values.map((cell, cellIndex) => {
                                       // Xác định loại link nếu có
                                       const originalUrl = cell.userEnteredFormat?.textFormat?.link?.uri || cell.hyperlink;
-                                      const url = getUpdatedUrl(originalUrl);
+                                      const { url } = getUpdatedUrl(originalUrl);
                                       const isLink = url ? true : false;
                                       const linkType = isLink 
                                         ? isYoutubeLink(url) 
