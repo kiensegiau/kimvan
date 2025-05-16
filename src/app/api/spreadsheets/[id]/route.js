@@ -146,37 +146,13 @@ async function fetchSheetDetail(sheetId) {
         fs.writeFileSync(detailFilePath, JSON.stringify(detailData, null, 2));
         console.log(`Đã lưu chi tiết sheet vào: ${detailFilePath}`);
         
-        // Đóng trang sau khi hoàn thành
+        // Hiển thị thông báo trong console
+        console.log('\n===== LẤY JSON THÀNH CÔNG =====');
+        console.log(`Đã lấy xong chi tiết sheet với ID: ${shortId}`);
+        console.log(`Kết quả được lưu tại: ${detailFilePath}`);
+        
+        // Đóng trang chi tiết
         await detailPage.close();
-        
-        // Hiển thị thông báo hoàn thành
-        const finalPage = await browser.newPage();
-        await finalPage.setViewport({ width: 1280, height: 800 });
-        await finalPage.goto('https://kimvan.id.vn/', { waitUntil: 'networkidle0' });
-        
-        await finalPage.evaluate(() => {
-          document.body.style.backgroundColor = '#f0f8ff';
-          const div = document.createElement('div');
-          div.style.padding = '20px';
-          div.style.margin = '20px auto';
-          div.style.maxWidth = '600px';
-          div.style.backgroundColor = '#e6f7ff';
-          div.style.border = '1px solid #91d5ff';
-          div.style.borderRadius = '5px';
-          div.style.fontFamily = 'Arial, sans-serif';
-          
-          div.innerHTML = `
-            <h2 style="color: #096dd9; text-align: center;">Hoàn thành lấy chi tiết sheet</h2>
-            <p style="font-size: 16px; line-height: 1.5;">Đã lấy xong chi tiết sheet từ API KimVan.</p>
-            <p style="font-size: 16px; line-height: 1.5;"><strong>Lưu ý:</strong> Bạn có thể đóng trình duyệt này bất cứ lúc nào, phiên đăng nhập vẫn được lưu.</p>
-          `;
-          
-          document.body.prepend(div);
-        });
-        
-        console.log('\n===== HOÀN THÀNH =====');
-        console.log(`Đã lấy chi tiết sheet với ID: ${shortId}`);
-        console.log(`Kết quả được lưu tại: ${resultsDir}/${detailFileName}`);
         
         return {
           success: true,
@@ -201,8 +177,9 @@ async function fetchSheetDetail(sheetId) {
         };
       }
     } finally {
-      // Không đóng trình duyệt để giữ phiên đăng nhập
-      console.log('Đã giữ trình duyệt mở để sử dụng lần sau');
+      // Đóng trình duyệt ngay lập tức
+      await browser.close();
+      console.log('Đã đóng trình duyệt Chrome');
     }
   } catch (error) {
     console.error('Lỗi khi lấy chi tiết sheet:', error);

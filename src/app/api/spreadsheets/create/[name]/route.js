@@ -391,45 +391,14 @@ async function autoFetchData(sheetName, options = {}) {
       await listPage.close();
       console.log('Đã đóng tab danh sách sheet');
     } finally {
-      // Mở tab mới để người dùng có thể sử dụng
-      try {
-        const finalPage = await browser.newPage();
-        await finalPage.setViewport({ width: 1280, height: 800 });
-        await finalPage.goto('https://kimvan.id.vn/', { waitUntil: 'networkidle0' });
-        
-        await finalPage.evaluate(() => {
-          document.body.style.backgroundColor = '#f0f8ff';
-          // Tạo thông báo
-          const div = document.createElement('div');
-          div.style.padding = '20px';
-          div.style.margin = '20px auto';
-          div.style.maxWidth = '600px';
-          div.style.backgroundColor = '#e6f7ff';
-          div.style.border = '1px solid #91d5ff';
-          div.style.borderRadius = '5px';
-          div.style.fontFamily = 'Arial, sans-serif';
-          
-          div.innerHTML = `
-            <h2 style="color: #096dd9; text-align: center;">Hoàn thành lấy danh sách sheet</h2>
-            <p style="font-size: 16px; line-height: 1.5;">Đã lấy xong danh sách sheet từ API KimVan.</p>
-            <p style="font-size: 16px; line-height: 1.5;">Để lấy chi tiết từng sheet, sử dụng API /api/spreadsheets/[id]</p>
-            <p style="font-size: 16px; line-height: 1.5;"><strong>Lưu ý:</strong> Bạn có thể đóng trình duyệt này bất cứ lúc nào, phiên đăng nhập vẫn được lưu.</p>
-          `;
-          
-          document.body.prepend(div);
-        });
-        
-        console.log('\n===== GIỮ TRÌNH DUYỆT MỞ =====');
-        console.log('Trình duyệt Chrome sẽ được giữ mở để sử dụng lần sau');
-        console.log('Bạn có thể đóng trình duyệt bất cứ lúc nào nếu muốn');
-        console.log('Thông tin đăng nhập sẽ được lưu trong thư mục chrome-user-data');
-      } catch (err) {
-        console.error('Lỗi khi mở tab thông báo:', err);
-      }
+      // Hiển thị thông báo trong console
+      console.log('\n===== LẤY DANH SÁCH SHEET THÀNH CÔNG =====');
+      console.log(`Đã lấy xong danh sách sheet cho "${sheetName}"`);
+      console.log(`Kết quả được lưu tại: ${resultsDir}`);
       
-      // KHÔNG đóng trình duyệt
-      // browser.close() đã bị loại bỏ để giữ trình duyệt mở
-      console.log('Đã giữ trình duyệt mở theo yêu cầu');
+      // Đóng trình duyệt ngay lập tức
+      await browser.close();
+      console.log('Đã đóng trình duyệt Chrome');
     }
     
     // 4. Xử lý dữ liệu đã lấy
@@ -497,13 +466,13 @@ export async function GET(request, { params }) {
       // Gọi trực tiếp hàm autoFetchData 
       const options = {
         waitTime: 5000,          // Thời gian chờ giữa các request
-        keepBrowserOpen: true,   // Giữ trình duyệt Chrome mở sau khi hoàn thành
+        keepBrowserOpen: false,  // Đóng trình duyệt Chrome sau khi hoàn thành
         loginTimeout: 120000     // Cho phép 2 phút để đăng nhập nếu cần
       };
       
       console.log('Đang mở Chrome để bạn quan sát quá trình...');
       console.log('Nếu chưa đăng nhập, hệ thống sẽ đợi bạn đăng nhập Gmail');
-      console.log('Trình duyệt sẽ KHÔNG đóng sau khi hoàn thành, để bạn có thể tiếp tục sử dụng');
+      console.log('Trình duyệt sẽ tự động đóng sau khi hoàn thành');
       
       await autoFetchData(name, options);
       
@@ -511,7 +480,7 @@ export async function GET(request, { params }) {
       const newData = findSheetListByName(name);
       if (newData) {
         console.log(`Successfully fetched and processed data for "${name}"`);
-        console.log('Chrome được giữ mở - bạn có thể tiếp tục sử dụng hoặc đóng lại');
+        console.log('Chrome đã được đóng tự động');
         
         return NextResponse.json(newData, {
           headers: responseHeaders
@@ -529,7 +498,7 @@ export async function GET(request, { params }) {
             'Xử lý kết quả: node src/scripts/process-results.js',
             'Sử dụng API offline: /api/spreadsheets/from-offline/' + name
           ],
-          note: 'Chrome browser đã được giữ mở để bạn có thể tiếp tục sử dụng',
+          note: 'Chrome browser đã được đóng tự động',
           possibleReason: 'API KimVan có thể yêu cầu đăng nhập hoặc áp dụng giới hạn tốc độ (rate limit)',
           offlineApiUrl: `/api/spreadsheets/from-offline/${name}`,
           timestamp: timestamp
@@ -560,7 +529,7 @@ export async function GET(request, { params }) {
           'Xử lý kết quả: node src/scripts/process-results.js',
           'Sử dụng API offline: /api/spreadsheets/from-offline/' + name
         ],
-        note: 'Chrome browser đã được giữ mở để bạn có thể tiếp tục sử dụng',
+        note: 'Chrome browser đã được đóng tự động',
         error: fetchError.message,
         offlineApiUrl: `/api/spreadsheets/from-offline/${name}`,
         timestamp: timestamp
