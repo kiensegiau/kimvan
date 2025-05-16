@@ -36,6 +36,10 @@ export default function CoursesPage() {
   const [processResult, setProcessResult] = useState(null);
   const [selectedCourses, setSelectedCourses] = useState([]);
   const [processValue, setProcessValue] = useState('');
+  const [showSyncConfirmModal, setShowSyncConfirmModal] = useState(false);
+  const [syncAnalysisData, setSyncAnalysisData] = useState(null);
+  const [analyzingData, setAnalyzingData] = useState(false);
+  const [pendingSyncData, setPendingSyncData] = useState(null);
   
   // Thiết lập cookie admin_access khi trang được tải
   useEffect(() => {
@@ -247,52 +251,143 @@ export default function CoursesPage() {
     }
   };
 
-  // Hàm đồng bộ dữ liệu cho một khóa học cụ thể
-  const handleSyncSingleCourse = async (courseId) => {
+  // Hàm phân tích dữ liệu từ Kimvan
+  const analyzeKimvanData = (data) => {
+    if (!data) return null;
+    
     try {
-      setSyncing(true);
-      setError(null);
-      
-      // Hiển thị thông báo
-      setSyncResults({
-        inProgress: true,
-        success: true,
-        message: 'Đang đồng bộ khóa học...',
-        summary: {
-          total: 1,
-          created: 0,
-          updated: 0,
-          errors: 0
-        }
-      });
-      
-      // Bước 1: Tìm khóa học hiện có trong danh sách
-      const existingCourse = courses.find(course => course.kimvanId === courseId);
-      
-      if (!existingCourse) {
-        throw new Error('Không tìm thấy khóa học trong hệ thống');
-      }
-      
-      // Bước 2: Gọi API để lấy dữ liệu chi tiết từ Kimvan
-      const response = await fetch(`/api/spreadsheets/${courseId}`);
-      if (!response.ok) {
-        throw new Error(`Lỗi khi lấy dữ liệu từ Kimvan: ${response.status}`);
-      }
-      
-      const kimvanData = await response.json();
-      
-      // Bước 3: Định dạng dữ liệu trước khi đồng bộ, GIỮ NGUYÊN thông tin hiện tại
-      const courseToSync = {
-        _id: existingCourse._id,
-        kimvanId: courseId,
-        name: existingCourse.name,               // Giữ nguyên tên hiện tại
-        description: existingCourse.description, // Giữ nguyên mô tả hiện tại
-        price: existingCourse.price,             // Giữ nguyên giá hiện tại
-        status: existingCourse.status,           // Giữ nguyên trạng thái hiện tại
-        originalData: kimvanData                 // CHỈ cập nhật dữ liệu gốc
+      // Khởi tạo đối tượng phân tích
+      const analysis = {
+        youtubeLinks: 0,
+        driveLinks: 0,
+        totalLinks: 0,
+        lessons: [],
+        documents: [],
+        attachments: []
       };
       
-      // Bước 4: Gọi API để đồng bộ với MongoDB - sử dụng API admin đúng
+      // Hàm kiểm tra link YouTube
+      const isYoutubeLink = (url) => {
+        return url && (
+          url.includes('youtube.com') || 
+          url.includes('youtu.be') || 
+          url.includes('youtube-nocookie.com')
+        );
+      };
+      
+      // Hàm kiểm tra link Google Drive
+      const isDriveLink = (url) => {
+        return url && (
+          url.includes('drive.google.com') || 
+          url.includes('docs.google.com')
+        );
+      };
+      
+      // Phân tích dữ liệu bài học
+      if (data.chapters && Array.isArray(data.chapters)) {
+        data.chapters.forEach(chapter => {
+          if (chapter.lessons && Array.isArray(chapter.lessons)) {
+            chapter.lessons.forEach(lesson => {
+              // Thêm vào danh sách bài học
+              analysis.lessons.push({
+                id: lesson.id || '',
+                title: lesson.title || 'Không có tiêu đề',
+                videoType: lesson.videoType || 'unknown',
+                videoUrl: lesson.videoUrl || '',
+                chapterTitle: chapter.title || 'Chưa phân loại'
+              });
+              
+              // Đếm các loại link
+              if (lesson.videoUrl) {
+                analysis.totalLinks++;
+                if (isYoutubeLink(lesson.videoUrl)) {
+                  analysis.youtubeLinks++;
+                } else if (isDriveLink(lesson.videoUrl)) {
+                  analysis.driveLinks++;
+                }
+              }
+            });
+          }
+        });
+      }
+      
+      // Phân tích dữ liệu tài liệu và đính kèm
+      if (data.resources && Array.isArray(data.resources)) {
+        data.resources.forEach(resource => {
+          // Thêm vào danh sách tài liệu
+          analysis.documents.push({
+            id: resource.id || '',
+            title: resource.title || 'Không có tiêu đề',
+            type: resource.type || 'unknown',
+            url: resource.url || ''
+          });
+          
+          // Đếm các loại link
+          if (resource.url) {
+            analysis.totalLinks++;
+            if (isYoutubeLink(resource.url)) {
+              analysis.youtubeLinks++;
+            } else if (isDriveLink(resource.url)) {
+              analysis.driveLinks++;
+            }
+          }
+        });
+      }
+      
+      // Phân tích dữ liệu đính kèm nếu có
+      if (data.attachments && Array.isArray(data.attachments)) {
+        data.attachments.forEach(attachment => {
+          // Thêm vào danh sách đính kèm
+          analysis.attachments.push({
+            id: attachment.id || '',
+            title: attachment.title || 'Không có tiêu đề',
+            type: attachment.type || 'unknown',
+            url: attachment.url || ''
+          });
+          
+          // Đếm các loại link
+          if (attachment.url) {
+            analysis.totalLinks++;
+            if (isYoutubeLink(attachment.url)) {
+              analysis.youtubeLinks++;
+            } else if (isDriveLink(attachment.url)) {
+              analysis.driveLinks++;
+            }
+          }
+        });
+      }
+      
+      return analysis;
+    } catch (error) {
+      console.error('Lỗi khi phân tích dữ liệu Kimvan:', error);
+      return null;
+    }
+  };
+
+  // Hàm xác nhận đồng bộ sau khi phân tích
+  const handleConfirmSync = async () => {
+    try {
+      console.log('🚀 Bắt đầu quá trình đồng bộ sau khi xác nhận');
+      setShowSyncConfirmModal(false);
+      setSyncing(true);
+      
+      // Lấy dữ liệu đang chờ đồng bộ
+      const { existingCourse, kimvanData } = pendingSyncData;
+      console.log('📦 Dữ liệu đang chờ đồng bộ:', existingCourse.name);
+      
+      // Định dạng dữ liệu
+      const courseToSync = {
+        _id: existingCourse._id,
+        kimvanId: existingCourse.kimvanId,
+        name: existingCourse.name,
+        description: existingCourse.description,
+        price: existingCourse.price,
+        status: existingCourse.status,
+        originalData: kimvanData
+      };
+      
+      // Gọi API để đồng bộ với MongoDB
+      console.log('📡 Gửi dữ liệu đến API...');
       const syncResponse = await fetch(`/api/admin/courses/${existingCourse._id}`, {
         method: 'PUT',
         headers: {
@@ -310,6 +405,7 @@ export default function CoursesPage() {
         throw new Error(syncData.message || 'Không thể đồng bộ dữ liệu');
       }
       
+      console.log('✅ Đồng bộ thành công');
       // Hiển thị kết quả đồng bộ
       setSyncResults({
         inProgress: false,
@@ -325,9 +421,11 @@ export default function CoursesPage() {
       
       // Tải lại danh sách khóa học
       await fetchCourses();
+      
     } catch (err) {
-      console.error('Lỗi khi đồng bộ khóa học:', err);
+      console.error('❌ Lỗi khi đồng bộ khóa học:', err);
       setError(err.message || 'Đã xảy ra lỗi khi đồng bộ khóa học từ Kimvan');
+      
       // Hiển thị kết quả lỗi
       setSyncResults({
         inProgress: false,
@@ -342,6 +440,86 @@ export default function CoursesPage() {
       });
     } finally {
       setSyncing(false);
+      setPendingSyncData(null);
+    }
+  };
+
+  // Hàm đồng bộ dữ liệu cho một khóa học cụ thể
+  const handleSyncSingleCourse = async (courseId) => {
+    try {
+      setAnalyzingData(true);
+      setError(null);
+      
+      console.log('🔍 Bắt đầu phân tích dữ liệu khóa học:', courseId);
+      
+      // Hiển thị thông báo
+      setSyncResults({
+        inProgress: true,
+        success: true,
+        message: 'Đang phân tích dữ liệu khóa học...',
+        summary: {
+          total: 1,
+          created: 0,
+          updated: 0,
+          errors: 0
+        }
+      });
+      
+      // Bước 1: Tìm khóa học hiện có trong danh sách
+      const existingCourse = courses.find(course => course.kimvanId === courseId);
+      
+      if (!existingCourse) {
+        throw new Error('Không tìm thấy khóa học trong hệ thống');
+      }
+      
+      console.log('📋 Tìm thấy khóa học trong hệ thống:', existingCourse.name);
+      
+      // Bước 2: Gọi API để lấy dữ liệu chi tiết từ Kimvan
+      console.log('🌐 Đang lấy dữ liệu từ Kimvan...');
+      const response = await fetch(`/api/spreadsheets/${courseId}`);
+      if (!response.ok) {
+        throw new Error(`Lỗi khi lấy dữ liệu từ Kimvan: ${response.status}`);
+      }
+      
+      const kimvanData = await response.json();
+      console.log('✅ Đã nhận dữ liệu từ Kimvan');
+      
+      // Bước 3: Phân tích dữ liệu từ Kimvan
+      console.log('🔎 Đang phân tích dữ liệu...');
+      const analysis = analyzeKimvanData(kimvanData);
+      console.log('📊 Kết quả phân tích:', analysis);
+      
+      // Lưu dữ liệu phân tích và dữ liệu đang chờ đồng bộ
+      setSyncAnalysisData(analysis);
+      setPendingSyncData({ existingCourse, kimvanData });
+      
+      // Đảm bảo state được cập nhật trước khi hiển thị modal
+      setTimeout(() => {
+        // Bước 4: Hiển thị modal xác nhận với dữ liệu phân tích
+        console.log('🖼️ Hiển thị modal xác nhận đồng bộ');
+        setShowSyncConfirmModal(true);
+        setAnalyzingData(false);
+        
+        // Xóa thông báo đang phân tích
+        setSyncResults(null);
+      }, 300);
+      
+    } catch (err) {
+      console.error('❌ Lỗi khi phân tích khóa học:', err);
+      setError(err.message || 'Đã xảy ra lỗi khi phân tích khóa học từ Kimvan');
+      // Hiển thị kết quả lỗi
+      setSyncResults({
+        inProgress: false,
+        success: false,
+        message: `Lỗi: ${err.message}`,
+        summary: {
+          total: 1,
+          created: 0,
+          updated: 0,
+          errors: 1
+        }
+      });
+      setAnalyzingData(false);
     }
   };
 
@@ -829,19 +1007,22 @@ export default function CoursesPage() {
                           {course.kimvanId && (
                             <>
                               <button
-                                onClick={() => handleViewOriginalData(course.kimvanId)}
+                                onClick={() => handleViewOriginalData(course._id)}
                                 className="text-yellow-600 hover:text-yellow-900 mr-2"
                                 title="Xem dữ liệu gốc"
                               >
                                 <CloudArrowDownIcon className="h-5 w-5" />
                               </button>
                               <button
-                                onClick={() => handleSyncSingleCourse(course.kimvanId)}
-                                disabled={syncing}
-                                className="text-green-600 hover:text-green-900 mr-2"
+                                onClick={() => {
+                                  console.log('🔄 Nút đồng bộ được nhấn cho khóa học:', course.name, 'ID:', course.kimvanId);
+                                  handleSyncSingleCourse(course.kimvanId);
+                                }}
+                                disabled={syncing || analyzingData}
+                                className={`text-green-600 hover:text-green-900 mr-2 ${(syncing || analyzingData) ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 title="Đồng bộ khóa học này"
                               >
-                                <ArrowPathIcon className={`h-5 w-5 ${syncing ? 'animate-spin' : ''}`} />
+                                <ArrowPathIcon className={`h-5 w-5 ${(syncing || analyzingData) ? 'animate-spin' : ''}`} />
                               </button>
                             </>
                           )}
@@ -1185,6 +1366,220 @@ export default function CoursesPage() {
                   <button
                     type="button"
                     onClick={() => setShowProcessModal(false)}
+                    className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                  >
+                    Hủy
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Modal Xác nhận đồng bộ với phân tích dữ liệu */}
+      {showSyncConfirmModal && (
+        <>
+          {/* Lớp phủ */}
+          <div 
+            className="fixed inset-0 bg-gray-500 bg-opacity-75 z-40 cursor-pointer" 
+            onClick={() => setShowSyncConfirmModal(false)}
+          ></div>
+          
+          {/* Nội dung modal */}
+          <div className="fixed z-50 inset-0 overflow-y-auto">
+            <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+              <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+              <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
+                <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                  <div className="sm:flex sm:items-start">
+                    <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
+                      <CloudArrowDownIcon className="h-6 w-6 text-blue-600" aria-hidden="true" />
+                    </div>
+                    <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                      <h3 className="text-lg leading-6 font-medium text-gray-900">
+                        Xác nhận đồng bộ dữ liệu khóa học
+                      </h3>
+                      
+                      {pendingSyncData && (
+                        <div className="mt-2">
+                          <p className="text-sm text-gray-500 mb-1">
+                            Bạn đang chuẩn bị đồng bộ dữ liệu cho khóa học sau:
+                          </p>
+                          <p className="text-base font-medium text-gray-900 mb-4">
+                            {pendingSyncData.existingCourse.name}
+                          </p>
+                          
+                          {/* Thẻ thống kê */}
+                          {syncAnalysisData && (
+                            <div className="grid grid-cols-3 gap-4 mb-6">
+                              <div className="border rounded p-3 bg-blue-50">
+                                <p className="text-sm text-gray-600">Links YouTube</p>
+                                <p className="text-2xl font-semibold text-blue-600">{syncAnalysisData.youtubeLinks}</p>
+                              </div>
+                              <div className="border rounded p-3 bg-green-50">
+                                <p className="text-sm text-gray-600">Links Google Drive</p>
+                                <p className="text-2xl font-semibold text-green-600">{syncAnalysisData.driveLinks}</p>
+                              </div>
+                              <div className="border rounded p-3 bg-gray-50">
+                                <p className="text-sm text-gray-600">Tổng số links</p>
+                                <p className="text-2xl font-semibold text-gray-600">{syncAnalysisData.totalLinks}</p>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Tabs cho các loại dữ liệu */}
+                          {syncAnalysisData && (
+                            <div className="mt-4 max-h-96 overflow-y-auto">
+                              <div className="border-b border-gray-200">
+                                <nav className="-mb-px flex" aria-label="Tabs">
+                                  <button
+                                    onClick={() => document.getElementById('tab-lessons').scrollIntoView()}
+                                    className="w-1/3 py-2 px-1 text-center border-b-2 border-blue-500 font-medium text-sm text-blue-600"
+                                  >
+                                    Bài giảng ({syncAnalysisData.lessons.length})
+                                  </button>
+                                  <button
+                                    onClick={() => document.getElementById('tab-documents').scrollIntoView()}
+                                    className="w-1/3 py-2 px-1 text-center border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                                  >
+                                    Tài liệu ({syncAnalysisData.documents.length})
+                                  </button>
+                                  <button
+                                    onClick={() => document.getElementById('tab-attachments').scrollIntoView()}
+                                    className="w-1/3 py-2 px-1 text-center border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                                  >
+                                    Đính kèm ({syncAnalysisData.attachments.length})
+                                  </button>
+                                </nav>
+                              </div>
+                              
+                              {/* Bảng bài giảng */}
+                              <div id="tab-lessons" className="py-4">
+                                <h4 className="text-md font-medium text-gray-900 mb-2">Danh sách bài giảng</h4>
+                                {syncAnalysisData.lessons.length > 0 ? (
+                                  <table className="min-w-full divide-y divide-gray-200">
+                                    <thead className="bg-gray-50">
+                                      <tr>
+                                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên bài giảng</th>
+                                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chương</th>
+                                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Loại video</th>
+                                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Link</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                      {syncAnalysisData.lessons.map((lesson, index) => (
+                                        <tr key={index}>
+                                          <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">{lesson.title}</td>
+                                          <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{lesson.chapterTitle}</td>
+                                          <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
+                                            {lesson.videoUrl && lesson.videoUrl.includes('youtube') ? 'YouTube' : 
+                                             lesson.videoUrl && lesson.videoUrl.includes('drive.google') ? 'Drive' : 
+                                             lesson.videoType || 'N/A'}
+                                          </td>
+                                          <td className="px-3 py-2 text-sm text-gray-500 max-w-xs truncate">
+                                            {lesson.videoUrl ? (
+                                              <a href={lesson.videoUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline truncate">
+                                                {lesson.videoUrl.substring(0, 30)}...
+                                              </a>
+                                            ) : 'Không có'}
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                ) : (
+                                  <p className="text-gray-500 text-sm">Không có bài giảng nào</p>
+                                )}
+                              </div>
+                              
+                              {/* Bảng tài liệu */}
+                              <div id="tab-documents" className="py-4">
+                                <h4 className="text-md font-medium text-gray-900 mb-2">Danh sách tài liệu</h4>
+                                {syncAnalysisData.documents.length > 0 ? (
+                                  <table className="min-w-full divide-y divide-gray-200">
+                                    <thead className="bg-gray-50">
+                                      <tr>
+                                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên tài liệu</th>
+                                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Loại</th>
+                                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Link</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                      {syncAnalysisData.documents.map((doc, index) => (
+                                        <tr key={index}>
+                                          <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">{doc.title}</td>
+                                          <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{doc.type || 'N/A'}</td>
+                                          <td className="px-3 py-2 text-sm text-gray-500 max-w-xs truncate">
+                                            {doc.url ? (
+                                              <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline truncate">
+                                                {doc.url.substring(0, 30)}...
+                                              </a>
+                                            ) : 'Không có'}
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                ) : (
+                                  <p className="text-gray-500 text-sm">Không có tài liệu nào</p>
+                                )}
+                              </div>
+                              
+                              {/* Bảng đính kèm */}
+                              <div id="tab-attachments" className="py-4">
+                                <h4 className="text-md font-medium text-gray-900 mb-2">Danh sách đính kèm</h4>
+                                {syncAnalysisData.attachments.length > 0 ? (
+                                  <table className="min-w-full divide-y divide-gray-200">
+                                    <thead className="bg-gray-50">
+                                      <tr>
+                                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên đính kèm</th>
+                                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Loại</th>
+                                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Link</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                      {syncAnalysisData.attachments.map((attachment, index) => (
+                                        <tr key={index}>
+                                          <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">{attachment.title}</td>
+                                          <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{attachment.type || 'N/A'}</td>
+                                          <td className="px-3 py-2 text-sm text-gray-500 max-w-xs truncate">
+                                            {attachment.url ? (
+                                              <a href={attachment.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline truncate">
+                                                {attachment.url.substring(0, 30)}...
+                                              </a>
+                                            ) : 'Không có'}
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                ) : (
+                                  <p className="text-gray-500 text-sm">Không có đính kèm nào</p>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                  <button
+                    type="button"
+                    onClick={handleConfirmSync}
+                    disabled={syncing}
+                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
+                  >
+                    {syncing ? 'Đang đồng bộ...' : 'Xác nhận đồng bộ'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowSyncConfirmModal(false);
+                      setPendingSyncData(null);
+                    }}
                     className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
                   >
                     Hủy
