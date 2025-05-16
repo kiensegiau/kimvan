@@ -4,6 +4,9 @@ import path from 'path';
 // File path để lưu trữ token KimVan
 const KIMVAN_TOKEN_PATH = path.join(process.cwd(), 'kimvan_token.json');
 
+let cachedAuthInfo = null;
+let lastLoadTime = 0;
+
 /**
  * Lấy KimVan token từ file lưu trữ
  * @returns {Object} Đối tượng chứa token và thông tin liên quan
@@ -218,83 +221,92 @@ export function buildFullCookieString(cookieData) {
 }
 
 /**
- * Tạo KimVan Authorization headers
- * @returns {Object} Headers cho request API
+ * Hàm lấy headers xác thực cho KimVan API
+ * Đọc từ file auth được lưu bởi script Puppeteer
  */
 export function getKimVanAuthHeaders() {
-  // Chuẩn bị headers cơ bản
+  const now = Date.now();
+  
+  // Chỉ đọc lại file sau mỗi 5 phút
+  if (!cachedAuthInfo || now - lastLoadTime > 5 * 60 * 1000) {
+    try {
+      // Tìm file auth mới nhất trong thư mục logs
+      const logsDir = path.join(process.cwd(), 'logs');
+      const files = fs.readdirSync(logsDir)
+        .filter(file => file.startsWith('kimvan-requests-'))
+        .sort()
+        .reverse(); // Sắp xếp theo thời gian mới nhất
+      
+      if (files.length > 0) {
+        const latestFile = path.join(logsDir, files[0]);
+        const fileContent = fs.readFileSync(latestFile, 'utf8');
+        const authData = JSON.parse(fileContent);
+        
+        // Lưu vào cache
+        cachedAuthInfo = authData;
+        lastLoadTime = now;
+        
+        console.log(`Đã đọc thông tin xác thực từ file: ${latestFile}`);
+      } else {
+        console.warn('Không tìm thấy file thông tin xác thực. Vui lòng chạy script Puppeteer trước.');
+      }
+    } catch (error) {
+      console.error('Lỗi khi đọc file thông tin xác thực:', error);
+    }
+  }
+  
+  // Tạo headers dựa trên thông tin trong file
   const headers = {
-    'accept': '*/*',
-    'accept-encoding': 'gzip, deflate, br, zstd',
-    'accept-language': 'vi',
-    'cache-control': 'no-cache',
-    'pragma': 'no-cache',
-    'sec-ch-ua': '"Google Chrome";v="135", "Not-A.Brand";v="8", "Chromium";v="135"',
-    'sec-ch-ua-mobile': '?0',
-    'sec-ch-ua-platform': '"Windows"',
-    'sec-fetch-dest': 'empty',
-    'sec-fetch-mode': 'cors',
-    'sec-fetch-site': 'same-origin',
-    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36',
-    'priority': 'u=1, i',
-    'referer': 'https://kimvan.id.vn/'
+    'Content-Type': 'application/json',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
   };
   
-  const tokenData = getKimVanToken();
-  
-  if (!tokenData) {
-    console.log('[TOKEN] Không tìm thấy token KimVan. Thử sử dụng KIMVAN_COOKIE từ biến môi trường.');
-    
-    // Sử dụng KIMVAN_COOKIE từ biến môi trường nếu có
-    const envCookie = process.env.KIMVAN_COOKIE;
-    if (envCookie) {
-      // Phân tích cookie từ biến môi trường
-      const cookieData = parseCookieString(envCookie);
-      
-      if (cookieData) {
-        if (cookieData.token_type === 'jwt') {
-          headers['Authorization'] = `Bearer ${cookieData.value}`;
-          console.log('[TOKEN] Sử dụng JWT Bearer token từ biến môi trường');
-        } else {
-          // Tạo cookie đầy đủ
-          headers['cookie'] = envCookie.includes(';') ? envCookie : buildFullCookieString(cookieData);
-          console.log('[TOKEN] Sử dụng cookie đầy đủ từ biến môi trường');
-        }
-      } else {
-        // Sử dụng cookie nguyên gốc nếu không thể phân tích
-        headers['cookie'] = envCookie;
-        console.log('[TOKEN] Sử dụng cookie nguyên gốc từ biến môi trường');
+  if (cachedAuthInfo) {
+    // Ưu tiên sử dụng Bearer token nếu có
+    if (cachedAuthInfo.requests) {
+      const authRequest = cachedAuthInfo.requests.find(r => r.headers && r.headers.Authorization);
+      if (authRequest?.headers?.Authorization) {
+        headers.Authorization = authRequest.headers.Authorization;
       }
-    } else {
-      console.log('[TOKEN] CẢNH BÁO: Không tìm thấy token để xác thực!');
     }
     
-    return headers;
+    // Nếu không có Bearer token, dùng cookie
+    if (!headers.Authorization && cachedAuthInfo.cookies) {
+      const authCookie = cachedAuthInfo.cookies.find(
+        c => c.name === 'connect.sid' || c.name.toLowerCase().includes('token')
+      );
+      if (authCookie) {
+        headers.cookie = `${authCookie.name}=${authCookie.value}`;
+      }
+    }
   }
-  
-  // Sử dụng token đã lưu trong file
-  if (tokenData.token_type === 'jwt') {
-    // Ưu tiên sử dụng accessToken nếu có
-    const token = tokenData.accessToken || tokenData.value;
-    console.log('[TOKEN] Sử dụng JWT Bearer token từ file');
-    headers['Authorization'] = `Bearer ${token}`;
-  } else {
-    console.log('[TOKEN] Sử dụng cookie đầy đủ từ file');
-    
-    // Tạo chuỗi cookie đầy đủ
-    headers['cookie'] = tokenData.cookie_string || buildFullCookieString(tokenData);
-  }
-  
-  // Log tóm tắt headers để debug
-  console.log('[TOKEN] Tóm tắt headers:', {
-    hasAuthorization: !!headers.Authorization,
-    hasCookie: !!headers.cookie,
-    cookieLength: headers.cookie ? headers.cookie.length : 0,
-    authLength: headers.Authorization ? headers.Authorization.length : 0,
-    hasEmail: !!tokenData?.auth_email
-  });
   
   return headers;
+}
+
+/**
+ * Hàm lưu thông tin xác thực mới
+ * (Có thể được sử dụng từ API route khác nếu cần)
+ */
+export function saveKimVanAuth(authInfo) {
+  try {
+    const logsDir = path.join(process.cwd(), 'logs');
+    if (!fs.existsSync(logsDir)) {
+      fs.mkdirSync(logsDir, { recursive: true });
+    }
+    
+    const filePath = path.join(logsDir, `kimvan-auth-manual-${Date.now()}.json`);
+    fs.writeFileSync(filePath, JSON.stringify(authInfo, null, 2));
+    
+    // Cập nhật cache
+    cachedAuthInfo = authInfo;
+    lastLoadTime = Date.now();
+    
+    return true;
+  } catch (error) {
+    console.error('Lỗi khi lưu thông tin xác thực:', error);
+    return false;
+  }
 }
 
 /**

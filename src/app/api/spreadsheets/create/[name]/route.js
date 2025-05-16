@@ -1,92 +1,647 @@
 import { NextResponse } from 'next/server';
-import { getKimVanAuthHeaders } from '../../../helpers/kimvan-token';
+import path from 'path';
+import fs from 'fs';
+import puppeteer from 'puppeteer';
 
+// Thư mục kết quả và xử lý
+const resultsDir = path.join(process.cwd(), 'results');
+const processedDir = path.join(process.cwd(), 'processed');
+
+// Đảm bảo thư mục tồn tại
+if (!fs.existsSync(resultsDir)) {
+  fs.mkdirSync(resultsDir, { recursive: true });
+}
+if (!fs.existsSync(processedDir)) {
+  fs.mkdirSync(processedDir, { recursive: true });
+}
+
+/**
+ * Tạo URL tìm kiếm danh sách sheet
+ * @param {string} sheetName - Tên sheet cần tìm
+ * @returns {string} URL đầy đủ
+ */
+function createListUrl(sheetName) {
+  // Loại bỏ tham số t (cache busting)
+  return `https://kimvan.id.vn/api/spreadsheets/create/${encodeURIComponent(sheetName)}`;
+}
+
+/**
+ * Tạo URL lấy dữ liệu chi tiết của sheet
+ * @param {string} sheetId - ID của sheet
+ * @returns {string} URL đầy đủ
+ */
+function createDetailUrl(sheetId) {
+  // Loại bỏ tham số t (cache busting)
+  return `https://kimvan.id.vn/api/spreadsheets/${encodeURIComponent(sheetId)}`;
+}
+
+/**
+ * Xử lý dữ liệu kết quả
+ */
+function processResults() {
+  try {
+    console.log('Đang xử lý dữ liệu...');
+    
+    // Đọc tất cả các file trong thư mục results
+    const files = fs.readdirSync(resultsDir);
+    
+    // Khởi tạo đối tượng chứa dữ liệu đã xử lý
+    const processedData = {
+      timestamp: new Date().toISOString(),
+      sheetLists: {},
+      sheetDetails: {}
+    };
+    
+    // Duyệt qua từng file
+    let filesProcessed = 0;
+    
+    files.forEach(file => {
+      if (!file.endsWith('.json')) return;
+      
+      const filePath = path.join(resultsDir, file);
+      const fileName = path.basename(filePath);
+      console.log(`Đang xử lý file: ${fileName}`);
+      
+      try {
+        const content = fs.readFileSync(filePath, 'utf8');
+        const data = JSON.parse(content);
+        
+        // Xác định loại dữ liệu (danh sách hoặc chi tiết)
+        if (file.includes('-list.json')) {
+          // File danh sách sheet
+          const sheetName = file.replace('-list.json', '');
+          processedData.sheetLists[sheetName] = {
+            source: fileName,
+            timestamp: new Date().toISOString(),
+            data: data
+          };
+          console.log(`File ${fileName} chứa danh sách sheet cho "${sheetName}" (${Array.isArray(data) ? data.length : 0} sheets)`);
+          
+        } else if (file.includes('-detail.json')) {
+          // File chi tiết sheet
+          const sheetIdMatch = fileName.match(/[^-]+-([a-zA-Z0-9_-]{10})/);
+          const sheetId = sheetIdMatch ? sheetIdMatch[1] : 'unknown';
+          
+          processedData.sheetDetails[sheetId] = {
+            source: fileName,
+            timestamp: new Date().toISOString(),
+            data: data
+          };
+          
+          console.log(`File ${fileName} chứa chi tiết sheet với ID: ${sheetId}`);
+        } else {
+          console.log(`File ${fileName} có định dạng không xác định.`);
+        }
+        
+        filesProcessed++;
+      } catch (error) {
+        console.error(`Lỗi khi xử lý file ${file}:`, error.message);
+      }
+    });
+    
+    if (filesProcessed === 0) {
+      console.log('Không tìm thấy file JSON nào để xử lý. Hãy chạy script open-browser.js trước.');
+      return null;
+    }
+    
+    // Lưu dữ liệu đã xử lý
+    const processedFilePath = path.join(processedDir, `kimvan-data-${Date.now()}.json`);
+    fs.writeFileSync(processedFilePath, JSON.stringify(processedData, null, 2));
+    
+    // Cập nhật file index
+    const indexFilePath = path.join(processedDir, 'index.json');
+    const indexData = {
+      timestamp: new Date().toISOString(),
+      lastProcessed: processedFilePath,
+      sheetListCount: Object.keys(processedData.sheetLists).length,
+      sheetDetailCount: Object.keys(processedData.sheetDetails).length,
+      sheetNames: Object.keys(processedData.sheetLists),
+      sheetIds: Object.keys(processedData.sheetDetails)
+    };
+    fs.writeFileSync(indexFilePath, JSON.stringify(indexData, null, 2));
+    
+    console.log(`\nĐã xử lý ${filesProcessed} file JSON`);
+    console.log(`Tìm thấy ${Object.keys(processedData.sheetLists).length} danh sách sheet`);
+    console.log(`Tìm thấy ${Object.keys(processedData.sheetDetails).length} chi tiết sheet`);
+    console.log(`Dữ liệu đã xử lý được lưu tại: ${processedFilePath}`);
+    console.log(`File index đã được cập nhật: ${indexFilePath}`);
+    
+    return processedData;
+  } catch (error) {
+    console.error('Lỗi khi xử lý dữ liệu:', error);
+    return null;
+  }
+}
+
+/**
+ * Find index.json in processed directory
+ * @returns {Object|null} Data from index.json or null if not found
+ */
+function findIndexFile() {
+  try {
+    const indexPath = path.join(processedDir, 'index.json');
+    
+    if (!fs.existsSync(indexPath)) {
+      console.log('Index file not found.');
+      return null;
+    }
+    
+    const content = fs.readFileSync(indexPath, 'utf8');
+    return JSON.parse(content);
+  } catch (error) {
+    console.error('Error reading index file:', error.message);
+    return null;
+  }
+}
+
+/**
+ * Find latest processed data
+ * @returns {Object|null} Processed data or null if not found
+ */
+function findLatestProcessedData() {
+  try {
+    const indexData = findIndexFile();
+    if (!indexData || !indexData.lastProcessed) return null;
+    
+    const dataPath = indexData.lastProcessed;
+    if (!fs.existsSync(dataPath)) {
+      console.log(`Data file not found: ${dataPath}`);
+      return null;
+    }
+    
+    const content = fs.readFileSync(dataPath, 'utf8');
+    return JSON.parse(content);
+  } catch (error) {
+    console.error('Error reading processed data:', error.message);
+    return null;
+  }
+}
+
+/**
+ * Find sheet list by name from offline data
+ * @param {string} name - Sheet name
+ * @returns {Array|null} Sheet list or null if not found
+ */
+function findSheetListByName(name) {
+  const processedData = findLatestProcessedData();
+  if (!processedData || !processedData.sheetLists) return null;
+  
+  // Exact match
+  if (processedData.sheetLists[name]) {
+    return processedData.sheetLists[name].data;
+  }
+  
+  // Partial match
+  const keys = Object.keys(processedData.sheetLists);
+  for (const key of keys) {
+    if (key.includes(name) || name.includes(key)) {
+      return processedData.sheetLists[key].data;
+    }
+  }
+  
+  return null;
+}
+
+/**
+ * Kiểm tra xem người dùng đã đăng nhập chưa
+ * @param {Object} page - Trang Puppeteer
+ * @returns {Promise<boolean>} Đã đăng nhập hay chưa
+ */
+async function isLoggedIn(page) {
+  try {
+    // Kiểm tra xem có phần tử nào chỉ hiện khi đã đăng nhập không
+    // Hoặc kiểm tra xem có phần tử login không
+    const loginButton = await page.$('button[type="submit"], a.login-button, .login');
+    return !loginButton; // Nếu không có nút đăng nhập, coi như đã đăng nhập
+  } catch (error) {
+    console.error('Lỗi khi kiểm tra trạng thái đăng nhập:', error);
+    return false;
+  }
+}
+
+/**
+ * Tự động lấy và lưu dữ liệu từ API KimVan
+ * @param {string} sheetName - Tên sheet cần lấy
+ * @param {Object} options - Tuỳ chọn
+ */
+async function autoFetchData(sheetName, options = {}) {
+  const waitTime = options.waitTime || 5000; // 5 giây mặc định
+  const keepOpen = options.keepOpen || 60000; // Thời gian giữ trình duyệt mở sau khi hoàn thành (mặc định 1 phút)
+  const loginTimeout = options.loginTimeout || 120000; // Thời gian tối đa đợi đăng nhập (2 phút)
+  let sheetIds = [];
+  
+  try {
+    console.log(`===== BẮT ĐẦU TỰ ĐỘNG LẤY DỮ LIỆU CHO "${sheetName}" =====`);
+    
+    // Đường dẫn đến thư mục dữ liệu người dùng Chrome
+    const userDataDir = path.join(process.cwd(), 'chrome-user-data');
+    
+    // Đảm bảo thư mục tồn tại
+    if (!fs.existsSync(userDataDir)) {
+      fs.mkdirSync(userDataDir, { recursive: true });
+    }
+    
+    // 1. Khởi động trình duyệt với giao diện visible và cấu hình an toàn
+    console.log('Khởi động trình duyệt Chrome để bạn có thể quan sát và đăng nhập nếu cần...');
+    console.log('Sử dụng cấu hình mới để tránh lỗi "This browser or app may not be secure"');
+    
+    const browser = await puppeteer.launch({
+      headless: false,                // Hiển thị trình duyệt
+      defaultViewport: null,          // Tự động điều chỉnh kích thước viewport
+      userDataDir: userDataDir,       // Thư mục lưu dữ liệu người dùng
+      args: [
+        '--start-maximized',          // Mở cửa sổ to hơn
+        '--no-sandbox',               // Cần thiết trong một số môi trường
+        '--disable-setuid-sandbox',   // Cần thiết trong một số môi trường
+        '--disable-blink-features=AutomationControlled', // Quan trọng: ẩn đặc điểm tự động hóa
+        '--window-size=1920,1080'     // Kích thước cửa sổ lớn
+      ]
+    });
+    
+    try {
+      // 2. Lấy danh sách sheet
+      console.log(`\n[1] Lấy danh sách sheet cho "${sheetName}"...`);
+      const listUrl = createListUrl(sheetName);
+      console.log(`URL: ${listUrl}`);
+      
+      const listPage = await browser.newPage();
+      
+      // Cài đặt để tránh phát hiện là trình duyệt tự động
+      await listPage.evaluateOnNewDocument(() => {
+        // Ghi đè navigator.webdriver để tránh bị phát hiện
+        Object.defineProperty(navigator, 'webdriver', {
+          get: () => false,
+        });
+        
+        // Xóa thuộc tính cài đặt tự động
+        delete navigator.__proto__.webdriver;
+        
+        // Thêm plugins giả để trông giống trình duyệt thật
+        const originalQuery = window.navigator.permissions.query;
+        window.navigator.permissions.query = (parameters) => (
+          parameters.name === 'notifications' ?
+            Promise.resolve({ state: Notification.permission }) :
+            originalQuery(parameters)
+        );
+        
+        // Thêm chuỗi userAgent giả
+        Object.defineProperty(navigator, 'userAgent', {
+          get: () => "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+        });
+      });
+      
+      // Cấu hình trình duyệt giống Chrome thật
+      await listPage.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36');
+      
+      // Thiết lập kích thước trang đủ lớn
+      await listPage.setViewport({ width: 1280, height: 800 });
+      
+      // Hiển thị thông báo trên console của trình duyệt
+      await listPage.evaluateOnNewDocument(() => {
+        console.log('%cAPI KimVan Access', 'font-size: 20px; color: green; font-weight: bold');
+        console.log('Đang lấy dữ liệu, vui lòng đợi...');
+        console.log('Nếu cần đăng nhập, vui lòng đăng nhập Gmail trong cửa sổ này');
+      });
+      
+      await listPage.goto(listUrl, { waitUntil: 'networkidle0', timeout: 60000 });
+      
+      // Kiểm tra đăng nhập và đợi nếu cần
+      const loginStartTime = Date.now();
+      let isUserLoggedIn = await isLoggedIn(listPage);
+      
+      if (!isUserLoggedIn) {
+        console.log('\n===== ĐĂNG NHẬP GMAIL =====');
+        console.log('Vui lòng đăng nhập Gmail trong trình duyệt vừa hiện ra');
+        console.log(`Hệ thống sẽ đợi tối đa ${loginTimeout/1000} giây để bạn đăng nhập`);
+        console.log('Nhấn ESC hoặc đóng trình duyệt nếu muốn hủy quá trình');
+        
+        // Đợi người dùng đăng nhập
+        while (!isUserLoggedIn && (Date.now() - loginStartTime) < loginTimeout) {
+          // Đợi một lúc rồi kiểm tra lại
+          await new Promise(resolve => setTimeout(resolve, 5000));
+          console.log('Đang đợi đăng nhập...');
+          isUserLoggedIn = await isLoggedIn(listPage);
+          
+          // Nếu đã đăng nhập thì thông báo và tải lại trang
+          if (isUserLoggedIn) {
+            console.log('Đã phát hiện đăng nhập thành công!');
+            // Tải lại trang để áp dụng phiên đăng nhập
+            await listPage.reload({ waitUntil: 'networkidle0', timeout: 30000 });
+            break;
+          }
+        }
+        
+        // Nếu vẫn chưa đăng nhập sau khi hết thời gian
+        if (!isUserLoggedIn) {
+          console.log('Hết thời gian đợi đăng nhập. Tiếp tục quá trình (có thể bị giới hạn quyền truy cập)');
+        }
+      }
+      
+      // Tạm dừng để người dùng có thể xem
+      console.log('Đợi 3 giây để bạn có thể quan sát...');
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
+      // Lấy nội dung JSON
+      const listContent = await listPage.evaluate(() => document.body.innerText);
+      let listData;
+      
+      try {
+        listData = JSON.parse(listContent);
+        // Lưu file JSON
+        const listFileName = `${sheetName}-list.json`;
+        const listFilePath = path.join(resultsDir, listFileName);
+        fs.writeFileSync(listFilePath, JSON.stringify(listData, null, 2));
+        console.log(`Đã lưu danh sách sheet vào: ${listFilePath}`);
+        
+        // Lấy ID từ danh sách
+        if (Array.isArray(listData) && listData.length > 0) {
+          sheetIds = listData.map(item => item.id);
+          console.log(`Đã lấy ${sheetIds.length} ID sheet từ danh sách`);
+        } else {
+          console.warn('Dữ liệu danh sách không hợp lệ hoặc rỗng');
+        }
+      } catch (parseError) {
+        console.error('Lỗi khi xử lý dữ liệu danh sách:', parseError);
+        console.log('Nội dung nhận được:', listContent.slice(0, 500) + '...');
+        
+        // Lưu nội dung thô để kiểm tra
+        const rawFileName = `${sheetName}-list-raw.txt`;
+        const rawFilePath = path.join(resultsDir, rawFileName);
+        fs.writeFileSync(rawFilePath, listContent);
+        console.log(`Đã lưu nội dung thô vào: ${rawFilePath}`);
+        
+        // Kiểm tra các lỗi phổ biến
+        if (listContent.includes('429') || listContent.includes('rate limit')) {
+          console.error('LỖI 429 - RATE LIMIT: Yêu cầu quá nhiều trong thời gian ngắn');
+        } else if (listContent.includes('login') || listContent.includes('sign in')) {
+          console.error('LỖI ĐĂNG NHẬP: Bạn cần đăng nhập để truy cập API');
+        }
+        
+        console.log('\n===== GIẢI PHÁP =====');
+        console.log('1. Sử dụng script thay thế để mở trình duyệt thực tế:');
+        console.log('   node src/scripts/open-browser.js ' + sheetName);
+        console.log('2. Lưu kết quả từ trình duyệt vào thư mục results');
+        console.log('3. Xử lý kết quả với script:');
+        console.log('   node src/scripts/process-results.js');
+        console.log('4. Sử dụng API offline:');
+        console.log('   /api/spreadsheets/from-offline/' + sheetName);
+      }
+      
+      await listPage.close();
+      console.log('Đã đóng tab danh sách sheet');
+      
+      // Đợi để tránh rate limit
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+      
+      // 3. Lấy chi tiết sheet (nếu có ID)
+      if (sheetIds && sheetIds.length > 0) {
+        console.log(`\nĐã tìm thấy ${sheetIds.length} ID sheet để lấy chi tiết`);
+        
+        for (let i = 0; i < sheetIds.length; i++) {
+          const sheetId = sheetIds[i];
+          const shortId = sheetId.substring(0, 10);
+          
+          console.log(`\n[${i + 2}] Lấy chi tiết sheet ${i + 1}/${sheetIds.length}: ${shortId}...`);
+          const detailUrl = createDetailUrl(sheetId);
+          console.log(`URL: ${detailUrl}`);
+          
+          const detailPage = await browser.newPage();
+          
+          // Cài đặt để tránh phát hiện là trình duyệt tự động (giống trên)
+          await detailPage.evaluateOnNewDocument(() => {
+            Object.defineProperty(navigator, 'webdriver', {
+              get: () => false,
+            });
+            delete navigator.__proto__.webdriver;
+          });
+          
+          // Cấu hình trình duyệt giống Chrome thật
+          await detailPage.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36');
+          
+          // Thiết lập kích thước trang đủ lớn
+          await detailPage.setViewport({ width: 1280, height: 800 });
+          
+          // Hiển thị thông báo trên console của trình duyệt
+          await detailPage.evaluateOnNewDocument(() => {
+            console.log('%cAPI KimVan - Chi tiết Sheet', 'font-size: 20px; color: blue; font-weight: bold');
+            console.log('Đang lấy chi tiết sheet, vui lòng đợi...');
+          });
+          
+          await detailPage.goto(detailUrl, { waitUntil: 'networkidle0', timeout: 30000 });
+          
+          // Tạm dừng để người dùng có thể xem
+          console.log('Đợi 2 giây để bạn có thể quan sát...');
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          // Lấy nội dung JSON
+          const detailContent = await detailPage.evaluate(() => document.body.innerText);
+          let detailData;
+          
+          try {
+            detailData = JSON.parse(detailContent);
+            // Lưu file JSON
+            const detailFileName = `${sheetName}-${shortId}-detail.json`;
+            const detailFilePath = path.join(resultsDir, detailFileName);
+            fs.writeFileSync(detailFilePath, JSON.stringify(detailData, null, 2));
+            console.log(`Đã lưu chi tiết sheet vào: ${detailFilePath}`);
+          } catch (parseError) {
+            console.error('Lỗi khi xử lý dữ liệu chi tiết:', parseError);
+            console.log('Nội dung nhận được:', detailContent.slice(0, 500) + '...');
+            
+            // Lưu nội dung thô để kiểm tra
+            const rawFileName = `${sheetName}-${shortId}-detail-raw.txt`;
+            const rawFilePath = path.join(resultsDir, rawFileName);
+            fs.writeFileSync(rawFilePath, detailContent);
+            console.log(`Đã lưu nội dung thô vào: ${rawFilePath}`);
+            
+            // Kiểm tra các lỗi phổ biến
+            if (detailContent.includes('429') || detailContent.includes('rate limit')) {
+              console.error('LỖI 429 - RATE LIMIT: Yêu cầu quá nhiều trong thời gian ngắn');
+              console.log('Sẽ tiếp tục với các sheet khác nếu có');
+              console.log('Bạn có thể sử dụng script open-browser.js sau để lấy chi tiết sheet này:');
+              console.log(`node src/scripts/open-browser.js ${sheetName} "${sheetId}"`);
+            } else if (detailContent.includes('login') || detailContent.includes('sign in')) {
+              console.error('LỖI ĐĂNG NHẬP: Bạn cần đăng nhập để truy cập API');
+            }
+          }
+          
+          await detailPage.close();
+          console.log(`Đã đóng tab chi tiết sheet ${shortId}`);
+          
+          // Đợi để tránh rate limit (nếu còn sheet tiếp theo)
+          if (i < sheetIds.length - 1) {
+            console.log(`Đợi ${waitTime/1000} giây trước khi lấy sheet tiếp theo...`);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+          }
+        }
+      } else {
+        console.log('Không tìm thấy ID sheet nào để lấy chi tiết');
+      }
+    } finally {
+      // Giữ trình duyệt mở một lúc để người dùng có thể xem
+      console.log(`\nGiữ trình duyệt mở ${keepOpen/1000} giây (1 phút) để bạn có thể quan sát...`);
+      await new Promise(resolve => setTimeout(resolve, keepOpen));
+      
+      // Đóng trình duyệt
+      await browser.close();
+      console.log('Đã đóng trình duyệt');
+    }
+    
+    // 4. Xử lý dữ liệu đã lấy
+    console.log('\n===== XỬ LÝ DỮ LIỆU =====');
+    const processedData = processResults();
+    
+    console.log('\n===== HOÀN THÀNH =====');
+    console.log(`Đã tự động lấy và xử lý dữ liệu cho sheet "${sheetName}"`);
+    console.log('Kết quả được lưu trong thư mục:');
+    console.log(`- Dữ liệu thô: ${resultsDir}`);
+    console.log(`- Dữ liệu đã xử lý: ${processedDir}`);
+    console.log('\n===== HƯỚNG DẪN SỬ DỤNG DỮ LIỆU =====');
+    console.log('- API offline: /api/spreadsheets/from-offline/' + sheetName);
+    console.log('- API chi tiết offline: /api/spreadsheets/from-offline/detail/[id]');
+    
+    return processedData;
+  } catch (error) {
+    console.error('Lỗi khi tự động lấy dữ liệu:', error);
+    
+    // Hiển thị hướng dẫn cho người dùng
+    console.log('\n===== GIẢI PHÁP THAY THẾ =====');
+    console.log('1. Sử dụng script thay thế để mở trình duyệt thực tế:');
+    console.log('   node src/scripts/open-browser.js ' + sheetName);
+    console.log('2. Lưu kết quả từ trình duyệt vào thư mục results');
+    console.log('3. Xử lý kết quả với script:');
+    console.log('   node src/scripts/process-results.js');
+    console.log('4. Sử dụng API offline:');
+    console.log('   /api/spreadsheets/from-offline/' + sheetName);
+    
+    return null;
+  }
+}
+
+/**
+ * API handler - Automatically fetch and process data
+ */
 export async function GET(request, { params }) {
   try {
-    // Đảm bảo await params trước khi sử dụng
+    // Ensure params are awaited
     const paramsData = await params;
     const name = paramsData.name;
     
     if (!name) {
-      return NextResponse.json({ error: 'Tên không được cung cấp' }, { status: 400 });
+      return NextResponse.json({ error: 'Name not provided' }, { status: 400 });
     }
     
+    // Create timestamp
+    const timestamp = Date.now();
+    const responseHeaders = {
+      'X-Timestamp': `${timestamp}`,
+      'X-Cache-Control': 'no-cache',
+      'X-Data-Source': 'fresh-fetch' // Luôn lấy dữ liệu mới
+    };
+    
     console.log('==============================================');
-    console.log(`🔍 Đang gọi API KimVan Create với name: ${name}`);
+    console.log(`Processing data for: ${name}`);
+    console.log(`Timestamp: ${timestamp}`);
+    console.log(`Always fetching fresh data (cache bypass disabled)`);
     console.log('==============================================');
     
-    // Sử dụng biến môi trường cho URL API
-    const kimvanApiUrl = process.env.KIMVAN_API_URL || 'https://kimvan.id.vn/api/spreadsheets/';
-    const kimvanUrl = `${kimvanApiUrl}create/${name}`;
+    // Bỏ phần kiểm tra dữ liệu hiện có, luôn lấy dữ liệu mới
+    console.log(`Fetching fresh data for "${name}"...`);
     
-    // Lấy headers chứa thông tin xác thực
-    const headers = getKimVanAuthHeaders();
-    console.log('Headers để gọi API:', {
-      hasAuthorization: !!headers.Authorization,
-      hasCookie: !!headers.cookie,
-      headerCount: Object.keys(headers).length,
-      method: 'GET'
-    });
-    
-    // Log thêm thông tin về token sử dụng
-    if (headers.Authorization) {
-      console.log('Sử dụng JWT Authorization Bearer token');
-      const tokenPreview = headers.Authorization.substring(0, 30) + '...';
-      console.log(`Bearer token (một phần): ${tokenPreview}`);
-    } else if (headers.cookie) {
-      console.log('Sử dụng Session token với Cookie');
-      const cookiePreview = headers.cookie.substring(0, 30) + '...';
-      console.log(`Cookie (một phần): ${cookiePreview}`);
-    } else {
-      console.log('CẢNH BÁO: Không tìm thấy token để xác thực!');
-    }
-    
-    // Gọi API KimVan với các header đã thiết lập
-    const response = await fetch(kimvanUrl, {
-      method: 'GET',
-      headers: headers,
-      next: { revalidate: 60 } // Sử dụng cache trong 60 giây
-    });
-    
-    // Log thông tin response
-    console.log(`Kết quả từ API KimVan: Status ${response.status}`);
-    
-    // Nếu API trả về lỗi
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`Lỗi từ API KimVan: ${errorText}`);
+    try {
+      // Gọi trực tiếp hàm autoFetchData 
+      const options = {
+        waitTime: 5000,          // Thời gian chờ giữa các request
+        keepOpen: 60000,         // Giữ trình duyệt mở 1 phút để người dùng quan sát
+        loginTimeout: 120000     // Cho phép 2 phút để đăng nhập nếu cần
+      };
       
-      // Nếu là lỗi xác thực
-      if (response.status === 401 || response.status === 403) {
+      console.log('Đang mở Chrome để bạn quan sát quá trình...');
+      console.log('Nếu chưa đăng nhập, hệ thống sẽ đợi bạn đăng nhập Gmail');
+      console.log('Trình duyệt sẽ giữ mở trong 1 phút sau khi hoàn thành để bạn kiểm tra kết quả');
+      
+      await autoFetchData(name, options);
+      
+      // Check if data is now available
+      const newData = findSheetListByName(name);
+      if (newData) {
+        console.log(`Successfully fetched and processed data for "${name}"`);
+        
+        return NextResponse.json(newData, {
+          headers: responseHeaders
+        });
+      } else {
+        // If still no data, return error with helpful instructions
+        console.error(`Failed to fetch data for "${name}"`);
+        
+        // Tạo hướng dẫn giải pháp thay thế
+        const alternativeSolution = {
+          message: 'Không thể tự động lấy dữ liệu. Vui lòng sử dụng phương pháp thay thế.',
+          steps: [
+            'Sử dụng script thay thế để mở trình duyệt thực tế: node src/scripts/open-browser.js ' + name,
+            'Lưu kết quả từ trình duyệt vào thư mục results',
+            'Xử lý kết quả: node src/scripts/process-results.js',
+            'Sử dụng API offline: /api/spreadsheets/from-offline/' + name
+          ],
+          possibleReason: 'API KimVan có thể yêu cầu đăng nhập hoặc áp dụng giới hạn tốc độ (rate limit)',
+          offlineApiUrl: `/api/spreadsheets/from-offline/${name}`,
+          timestamp: timestamp
+        };
+        
         return NextResponse.json(
-          { error: 'Lỗi xác thực với KimVan. Token có thể đã hết hạn.' }, 
-          { status: response.status }
+          {
+            error: 'Data fetching failed',
+            detail: 'Automatic data fetching completed but no data was found',
+            alternativeSolution: alternativeSolution,
+            timestamp: timestamp
+          },
+          {
+            status: 500,
+            headers: responseHeaders
+          }
         );
       }
+    } catch (fetchError) {
+      console.error('Error during automatic data fetch:', fetchError);
       
-      // Nếu vượt quá rate limit
-      if (response.status === 429) {
-        return NextResponse.json(
-          { error: 'Đã vượt quá giới hạn yêu cầu. Vui lòng thử lại sau.' }, 
-          { status: 429 }
-        );
-      }
+      // Tạo hướng dẫn khắc phục
+      const troubleshooting = {
+        message: 'Gặp lỗi khi tự động lấy dữ liệu. Vui lòng thử phương pháp thay thế.',
+        steps: [
+          'Sử dụng script thay thế để mở trình duyệt thực tế: node src/scripts/open-browser.js ' + name,
+          'Lưu kết quả từ trình duyệt vào thư mục results',
+          'Xử lý kết quả: node src/scripts/process-results.js',
+          'Sử dụng API offline: /api/spreadsheets/from-offline/' + name
+        ],
+        error: fetchError.message,
+        offlineApiUrl: `/api/spreadsheets/from-offline/${name}`,
+        timestamp: timestamp
+      };
       
+      // Return error response
       return NextResponse.json(
-        { error: `Lỗi từ API KimVan: ${errorText}` },
-        { status: response.status }
+        {
+          error: 'Automatic data fetching failed',
+          detail: fetchError.message,
+          troubleshooting: troubleshooting,
+          timestamp: timestamp
+        },
+        {
+          status: 500,
+          headers: responseHeaders
+        }
       );
     }
-    
-    // Trả về kết quả từ API KimVan
-    const data = await response.json();
-    console.log('Dữ liệu trả về từ API KimVan:', data);
-    
-    return NextResponse.json(data);
   } catch (error) {
-    console.error('Lỗi khi gọi API KimVan:', error);
+    console.error('Unknown error:', error);
+    
+    // Basic error response
     return NextResponse.json(
-      { error: `Lỗi khi gọi API KimVan: ${error.message}` }, 
+      { 
+        error: `Error: ${error.message}`,
+        timestamp: Date.now(),
+        suggestion: 'Vui lòng thử sử dụng script manual: node src/scripts/open-browser.js'
+      },
       { status: 500 }
     );
   }

@@ -48,3 +48,4 @@ next-env.d.ts
 
 # Temp files
 /temp/*.mp4
+/chrome-user-data
