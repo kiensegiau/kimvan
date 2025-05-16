@@ -251,6 +251,54 @@ export default function CoursesPage() {
     }
   };
 
+  // Hàm trích xuất ID YouTube từ URL
+  const extractYoutubeId = (url) => {
+    if (!url) return null;
+    
+    // Hỗ trợ nhiều định dạng URL YouTube
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    
+    return (match && match[2].length === 11) ? match[2] : null;
+  };
+  
+  // Hàm kiểm tra xem URL có phải là YouTube link không
+  const isYoutubeLink = (url) => {
+    if (!url) return false;
+    return url.includes('youtube.com') || url.includes('youtu.be');
+  };
+  
+  // Hàm kiểm tra xem URL có phải là PDF không
+  const isPdfLink = (url) => {
+    if (!url) return false;
+    
+    // Kiểm tra nhiều trường hợp của link PDF
+    const urlLower = url.toLowerCase();
+    
+    // Kiểm tra đuôi file là .pdf
+    if (urlLower.endsWith('.pdf')) return true;
+    
+    // Kiểm tra URL có chứa 'pdf' trong đường dẫn
+    if (urlLower.includes('/pdf/')) return true;
+    
+    // Kiểm tra URL Google Drive có định dạng PDF
+    if (urlLower.includes('drive.google.com') && urlLower.includes('pdf')) return true;
+    
+    // Kiểm tra URL có tham số type=pdf
+    if (urlLower.includes('type=pdf')) return true;
+    
+    // Kiểm tra URL có tham số format=pdf
+    if (urlLower.includes('format=pdf')) return true;
+    
+    return false;
+  };
+  
+  // Hàm kiểm tra xem URL có phải là Google Drive link không
+  const isGoogleDriveLink = (url) => {
+    if (!url) return false;
+    return url.includes('drive.google.com') || url.includes('docs.google.com');
+  };
+
   // Hàm phân tích dữ liệu từ Kimvan
   const analyzeKimvanData = (data) => {
     if (!data) return null;
@@ -260,103 +308,232 @@ export default function CoursesPage() {
       const analysis = {
         youtubeLinks: 0,
         driveLinks: 0,
+        pdfLinks: 0, // Thêm đếm số lượng PDF
         totalLinks: 0,
         lessons: [],
         documents: [],
         attachments: []
       };
       
-      // Hàm kiểm tra link YouTube
-      const isYoutubeLink = (url) => {
-        return url && (
-          url.includes('youtube.com') || 
-          url.includes('youtu.be') || 
-          url.includes('youtube-nocookie.com')
-        );
+      // Hàm đệ quy để tìm link trong cấu trúc JSON phức tạp
+      const findLinks = (obj) => {
+        if (!obj || typeof obj !== 'object') return;
+        
+        // Kiểm tra nếu đối tượng có trường link và uri
+        if (obj.textFormat && obj.textFormat.link && obj.textFormat.link.uri) {
+          const url = obj.textFormat.link.uri;
+          analysis.totalLinks++;
+          
+          if (isYoutubeLink(url)) {
+            analysis.youtubeLinks++;
+            return { type: 'youtube', url, id: extractYoutubeId(url) };
+          } else if (isGoogleDriveLink(url)) {
+            analysis.driveLinks++;
+            return { type: 'drive', url };
+          } else if (isPdfLink(url)) {
+            analysis.pdfLinks++;
+            return { type: 'pdf', url };
+          } else {
+            return { type: 'other', url };
+          }
+        }
+        
+        // Kiểm tra trường hyperlink (có thể chứa URL)
+        if (obj.hyperlink) {
+          const url = obj.hyperlink;
+          if (url.includes('http')) {
+            analysis.totalLinks++;
+            if (isYoutubeLink(url)) {
+              analysis.youtubeLinks++;
+              return { type: 'youtube', url, id: extractYoutubeId(url) };
+            } else if (isGoogleDriveLink(url)) {
+              analysis.driveLinks++;
+              return { type: 'drive', url };
+            } else if (isPdfLink(url)) {
+              analysis.pdfLinks++;
+              return { type: 'pdf', url };
+            } else {
+              return { type: 'other', url };
+            }
+          }
+        }
+        
+        // Kiểm tra trường formattedValue có chứa URL không
+        if (obj.formattedValue && typeof obj.formattedValue === 'string') {
+          const url = obj.formattedValue;
+          if (url.startsWith('http')) {
+            analysis.totalLinks++;
+            if (isYoutubeLink(url)) {
+              analysis.youtubeLinks++;
+              return { type: 'youtube', url, id: extractYoutubeId(url) };
+            } else if (isGoogleDriveLink(url)) {
+              analysis.driveLinks++;
+              return { type: 'drive', url };
+            } else if (isPdfLink(url)) {
+              analysis.pdfLinks++;
+              return { type: 'pdf', url };
+            }
+          }
+        }
+        
+        // Kiểm tra cấu trúc dữ liệu từ sheets API
+        if (obj.values && Array.isArray(obj.values)) {
+          obj.values.forEach(val => {
+            if (val.userEnteredFormat && val.userEnteredFormat.textFormat && 
+                val.userEnteredFormat.textFormat.link && val.userEnteredFormat.textFormat.link.uri) {
+              const url = val.userEnteredFormat.textFormat.link.uri;
+              analysis.totalLinks++;
+              
+              if (isYoutubeLink(url)) {
+                analysis.youtubeLinks++;
+              } else if (isGoogleDriveLink(url)) {
+                analysis.driveLinks++;
+              } else if (isPdfLink(url)) {
+                analysis.pdfLinks++;
+              }
+            }
+            
+            // Kiểm tra formattedValue có chứa URL không
+            if (val.formattedValue && typeof val.formattedValue === 'string') {
+              const text = val.formattedValue;
+              if (text.startsWith('http')) {
+                analysis.totalLinks++;
+                if (isYoutubeLink(text)) {
+                  analysis.youtubeLinks++;
+                } else if (isGoogleDriveLink(text)) {
+                  analysis.driveLinks++;
+                } else if (isPdfLink(text)) {
+                  analysis.pdfLinks++;
+                }
+              }
+            }
+          });
+        }
+        
+        // Duyệt đệ quy qua tất cả các trường
+        for (const key in obj) {
+          if (obj[key] && typeof obj[key] === 'object') {
+            findLinks(obj[key]);
+          }
+        }
       };
       
-      // Hàm kiểm tra link Google Drive
-      const isDriveLink = (url) => {
-        return url && (
-          url.includes('drive.google.com') || 
-          url.includes('docs.google.com')
-        );
-      };
-      
-      // Phân tích dữ liệu bài học
+      // Xử lý dữ liệu bài học
       if (data.chapters && Array.isArray(data.chapters)) {
         data.chapters.forEach(chapter => {
           if (chapter.lessons && Array.isArray(chapter.lessons)) {
             chapter.lessons.forEach(lesson => {
+              // Xác định loại video dựa trên URL
+              let videoType = 'unknown';
+              let videoUrl = lesson.videoUrl || '';
+              let videoId = null;
+              
+              if (videoUrl) {
+                if (isYoutubeLink(videoUrl)) {
+                  videoType = 'youtube';
+                  videoId = extractYoutubeId(videoUrl);
+                } else if (isGoogleDriveLink(videoUrl)) {
+                  videoType = 'drive';
+                } else if (isPdfLink(videoUrl)) {
+                  videoType = 'pdf';
+                }
+              }
+              
               // Thêm vào danh sách bài học
               analysis.lessons.push({
                 id: lesson.id || '',
                 title: lesson.title || 'Không có tiêu đề',
-                videoType: lesson.videoType || 'unknown',
-                videoUrl: lesson.videoUrl || '',
+                videoType: videoType,
+                videoUrl: videoUrl,
+                videoId: videoId,
                 chapterTitle: chapter.title || 'Chưa phân loại'
               });
-              
-              // Đếm các loại link
-              if (lesson.videoUrl) {
-                analysis.totalLinks++;
-                if (isYoutubeLink(lesson.videoUrl)) {
-                  analysis.youtubeLinks++;
-                } else if (isDriveLink(lesson.videoUrl)) {
-                  analysis.driveLinks++;
-                }
+            });
+          }
+        });
+      }
+      
+      // Phân tích dữ liệu tài liệu
+      if (data.resources && Array.isArray(data.resources)) {
+        data.resources.forEach(resource => {
+          // Xác định loại tài liệu dựa trên URL
+          let resourceType = resource.type || 'unknown';
+          let resourceUrl = resource.url || '';
+          let resourceId = null;
+          
+          if (resourceUrl) {
+            if (isYoutubeLink(resourceUrl)) {
+              resourceType = 'youtube';
+              resourceId = extractYoutubeId(resourceUrl);
+            } else if (isGoogleDriveLink(resourceUrl)) {
+              resourceType = 'drive';
+            } else if (isPdfLink(resourceUrl)) {
+              resourceType = 'pdf';
+            }
+          }
+          
+          // Thêm vào danh sách tài liệu
+          analysis.documents.push({
+            id: resource.id || '',
+            title: resource.title || 'Không có tiêu đề',
+            type: resourceType,
+            url: resourceUrl,
+            resourceId: resourceId
+          });
+        });
+      }
+      
+      // Phân tích dữ liệu đính kèm
+      if (data.attachments && Array.isArray(data.attachments)) {
+        data.attachments.forEach(attachment => {
+          // Xác định loại đính kèm dựa trên URL
+          let attachmentType = attachment.type || 'unknown';
+          let attachmentUrl = attachment.url || '';
+          let attachmentId = null;
+          
+          if (attachmentUrl) {
+            if (isYoutubeLink(attachmentUrl)) {
+              attachmentType = 'youtube';
+              attachmentId = extractYoutubeId(attachmentUrl);
+            } else if (isGoogleDriveLink(attachmentUrl)) {
+              attachmentType = 'drive';
+            } else if (isPdfLink(attachmentUrl)) {
+              attachmentType = 'pdf';
+            }
+          }
+          
+          // Thêm vào danh sách đính kèm
+          analysis.attachments.push({
+            id: attachment.id || '',
+            title: attachment.title || 'Không có tiêu đề',
+            type: attachmentType,
+            url: attachmentUrl,
+            attachmentId: attachmentId
+          });
+        });
+      }
+      
+      // Phân tích cấu trúc phức tạp từ Google Sheets
+      if (data.sheets && Array.isArray(data.sheets)) {
+        data.sheets.forEach(sheet => {
+          // Kiểm tra tiêu đề sheet
+          if (sheet.properties && sheet.properties.title) {
+            console.log(`📊 Đang phân tích sheet: ${sheet.properties.title}`);
+          }
+          
+          if (sheet.data && Array.isArray(sheet.data)) {
+            sheet.data.forEach(sheetData => {
+              if (sheetData.rowData && Array.isArray(sheetData.rowData)) {
+                sheetData.rowData.forEach(row => {
+                  findLinks(row);
+                });
               }
             });
           }
         });
       }
       
-      // Phân tích dữ liệu tài liệu và đính kèm
-      if (data.resources && Array.isArray(data.resources)) {
-        data.resources.forEach(resource => {
-          // Thêm vào danh sách tài liệu
-          analysis.documents.push({
-            id: resource.id || '',
-            title: resource.title || 'Không có tiêu đề',
-            type: resource.type || 'unknown',
-            url: resource.url || ''
-          });
-          
-          // Đếm các loại link
-          if (resource.url) {
-            analysis.totalLinks++;
-            if (isYoutubeLink(resource.url)) {
-              analysis.youtubeLinks++;
-            } else if (isDriveLink(resource.url)) {
-              analysis.driveLinks++;
-            }
-          }
-        });
-      }
-      
-      // Phân tích dữ liệu đính kèm nếu có
-      if (data.attachments && Array.isArray(data.attachments)) {
-        data.attachments.forEach(attachment => {
-          // Thêm vào danh sách đính kèm
-          analysis.attachments.push({
-            id: attachment.id || '',
-            title: attachment.title || 'Không có tiêu đề',
-            type: attachment.type || 'unknown',
-            url: attachment.url || ''
-          });
-          
-          // Đếm các loại link
-          if (attachment.url) {
-            analysis.totalLinks++;
-            if (isYoutubeLink(attachment.url)) {
-              analysis.youtubeLinks++;
-            } else if (isDriveLink(attachment.url)) {
-              analysis.driveLinks++;
-            }
-          }
-        });
-      }
-      
+      console.log('✅ Kết quả phân tích:', analysis);
       return analysis;
     } catch (error) {
       console.error('Lỗi khi phân tích dữ liệu Kimvan:', error);
@@ -420,7 +597,7 @@ export default function CoursesPage() {
       });
       
       // Tải lại danh sách khóa học
-      await fetchCourses();
+      // await fetchCourses();
       
     } catch (err) {
       console.error('❌ Lỗi khi đồng bộ khóa học:', err);
@@ -1135,7 +1312,7 @@ export default function CoursesPage() {
 
       {/* Modal Xác nhận đồng bộ */}
       {showSyncModal && (
-        <>
+        <div>
           {/* Lớp phủ */}
           <div 
             className="fixed inset-0 bg-gray-500 bg-opacity-75 z-40 cursor-pointer" 
@@ -1208,7 +1385,7 @@ export default function CoursesPage() {
               </div>
             </div>
           </div>
-        </>
+        </div>
       )}
 
       {/* Modal hiển thị dữ liệu gốc */}
@@ -1278,7 +1455,7 @@ export default function CoursesPage() {
 
       {/* Modal Xử lý dữ liệu khóa học */}
       {showProcessModal && (
-        <>
+        <div>
           {/* Lớp phủ */}
           <div 
             className="fixed inset-0 bg-gray-500 bg-opacity-75 z-40 cursor-pointer" 
@@ -1374,12 +1551,12 @@ export default function CoursesPage() {
               </div>
             </div>
           </div>
-        </>
+        </div>
       )}
 
       {/* Modal Xác nhận đồng bộ với phân tích dữ liệu */}
       {showSyncConfirmModal && (
-        <>
+        <div>
           {/* Lớp phủ */}
           <div 
             className="fixed inset-0 bg-gray-500 bg-opacity-75 z-40 cursor-pointer" 
@@ -1413,153 +1590,99 @@ export default function CoursesPage() {
                           {/* Thẻ thống kê */}
                           {syncAnalysisData && (
                             <div className="grid grid-cols-3 gap-4 mb-6">
-                              <div className="border rounded p-3 bg-blue-50">
-                                <p className="text-sm text-gray-600">Links YouTube</p>
-                                <p className="text-2xl font-semibold text-blue-600">{syncAnalysisData.youtubeLinks}</p>
+                              <div className="border rounded p-3 bg-red-50 shadow-sm hover:shadow-md transition-shadow">
+                                <p className="text-sm text-gray-600 font-medium">Links YouTube</p>
+                                <div className="flex items-center">
+                                  <p className="text-2xl font-semibold text-red-600">{syncAnalysisData.youtubeLinks}</p>
+                                  {syncAnalysisData.youtubeLinks > 0 && syncAnalysisData.totalLinks > 0 && (
+                                    <span className="ml-2 px-2 py-1 text-xs rounded-full bg-red-100 text-red-800">
+                                      {Math.round((syncAnalysisData.youtubeLinks / syncAnalysisData.totalLinks) * 100)}%
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-xs text-gray-500 mt-1">Video trực tuyến từ YouTube</p>
                               </div>
-                              <div className="border rounded p-3 bg-green-50">
-                                <p className="text-sm text-gray-600">Links Google Drive</p>
-                                <p className="text-2xl font-semibold text-green-600">{syncAnalysisData.driveLinks}</p>
+                              <div className="border rounded p-3 bg-blue-50 shadow-sm hover:shadow-md transition-shadow">
+                                <p className="text-sm text-gray-600 font-medium">Links Google Drive</p>
+                                <div className="flex items-center">
+                                  <p className="text-2xl font-semibold text-blue-600">{syncAnalysisData.driveLinks}</p>
+                                  {syncAnalysisData.driveLinks > 0 && syncAnalysisData.totalLinks > 0 && (
+                                    <span className="ml-2 px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
+                                      {Math.round((syncAnalysisData.driveLinks / syncAnalysisData.totalLinks) * 100)}%
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-xs text-gray-500 mt-1">Tài liệu từ Google Drive</p>
                               </div>
-                              <div className="border rounded p-3 bg-gray-50">
-                                <p className="text-sm text-gray-600">Tổng số links</p>
-                                <p className="text-2xl font-semibold text-gray-600">{syncAnalysisData.totalLinks}</p>
+                              <div className="border rounded p-3 bg-green-50 shadow-sm hover:shadow-md transition-shadow">
+                                <p className="text-sm text-gray-600 font-medium">Links PDF</p>
+                                <div className="flex items-center">
+                                  <p className="text-2xl font-semibold text-green-600">{syncAnalysisData.pdfLinks || 0}</p>
+                                  {syncAnalysisData.pdfLinks > 0 && syncAnalysisData.totalLinks > 0 && (
+                                    <span className="ml-2 px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">
+                                      {Math.round((syncAnalysisData.pdfLinks / syncAnalysisData.totalLinks) * 100)}%
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-xs text-gray-500 mt-1">Tài liệu định dạng PDF</p>
                               </div>
                             </div>
                           )}
                           
-                          {/* Tabs cho các loại dữ liệu */}
-                          {syncAnalysisData && (
-                            <div className="mt-4 max-h-96 overflow-y-auto">
-                              <div className="border-b border-gray-200">
-                                <nav className="-mb-px flex" aria-label="Tabs">
-                                  <button
-                                    onClick={() => document.getElementById('tab-lessons').scrollIntoView()}
-                                    className="w-1/3 py-2 px-1 text-center border-b-2 border-blue-500 font-medium text-sm text-blue-600"
-                                  >
-                                    Bài giảng ({syncAnalysisData.lessons.length})
-                                  </button>
-                                  <button
-                                    onClick={() => document.getElementById('tab-documents').scrollIntoView()}
-                                    className="w-1/3 py-2 px-1 text-center border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                                  >
-                                    Tài liệu ({syncAnalysisData.documents.length})
-                                  </button>
-                                  <button
-                                    onClick={() => document.getElementById('tab-attachments').scrollIntoView()}
-                                    className="w-1/3 py-2 px-1 text-center border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                                  >
-                                    Đính kèm ({syncAnalysisData.attachments.length})
-                                  </button>
-                                </nav>
-                              </div>
-                              
-                              {/* Bảng bài giảng */}
-                              <div id="tab-lessons" className="py-4">
-                                <h4 className="text-md font-medium text-gray-900 mb-2">Danh sách bài giảng</h4>
-                                {syncAnalysisData.lessons.length > 0 ? (
-                                  <table className="min-w-full divide-y divide-gray-200">
-                                    <thead className="bg-gray-50">
-                                      <tr>
-                                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên bài giảng</th>
-                                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chương</th>
-                                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Loại video</th>
-                                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Link</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody className="bg-white divide-y divide-gray-200">
-                                      {syncAnalysisData.lessons.map((lesson, index) => (
-                                        <tr key={index}>
-                                          <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">{lesson.title}</td>
-                                          <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{lesson.chapterTitle}</td>
-                                          <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
-                                            {lesson.videoUrl && lesson.videoUrl.includes('youtube') ? 'YouTube' : 
-                                             lesson.videoUrl && lesson.videoUrl.includes('drive.google') ? 'Drive' : 
-                                             lesson.videoType || 'N/A'}
-                                          </td>
-                                          <td className="px-3 py-2 text-sm text-gray-500 max-w-xs truncate">
-                                            {lesson.videoUrl ? (
-                                              <a href={lesson.videoUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline truncate">
-                                                {lesson.videoUrl.substring(0, 30)}...
-                                              </a>
-                                            ) : 'Không có'}
-                                          </td>
-                                        </tr>
-                                      ))}
-                                    </tbody>
-                                  </table>
-                                ) : (
-                                  <p className="text-gray-500 text-sm">Không có bài giảng nào</p>
-                                )}
-                              </div>
-                              
-                              {/* Bảng tài liệu */}
-                              <div id="tab-documents" className="py-4">
-                                <h4 className="text-md font-medium text-gray-900 mb-2">Danh sách tài liệu</h4>
-                                {syncAnalysisData.documents.length > 0 ? (
-                                  <table className="min-w-full divide-y divide-gray-200">
-                                    <thead className="bg-gray-50">
-                                      <tr>
-                                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên tài liệu</th>
-                                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Loại</th>
-                                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Link</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody className="bg-white divide-y divide-gray-200">
-                                      {syncAnalysisData.documents.map((doc, index) => (
-                                        <tr key={index}>
-                                          <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">{doc.title}</td>
-                                          <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{doc.type || 'N/A'}</td>
-                                          <td className="px-3 py-2 text-sm text-gray-500 max-w-xs truncate">
-                                            {doc.url ? (
-                                              <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline truncate">
-                                                {doc.url.substring(0, 30)}...
-                                              </a>
-                                            ) : 'Không có'}
-                                          </td>
-                                        </tr>
-                                      ))}
-                                    </tbody>
-                                  </table>
-                                ) : (
-                                  <p className="text-gray-500 text-sm">Không có tài liệu nào</p>
-                                )}
-                              </div>
-                              
-                              {/* Bảng đính kèm */}
-                              <div id="tab-attachments" className="py-4">
-                                <h4 className="text-md font-medium text-gray-900 mb-2">Danh sách đính kèm</h4>
-                                {syncAnalysisData.attachments.length > 0 ? (
-                                  <table className="min-w-full divide-y divide-gray-200">
-                                    <thead className="bg-gray-50">
-                                      <tr>
-                                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên đính kèm</th>
-                                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Loại</th>
-                                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Link</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody className="bg-white divide-y divide-gray-200">
-                                      {syncAnalysisData.attachments.map((attachment, index) => (
-                                        <tr key={index}>
-                                          <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">{attachment.title}</td>
-                                          <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{attachment.type || 'N/A'}</td>
-                                          <td className="px-3 py-2 text-sm text-gray-500 max-w-xs truncate">
-                                            {attachment.url ? (
-                                              <a href={attachment.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline truncate">
-                                                {attachment.url.substring(0, 30)}...
-                                              </a>
-                                            ) : 'Không có'}
-                                          </td>
-                                        </tr>
-                                      ))}
-                                    </tbody>
-                                  </table>
-                                ) : (
-                                  <p className="text-gray-500 text-sm">Không có đính kèm nào</p>
-                                )}
-                              </div>
+                          <div className="border rounded p-4 bg-gray-50 shadow-sm mb-4 hover:shadow-md transition-shadow">
+                            <div className="flex items-center justify-between mb-2">
+                              <p className="text-sm font-medium text-gray-700">Tổng cộng tất cả liên kết</p>
+                              <p className="text-xl font-bold text-gray-800">{syncAnalysisData.totalLinks}</p>
                             </div>
-                          )}
+                            
+                            <div className="flex flex-wrap gap-2 mb-3">
+                              {syncAnalysisData.youtubeLinks > 0 && (
+                                <span className="px-3 py-1 text-xs rounded-full bg-red-100 text-red-800 flex items-center">
+                                  <span className="w-2 h-2 rounded-full bg-red-500 mr-1"></span>
+                                  YouTube: {syncAnalysisData.youtubeLinks}
+                                </span>
+                              )}
+                              {syncAnalysisData.driveLinks > 0 && (
+                                <span className="px-3 py-1 text-xs rounded-full bg-blue-100 text-blue-800 flex items-center">
+                                  <span className="w-2 h-2 rounded-full bg-blue-500 mr-1"></span>
+                                  Drive: {syncAnalysisData.driveLinks}
+                                </span>
+                              )}
+                              {(syncAnalysisData.pdfLinks > 0) && (
+                                <span className="px-3 py-1 text-xs rounded-full bg-green-100 text-green-800 flex items-center">
+                                  <span className="w-2 h-2 rounded-full bg-green-500 mr-1"></span>
+                                  PDF: {syncAnalysisData.pdfLinks}
+                                </span>
+                              )}
+                            </div>
+                            
+                            {/* Thanh tiến trình */}
+                            <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
+                              {syncAnalysisData.totalLinks > 0 && (
+                                <div className="flex h-full">
+                                  {syncAnalysisData.youtubeLinks > 0 && (
+                                    <div 
+                                      className="h-full bg-red-500" 
+                                      style={{width: `${(syncAnalysisData.youtubeLinks / syncAnalysisData.totalLinks) * 100}%`}}
+                                    ></div>
+                                  )}
+                                  {syncAnalysisData.driveLinks > 0 && (
+                                    <div 
+                                      className="h-full bg-blue-500" 
+                                      style={{width: `${(syncAnalysisData.driveLinks / syncAnalysisData.totalLinks) * 100}%`}}
+                                    ></div>
+                                  )}
+                                  {syncAnalysisData.pdfLinks > 0 && (
+                                    <div 
+                                      className="h-full bg-green-500" 
+                                      style={{width: `${(syncAnalysisData.pdfLinks / syncAnalysisData.totalLinks) * 100}%`}}
+                                    ></div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                            <p className="text-xs text-gray-500 mt-2">Phân tích các liên kết trong dữ liệu khóa học</p>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -1588,7 +1711,7 @@ export default function CoursesPage() {
               </div>
             </div>
           </div>
-        </>
+        </div>
       )}
     </div>
   );
