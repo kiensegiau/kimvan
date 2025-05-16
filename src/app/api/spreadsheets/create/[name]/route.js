@@ -226,12 +226,11 @@ async function isLoggedIn(page) {
  */
 async function autoFetchData(sheetName, options = {}) {
   const waitTime = options.waitTime || 5000; // 5 giây mặc định
-  const keepOpen = options.keepOpen || 60000; // Thời gian giữ trình duyệt mở sau khi hoàn thành (mặc định 1 phút)
+  const keepBrowserOpen = options.keepBrowserOpen || true; // Giữ trình duyệt mở sau khi hoàn thành
   const loginTimeout = options.loginTimeout || 120000; // Thời gian tối đa đợi đăng nhập (2 phút)
-  let sheetIds = [];
   
   try {
-    console.log(`===== BẮT ĐẦU TỰ ĐỘNG LẤY DỮ LIỆU CHO "${sheetName}" =====`);
+    console.log(`===== BẮT ĐẦU TỰ ĐỘNG LẤY DANH SÁCH CHO "${sheetName}" =====`);
     
     // Đường dẫn đến thư mục dữ liệu người dùng Chrome
     const userDataDir = path.join(process.cwd(), 'chrome-user-data');
@@ -344,6 +343,7 @@ async function autoFetchData(sheetName, options = {}) {
       // Lấy nội dung JSON
       const listContent = await listPage.evaluate(() => document.body.innerText);
       let listData;
+      let sheetIds = [];
       
       try {
         listData = JSON.parse(listContent);
@@ -357,6 +357,7 @@ async function autoFetchData(sheetName, options = {}) {
         if (Array.isArray(listData) && listData.length > 0) {
           sheetIds = listData.map(item => item.id);
           console.log(`Đã lấy ${sheetIds.length} ID sheet từ danh sách`);
+          console.log(`Để lấy chi tiết từng sheet, sử dụng API: /api/spreadsheets/[id]`);
         } else {
           console.warn('Dữ liệu danh sách không hợp lệ hoặc rỗng');
         }
@@ -389,102 +390,46 @@ async function autoFetchData(sheetName, options = {}) {
       
       await listPage.close();
       console.log('Đã đóng tab danh sách sheet');
-      
-      // Đợi để tránh rate limit
-      await new Promise(resolve => setTimeout(resolve, waitTime));
-      
-      // 3. Lấy chi tiết sheet (nếu có ID)
-      if (sheetIds && sheetIds.length > 0) {
-        console.log(`\nĐã tìm thấy ${sheetIds.length} ID sheet để lấy chi tiết`);
-        
-        for (let i = 0; i < sheetIds.length; i++) {
-          const sheetId = sheetIds[i];
-          const shortId = sheetId.substring(0, 10);
-          
-          console.log(`\n[${i + 2}] Lấy chi tiết sheet ${i + 1}/${sheetIds.length}: ${shortId}...`);
-          const detailUrl = createDetailUrl(sheetId);
-          console.log(`URL: ${detailUrl}`);
-          
-          const detailPage = await browser.newPage();
-          
-          // Cài đặt để tránh phát hiện là trình duyệt tự động (giống trên)
-          await detailPage.evaluateOnNewDocument(() => {
-            Object.defineProperty(navigator, 'webdriver', {
-              get: () => false,
-            });
-            delete navigator.__proto__.webdriver;
-          });
-          
-          // Cấu hình trình duyệt giống Chrome thật
-          await detailPage.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36');
-          
-          // Thiết lập kích thước trang đủ lớn
-          await detailPage.setViewport({ width: 1280, height: 800 });
-          
-          // Hiển thị thông báo trên console của trình duyệt
-          await detailPage.evaluateOnNewDocument(() => {
-            console.log('%cAPI KimVan - Chi tiết Sheet', 'font-size: 20px; color: blue; font-weight: bold');
-            console.log('Đang lấy chi tiết sheet, vui lòng đợi...');
-          });
-          
-          await detailPage.goto(detailUrl, { waitUntil: 'networkidle0', timeout: 30000 });
-          
-          // Tạm dừng để người dùng có thể xem
-          console.log('Đợi 2 giây để bạn có thể quan sát...');
-          await new Promise(resolve => setTimeout(resolve, 2000));
-          
-          // Lấy nội dung JSON
-          const detailContent = await detailPage.evaluate(() => document.body.innerText);
-          let detailData;
-          
-          try {
-            detailData = JSON.parse(detailContent);
-            // Lưu file JSON
-            const detailFileName = `${sheetName}-${shortId}-detail.json`;
-            const detailFilePath = path.join(resultsDir, detailFileName);
-            fs.writeFileSync(detailFilePath, JSON.stringify(detailData, null, 2));
-            console.log(`Đã lưu chi tiết sheet vào: ${detailFilePath}`);
-          } catch (parseError) {
-            console.error('Lỗi khi xử lý dữ liệu chi tiết:', parseError);
-            console.log('Nội dung nhận được:', detailContent.slice(0, 500) + '...');
-            
-            // Lưu nội dung thô để kiểm tra
-            const rawFileName = `${sheetName}-${shortId}-detail-raw.txt`;
-            const rawFilePath = path.join(resultsDir, rawFileName);
-            fs.writeFileSync(rawFilePath, detailContent);
-            console.log(`Đã lưu nội dung thô vào: ${rawFilePath}`);
-            
-            // Kiểm tra các lỗi phổ biến
-            if (detailContent.includes('429') || detailContent.includes('rate limit')) {
-              console.error('LỖI 429 - RATE LIMIT: Yêu cầu quá nhiều trong thời gian ngắn');
-              console.log('Sẽ tiếp tục với các sheet khác nếu có');
-              console.log('Bạn có thể sử dụng script open-browser.js sau để lấy chi tiết sheet này:');
-              console.log(`node src/scripts/open-browser.js ${sheetName} "${sheetId}"`);
-            } else if (detailContent.includes('login') || detailContent.includes('sign in')) {
-              console.error('LỖI ĐĂNG NHẬP: Bạn cần đăng nhập để truy cập API');
-            }
-          }
-          
-          await detailPage.close();
-          console.log(`Đã đóng tab chi tiết sheet ${shortId}`);
-          
-          // Đợi để tránh rate limit (nếu còn sheet tiếp theo)
-          if (i < sheetIds.length - 1) {
-            console.log(`Đợi ${waitTime/1000} giây trước khi lấy sheet tiếp theo...`);
-            await new Promise(resolve => setTimeout(resolve, waitTime));
-          }
-        }
-      } else {
-        console.log('Không tìm thấy ID sheet nào để lấy chi tiết');
-      }
     } finally {
-      // Giữ trình duyệt mở một lúc để người dùng có thể xem
-      console.log(`\nGiữ trình duyệt mở ${keepOpen/1000} giây (1 phút) để bạn có thể quan sát...`);
-      await new Promise(resolve => setTimeout(resolve, keepOpen));
+      // Mở tab mới để người dùng có thể sử dụng
+      try {
+        const finalPage = await browser.newPage();
+        await finalPage.setViewport({ width: 1280, height: 800 });
+        await finalPage.goto('https://kimvan.id.vn/', { waitUntil: 'networkidle0' });
+        
+        await finalPage.evaluate(() => {
+          document.body.style.backgroundColor = '#f0f8ff';
+          // Tạo thông báo
+          const div = document.createElement('div');
+          div.style.padding = '20px';
+          div.style.margin = '20px auto';
+          div.style.maxWidth = '600px';
+          div.style.backgroundColor = '#e6f7ff';
+          div.style.border = '1px solid #91d5ff';
+          div.style.borderRadius = '5px';
+          div.style.fontFamily = 'Arial, sans-serif';
+          
+          div.innerHTML = `
+            <h2 style="color: #096dd9; text-align: center;">Hoàn thành lấy danh sách sheet</h2>
+            <p style="font-size: 16px; line-height: 1.5;">Đã lấy xong danh sách sheet từ API KimVan.</p>
+            <p style="font-size: 16px; line-height: 1.5;">Để lấy chi tiết từng sheet, sử dụng API /api/spreadsheets/[id]</p>
+            <p style="font-size: 16px; line-height: 1.5;"><strong>Lưu ý:</strong> Bạn có thể đóng trình duyệt này bất cứ lúc nào, phiên đăng nhập vẫn được lưu.</p>
+          `;
+          
+          document.body.prepend(div);
+        });
+        
+        console.log('\n===== GIỮ TRÌNH DUYỆT MỞ =====');
+        console.log('Trình duyệt Chrome sẽ được giữ mở để sử dụng lần sau');
+        console.log('Bạn có thể đóng trình duyệt bất cứ lúc nào nếu muốn');
+        console.log('Thông tin đăng nhập sẽ được lưu trong thư mục chrome-user-data');
+      } catch (err) {
+        console.error('Lỗi khi mở tab thông báo:', err);
+      }
       
-      // Đóng trình duyệt
-      await browser.close();
-      console.log('Đã đóng trình duyệt');
+      // KHÔNG đóng trình duyệt
+      // browser.close() đã bị loại bỏ để giữ trình duyệt mở
+      console.log('Đã giữ trình duyệt mở theo yêu cầu');
     }
     
     // 4. Xử lý dữ liệu đã lấy
@@ -498,7 +443,7 @@ async function autoFetchData(sheetName, options = {}) {
     console.log(`- Dữ liệu đã xử lý: ${processedDir}`);
     console.log('\n===== HƯỚNG DẪN SỬ DỤNG DỮ LIỆU =====');
     console.log('- API offline: /api/spreadsheets/from-offline/' + sheetName);
-    console.log('- API chi tiết offline: /api/spreadsheets/from-offline/detail/[id]');
+    console.log('- API chi tiết: /api/spreadsheets/[id] (để lấy chi tiết từng sheet)');
     
     return processedData;
   } catch (error) {
@@ -552,13 +497,13 @@ export async function GET(request, { params }) {
       // Gọi trực tiếp hàm autoFetchData 
       const options = {
         waitTime: 5000,          // Thời gian chờ giữa các request
-        keepOpen: 60000,         // Giữ trình duyệt mở 1 phút để người dùng quan sát
+        keepBrowserOpen: true,   // Giữ trình duyệt Chrome mở sau khi hoàn thành
         loginTimeout: 120000     // Cho phép 2 phút để đăng nhập nếu cần
       };
       
       console.log('Đang mở Chrome để bạn quan sát quá trình...');
       console.log('Nếu chưa đăng nhập, hệ thống sẽ đợi bạn đăng nhập Gmail');
-      console.log('Trình duyệt sẽ giữ mở trong 1 phút sau khi hoàn thành để bạn kiểm tra kết quả');
+      console.log('Trình duyệt sẽ KHÔNG đóng sau khi hoàn thành, để bạn có thể tiếp tục sử dụng');
       
       await autoFetchData(name, options);
       
@@ -566,6 +511,7 @@ export async function GET(request, { params }) {
       const newData = findSheetListByName(name);
       if (newData) {
         console.log(`Successfully fetched and processed data for "${name}"`);
+        console.log('Chrome được giữ mở - bạn có thể tiếp tục sử dụng hoặc đóng lại');
         
         return NextResponse.json(newData, {
           headers: responseHeaders
@@ -583,6 +529,7 @@ export async function GET(request, { params }) {
             'Xử lý kết quả: node src/scripts/process-results.js',
             'Sử dụng API offline: /api/spreadsheets/from-offline/' + name
           ],
+          note: 'Chrome browser đã được giữ mở để bạn có thể tiếp tục sử dụng',
           possibleReason: 'API KimVan có thể yêu cầu đăng nhập hoặc áp dụng giới hạn tốc độ (rate limit)',
           offlineApiUrl: `/api/spreadsheets/from-offline/${name}`,
           timestamp: timestamp
@@ -613,6 +560,7 @@ export async function GET(request, { params }) {
           'Xử lý kết quả: node src/scripts/process-results.js',
           'Sử dụng API offline: /api/spreadsheets/from-offline/' + name
         ],
+        note: 'Chrome browser đã được giữ mở để bạn có thể tiếp tục sử dụng',
         error: fetchError.message,
         offlineApiUrl: `/api/spreadsheets/from-offline/${name}`,
         timestamp: timestamp

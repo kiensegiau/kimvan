@@ -12,12 +12,12 @@ if (!fs.existsSync(resultsDir)) {
 }
 
 /**
- * Tạo URL lấy dữ liệu chi tiết của sheet
- * @param {string} sheetId - ID của sheet
+ * Tạo URL tìm kiếm danh sách sheet
+ * @param {string} sheetName - Tên sheet cần tìm
  * @returns {string} URL đầy đủ
  */
-function createDetailUrl(sheetId) {
-  return `https://kimvan.id.vn/api/spreadsheets/${encodeURIComponent(sheetId)}`;
+function createListUrl(sheetName) {
+  return `https://kimvan.id.vn/api/spreadsheets/create/${encodeURIComponent(sheetName)}`;
 }
 
 /**
@@ -36,13 +36,13 @@ async function isLoggedIn(page) {
 }
 
 /**
- * Tự động lấy chi tiết sheet từ API KimVan
- * @param {string} sheetId - ID của sheet cần lấy
- * @returns {Promise<Object>} Dữ liệu sheet hoặc null nếu có lỗi
+ * Tự động lấy danh sách sheet từ API KimVan (không lấy chi tiết)
+ * @param {string} sheetName - Tên sheet cần lấy
+ * @returns {Promise<Object>} Dữ liệu danh sách hoặc null nếu có lỗi
  */
-async function fetchSheetDetail(sheetId) {
+async function fetchSheetList(sheetName) {
   try {
-    console.log(`===== BẮT ĐẦU LẤY CHI TIẾT SHEET VỚI ID "${sheetId}" =====`);
+    console.log(`===== BẮT ĐẦU LẤY DANH SÁCH SHEET CHO "${sheetName}" =====`);
     
     // Đường dẫn đến thư mục dữ liệu người dùng Chrome
     const userDataDir = path.join(process.cwd(), 'chrome-user-data');
@@ -53,7 +53,7 @@ async function fetchSheetDetail(sheetId) {
     }
     
     // Khởi động trình duyệt với cấu hình an toàn
-    console.log('Khởi động trình duyệt Chrome để lấy chi tiết sheet...');
+    console.log('Khởi động trình duyệt Chrome để lấy danh sách sheet...');
     
     const browser = await puppeteer.launch({
       headless: false,
@@ -69,15 +69,14 @@ async function fetchSheetDetail(sheetId) {
     });
     
     try {
-      const shortId = sheetId.substring(0, 10);
-      console.log(`\nLấy chi tiết sheet: ${shortId}...`);
-      const detailUrl = createDetailUrl(sheetId);
-      console.log(`URL: ${detailUrl}`);
+      console.log(`\nLấy danh sách sheet cho "${sheetName}"...`);
+      const listUrl = createListUrl(sheetName);
+      console.log(`URL: ${listUrl}`);
       
-      const detailPage = await browser.newPage();
+      const listPage = await browser.newPage();
       
       // Cài đặt để tránh phát hiện là trình duyệt tự động
-      await detailPage.evaluateOnNewDocument(() => {
+      await listPage.evaluateOnNewDocument(() => {
         Object.defineProperty(navigator, 'webdriver', { get: () => false });
         delete navigator.__proto__.webdriver;
         
@@ -93,19 +92,19 @@ async function fetchSheetDetail(sheetId) {
         });
       });
       
-      await detailPage.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36');
-      await detailPage.setViewport({ width: 1280, height: 800 });
+      await listPage.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36');
+      await listPage.setViewport({ width: 1280, height: 800 });
       
-      await detailPage.evaluateOnNewDocument(() => {
-        console.log('%cAPI KimVan - Chi tiết Sheet', 'font-size: 20px; color: blue; font-weight: bold');
-        console.log('Đang lấy chi tiết sheet, vui lòng đợi...');
+      await listPage.evaluateOnNewDocument(() => {
+        console.log('%cAPI KimVan - Danh sách Sheet', 'font-size: 20px; color: green; font-weight: bold');
+        console.log('Đang lấy danh sách sheet, vui lòng đợi...');
         console.log('Nếu cần đăng nhập, vui lòng đăng nhập Gmail trong cửa sổ này');
       });
       
-      await detailPage.goto(detailUrl, { waitUntil: 'networkidle0', timeout: 60000 });
+      await listPage.goto(listUrl, { waitUntil: 'networkidle0', timeout: 60000 });
       
       // Kiểm tra đăng nhập
-      let isUserLoggedIn = await isLoggedIn(detailPage);
+      let isUserLoggedIn = await isLoggedIn(listPage);
       
       if (!isUserLoggedIn) {
         console.log('\n===== CẦN ĐĂNG NHẬP GMAIL =====');
@@ -119,11 +118,11 @@ async function fetchSheetDetail(sheetId) {
         while (!isUserLoggedIn && (Date.now() - loginStartTime) < loginTimeout) {
           await new Promise(resolve => setTimeout(resolve, 5000));
           console.log('Đang đợi đăng nhập...');
-          isUserLoggedIn = await isLoggedIn(detailPage);
+          isUserLoggedIn = await isLoggedIn(listPage);
           
           if (isUserLoggedIn) {
             console.log('Đã phát hiện đăng nhập thành công!');
-            await detailPage.reload({ waitUntil: 'networkidle0', timeout: 30000 });
+            await listPage.reload({ waitUntil: 'networkidle0', timeout: 30000 });
             break;
           }
         }
@@ -134,20 +133,20 @@ async function fetchSheetDetail(sheetId) {
       }
       
       // Lấy nội dung JSON
-      const detailContent = await detailPage.evaluate(() => document.body.innerText);
-      let detailData;
+      const listContent = await listPage.evaluate(() => document.body.innerText);
+      let listData;
       
       try {
-        detailData = JSON.parse(detailContent);
+        listData = JSON.parse(listContent);
         
         // Lưu file JSON
-        const detailFileName = `sheet-${shortId}-detail.json`;
-        const detailFilePath = path.join(resultsDir, detailFileName);
-        fs.writeFileSync(detailFilePath, JSON.stringify(detailData, null, 2));
-        console.log(`Đã lưu chi tiết sheet vào: ${detailFilePath}`);
+        const listFileName = `${sheetName}-list.json`;
+        const listFilePath = path.join(resultsDir, listFileName);
+        fs.writeFileSync(listFilePath, JSON.stringify(listData, null, 2));
+        console.log(`Đã lưu danh sách sheet vào: ${listFilePath}`);
         
         // Đóng trang sau khi hoàn thành
-        await detailPage.close();
+        await listPage.close();
         
         // Hiển thị thông báo hoàn thành
         const finalPage = await browser.newPage();
@@ -166,8 +165,9 @@ async function fetchSheetDetail(sheetId) {
           div.style.fontFamily = 'Arial, sans-serif';
           
           div.innerHTML = `
-            <h2 style="color: #096dd9; text-align: center;">Hoàn thành lấy chi tiết sheet</h2>
-            <p style="font-size: 16px; line-height: 1.5;">Đã lấy xong chi tiết sheet từ API KimVan.</p>
+            <h2 style="color: #096dd9; text-align: center;">Hoàn thành lấy danh sách sheet</h2>
+            <p style="font-size: 16px; line-height: 1.5;">Đã lấy xong danh sách sheet từ API KimVan.</p>
+            <p style="font-size: 16px; line-height: 1.5;">Để lấy chi tiết từng sheet, sử dụng API /api/spreadsheets/fetchDetail/[id]</p>
             <p style="font-size: 16px; line-height: 1.5;"><strong>Lưu ý:</strong> Bạn có thể đóng trình duyệt này bất cứ lúc nào, phiên đăng nhập vẫn được lưu.</p>
           `;
           
@@ -175,28 +175,30 @@ async function fetchSheetDetail(sheetId) {
         });
         
         console.log('\n===== HOÀN THÀNH =====');
-        console.log(`Đã lấy chi tiết sheet với ID: ${shortId}`);
-        console.log(`Kết quả được lưu tại: ${resultsDir}/${detailFileName}`);
+        console.log(`Đã lấy danh sách sheet cho "${sheetName}"`);
+        console.log(`Tìm thấy ${Array.isArray(listData) ? listData.length : 0} sheets`);
+        console.log(`Kết quả được lưu tại: ${resultsDir}/${sheetName}-list.json`);
         
         return {
           success: true,
-          data: detailData,
-          sheetId: sheetId,
+          data: listData,
+          count: Array.isArray(listData) ? listData.length : 0,
+          sheetName: sheetName,
           timestamp: Date.now()
         };
       } catch (error) {
-        console.error('Lỗi khi xử lý dữ liệu chi tiết:', error);
+        console.error('Lỗi khi xử lý dữ liệu danh sách:', error);
         
         // Lưu nội dung thô để kiểm tra
-        const rawFileName = `sheet-${shortId}-detail-raw.txt`;
+        const rawFileName = `${sheetName}-list-raw.txt`;
         const rawFilePath = path.join(resultsDir, rawFileName);
-        fs.writeFileSync(rawFilePath, detailContent);
+        fs.writeFileSync(rawFilePath, listContent);
         
         return {
           success: false,
           error: error.message,
-          errorCode: detailContent.includes('429') ? 429 : 400,
-          sheetId: sheetId,
+          errorCode: listContent.includes('429') ? 429 : 400,
+          sheetName: sheetName,
           timestamp: Date.now()
         };
       }
@@ -205,25 +207,27 @@ async function fetchSheetDetail(sheetId) {
       console.log('Đã giữ trình duyệt mở để sử dụng lần sau');
     }
   } catch (error) {
-    console.error('Lỗi khi lấy chi tiết sheet:', error);
+    console.error('Lỗi khi lấy danh sách sheet:', error);
     
     return {
       success: false,
       error: error.message,
-      sheetId: sheetId,
+      sheetName: sheetName,
       timestamp: Date.now()
     };
   }
 }
 
+/**
+ * API handler - Lấy danh sách sheet theo tên
+ */
 export async function GET(request, { params }) {
   try {
-    // Await params trước khi sử dụng
     const paramsData = await params;
-    const id = paramsData.id;
+    const name = paramsData.name;
     
-    if (!id) {
-      return NextResponse.json({ error: 'ID không được cung cấp' }, { status: 400 });
+    if (!name) {
+      return NextResponse.json({ error: 'Tên sheet không được cung cấp' }, { status: 400 });
     }
     
     // Timestamp cho header
@@ -231,25 +235,28 @@ export async function GET(request, { params }) {
     const responseHeaders = {
       'X-Timestamp': `${timestamp}`,
       'X-Cache-Control': 'no-cache',
-      'X-Data-Source': 'fetch-detail-only'
+      'X-Data-Source': 'fetch-list-only'
     };
     
     console.log('==============================================');
-    console.log(`Lấy chi tiết sheet với ID: ${id}`);
+    console.log(`Lấy danh sách sheet cho: ${name}`);
     console.log(`Timestamp: ${timestamp}`);
     console.log('==============================================');
     
-    // Gọi hàm lấy chi tiết
-    const result = await fetchSheetDetail(id);
+    // Gọi hàm lấy danh sách
+    const result = await fetchSheetList(name);
     
     if (result.success) {
       return NextResponse.json(result.data, {
-        headers: responseHeaders
+        headers: {
+          ...responseHeaders,
+          'X-Total-Count': `${result.count}`
+        }
       });
     } else {
       return NextResponse.json(
         {
-          error: 'Không thể lấy chi tiết sheet',
+          error: 'Không thể lấy danh sách sheet',
           detail: result.error,
           errorCode: result.errorCode,
           timestamp: timestamp
