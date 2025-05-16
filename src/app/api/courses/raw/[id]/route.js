@@ -4,6 +4,7 @@ import { ObjectId } from 'mongodb';
 import mongoose from 'mongoose';
 import Course from '@/models/Course';
 import { adminAuthMiddleware } from '@/app/api/admin/middleware';
+import { cookies } from 'next/headers';
 
 // Đảm bảo kết nối MongoDB được thiết lập
 let isConnected = false;
@@ -25,7 +26,53 @@ export async function GET(request, { params }) {
   try {
     console.log('🔒 Raw API - Bắt đầu xử lý yêu cầu tới API không mã hóa');
     
-    // Sử dụng middleware admin để xác thực
+    // Kiểm tra cookie admin_access trước
+    const cookieStore = cookies();
+    const adminAccess = cookieStore.get('admin_access');
+    
+    if (adminAccess && adminAccess.value === 'true') {
+      console.log('🔒 Raw API - Đã có cookie admin_access, cho phép truy cập');
+      
+      // Đảm bảo params được awaited
+      const resolvedParams = await Promise.resolve(params);
+      const { id } = resolvedParams;
+      
+      const searchParams = request.nextUrl.searchParams;
+      const type = searchParams.get('type') || 'slug';
+      
+      // Đảm bảo kết nối đến MongoDB trước khi truy vấn
+      await connectDB();
+      
+      // Tìm khóa học theo ID hoặc slug
+      let course;
+      if (type === '_id') {
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+          return NextResponse.json({ 
+            success: false,
+            message: 'ID không hợp lệ' 
+          }, { status: 400 });
+        }
+        course = await Course.findById(id).lean().exec();
+      } else {
+        course = await Course.findOne({ slug: id }).lean().exec();
+      }
+      
+      if (!course) {
+        return NextResponse.json({ 
+          success: false,
+          message: 'Không tìm thấy khóa học' 
+        }, { status: 404 });
+      }
+      
+      // Trả về dữ liệu khóa học không mã hóa - CHỈ CHO ADMIN
+      console.log('✅ Raw API - Đã tìm thấy khóa học, trả về dữ liệu không mã hóa');
+      return NextResponse.json({
+        success: true,
+        data: course
+      });
+    }
+    
+    // Nếu không có cookie admin_access, thử xác thực Firebase token
     console.log('🔒 Raw API - Gọi middleware xác thực admin');
     const adminRequest = await adminAuthMiddleware(request);
     

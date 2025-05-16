@@ -22,6 +22,10 @@ const connectDB = async () => {
 // GET: Lấy thông tin chi tiết của một khóa học
 export async function GET(request, { params }) {
   try {
+    // Await params trước khi sử dụng
+    const paramsData = await params;
+    const id = paramsData.id;
+    
     // Kiểm tra cookie admin_access
     const cookieStore = cookies();
     const adminAccess = cookieStore.get('admin_access');
@@ -29,8 +33,6 @@ export async function GET(request, { params }) {
     // Nếu có cookie admin_access, cho phép truy cập
     if (adminAccess && adminAccess.value === 'true') {
       console.log('🔒 Admin API - Đã có cookie admin_access, cho phép truy cập');
-      
-      const { id } = params;
       
       // Đảm bảo kết nối đến MongoDB trước khi truy vấn
       await connectDB();
@@ -68,8 +70,6 @@ export async function GET(request, { params }) {
       }, { status: 403 });
     }
     
-    const { id } = params;
-    
     // Đảm bảo kết nối đến MongoDB trước khi truy vấn
     await connectDB();
     
@@ -106,6 +106,10 @@ export async function GET(request, { params }) {
 // PUT: Cập nhật thông tin khóa học
 export async function PUT(request, { params }) {
   try {
+    // Await params trước khi sử dụng
+    const paramsData = await params;
+    const id = paramsData.id;
+    
     // Kiểm tra cookie admin_access
     const cookieStore = cookies();
     const adminAccess = cookieStore.get('admin_access');
@@ -114,7 +118,6 @@ export async function PUT(request, { params }) {
     if (adminAccess && adminAccess.value === 'true') {
       console.log('🔒 Admin API - Đã có cookie admin_access, cho phép truy cập');
       
-      const { id } = params;
       const body = await request.json();
       
       // Đảm bảo kết nối đến MongoDB trước khi truy vấn
@@ -163,7 +166,6 @@ export async function PUT(request, { params }) {
       }, { status: 403 });
     }
     
-    const { id } = params;
     const body = await request.json();
     
     // Đảm bảo kết nối đến MongoDB trước khi truy vấn
@@ -212,6 +214,10 @@ export async function PUT(request, { params }) {
 // DELETE: Xóa khóa học
 export async function DELETE(request, { params }) {
   try {
+    // Await params trước khi sử dụng
+    const paramsData = await params;
+    const id = paramsData.id;
+    
     // Kiểm tra cookie admin_access
     const cookieStore = cookies();
     const adminAccess = cookieStore.get('admin_access');
@@ -219,8 +225,6 @@ export async function DELETE(request, { params }) {
     // Nếu có cookie admin_access, cho phép truy cập
     if (adminAccess && adminAccess.value === 'true') {
       console.log('🔒 Admin API - Đã có cookie admin_access, cho phép truy cập');
-      
-      const { id } = params;
       
       // Đảm bảo kết nối đến MongoDB trước khi truy vấn
       await connectDB();
@@ -259,8 +263,6 @@ export async function DELETE(request, { params }) {
         message: 'Bạn không có quyền thực hiện hành động này' 
       }, { status: 403 });
     }
-    
-    const { id } = params;
     
     // Đảm bảo kết nối đến MongoDB trước khi truy vấn
     await connectDB();
