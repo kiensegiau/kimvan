@@ -247,6 +247,104 @@ export default function CoursesPage() {
     }
   };
 
+  // Hàm đồng bộ dữ liệu cho một khóa học cụ thể
+  const handleSyncSingleCourse = async (courseId) => {
+    try {
+      setSyncing(true);
+      setError(null);
+      
+      // Hiển thị thông báo
+      setSyncResults({
+        inProgress: true,
+        success: true,
+        message: 'Đang đồng bộ khóa học...',
+        summary: {
+          total: 1,
+          created: 0,
+          updated: 0,
+          errors: 0
+        }
+      });
+      
+      // Bước 1: Tìm khóa học hiện có trong danh sách
+      const existingCourse = courses.find(course => course.kimvanId === courseId);
+      
+      if (!existingCourse) {
+        throw new Error('Không tìm thấy khóa học trong hệ thống');
+      }
+      
+      // Bước 2: Gọi API để lấy dữ liệu chi tiết từ Kimvan
+      const response = await fetch(`/api/spreadsheets/${courseId}`);
+      if (!response.ok) {
+        throw new Error(`Lỗi khi lấy dữ liệu từ Kimvan: ${response.status}`);
+      }
+      
+      const kimvanData = await response.json();
+      
+      // Bước 3: Định dạng dữ liệu trước khi đồng bộ, GIỮ NGUYÊN thông tin hiện tại
+      const courseToSync = {
+        _id: existingCourse._id,
+        kimvanId: courseId,
+        name: existingCourse.name,               // Giữ nguyên tên hiện tại
+        description: existingCourse.description, // Giữ nguyên mô tả hiện tại
+        price: existingCourse.price,             // Giữ nguyên giá hiện tại
+        status: existingCourse.status,           // Giữ nguyên trạng thái hiện tại
+        originalData: kimvanData                 // CHỈ cập nhật dữ liệu gốc
+      };
+      
+      // Bước 4: Gọi API để đồng bộ với MongoDB - sử dụng API admin đúng
+      const syncResponse = await fetch(`/api/admin/courses/${existingCourse._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          ...courseToSync,
+          updatedAt: new Date()
+        }),
+      });
+      
+      const syncData = await syncResponse.json();
+      
+      if (!syncResponse.ok) {
+        throw new Error(syncData.message || 'Không thể đồng bộ dữ liệu');
+      }
+      
+      // Hiển thị kết quả đồng bộ
+      setSyncResults({
+        inProgress: false,
+        success: true,
+        message: 'Đồng bộ khóa học thành công',
+        summary: {
+          total: 1,
+          created: 0,
+          updated: 1,
+          errors: 0
+        }
+      });
+      
+      // Tải lại danh sách khóa học
+      await fetchCourses();
+    } catch (err) {
+      console.error('Lỗi khi đồng bộ khóa học:', err);
+      setError(err.message || 'Đã xảy ra lỗi khi đồng bộ khóa học từ Kimvan');
+      // Hiển thị kết quả lỗi
+      setSyncResults({
+        inProgress: false,
+        success: false,
+        message: `Lỗi: ${err.message}`,
+        summary: {
+          total: 1,
+          created: 0,
+          updated: 0,
+          errors: 1
+        }
+      });
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   // Hàm đồng bộ dữ liệu từ Kimvan
   const handleSync = async () => {
     try {
@@ -729,13 +827,23 @@ export default function CoursesPage() {
                             <PencilIcon className="h-5 w-5" />
                           </button>
                           {course.kimvanId && (
-                            <button
-                              onClick={() => handleViewOriginalData(course.kimvanId)}
-                              className="text-yellow-600 hover:text-yellow-900 mr-2"
-                              title="Xem dữ liệu gốc"
-                            >
-                              <CloudArrowDownIcon className="h-5 w-5" />
-                            </button>
+                            <>
+                              <button
+                                onClick={() => handleViewOriginalData(course.kimvanId)}
+                                className="text-yellow-600 hover:text-yellow-900 mr-2"
+                                title="Xem dữ liệu gốc"
+                              >
+                                <CloudArrowDownIcon className="h-5 w-5" />
+                              </button>
+                              <button
+                                onClick={() => handleSyncSingleCourse(course.kimvanId)}
+                                disabled={syncing}
+                                className="text-green-600 hover:text-green-900 mr-2"
+                                title="Đồng bộ khóa học này"
+                              >
+                                <ArrowPathIcon className={`h-5 w-5 ${syncing ? 'animate-spin' : ''}`} />
+                              </button>
+                            </>
                           )}
                           <button
                             onClick={() => handleDelete(course._id)}

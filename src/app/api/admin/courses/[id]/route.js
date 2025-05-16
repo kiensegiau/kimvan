@@ -27,7 +27,7 @@ export async function GET(request, { params }) {
     const id = paramsData.id;
     
     // Kiểm tra cookie admin_access
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const adminAccess = cookieStore.get('admin_access');
     
     // Nếu có cookie admin_access, cho phép truy cập
@@ -111,7 +111,7 @@ export async function PUT(request, { params }) {
     const id = paramsData.id;
     
     // Kiểm tra cookie admin_access
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const adminAccess = cookieStore.get('admin_access');
     
     // Nếu có cookie admin_access, cho phép truy cập
@@ -219,7 +219,7 @@ export async function DELETE(request, { params }) {
     const id = paramsData.id;
     
     // Kiểm tra cookie admin_access
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const adminAccess = cookieStore.get('admin_access');
     
     // Nếu có cookie admin_access, cho phép truy cập
