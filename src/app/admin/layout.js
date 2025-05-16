@@ -106,24 +106,7 @@ export default function AdminLayout({ children }) {
   
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* YouTube Warning Banner - hiển thị ở trên cùng nếu token không hợp lệ */}
-      {youtubeTokenStatus && !isYoutubeSetupPage && 
-       (!youtubeTokenStatus.exists || (youtubeTokenStatus.exists && !youtubeTokenStatus.valid)) && (
-        <div className="bg-yellow-100 border-b border-yellow-300 p-3 fixed top-0 left-0 right-0 z-50">
-          <div className="flex items-center justify-center max-w-7xl mx-auto">
-            <ExclamationCircleIcon className="h-5 w-5 text-yellow-600 mr-2" />
-            <span className="text-sm text-yellow-800">
-              YouTube API chưa được thiết lập. Tính năng tải lên video sẽ không hoạt động.
-            </span>
-            <button 
-              onClick={() => router.push('/admin/youtube-setup')}
-              className="ml-4 px-3 py-1 rounded text-xs font-medium bg-yellow-200 text-yellow-800 hover:bg-yellow-300"
-            >
-              Thiết lập ngay
-            </button>
-          </div>
-        </div>
-      )}
+  
       
       {/* Mobile sidebar */}
       <div className="lg:hidden">
