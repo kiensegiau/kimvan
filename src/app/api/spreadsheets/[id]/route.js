@@ -12,6 +12,43 @@ if (!fs.existsSync(resultsDir)) {
 }
 
 /**
+ * Dọn dẹp thư mục kết quả sau khi đã xử lý thành công
+ * @param {string} keepFile - Đường dẫn file cần giữ lại
+ * @returns {number} Số lượng file đã xóa
+ */
+function cleanupFolders(keepFile = null) {
+  try {
+    console.log('\n===== BẮT ĐẦU DỌN DẸP THƯ MỤC =====');
+    let filesDeleted = 0;
+    
+    // Dọn dẹp thư mục kết quả tạm thời
+    if (fs.existsSync(resultsDir)) {
+      const files = fs.readdirSync(resultsDir);
+      console.log(`Tìm thấy ${files.length} file trong thư mục kết quả tạm thời`);
+      
+      for (const file of files) {
+        const filePath = path.join(resultsDir, file);
+        
+        // Kiểm tra đây có phải là file không và không phải file cần giữ lại
+        if (fs.statSync(filePath).isFile() && (!keepFile || filePath !== keepFile)) {
+          fs.unlinkSync(filePath);
+          filesDeleted++;
+          console.log(`Đã xóa file: ${file}`);
+        }
+      }
+      
+      console.log(`Đã xóa ${filesDeleted} file từ thư mục kết quả tạm thời`);
+    }
+    
+    console.log('===== DỌN DẸP HOÀN THÀNH =====');
+    return filesDeleted;
+  } catch (error) {
+    console.error('Lỗi khi dọn dẹp thư mục:', error);
+    return 0;
+  }
+}
+
+/**
  * Tạo URL lấy dữ liệu chi tiết của sheet
  * @param {string} sheetId - ID của sheet
  * @returns {string} URL đầy đủ
@@ -220,6 +257,12 @@ export async function GET(request, { params }) {
     const result = await fetchSheetDetail(id);
     
     if (result.success) {
+      // Dọn dẹp thư mục kết quả, giữ lại file vừa lấy được
+      const detailFileName = `sheet-${id.substring(0, 10)}-detail.json`;
+      const detailFilePath = path.join(resultsDir, detailFileName);
+      const filesDeleted = cleanupFolders(detailFilePath);
+      console.log(`Đã dọn dẹp ${filesDeleted} file tạm thời sau khi lấy chi tiết thành công`);
+      
       return NextResponse.json(result.data, {
         headers: responseHeaders
       });

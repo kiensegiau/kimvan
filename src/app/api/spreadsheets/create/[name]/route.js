@@ -16,6 +16,79 @@ if (!fs.existsSync(processedDir)) {
 }
 
 /**
+ * Dọn dẹp thư mục kết quả sau khi đã xử lý thành công
+ * @param {boolean} keepProcessedFiles - Có giữ lại file đã xử lý không
+ * @returns {number} Số lượng file đã xóa
+ */
+function cleanupFolders(keepProcessedFiles = false) {
+  try {
+    console.log('\n===== BẮT ĐẦU DỌN DẸP THƯ MỤC =====');
+    let filesDeleted = 0;
+    
+    // 1. Dọn dẹp thư mục kết quả tạm thời
+    if (fs.existsSync(resultsDir)) {
+      const files = fs.readdirSync(resultsDir);
+      console.log(`Tìm thấy ${files.length} file trong thư mục kết quả tạm thời`);
+      
+      for (const file of files) {
+        const filePath = path.join(resultsDir, file);
+        
+        // Kiểm tra đây có phải là file không
+        if (fs.statSync(filePath).isFile()) {
+          fs.unlinkSync(filePath);
+          filesDeleted++;
+          console.log(`Đã xóa file: ${file}`);
+        }
+      }
+      
+      console.log(`Đã xóa ${filesDeleted} file từ thư mục kết quả tạm thời`);
+    }
+    
+    // 2. Nếu cần, dọn dẹp thư mục đã xử lý (giữ file index.json và file mới nhất)
+    if (!keepProcessedFiles && fs.existsSync(processedDir)) {
+      const indexPath = path.join(processedDir, 'index.json');
+      let latestFile = null;
+      
+      // Tìm file mới nhất từ index.json
+      if (fs.existsSync(indexPath)) {
+        try {
+          const indexContent = fs.readFileSync(indexPath, 'utf8');
+          const indexData = JSON.parse(indexContent);
+          latestFile = indexData.lastProcessed;
+        } catch (error) {
+          console.error('Lỗi khi đọc file index.json:', error.message);
+        }
+      }
+      
+      // Xóa các file cũ
+      if (latestFile) {
+        const files = fs.readdirSync(processedDir);
+        let oldFilesDeleted = 0;
+        
+        for (const file of files) {
+          const filePath = path.join(processedDir, file);
+          
+          // Không xóa file index.json và file mới nhất
+          if (file !== 'index.json' && filePath !== latestFile && fs.statSync(filePath).isFile()) {
+            fs.unlinkSync(filePath);
+            oldFilesDeleted++;
+            console.log(`Đã xóa file đã xử lý cũ: ${file}`);
+          }
+        }
+        
+        console.log(`Đã xóa ${oldFilesDeleted} file đã xử lý cũ`);
+      }
+    }
+    
+    console.log('===== DỌN DẸP HOÀN THÀNH =====');
+    return filesDeleted;
+  } catch (error) {
+    console.error('Lỗi khi dọn dẹp thư mục:', error);
+    return 0;
+  }
+}
+
+/**
  * Tạo URL tìm kiếm danh sách sheet
  * @param {string} sheetName - Tên sheet cần tìm
  * @returns {string} URL đầy đủ
@@ -481,6 +554,10 @@ export async function GET(request, { params }) {
       if (newData) {
         console.log(`Successfully fetched and processed data for "${name}"`);
         console.log('Chrome đã được đóng tự động');
+        
+        // Dọn dẹp thư mục sau khi xử lý thành công
+        const filesDeleted = cleanupFolders(true); // true = giữ lại các file đã xử lý
+        console.log(`Đã dọn dẹp ${filesDeleted} file tạm thời sau khi xử lý thành công`);
         
         return NextResponse.json(newData, {
           headers: responseHeaders
