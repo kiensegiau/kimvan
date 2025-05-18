@@ -16,54 +16,57 @@ import { createConvertWorker, createProcessWorker } from './workers.js';
 // Tối ưu hàm chính để xóa watermark
 export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
   const startTime = Date.now();
+  let tempDir = null;
+  let gsPath = null;
+  
   console.log('🔄 Bắt đầu xử lý xóa watermark...');
   
-  // Kiểm tra xem sharp có khả dụng không
   try {
-    if (process.env.NODE_ENV === 'production') {
-      // Các cấu hình cho môi trường production nếu cần
+    // Kiểm tra xem sharp có khả dụng không
+    try {
+      if (process.env.NODE_ENV === 'production') {
+        // Các cấu hình cho môi trường production nếu cần
+      }
+    } catch (error) {
+      throw new Error('Thư viện xử lý hình ảnh (Sharp) không khả dụng trên máy chủ này. Vui lòng liên hệ quản trị viên.');
     }
-  } catch (error) {
-    throw new Error('Thư viện xử lý hình ảnh (Sharp) không khả dụng trên máy chủ này. Vui lòng liên hệ quản trị viên.');
-  }
-  
-  // Tìm GhostScript một lần và cache kết quả
-  let gsPath;
-  try {
-    gsPath = findGhostscript();
-  } catch (gsError) {
-    throw gsError;
-  }
+    
+    // Tìm GhostScript một lần và cache kết quả
+    try {
+      gsPath = findGhostscript();
+    } catch (gsError) {
+      throw gsError;
+    }
 
-  if (!inputPath) {
-    throw new Error('Không có đường dẫn file đầu vào');
-  }
-  
-  outputPath = outputPath || inputPath.replace('.pdf', '_clean.pdf');
-  
-  if (!fs.existsSync(inputPath)) {
-    throw new Error(`File không tồn tại: ${inputPath}`);
-  }
-  
-  // Kiểm tra kích thước file
-  let stats;
-  try {
-    stats = fs.statSync(inputPath);
-  } catch (statError) {
-    throw new Error(`Không thể đọc thông tin file: ${statError.message}`);
-  }
-  
-  const fileSizeInMB = stats.size / (1024 * 1024);
-  
-  // Tạo thư mục temp hiệu quả hơn
-  const tempDir = path.join(os.tmpdir(), `pdf-watermark-removal-${Date.now()}`);
-  try {
-    fs.mkdirSync(tempDir, { recursive: true });
-  } catch (mkdirError) {
-    throw new Error(`Không thể tạo thư mục tạm: ${mkdirError.message}`);
-  }
-  
-  try {
+    if (!inputPath) {
+      throw new Error('Không có đường dẫn file đầu vào');
+    }
+    
+    outputPath = outputPath || inputPath.replace('.pdf', '_clean.pdf');
+    
+    if (!fs.existsSync(inputPath)) {
+      throw new Error(`File không tồn tại: ${inputPath}`);
+    }
+    
+    // Kiểm tra kích thước file
+    let stats;
+    try {
+      stats = fs.statSync(inputPath);
+    } catch (statError) {
+      throw new Error(`Không thể đọc thông tin file: ${statError.message}`);
+    }
+    
+    const fileSizeInMB = stats.size / (1024 * 1024);
+    console.log(`📊 Kích thước file: ${fileSizeInMB.toFixed(2)} MB`);
+    
+    // Tạo thư mục temp hiệu quả hơn
+    tempDir = path.join(os.tmpdir(), `pdf-watermark-removal-${Date.now()}`);
+    try {
+      fs.mkdirSync(tempDir, { recursive: true });
+    } catch (mkdirError) {
+      throw new Error(`Không thể tạo thư mục tạm: ${mkdirError.message}`);
+    }
+    
     // Đếm số trang với cache
     console.log('🔍 Đang phân tích số trang của PDF...');
     let numPages;
@@ -75,11 +78,13 @@ export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
     
     console.log(`📄 Phát hiện ${numPages} trang, đang tách PDF...`);
     
-    // Tối ưu biến cho số lượng công nhân
+    // Tối ưu biến cho số lượng công nhân - giảm xuống để bớt tiêu thụ ram
     const optimalWorkers = Math.min(
       config.maxWorkers,
-      Math.max(1, Math.min(os.cpus().length - 1, numPages))
+      Math.max(1, Math.min(Math.max(1, os.cpus().length - 2), Math.min(numPages, 2)))
     );
+    
+    console.log(`🧠 Sử dụng ${optimalWorkers} worker(s) để xử lý`);
     
     // Tách PDF thành từng trang - sử dụng tùy chọn tối ưu cho GhostScript
     const gsCommand = `"${gsPath}" -dALLOWPSTRANSPARENCY -dBATCH -dNOPAUSE -q -dNumRenderingThreads=${optimalWorkers} -sDEVICE=pdfwrite -dSAFER ` +
@@ -91,6 +96,9 @@ export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
     } catch (gsError) {
       throw new Error(`Lỗi khi tách PDF: ${gsError.message}`);
     }
+    
+    // Giải phóng bộ nhớ sau khi tách PDF
+    forceGarbageCollection();
     
     // Kiểm tra kết quả nhanh hơn bằng cách dựa vào readdir và lọc
     let pdfFiles;
@@ -129,7 +137,9 @@ export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
 
     // Chuyển đổi PDF sang PNG theo batch nhỏ, không phải song song toàn bộ
     console.log('🔄 Bước 1/3: Chuyển đổi PDF sang hình ảnh...');
-    const batchSize = config.batchSize || 3; // Xử lý tối đa 3 trang cùng lúc để tránh tràn bộ nhớ
+    
+    // Giảm kích thước batch để tránh tràn bộ nhớ
+    const batchSize = Math.min(config.batchSize || 3, 2);
     
     // Chia trang thành các batch nhỏ hơn để xử lý
     const convertResults = [];
@@ -154,19 +164,25 @@ export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
         
         convertResults.push(...batchResults);
       
-        // Thúc đẩy GC sau mỗi batch
-        try {
-          if (typeof global.gc === 'function') {
-            global.gc();
+        // Dọn dẹp các file PDF trang đã chuyển đổi để giải phóng bộ nhớ ngay lập tức
+        for (const task of currentBatch) {
+          try {
+            if (fs.existsSync(task.pdfPath)) {
+              fs.unlinkSync(task.pdfPath);
+            }
+          } catch (unlinkError) {
+            console.debug(`Không thể xóa file PDF tạm: ${unlinkError.message}`);
           }
-        } catch (gcError) {
-          console.debug(`Lỗi gọi GC: ${gcError.message}`);
         }
-      
-        // Tạm dừng để cho GC có cơ hội chạy và giải phóng bộ nhớ
-        await new Promise(resolve => setTimeout(resolve, 200));
+        
+        // Thúc đẩy GC sau mỗi batch
+        forceGarbageCollection();
+        
+        // Tăng thời gian chờ giữa các batch để hệ thống có thời gian giải phóng bộ nhớ
+        await new Promise(resolve => setTimeout(resolve, 300));
       } catch (batchProcessError) {
         console.error(`Lỗi xử lý batch chuyển đổi tại vị trí ${i}: ${batchProcessError.message}`);
+        // Vẫn tiếp tục xử lý các batch tiếp theo
       }
     }
     console.log(`🔄 Chuyển đổi PDF sang hình ảnh: 100% (${conversionTasks.length}/${conversionTasks.length} trang)`);
@@ -205,19 +221,25 @@ export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
         
         processResults.push(...batchResults);
         
-        // Thúc đẩy GC sau mỗi batch
-        try {
-          if (typeof global.gc === 'function') {
-            global.gc();
+        // Thúc đẩy GC sau mỗi batch và xóa file PNG gốc đã xử lý
+        for (const conversion of currentBatch) {
+          try {
+            if (fs.existsSync(conversion.pngPath)) {
+              fs.unlinkSync(conversion.pngPath);
+            }
+          } catch (unlinkError) {
+            console.debug(`Không thể xóa file PNG gốc: ${unlinkError.message}`);
           }
-        } catch (gcError) {
-          console.debug(`Lỗi gọi GC: ${gcError.message}`);
         }
         
+        // Thúc đẩy GC sau mỗi batch
+        forceGarbageCollection();
+        
         // Tạm dừng để cho GC có cơ hội chạy và giải phóng bộ nhớ
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise(resolve => setTimeout(resolve, 300));
       } catch (batchProcessError) {
         console.error(`Lỗi xử lý batch xóa watermark tại vị trí ${i}: ${batchProcessError.message}`);
+        // Vẫn tiếp tục xử lý các batch tiếp theo
       }
     }
     console.log(`🔄 Xử lý xóa watermark: 100% (${successfulConversions.length}/${successfulConversions.length} trang)`);
@@ -271,18 +293,17 @@ export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
           console.debug(`Không thể xóa file PNG tạm: ${unlinkError.message}`);
         }
         
-        // Thúc đẩy GC sau mỗi trang
-        try {
-          if (typeof global.gc === 'function') {
-            global.gc();
-          }
-        } catch (gcError) {
-          console.debug(`Lỗi gọi GC: ${gcError.message}`);
+        // Thúc đẩy GC sau mỗi 3 trang
+        if (i % 3 === 2) {
+          forceGarbageCollection();
         }
       } catch (pageError) {
         console.error(`Lỗi khi thêm trang ${i+1} vào PDF: ${pageError.message}`);
       }
     }
+    
+    // Giải phóng bộ nhớ trước khi lưu PDF lớn
+    forceGarbageCollection();
     
     // Lưu PDF với tùy chọn nén tối ưu
     console.log('💾 Lưu file PDF kết quả...');
@@ -302,14 +323,9 @@ export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
       throw new Error(`Không thể ghi file PDF: ${writeError.message}`);
     }
     
-    // Dọn dẹp file tạm ngay khi có thể để tiết kiệm bộ nhớ
-    if (config.cleanupTempFiles) {
-      try {
-        cleanupTempFiles(tempDir);
-      } catch (cleanupError) {
-        console.warn(`⚠️ Lỗi khi dọn dẹp thư mục tạm: ${cleanupError.message}`);
-      }
-    }
+    // Giải phóng biến pdfBytes ngay sau khi ghi xong để giải phóng bộ nhớ
+    pdfBytes = null;
+    forceGarbageCollection();
     
     // Sau khi hoàn thành
     const endTime = Date.now();
@@ -332,15 +348,19 @@ export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
     };
   } catch (error) {
     console.log(`❌ Lỗi: ${error.message}`);
-    
-    // Dọn dẹp file tạm
-    try {
-      cleanupTempFiles(tempDir);
-    } catch (cleanupError) {
-      // Ignore error
+    throw error;
+  } finally {
+    // Dọn dẹp file tạm trong finally để đảm bảo luôn được thực hiện
+    if (tempDir && fs.existsSync(tempDir)) {
+      try {
+        cleanupTempFiles(tempDir);
+      } catch (cleanupError) {
+        console.error(`Không thể dọn dẹp thư mục tạm: ${cleanupError.message}`);
+      }
     }
     
-    throw error;
+    // Thúc đẩy garbage collection lần cuối
+    forceGarbageCollection();
   }
 }
 

@@ -92,31 +92,104 @@ export function getExtensionFromMimeType(mimeType) {
   }
 }
 
-// Clean up temporary files
+// Cải tiến chức năng dọn dẹp tạm để hiệu quả hơn và đảm bảo giải phóng bộ nhớ
 export function cleanupTempFiles(tempDir) {
+  if (!tempDir) return;
+  
   try {
     if (fs.existsSync(tempDir)) {
+      // Sử dụng đường dẫn tuyệt đối để tránh lỗi
+      const absoluteTempDir = path.resolve(tempDir);
+      console.log(`🧹 Dọn dẹp thư mục tạm: ${absoluteTempDir}`);
+      
       try {
-        const files = fs.readdirSync(tempDir);
-        for (const file of files) {
+        // Đọc tất cả các mục trong thư mục
+        const entries = fs.readdirSync(absoluteTempDir, { withFileTypes: true });
+        
+        // Đếm số lượng tệp/thư mục được xử lý
+        let processedCount = 0;
+        const totalEntries = entries.length;
+        
+        // Xóa tất cả các tệp trước, sau đó các thư mục
+        for (const entry of entries) {
+          const fullPath = path.join(absoluteTempDir, entry.name);
+          
           try {
-            fs.unlinkSync(path.join(tempDir, file));
-          } catch (unlinkError) {
-            console.warn(`Không thể xóa file ${file}: ${unlinkError.message}`);
-            // Tiếp tục với file tiếp theo
+            // Nếu là thư mục, gọi đệ quy
+            if (entry.isDirectory()) {
+              cleanupTempFiles(fullPath);
+            } else {
+              // Xóa tệp
+              fs.unlinkSync(fullPath);
+            }
+            processedCount++;
+            
+            // Thúc đẩy GC sau mỗi 10 tệp để tránh tràn bộ nhớ
+            if (processedCount % 10 === 0) {
+              forceGarbageCollection();
+            }
+          } catch (entryError) {
+            console.warn(`⚠️ Không thể xóa ${entry.isDirectory() ? 'thư mục' : 'tệp'} ${entry.name}: ${entryError.message}`);
           }
         }
-        try {
-          fs.rmdirSync(tempDir, { recursive: true });
-        } catch (rmdirError) {
-          console.warn(`Không thể xóa thư mục ${tempDir}: ${rmdirError.message}`);
+        
+        // Xóa thư mục sau khi đã xóa tất cả các mục bên trong
+        fs.rmdirSync(absoluteTempDir, { recursive: true, force: true });
+        console.log(`✅ Đã xóa thành công thư mục tạm với ${processedCount}/${totalEntries} mục`);
+      } catch (fsError) {
+        // Nếu không thể xóa bằng fs, thử dùng cách mạnh hơn trên Windows
+        const isWindows = process.platform === 'win32';
+        if (isWindows) {
+          try {
+            execSync(`rmdir /s /q "${absoluteTempDir}"`, { stdio: 'ignore' });
+            console.log(`✅ Đã xóa thư mục tạm bằng lệnh rmdir`);
+          } catch (cmdError) {
+            console.error(`❌ Không thể xóa thư mục tạm bằng lệnh: ${cmdError.message}`);
+          }
+        } else {
+          try {
+            execSync(`rm -rf "${absoluteTempDir}"`, { stdio: 'ignore' });
+            console.log(`✅ Đã xóa thư mục tạm bằng lệnh rm`);
+          } catch (cmdError) {
+            console.error(`❌ Không thể xóa thư mục tạm bằng lệnh: ${cmdError.message}`);
+          }
         }
-      } catch (readError) {
-        console.error(`Không thể đọc thư mục ${tempDir}: ${readError.message}`);
       }
     }
   } catch (error) {
-    console.error(`Lỗi khi dọn dẹp tệp tạm: ${error.message}`);
+    console.error(`❌ Lỗi dọn dẹp thư mục tạm: ${error.message}`);
+  } finally {
+    // Thúc đẩy GC sau khi hoàn thành
+    forceGarbageCollection();
+  }
+}
+
+// Hàm mới: Thúc đẩy Garbage Collection để giải phóng bộ nhớ
+export function forceGarbageCollection() {
+  try {
+    // Giải phóng các biến không cần thiết
+    const beforeMemory = process.memoryUsage();
+    
+    // Gọi GC nếu có sẵn (cần chạy Node với flag --expose-gc)
+    if (typeof global.gc === 'function') {
+      global.gc();
+    }
+    
+    // Thử thúc đẩy GC gián tiếp
+    const tempArray = new Array(10000).fill(0);
+    tempArray.length = 0;
+    
+    // Kiểm tra mức sử dụng bộ nhớ sau khi dọn dẹp (chỉ để debug)
+    if (process.env.NODE_ENV === 'development') {
+      const afterMemory = process.memoryUsage();
+      const diffHeap = (beforeMemory.heapUsed - afterMemory.heapUsed) / (1024 * 1024);
+      if (diffHeap > 1) {
+        console.debug(`🧹 Đã giải phóng khoảng ${diffHeap.toFixed(2)}MB bộ nhớ`);
+      }
+    }
+  } catch (error) {
+    // Lỗi trong quá trình GC không quan trọng lắm
+    console.debug(`⚠️ Lỗi khi thúc đẩy GC: ${error.message}`);
   }
 }
 
@@ -204,7 +277,7 @@ export async function processBatches(items, processFunc, maxConcurrent) {
     const results = [];
     
     // Giảm kích thước batch để tránh sử dụng quá nhiều bộ nhớ cùng lúc
-    const safeBatchSize = Math.min(maxConcurrent, 3); // Tối đa 3 item cùng lúc
+    const safeBatchSize = Math.min(maxConcurrent, 2); // Giảm xuống 2 item cùng lúc để giảm tải bộ nhớ
     
     for (let i = 0; i < items.length; i += safeBatchSize) {
       try {
@@ -228,18 +301,15 @@ export async function processBatches(items, processFunc, maxConcurrent) {
         // Thêm kết quả vào mảng kết quả
         results.push(...batchResults);
         
-        // Đợi GC chạy sau mỗi batch
-        if (typeof global.gc === 'function') {
-          try {
-            global.gc();
-          } catch (gcError) {
-            console.debug(`Lỗi khi gọi GC: ${gcError.message}`);
-          }
-        }
+        // Chủ động giải phóng bộ nhớ sau mỗi batch
+        forceGarbageCollection();
         
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Đợi một chút giữa các batch để cho hệ thống thời gian xử lý bộ nhớ
+        await new Promise(resolve => setTimeout(resolve, 200));
       } catch (batchProcessError) {
         console.error(`Lỗi xử lý batch tại vị trí ${i}: ${batchProcessError.message}`);
+        // Giải phóng bộ nhớ khi có lỗi
+        forceGarbageCollection();
       }
     }
     

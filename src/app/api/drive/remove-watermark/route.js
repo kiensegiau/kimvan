@@ -59,6 +59,36 @@ process.on('warning', (warning) => {
   // console.warn(warning.name, warning.message);
 });
 
+// Thêm giám sát sử dụng bộ nhớ
+const memoryMonitor = {
+  lastMemoryUsage: process.memoryUsage(),
+  logMemoryStats: function(label = 'Hiện tại') {
+    try {
+      const currentUsage = process.memoryUsage();
+      const heapTotal = (currentUsage.heapTotal / (1024 * 1024)).toFixed(2);
+      const heapUsed = (currentUsage.heapUsed / (1024 * 1024)).toFixed(2);
+      const rss = (currentUsage.rss / (1024 * 1024)).toFixed(2);
+      
+      // Tính toán sự thay đổi
+      const heapUsedDiff = ((currentUsage.heapUsed - this.lastMemoryUsage.heapUsed) / (1024 * 1024)).toFixed(2);
+      const rssDiff = ((currentUsage.rss - this.lastMemoryUsage.rss) / (1024 * 1024)).toFixed(2);
+      
+      console.log(`📊 Sử dụng bộ nhớ (${label}): ${heapUsed}MB/${heapTotal}MB (Heap), ${rss}MB (RSS), Thay đổi: ${heapUsedDiff}MB (Heap), ${rssDiff}MB (RSS)`);
+      
+      // Cập nhật giá trị cuối
+      this.lastMemoryUsage = currentUsage;
+      
+      // Xử lý rò rỉ bộ nhớ tiềm ẩn
+      if (parseFloat(heapUsedDiff) > 50 || parseFloat(rssDiff) > 100) {
+        console.warn(`⚠️ Phát hiện tăng bộ nhớ đáng kể: ${heapUsedDiff}MB (Heap), ${rssDiff}MB (RSS)`);
+        forceGarbageCollection();
+      }
+    } catch (error) {
+      console.debug(`Lỗi khi log thông tin bộ nhớ: ${error.message}`);
+    }
+  }
+};
+
 // Sửa import sharp để sử dụng phiên bản tương thích với Node.js
 let sharp;
 try {
@@ -110,6 +140,9 @@ export async function POST(request) {
   let tempDir = null;
   let processedFilePath = null;
   let processingFolders = [];
+  
+  // Bắt đầu theo dõi bộ nhớ
+  memoryMonitor.logMemoryStats('Bắt đầu API');
   
   try {
     // Lấy token từ cookie thay vì từ request body
@@ -168,6 +201,9 @@ export async function POST(request) {
       );
     }
     
+    // Theo dõi bộ nhớ sau khi xác thực
+    memoryMonitor.logMemoryStats('Sau xác thực');
+    
     // Kiểm tra xem link là folder hay file
     let isFolder = false;
     if (driveLink.includes('drive.google.com/drive/folders/') || 
@@ -218,23 +254,35 @@ export async function POST(request) {
       }
     }
     
+    // Log thông tin bộ nhớ trước khi xử lý tập tin
+    memoryMonitor.logMemoryStats('Trước khi xử lý');
+    
+    let result;
     if (isFolder) {
       console.log('Xử lý folder:', driveLink);
       // Xử lý nếu là folder
-      const folderResponse = await handleDriveFolder(driveLink, backgroundImage, backgroundOpacity, courseName, courseId);
+      result = await handleDriveFolder(driveLink, backgroundImage, backgroundOpacity, courseName, courseId);
       
       // Không cần đọc response.json() ở đây vì sẽ làm stream bị khóa
       // Log được tạo trực tiếp trong hàm handleDriveFolder rồi
       console.log('Đã xử lý folder thành công, trả về kết quả...');
-      
-      return folderResponse;
     } else {
       console.log('Xử lý file đơn lẻ:', driveLink);
       // Xử lý nếu là file (PDF hoặc ảnh)
-      return await handleDriveFile(driveLink, backgroundImage, backgroundOpacity, courseName, courseId);
+      result = await handleDriveFile(driveLink, backgroundImage, backgroundOpacity, courseName, courseId);
     }
     
+    // Log thông tin bộ nhớ sau khi xử lý tập tin
+    memoryMonitor.logMemoryStats('Sau khi xử lý');
+    
+    // Dọn dẹp bộ nhớ trước khi trả về kết quả
+    forceGarbageCollection();
+    
+    return result;
   } catch (error) {
+    // Log thông tin bộ nhớ khi có lỗi
+    memoryMonitor.logMemoryStats('Lỗi xảy ra');
+    
     // Clean up temp files
     if (tempDir && fs.existsSync(tempDir)) {
       try {
@@ -264,6 +312,9 @@ export async function POST(request) {
     }
     console.error(`********************************`);
     
+    // Dọn dẹp bộ nhớ trước khi trả về lỗi
+    forceGarbageCollection();
+    
     return NextResponse.json(
       { 
         success: false,
@@ -272,6 +323,10 @@ export async function POST(request) {
       },
       { status: 500 }
     );
+  } finally {
+    // Force GC một lần nữa trước khi kết thúc API call
+    memoryMonitor.logMemoryStats('Kết thúc API');
+    forceGarbageCollection();
   }
 }
 
@@ -1037,6 +1092,9 @@ async function handleDriveFile(driveLink, backgroundImage, backgroundOpacity, co
     }
     console.error(`********************************`);
     
+    // Dọn dẹp bộ nhớ trước khi trả về lỗi
+    forceGarbageCollection();
+    
     return NextResponse.json(
       { 
         success: false,
@@ -1596,6 +1654,9 @@ async function handleDriveFolder(driveFolderLink, backgroundImage, backgroundOpa
         }
       }
     }
+    
+    // Dọn dẹp bộ nhớ trước khi trả về lỗi
+    forceGarbageCollection();
     
     return NextResponse.json(
       { 
