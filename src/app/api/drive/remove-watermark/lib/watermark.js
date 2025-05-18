@@ -59,6 +59,9 @@ export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
     const fileSizeInMB = stats.size / (1024 * 1024);
     console.log(`📊 Kích thước file: ${fileSizeInMB.toFixed(2)} MB`);
     
+    // Tối ưu hóa cấu hình dựa trên tài nguyên hệ thống
+    const optimizedConfig = optimizePerformance(config);
+    
     // Tạo thư mục temp hiệu quả hơn
     tempDir = path.join(os.tmpdir(), `pdf-watermark-removal-${Date.now()}`);
     try {
@@ -78,16 +81,18 @@ export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
     
     console.log(`📄 Phát hiện ${numPages} trang, đang tách PDF...`);
     
-    // Tối ưu biến cho số lượng công nhân - giảm xuống để bớt tiêu thụ ram
-    const optimalWorkers = Math.min(
-      config.maxWorkers,
-      Math.max(1, Math.min(Math.max(1, os.cpus().length - 2), Math.min(numPages, 2)))
-    );
+    // Tối ưu số lượng worker dựa trên cấu hình đã tối ưu
+    const optimalWorkers = optimizedConfig.highPerformanceMode
+      ? Math.min(optimizedConfig.maxWorkers, numPages)
+      : Math.min(
+          optimizedConfig.maxWorkers,
+          Math.max(1, Math.min(Math.max(1, os.cpus().length - 2), Math.min(numPages, 2)))
+        );
     
     console.log(`🧠 Sử dụng ${optimalWorkers} worker(s) để xử lý`);
     
     // Tách PDF thành từng trang - sử dụng tùy chọn tối ưu cho GhostScript
-    const gsCommand = `"${gsPath}" -dALLOWPSTRANSPARENCY -dBATCH -dNOPAUSE -q -dNumRenderingThreads=${optimalWorkers} -sDEVICE=pdfwrite -dSAFER ` +
+    const gsCommand = `"${gsPath}" -dALLOWPSTRANSPARENCY -dBATCH -dNOPAUSE -q -dNumRenderingThreads=${optimizedConfig.gsParallel || optimalWorkers} -sDEVICE=pdfwrite -dSAFER ` +
             `-dFirstPage=1 -dLastPage=${numPages} ` +
             `-sOutputFile="${path.join(tempDir, 'page_%d.pdf')}" "${inputPath}"`;
     
@@ -138,8 +143,8 @@ export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
     // Chuyển đổi PDF sang PNG theo batch nhỏ, không phải song song toàn bộ
     console.log('🔄 Bước 1/3: Chuyển đổi PDF sang hình ảnh...');
     
-    // Giảm kích thước batch để tránh tràn bộ nhớ
-    const batchSize = Math.min(config.batchSize || 3, 2);
+    // Sử dụng batchSize từ cấu hình đã tối ưu
+    const batchSize = optimizedConfig.batchSize || Math.min(config.batchSize || 3, 2);
     
     // Chia trang thành các batch nhỏ hơn để xử lý
     const convertResults = [];
@@ -151,7 +156,7 @@ export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
       
         // Xử lý batch hiện tại
         const batchPromises = currentBatch.map(task => 
-          createConvertWorker(gsPath, task.pdfPath, task.pngPath, task.page, numPages, config.dpi)
+          createConvertWorker(gsPath, task.pdfPath, task.pngPath, task.page, numPages, optimizedConfig.dpi || config.dpi)
         );
       
         let batchResults;
@@ -178,8 +183,8 @@ export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
         // Thúc đẩy GC sau mỗi batch
         forceGarbageCollection();
         
-        // Tăng thời gian chờ giữa các batch để hệ thống có thời gian giải phóng bộ nhớ
-        await new Promise(resolve => setTimeout(resolve, 300));
+        // Thời gian chờ giữa các batch từ cấu hình đã tối ưu
+        await new Promise(resolve => setTimeout(resolve, optimizedConfig.waitTime || 300));
       } catch (batchProcessError) {
         console.error(`Lỗi xử lý batch chuyển đổi tại vị trí ${i}: ${batchProcessError.message}`);
         // Vẫn tiếp tục xử lý các batch tiếp theo
@@ -208,7 +213,7 @@ export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
         
         // Xử lý batch hiện tại
         const batchPromises = currentBatch.map(conversion => 
-          createProcessWorker(conversion.pngPath, conversion.page, numPages, config)
+          createProcessWorker(conversion.pngPath, conversion.page, numPages, optimizedConfig)
         );
         
         let batchResults;
@@ -235,8 +240,8 @@ export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
         // Thúc đẩy GC sau mỗi batch
         forceGarbageCollection();
         
-        // Tạm dừng để cho GC có cơ hội chạy và giải phóng bộ nhớ
-        await new Promise(resolve => setTimeout(resolve, 300));
+        // Sử dụng thời gian chờ tối ưu
+        await new Promise(resolve => setTimeout(resolve, optimizedConfig.waitTime || 300));
       } catch (batchProcessError) {
         console.error(`Lỗi xử lý batch xóa watermark tại vị trí ${i}: ${batchProcessError.message}`);
         // Vẫn tiếp tục xử lý các batch tiếp theo

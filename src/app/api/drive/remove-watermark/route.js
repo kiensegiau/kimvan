@@ -152,7 +152,8 @@ export async function POST(request) {
     
     // Parse request body
     const requestBody = await request.json();
-    let { driveLink, backgroundImage, backgroundOpacity, url, courseName, courseId } = requestBody;
+    let { driveLink, backgroundImage, backgroundOpacity, url, courseName, courseId, 
+          highPerformance, maxWorkers, batchSize, waitTime, dpi } = requestBody;
 
     // Hỗ trợ cả url và driveLink (để tương thích)
     if (!driveLink && url) {
@@ -165,6 +166,30 @@ export async function POST(request) {
     }
     if (backgroundOpacity === undefined) {
       backgroundOpacity = 0.15; // Giảm xuống 0.15 để ảnh nền đậm hơn
+    }
+    
+    // Tạo cấu hình hiệu suất tùy chỉnh nếu được yêu cầu
+    let performanceConfig = { ...DEFAULT_CONFIG };
+    
+    // Chế độ hiệu suất cao nếu client yêu cầu
+    if (highPerformance === true) {
+      console.log('🚀 Kích hoạt chế độ hiệu suất cao theo yêu cầu của client');
+      performanceConfig.highPerformanceMode = true;
+      
+      // Sử dụng các tham số tùy chỉnh từ client nếu được cung cấp
+      if (maxWorkers && typeof maxWorkers === 'number') performanceConfig.maxWorkers = maxWorkers;
+      if (batchSize && typeof batchSize === 'number') performanceConfig.batchSize = batchSize;
+      if (waitTime && typeof waitTime === 'number') performanceConfig.waitTime = waitTime;
+      if (dpi && typeof dpi === 'number') performanceConfig.dpi = dpi;
+      
+      // Lấy thông tin hệ thống để tối ưu hóa
+      try {
+        const cpuCount = os.cpus().length;
+        performanceConfig.gsParallel = Math.min(Math.floor(cpuCount / 2), 4);
+        console.log(`🖥️ Sử dụng ${performanceConfig.gsParallel} luồng GhostScript`);
+      } catch (osError) {
+        console.warn(`⚠️ Không thể đọc thông tin CPU: ${osError.message}`);
+      }
     }
 
     // Xác thực người dùng nếu không skip validation
@@ -269,7 +294,7 @@ export async function POST(request) {
     } else {
       console.log('Xử lý file đơn lẻ:', driveLink);
       // Xử lý nếu là file (PDF hoặc ảnh)
-      result = await handleDriveFile(driveLink, backgroundImage, backgroundOpacity, courseName, courseId);
+      result = await handleDriveFile(driveLink, backgroundImage, backgroundOpacity, courseName, courseId, performanceConfig);
     }
     
     // Log thông tin bộ nhớ sau khi xử lý tập tin
@@ -331,7 +356,7 @@ export async function POST(request) {
 }
 
 // Hàm xử lý một file đơn lẻ (PDF hoặc ảnh)
-async function handleDriveFile(driveLink, backgroundImage, backgroundOpacity, courseName, courseId) {
+async function handleDriveFile(driveLink, backgroundImage, backgroundOpacity, courseName, courseId, performanceConfig = DEFAULT_CONFIG) {
   let tempDir = null;
   let processedFilePath = null;
   let fileName = null;

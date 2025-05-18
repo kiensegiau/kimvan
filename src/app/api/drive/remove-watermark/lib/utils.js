@@ -5,6 +5,7 @@ import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
 import { TOKEN_PATH, TOKEN_PATHS } from './config.js';
+import os from 'os';
 
 // Đọc token từ file
 export function getStoredToken() {
@@ -271,8 +272,68 @@ export function findGhostscript() {
   }
 }
 
+// Hàm mới: Kiểm tra và tối ưu hóa hiệu suất dựa trên tài nguyên hệ thống
+export function optimizePerformance(config = {}) {
+  try {
+    // Kiểm tra tài nguyên hệ thống
+    const cpuCount = os.cpus().length;
+    const totalMemory = Math.floor(os.totalmem() / (1024 * 1024 * 1024)); // GB
+    const freeMemory = Math.floor(os.freemem() / (1024 * 1024 * 1024)); // GB
+    
+    console.log(`🖥️ Hệ thống có ${cpuCount} CPU, ${totalMemory}GB RAM (${freeMemory}GB trống)`);
+    
+    // Tính toán tối ưu
+    let optimizedConfig = { ...config };
+    
+    // Tối ưu số lượng worker dựa trên CPU và RAM
+    if (cpuCount > 4 && freeMemory > 4) {
+      // Hệ thống mạnh: Nhiều CPU và RAM
+      console.log(`🚀 Phát hiện hệ thống mạnh, tối ưu cho hiệu suất cao`);
+      
+      optimizedConfig.maxWorkers = Math.min(cpuCount - 1, 8); // Tối đa 8 worker hoặc (số CPU - 1)
+      optimizedConfig.batchSize = Math.min(Math.floor(freeMemory / 2), 6); // Dựa vào RAM trống
+      optimizedConfig.waitTime = 100; // Giảm thời gian chờ
+      optimizedConfig.highPerformanceMode = true;
+      
+      // Tối ưu thêm các thông số
+      optimizedConfig.dpi = config.dpi || 300; // DPI mặc định nếu không cung cấp
+      optimizedConfig.gsParallel = Math.min(Math.floor(cpuCount / 2), 4); // Số luồng GhostScript
+    } else if (cpuCount > 2 && freeMemory > 2) {
+      // Hệ thống trung bình
+      console.log(`⚡ Phát hiện hệ thống đủ mạnh, tối ưu cân bằng`);
+      
+      optimizedConfig.maxWorkers = Math.min(cpuCount - 1, 4);
+      optimizedConfig.batchSize = Math.min(Math.floor(freeMemory / 3), 3);
+      optimizedConfig.waitTime = 200;
+      optimizedConfig.highPerformanceMode = false;
+      
+      // Tối ưu thêm các thông số
+      optimizedConfig.dpi = config.dpi || 250;
+      optimizedConfig.gsParallel = Math.min(Math.floor(cpuCount / 2), 2);
+    } else {
+      // Hệ thống yếu hoặc tải cao
+      console.log(`🐢 Phát hiện hệ thống tài nguyên thấp, tối ưu cho ổn định`);
+      
+      optimizedConfig.maxWorkers = 2;
+      optimizedConfig.batchSize = 2;
+      optimizedConfig.waitTime = 300;
+      optimizedConfig.highPerformanceMode = false;
+      
+      // Tối ưu thêm các thông số
+      optimizedConfig.dpi = config.dpi || 200;
+      optimizedConfig.gsParallel = 1;
+    }
+    
+    console.log(`✅ Cấu hình tối ưu: ${optimizedConfig.maxWorkers} worker, batch ${optimizedConfig.batchSize}, wait ${optimizedConfig.waitTime}ms`);
+    return optimizedConfig;
+  } catch (error) {
+    console.warn(`⚠️ Lỗi khi tối ưu hiệu suất: ${error.message}. Sử dụng cấu hình mặc định.`);
+    return config;
+  }
+}
+
 // Tối ưu xử lý song song để cải thiện hiệu suất và tránh tràn bộ nhớ
-export async function processBatches(items, processFunc, maxConcurrent) {
+export async function processBatches(items, processFunc, maxConcurrent, waitTime = 200) {
   try {
     const results = [];
     
@@ -305,7 +366,7 @@ export async function processBatches(items, processFunc, maxConcurrent) {
         forceGarbageCollection();
         
         // Đợi một chút giữa các batch để cho hệ thống thời gian xử lý bộ nhớ
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise(resolve => setTimeout(resolve, waitTime));
       } catch (batchProcessError) {
         console.error(`Lỗi xử lý batch tại vị trí ${i}: ${batchProcessError.message}`);
         // Giải phóng bộ nhớ khi có lỗi
