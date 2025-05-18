@@ -183,7 +183,7 @@ export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
         // Sử dụng Promise.all để xử lý nhiều batch cùng lúc
         const batchPromises = batches.map(async (batch, batchIndex) => {
           const batchTasks = batch.map(task => 
-            createConvertWorker(gsPath, task.pdfPath, task.pngPath, task.page, numPages, optimizedConfig.dpi || config.dpi)
+            createConvertWorker(gsPath, task.pdfPath, task.pngPath, task.page, numPages, config.dpi)
           );
           
           try {
@@ -234,7 +234,7 @@ export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
         
           // Xử lý batch hiện tại
           const batchPromises = currentBatch.map(task => 
-            createConvertWorker(gsPath, task.pdfPath, task.pngPath, task.page, numPages, optimizedConfig.dpi || config.dpi)
+            createConvertWorker(gsPath, task.pdfPath, task.pngPath, task.page, numPages, config.dpi)
           );
         
           let batchResults;
@@ -307,7 +307,7 @@ export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
         // Sử dụng Promise.all để xử lý nhiều batch cùng lúc
         const batchPromises = batches.map(async (batch, batchIndex) => {
           const batchTasks = batch.map(conversion => 
-            createProcessWorker(conversion.pngPath, conversion.page, numPages, optimizedConfig)
+            createProcessWorker(conversion.pngPath, conversion.page, numPages, config)
           );
           
           try {
@@ -357,8 +357,8 @@ export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
           console.log(`🔄 Xử lý xóa watermark: ${progress}% (${i}/${successfulConversions.length} trang)`);
           
           // Xử lý batch hiện tại
-          const batchPromises = currentBatch.map(conversion => 
-            createProcessWorker(conversion.pngPath, conversion.page, numPages, optimizedConfig)
+          const batchPromises = currentBatch.map(task => 
+            createProcessWorker(task.pngPath, task.page, numPages, config)
           );
           
           let batchResults;
@@ -372,10 +372,10 @@ export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
           processResults.push(...batchResults);
           
           // Thúc đẩy GC sau mỗi batch và xóa file PNG gốc đã xử lý
-          for (const conversion of currentBatch) {
+          for (const task of currentBatch) {
             try {
-              if (fs.existsSync(conversion.pngPath)) {
-                fs.unlinkSync(conversion.pngPath);
+              if (fs.existsSync(task.pngPath)) {
+                fs.unlinkSync(task.pngPath);
               }
             } catch (unlinkError) {
               console.debug(`Không thể xóa file PNG gốc: ${unlinkError.message}`);
