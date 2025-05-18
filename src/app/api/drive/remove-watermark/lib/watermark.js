@@ -9,7 +9,7 @@ import { PDFDocument } from 'pdf-lib';
 import PDFKit from 'pdfkit';
 import sharp from 'sharp';
 import { DEFAULT_CONFIG } from './config.js';
-import { findGhostscript, cleanupTempFiles, processBatches } from './utils.js';
+import { findGhostscript, cleanupTempFiles, processBatches, forceGarbageCollection } from './utils.js';
 import { countPdfPagesWithGhostscript, addImageToPdf } from './pdf-service.js';
 import { createConvertWorker, createProcessWorker } from './workers.js';
 
