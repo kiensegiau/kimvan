@@ -282,11 +282,14 @@ export function optimizePerformance(config = {}) {
     
     console.log(`🖥️ Hệ thống có ${cpuCount} CPU, ${totalMemory}GB RAM (${freeMemory}GB trống)`);
     
-    // Giữ nguyên DPI từ cấu hình người dùng
-    const userDpi = config.dpi || DEFAULT_CONFIG.dpi || 200;
+    // Ghi cứng DPI là 350 theo yêu cầu
+    const fixedDpi = 350;
     
     // Tính toán tối ưu
     let optimizedConfig = { ...config };
+    
+    // Ghi đè giá trị DPI
+    optimizedConfig.dpi = fixedDpi;
     
     // Tối ưu số lượng worker dựa trên CPU và RAM
     if (totalMemory >= 16 && freeMemory > 8) {
@@ -299,8 +302,8 @@ export function optimizePerformance(config = {}) {
       optimizedConfig.highPerformanceMode = true;
       optimizedConfig.ultra = true; // Chế độ cực cao
       
-      // Giữ nguyên DPI
-      optimizedConfig.dpi = userDpi;
+      // Ghi cứng DPI là 350
+      optimizedConfig.dpi = fixedDpi;
       optimizedConfig.gsParallel = Math.min(Math.ceil(cpuCount / 2), 8); // Tối đa 8 luồng GhostScript
       
       console.log(`⚡ Chế độ Ultra Performance: ${optimizedConfig.maxWorkers} worker, batch ${optimizedConfig.batchSize}, DPI: ${optimizedConfig.dpi}`);
@@ -313,8 +316,8 @@ export function optimizePerformance(config = {}) {
       optimizedConfig.waitTime = 100; // Giảm thời gian chờ
       optimizedConfig.highPerformanceMode = true;
       
-      // Giữ nguyên DPI
-      optimizedConfig.dpi = userDpi;
+      // Ghi cứng DPI là 350
+      optimizedConfig.dpi = fixedDpi;
       optimizedConfig.gsParallel = Math.min(Math.floor(cpuCount / 2), 4); // Số luồng GhostScript
     } else if (cpuCount > 2 && freeMemory > 2) {
       // Hệ thống trung bình
@@ -325,8 +328,8 @@ export function optimizePerformance(config = {}) {
       optimizedConfig.waitTime = 200;
       optimizedConfig.highPerformanceMode = false;
       
-      // Giữ nguyên DPI
-      optimizedConfig.dpi = userDpi;
+      // Ghi cứng DPI là 350
+      optimizedConfig.dpi = fixedDpi;
       optimizedConfig.gsParallel = Math.min(Math.floor(cpuCount / 2), 2);
     } else {
       // Hệ thống yếu hoặc tải cao
@@ -337,8 +340,8 @@ export function optimizePerformance(config = {}) {
       optimizedConfig.waitTime = 300;
       optimizedConfig.highPerformanceMode = false;
       
-      // Giữ nguyên DPI
-      optimizedConfig.dpi = userDpi;
+      // Ghi cứng DPI là 350
+      optimizedConfig.dpi = fixedDpi;
       optimizedConfig.gsParallel = 1;
     }
     
@@ -346,7 +349,7 @@ export function optimizePerformance(config = {}) {
     return optimizedConfig;
   } catch (error) {
     console.warn(`⚠️ Lỗi khi tối ưu hiệu suất: ${error.message}. Sử dụng cấu hình mặc định.`);
-    return config;
+    return { ...config, dpi: 350 }; // Vẫn ghi đè DPI=350 ngay cả khi có lỗi
   }
 }
 

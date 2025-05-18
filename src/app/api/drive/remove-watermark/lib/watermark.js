@@ -9,7 +9,7 @@ import { PDFDocument } from 'pdf-lib';
 import PDFKit from 'pdfkit';
 import sharp from 'sharp';
 import { DEFAULT_CONFIG } from './config.js';
-import { findGhostscript, cleanupTempFiles, processBatches, forceGarbageCollection } from './utils.js';
+import { findGhostscript, cleanupTempFiles, processBatches, forceGarbageCollection, optimizePerformance } from './utils.js';
 import { countPdfPagesWithGhostscript, addImageToPdf } from './pdf-service.js';
 import { createConvertWorker, createProcessWorker } from './workers.js';
 
@@ -183,7 +183,7 @@ export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
         // Sử dụng Promise.all để xử lý nhiều batch cùng lúc
         const batchPromises = batches.map(async (batch, batchIndex) => {
           const batchTasks = batch.map(task => 
-            createConvertWorker(gsPath, task.pdfPath, task.pngPath, task.page, numPages, config.dpi)
+            createConvertWorker(gsPath, task.pdfPath, task.pngPath, task.page, numPages, optimizedConfig.dpi)
           );
           
           try {
@@ -234,7 +234,7 @@ export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
         
           // Xử lý batch hiện tại
           const batchPromises = currentBatch.map(task => 
-            createConvertWorker(gsPath, task.pdfPath, task.pngPath, task.page, numPages, config.dpi)
+            createConvertWorker(gsPath, task.pdfPath, task.pngPath, task.page, numPages, optimizedConfig.dpi)
           );
         
           let batchResults;
@@ -307,7 +307,7 @@ export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
         // Sử dụng Promise.all để xử lý nhiều batch cùng lúc
         const batchPromises = batches.map(async (batch, batchIndex) => {
           const batchTasks = batch.map(conversion => 
-            createProcessWorker(conversion.pngPath, conversion.page, numPages, config)
+            createProcessWorker(conversion.pngPath, conversion.page, numPages, optimizedConfig)
           );
           
           try {
@@ -358,7 +358,7 @@ export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
           
           // Xử lý batch hiện tại
           const batchPromises = currentBatch.map(task => 
-            createProcessWorker(task.pngPath, task.page, numPages, config)
+            createProcessWorker(task.pngPath, task.page, numPages, optimizedConfig)
           );
           
           let batchResults;
