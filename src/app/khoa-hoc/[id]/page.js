@@ -775,7 +775,7 @@ export default function CourseDetailPage({ params }) {
         <div className="mt-6 border-t border-gray-200 pt-6 pb-2 px-4 sm:px-8">
           <div className="flex flex-col sm:flex-row justify-between items-center text-sm text-gray-500">
             <div className="mb-4 sm:mb-0">
-              <p>© {new Date().getFullYear()} Kimvan. Hệ thống quản lý học tập.</p>
+              <p>© {new Date().getFullYear()} Khoá học 6.0. Hệ thống quản lý học tập.</p>
             </div>
             <div className="flex space-x-4">
               <button onClick={() => router.push('/khoa-hoc')} className="text-indigo-600 hover:text-indigo-800 transition-colors">

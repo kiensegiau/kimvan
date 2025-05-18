@@ -448,7 +448,7 @@ export default function CoursesPage() {
       {/* Footer Mini */}
       <div className="bg-gray-900 text-white py-3 text-center text-sm">
         <div className="max-w-7xl mx-auto px-4">
-          <p>© 2023 Trang Khóa Học. Thiết kế bởi Kimvan.</p>
+          <p>© 2025 Trang Khóa Học. Thiết kế bởi Khoá học 6.0</p>
         </div>
       </div>
 

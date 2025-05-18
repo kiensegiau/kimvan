@@ -10,8 +10,8 @@ import { usePathname } from 'next/navigation';
 const inter = Inter({ subsets: ['latin'] });
 
 // Metadata không thể dùng trong client component, nên đưa ra file riêng hoặc dùng cách khác
-const siteTitle = 'Kimvan - Hệ thống học tập';
-const siteDescription = 'Hệ thống học tập trực tuyến Kimvan';
+const siteTitle = 'Khoá học 6.0 - Hệ thống học tập';
+const siteDescription = 'Hệ thống học tập trực tuyến Khoá học 6.0';
 
 // Đường dẫn của các trang xác thực, không hiển thị sidebar
 const authPaths = [

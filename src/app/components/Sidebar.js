@@ -110,7 +110,7 @@ const Sidebar = ({ closeSidebar }) => {
             <span className="text-white font-bold text-xl">K</span>
           </div>
           <div>
-            <h1 className="text-xl font-bold text-white">Kimvan</h1>
+            <h1 className="text-xl font-bold text-white">Khoá học 6.0</h1>
             <p className="text-xs text-indigo-200">Học tập trực tuyến THPT</p>
           </div>
         </Link>

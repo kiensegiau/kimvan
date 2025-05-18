@@ -228,7 +228,7 @@ export default function CoursesPage() {
       const data = await response.json();
       
       if (!response.ok) {
-        throw new Error(data.message || 'Không thể lấy danh sách khóa học từ Kimvan');
+        throw new Error(data.message || 'Không thể lấy danh sách khóa học từ Khoá học 6.0');
       }
       
       // Lưu danh sách khóa học gốc từ Kimvan vào state
@@ -244,7 +244,7 @@ export default function CoursesPage() {
       setKimvanCourses(kimvanCoursesOriginal || []);
       setShowSyncModal(true);
     } catch (err) {
-      console.error('Lỗi khi lấy danh sách khóa học từ Kimvan:', err);
+      console.error('Lỗi khi lấy danh sách khóa học từ Khoá học 6.0:', err);
       setError(err.message || 'Đã xảy ra lỗi khi lấy danh sách khóa học từ Kimvan');
     } finally {
       setLoading(false);

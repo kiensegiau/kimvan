@@ -269,7 +269,7 @@ export async function middleware(request) {
 // Cấu hình middleware
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|images|fonts|assets|api/auth).*)',
+    '/((?!_next/static|_next/image|favicon.ico|images|fonts|assets|api/auth|api/drive).*)',
     '/api/courses/:path*',
     '/admin/:path*',
     '/api/admin/:path*'

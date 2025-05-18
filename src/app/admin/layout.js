@@ -131,7 +131,7 @@ export default function AdminLayout({ children }) {
               
               <div className="flex-1 h-0 pt-5 pb-4 overflow-y-auto">
                 <div className="flex-shrink-0 flex items-center px-4">
-                  <h1 className="text-xl font-bold text-gray-900">KimVan Admin</h1>
+                  <h1 className="text-xl font-bold text-gray-900">Khoá học 6.0 Admin</h1>
                 </div>
                 <nav className="mt-5 px-2 space-y-1">
                   {navigation.map((item) => (
@@ -185,7 +185,7 @@ export default function AdminLayout({ children }) {
       <div className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 lg:border-r lg:border-gray-200 lg:bg-white">
         <div className="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
           <div className="flex items-center flex-shrink-0 px-4">
-            <h1 className="text-xl font-bold text-gray-900">KimVan Admin</h1>
+            <h1 className="text-xl font-bold text-gray-900">Khoá học 6.0 Admin</h1>
           </div>
           <nav className="mt-5 flex-1 px-2 bg-white space-y-1">
             {navigation.map((item) => (

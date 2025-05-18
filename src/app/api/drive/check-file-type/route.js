@@ -7,7 +7,6 @@
  * 3. Trả về loại nội dung (MIME type)
  * 
  * Tham số:
- * - token: Token xác thực API
  * - fileId: ID của file Google Drive hoặc link đầy đủ
  */
 
@@ -16,6 +15,9 @@ import { google } from 'googleapis';
 import { API_TOKEN } from '../remove-watermark/lib/config.js';
 import { getTokenByType } from '../remove-watermark/lib/utils.js';
 import fs from 'fs';
+import { cookies } from 'next/headers';
+import { cookieConfig } from '@/config/env-config';
+import { verifyServerAuthToken } from '@/utils/server-auth';
 
 // Hàm trích xuất Google Drive ID đơn giản hóa
 function extractGoogleDriveFileId(url) {
@@ -52,9 +54,14 @@ function extractGoogleDriveFileId(url) {
 
 export async function POST(request) {
   try {
+    // Lấy token từ cookie thay vì từ request body
+    const cookieStore = await cookies();
+    const token = cookieStore.get(cookieConfig.authCookieName)?.value;
+    const skipTokenValidation = process.env.NODE_ENV === 'development';
+
     // Parse request body
     const requestBody = await request.json();
-    let { token, fileId, skipTokenValidation, driveLink } = requestBody;
+    let { fileId, driveLink } = requestBody;
 
     // Hỗ trợ cả fileId và driveLink
     if (!fileId && driveLink) {
@@ -69,12 +76,30 @@ export async function POST(request) {
       }
     }
 
-    // Validate API token
-    if (!skipTokenValidation && (!token || token !== API_TOKEN)) {
-      return NextResponse.json(
-        { error: 'Không được phép. Token API không hợp lệ.' },
-        { status: 401 }
-      );
+    // Xác thực người dùng nếu không skip validation
+    if (!skipTokenValidation) {
+      if (!token) {
+        return NextResponse.json(
+          { error: 'Không được phép. Vui lòng đăng nhập.' },
+          { status: 401 }
+        );
+      }
+      
+      // Xác thực token với Firebase
+      try {
+        const user = await verifyServerAuthToken(token);
+        if (!user) {
+          return NextResponse.json(
+            { error: 'Token không hợp lệ hoặc đã hết hạn.' },
+            { status: 401 }
+          );
+        }
+      } catch (error) {
+        return NextResponse.json(
+          { error: 'Lỗi xác thực: ' + error.message },
+          { status: 401 }
+        );
+      }
     }
 
     // Validate fileId

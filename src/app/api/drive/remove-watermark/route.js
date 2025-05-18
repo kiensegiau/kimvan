@@ -9,7 +9,6 @@
  * 5. Trả về link đến file đã xử lý
  * 
  * Tham số:
- * - token: Token xác thực API
  * - driveLink: Link đến file PDF trên Google Drive
  * - backgroundImage (tùy chọn): Tên file hình nền (ví dụ: "nen.png") hoặc đường dẫn đầy đủ
  *   - Nếu chỉ cung cấp tên file, hệ thống sẽ tìm trong thư mục gốc của ứng dụng
@@ -27,6 +26,9 @@ import os from 'os';
 import { google } from 'googleapis';
 import clientPromise from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
+import { cookies } from 'next/headers';
+import { cookieConfig } from '@/config/env-config';
+import { verifyServerAuthToken } from '@/utils/server-auth';
 
 // Import các module đã tách
 import { API_TOKEN, DEFAULT_CONFIG } from './lib/config.js';
@@ -110,9 +112,14 @@ export async function POST(request) {
   let processingFolders = [];
   
   try {
+    // Lấy token từ cookie thay vì từ request body
+    const cookieStore = await cookies();
+    const token = cookieStore.get(cookieConfig.authCookieName)?.value;
+    const skipTokenValidation = process.env.NODE_ENV === 'development';
+    
     // Parse request body
     const requestBody = await request.json();
-    let { token, driveLink, backgroundImage, backgroundOpacity, skipTokenValidation, url, courseName, courseId } = requestBody;
+    let { driveLink, backgroundImage, backgroundOpacity, url, courseName, courseId } = requestBody;
 
     // Hỗ trợ cả url và driveLink (để tương thích)
     if (!driveLink && url) {
@@ -127,12 +134,30 @@ export async function POST(request) {
       backgroundOpacity = 0.15; // Giảm xuống 0.15 để ảnh nền đậm hơn
     }
 
-    // Validate API token chỉ khi không có skipTokenValidation
-    if (!skipTokenValidation && (!token || token !== API_TOKEN)) {
-      return NextResponse.json(
-        { error: 'Không được phép. Token API không hợp lệ.' },
-        { status: 401 }
-      );
+    // Xác thực người dùng nếu không skip validation
+    if (!skipTokenValidation) {
+      if (!token) {
+        return NextResponse.json(
+          { error: 'Không được phép. Vui lòng đăng nhập.' },
+          { status: 401 }
+        );
+      }
+      
+      // Xác thực token với Firebase
+      try {
+        const user = await verifyServerAuthToken(token);
+        if (!user) {
+          return NextResponse.json(
+            { error: 'Token không hợp lệ hoặc đã hết hạn.' },
+            { status: 401 }
+          );
+        }
+      } catch (error) {
+        return NextResponse.json(
+          { error: 'Lỗi xác thực: ' + error.message },
+          { status: 401 }
+        );
+      }
     }
 
     // Validate drive link

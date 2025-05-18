@@ -113,7 +113,7 @@ export default function Home() {
               </span>
             </div>
             <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight mb-3 md:mb-4 [text-shadow:_0_1px_10px_rgb(0_0_0_/_20%)]">
-              Nâng cao kỹ năng với <span className="text-pink-300">Kimvan</span>
+              Nâng cao kỹ năng với <span className="text-pink-300">Khoá học 6.0</span>
             </h1>
             <p className="text-base md:text-xl text-indigo-100 mb-6 md:mb-8 max-w-2xl mx-auto px-4 md:px-0">
               Hệ thống học tập trực tuyến hàng đầu với hàng trăm khóa học chất lượng cao từ các chuyên gia hàng đầu
@@ -166,7 +166,7 @@ export default function Home() {
         <div className="text-center max-w-3xl mx-auto mb-12">
           <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">Lựa chọn hàng đầu cho việc học trực tuyến</h2>
           <p className="text-lg text-gray-600">
-            Kimvan cung cấp nền tảng học tập toàn diện với nhiều tính năng ưu việt
+            Khoá học 6.0 cung cấp nền tảng học tập toàn diện với nhiều tính năng ưu việt
           </p>
         </div>
         
@@ -257,7 +257,7 @@ export default function Home() {
           <div className="text-center max-w-3xl mx-auto mb-10">
             <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">Khóa học nổi bật</h2>
             <p className="text-lg text-gray-600">
-              Những khóa học được yêu thích nhất tại Kimvan
+              Những khóa học được yêu thích nhất tại Khoá học 6.0
             </p>
           </div>
           
@@ -420,7 +420,7 @@ export default function Home() {
       {/* Footer Mini */}
       <div className="bg-gray-900 text-white py-3 text-center text-sm">
         <div className="max-w-7xl mx-auto px-4">
-          <p>© 2023 Kimvan. Hệ thống học tập trực tuyến hàng đầu.</p>
+          <p>© 2025 Khoá học 6.0. Hệ thống học tập trực tuyến hàng đầu.</p>
         </div>
       </div>
 
