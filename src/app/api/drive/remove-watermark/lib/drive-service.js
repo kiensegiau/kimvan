@@ -329,15 +329,32 @@ export async function findOrCreateCourseFolder(drive, courseName = null) {
     const escapedRootFolderName = escapeDriveQueryString(rootFolderName);
     const response = await drive.files.list({
       q: `name='${escapedRootFolderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
-      fields: 'files(id, name)',
+      fields: 'files(id, name, createdTime)',
+      orderBy: 'createdTime', // Lấy folder được tạo sớm nhất
       spaces: 'drive'
     });
     
     // Nếu thư mục gốc đã tồn tại, sử dụng nó
     let rootFolderId;
     if (response.data.files && response.data.files.length > 0) {
+      // Sử dụng folder đầu tiên (cũ nhất) nếu có nhiều folder cùng tên
       console.log(`Đã tìm thấy thư mục "${rootFolderName}" với ID: ${response.data.files[0].id}`);
       rootFolderId = response.data.files[0].id;
+      
+      // Kiểm tra xem có folder trùng lặp không
+      if (response.data.files.length > 1) {
+        console.log(`⚠️ Phát hiện ${response.data.files.length - 1} folder trùng lặp, đang dọn dẹp...`);
+        
+        // Giữ lại folder đầu tiên, xóa các folder còn lại
+        for (let i = 1; i < response.data.files.length; i++) {
+          try {
+            await drive.files.delete({ fileId: response.data.files[i].id });
+            console.log(`✅ Đã xóa folder trùng lặp ID: ${response.data.files[i].id}`);
+          } catch (deleteError) {
+            console.error(`❌ Không thể xóa folder trùng lặp: ${deleteError.message}`);
+          }
+        }
+      }
     } else {
       // Nếu không tìm thấy, tạo mới thư mục gốc
       console.log(`Không tìm thấy thư mục "${rootFolderName}", đang tạo mới...`);
@@ -369,13 +386,30 @@ export async function findOrCreateCourseFolder(drive, courseName = null) {
       const escapedCourseName = escapeDriveQueryString(sanitizedCourseName);
       const courseResponse = await drive.files.list({
         q: `name='${escapedCourseName}' and mimeType='application/vnd.google-apps.folder' and '${rootFolderId}' in parents and trashed=false`,
-        fields: 'files(id, name)',
+        fields: 'files(id, name, createdTime)',
+        orderBy: 'createdTime', // Lấy folder được tạo sớm nhất
         spaces: 'drive'
       });
       
       // Nếu đã tồn tại, sử dụng nó
       if (courseResponse.data.files && courseResponse.data.files.length > 0) {
         console.log(`Đã tìm thấy thư mục khóa học "${sanitizedCourseName}" với ID: ${courseResponse.data.files[0].id}`);
+        
+        // Kiểm tra xem có folder trùng lặp không
+        if (courseResponse.data.files.length > 1) {
+          console.log(`⚠️ Phát hiện ${courseResponse.data.files.length - 1} folder khóa học trùng lặp, đang dọn dẹp...`);
+          
+          // Giữ lại folder đầu tiên, xóa các folder còn lại
+          for (let i = 1; i < courseResponse.data.files.length; i++) {
+            try {
+              await drive.files.delete({ fileId: courseResponse.data.files[i].id });
+              console.log(`✅ Đã xóa folder khóa học trùng lặp ID: ${courseResponse.data.files[i].id}`);
+            } catch (deleteError) {
+              console.error(`❌ Không thể xóa folder khóa học trùng lặp: ${deleteError.message}`);
+            }
+          }
+        }
+        
         return courseResponse.data.files[0].id;
       }
       
@@ -502,10 +536,12 @@ export async function createDriveFolder(folderName, courseName = null) {
     
     // Kiểm tra xem folder đã tồn tại trong thư mục cha chưa
     console.log(`Đang kiểm tra xem folder "${folderName}" đã tồn tại trong thư mục cha chưa...`);
-    const escapedFolderName = escapeDriveQueryString(folderName);
+    const sanitizedFolderName = folderName.trim().replace(/[/\\?%*:|"<>]/g, '-');
+    const escapedFolderName = escapeDriveQueryString(sanitizedFolderName);
     const existingFolderResponse = await drive.files.list({
       q: `name='${escapedFolderName}' and mimeType='application/vnd.google-apps.folder' and '${parentFolderId}' in parents and trashed=false`,
-      fields: 'files(id, name, webViewLink)',
+      fields: 'files(id, name, webViewLink, createdTime)',
+      orderBy: 'createdTime',
       spaces: 'drive'
     });
     
@@ -513,6 +549,21 @@ export async function createDriveFolder(folderName, courseName = null) {
     if (existingFolderResponse.data.files && existingFolderResponse.data.files.length > 0) {
       const existingFolder = existingFolderResponse.data.files[0];
       console.log(`Folder "${folderName}" đã tồn tại với ID: ${existingFolder.id}`);
+      
+      // Kiểm tra xem có folder trùng lặp không
+      if (existingFolderResponse.data.files.length > 1) {
+        console.log(`⚠️ Phát hiện ${existingFolderResponse.data.files.length - 1} folder trùng lặp, đang dọn dẹp...`);
+        
+        // Giữ lại folder đầu tiên, xóa các folder còn lại
+        for (let i = 1; i < existingFolderResponse.data.files.length; i++) {
+          try {
+            await drive.files.delete({ fileId: existingFolderResponse.data.files[i].id });
+            console.log(`✅ Đã xóa folder trùng lặp ID: ${existingFolderResponse.data.files[i].id}`);
+          } catch (deleteError) {
+            console.error(`❌ Không thể xóa folder trùng lặp: ${deleteError.message}`);
+          }
+        }
+      }
       
       return {
         success: true,
@@ -525,13 +576,13 @@ export async function createDriveFolder(folderName, courseName = null) {
     
     // Tạo metadata cho folder
     const folderMetadata = {
-      name: folderName,
+      name: sanitizedFolderName,
       mimeType: 'application/vnd.google-apps.folder',
       parents: [parentFolderId] // Đặt thư mục cha là thư mục đã xác định
     };
     
     // Tạo folder trên Drive
-    console.log(`Folder "${folderName}" chưa tồn tại, đang tạo mới...`);
+    console.log(`Folder "${sanitizedFolderName}" chưa tồn tại, đang tạo mới...`);
     const folderResponse = await drive.files.create({
       resource: folderMetadata,
       fields: 'id,name,webViewLink',
@@ -540,9 +591,44 @@ export async function createDriveFolder(folderName, courseName = null) {
     
     // Không đặt quyền truy cập cho folder, giữ nguyên mặc định
     
+    // Lấy ID của folder mới tạo
+    const newFolderId = folderResponse.data.id;
+    
+    // Kiểm tra ngay các folder trùng lặp có thể đã được tạo trước đó
+    try {
+      // Tránh sử dụng id!= trong truy vấn - có thể gây lỗi "Invalid Value"
+      const checkDuplicateResponse = await drive.files.list({
+        q: `name='${escapedFolderName}' and mimeType='application/vnd.google-apps.folder' and '${parentFolderId}' in parents and trashed=false`,
+        fields: 'files(id, name)',
+        spaces: 'drive'
+      });
+      
+      // Lọc danh sách folder trùng lặp (khác với folder vừa tạo)
+      const duplicateFolders = checkDuplicateResponse.data.files.filter(
+        folder => folder.id !== newFolderId
+      );
+      
+      if (duplicateFolders.length > 0) {
+        console.log(`⚠️ Phát hiện ${duplicateFolders.length} folder trùng lặp, đang dọn dẹp...`);
+        
+        // Xóa các folder trùng lặp
+        for (const duplicateFolder of duplicateFolders) {
+          try {
+            await drive.files.delete({ fileId: duplicateFolder.id });
+            console.log(`✅ Đã xóa folder trùng lặp ID: ${duplicateFolder.id}`);
+          } catch (deleteError) {
+            console.error(`❌ Không thể xóa folder trùng lặp: ${deleteError.message}`);
+          }
+        }
+      }
+    } catch (error) {
+      // Nếu có lỗi khi kiểm tra folder trùng lặp, chỉ ghi log và tiếp tục
+      console.error(`❌ Lỗi khi kiểm tra folder trùng lặp: ${error.message}`);
+    }
+    
     return {
       success: true,
-      folderId: folderResponse.data.id,
+      folderId: newFolderId,
       folderName: folderResponse.data.name,
       webViewLink: folderResponse.data.webViewLink,
       isNew: true

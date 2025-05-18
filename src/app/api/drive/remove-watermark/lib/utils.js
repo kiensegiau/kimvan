@@ -405,8 +405,15 @@ export async function processBatches(items, processFunc, maxConcurrent, waitTime
 // Hàm escape tên file cho truy vấn Google Drive
 export function escapeDriveQueryString(str) {
   if (!str) return '';
+  
+  // Chuẩn hóa chuỗi Unicode (NFC)
+  let normalizedStr = str.normalize('NFC');
+  
   // Escape các ký tự đặc biệt trong truy vấn Google Drive
-  return str.replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\\/g, '\\\\');
+  return normalizedStr
+    .replace(/'/g, "\\'")
+    .replace(/"/g, '\\"')
+    .replace(/\\/g, '\\\\');
 }
 
 // Hàm cập nhật thông tin file đã xử lý vào MongoDB
@@ -495,4 +502,20 @@ export async function updateProcessedFileInDB(mongoClient, courseId, originalUrl
     console.error(`Lỗi khi cập nhật thông tin file vào DB: ${error.message}`);
     return { success: false, error: error.message };
   }
+}
+
+// Thêm hàm kiểm tra thông tin email trong token
+export function validateTokenEmail(token, tokenType = 'upload') {
+  if (!token) {
+    console.error(`❌ Token ${tokenType} không tồn tại`);
+    return false;
+  }
+
+  if (!token.email) {
+    console.warn(`⚠️ Token ${tokenType} không có thông tin email, có thể gây lỗi quyền truy cập`);
+    return false;
+  }
+
+  console.log(`✅ Token ${tokenType} hợp lệ với email: ${token.email}`);
+  return true;
 } 

@@ -24,11 +24,11 @@ import { Worker, isMainThread, parentPort, workerData } from 'worker_threads';
 import { v4 as uuidv4 } from 'uuid';
 import os from 'os';
 import { google } from 'googleapis';
-import clientPromise from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
 import { cookies } from 'next/headers';
 import { cookieConfig } from '@/config/env-config';
 import { verifyServerAuthToken } from '@/utils/server-auth';
+import { getMongoClient } from '@/lib/mongodb-connection';
 
 // Import các module đã tách
 import { API_TOKEN, DEFAULT_CONFIG } from './lib/config.js';
@@ -120,6 +120,7 @@ if (!isMainThread) {
   
   if (task === 'processPage') {
     // Xử lý ảnh trong worker thread
+    // Không kết nối đến MongoDB trong worker thread
     processPage(workerData).then(result => {
       parentPort.postMessage(result);
     }).catch(error => {
@@ -127,6 +128,7 @@ if (!isMainThread) {
     });
   } else if (task === 'convertPage') {
     // Chuyển đổi PDF sang PNG trong worker thread
+    // Không kết nối đến MongoDB trong worker thread
     convertPage(workerData).then(result => {
       parentPort.postMessage(result);
     }).catch(error => {
@@ -145,6 +147,17 @@ export async function POST(request) {
   memoryMonitor.logMemoryStats('Bắt đầu API');
   
   try {
+    // Kết nối MongoDB ngay từ đầu trong thread chính
+    // để tất cả các worker thread có thể sử dụng lại kết nối này
+    try {
+      // Sử dụng module kết nối tập trung thay vì clientPromise
+      const mongoClient = await getMongoClient();
+      console.log('📊 Thiết lập kết nối MongoDB trong thread chính thành công');
+    } catch (mongoError) {
+      console.error(`📊 Lỗi kết nối MongoDB: ${mongoError.message}`);
+      // Vẫn tiếp tục xử lý ngay cả khi không thể kết nối đến MongoDB
+    }
+    
     // Lấy token từ cookie thay vì từ request body
     const cookieStore = await cookies();
     const token = cookieStore.get(cookieConfig.authCookieName)?.value;
@@ -483,7 +496,7 @@ async function handleDriveFile(driveLink, backgroundImage, backgroundOpacity, co
                 console.log(`Cập nhật file đã tồn tại vào DB cho courseId: ${courseId}`);
                 
                 // Kết nối MongoDB
-                const mongoClient = await clientPromise;
+                const mongoClient = await getMongoClient();
                 
                 // Cập nhật thông tin file đã xử lý vào DB
                 await updateProcessedFileInDB(
@@ -872,7 +885,7 @@ async function handleDriveFile(driveLink, backgroundImage, backgroundOpacity, co
           console.log(`Cập nhật file đã xử lý thành công vào DB cho courseId: ${courseId}`);
           
           // Kết nối MongoDB
-          const mongoClient = await clientPromise;
+          const mongoClient = await getMongoClient();
           
           // Cập nhật thông tin file đã xử lý vào DB
           await updateProcessedFileInDB(
@@ -1069,7 +1082,7 @@ async function handleDriveFile(driveLink, backgroundImage, backgroundOpacity, co
             console.log(`Cập nhật thông tin ảnh đã xử lý vào DB cho courseId: ${courseId}`);
             
             // Kết nối MongoDB
-            const mongoClient = await clientPromise;
+            const mongoClient = await getMongoClient();
             
             // Cập nhật thông tin file đã xử lý vào DB
             await updateProcessedFileInDB(
@@ -1144,7 +1157,7 @@ async function handleDriveFolder(driveFolderLink, backgroundImage, backgroundOpa
     if (courseId) {
       try {
         dbCourseId = new ObjectId(courseId);
-        mongoClient = await clientPromise;
+        mongoClient = await getMongoClient();
         console.log(`Sẽ cập nhật DB cho courseId: ${courseId} sau khi xử lý folder`);
       } catch (idError) {
         console.error(`CourseId không hợp lệ: ${courseId}`);

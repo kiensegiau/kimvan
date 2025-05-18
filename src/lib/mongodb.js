@@ -1,70 +1,93 @@
-import { MongoClient } from 'mongodb';
+import { getMongoClient } from './mongodb-connection';
+import mongoose from 'mongoose';
+
+// Biến để theo dõi trạng thái kết nối mongoose
+let mongooseConnected = false;
+let mongooseConnecting = false;
+let mongooseConnectionLoggedOnce = false;
 
 // Kiểm tra URI MongoDB và ghi log cảnh báo thay vì báo lỗi
 if (!process.env.MONGODB_URI) {
   console.warn('CẢNH BÁO: Không tìm thấy MONGODB_URI trong biến môi trường, ứng dụng sẽ chạy ở chế độ demo');
 }
 
-// Sử dụng ưu tiên URI từ biến môi trường, nếu không có thì dùng localhost
-const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/kimvan';
-console.log('Đang sử dụng MongoDB URI:', uri);
-
-const options = {
-  connectTimeoutMS: 10000, // Tăng thời gian timeout kết nối
-  serverSelectionTimeoutMS: 10000, // Tăng thời gian timeout chọn server
-  retryWrites: true,
-  w: 'majority',
-  directConnection: process.env.MONGODB_URI ? false : true // Kết nối trực tiếp nếu dùng MongoDB cục bộ
-};
-
-let client;
-let clientPromise;
-
-// Hàm để tạo kết nối MongoDB
-export const connectToDatabase = async () => {
+// Tạo clientPromise sử dụng module kết nối tập trung mới
+const clientPromise = (async () => {
   try {
-    if (!client) {
-      client = new MongoClient(uri, options);
-      console.log('Đang kết nối đến MongoDB...');
-    }
-    
-    const connection = await client.connect();
-    console.log('Kết nối MongoDB thành công');
-    return connection;
+    // Sử dụng module kết nối tập trung thay vì tạo kết nối mới
+    const client = await getMongoClient();
+    return client;
   } catch (error) {
-    console.error('Lỗi khi kết nối đến MongoDB:', error);
+    console.error('❌ Không thể khởi tạo kết nối MongoDB:', error.message);
+    return Promise.reject(error);
+  }
+})();
+
+// Hàm connectDB mà các route API đang sử dụng
+export const connectDB = async () => {
+  // Nếu đã kết nối, không làm gì cả và trả về nhanh
+  if (mongooseConnected) return;
+  
+  // Nếu đang trong quá trình kết nối, đợi kết nối hoàn thành
+  if (mongooseConnecting) {
+    while (mongooseConnecting) {
+      await new Promise(resolve => setTimeout(resolve, 300));
+    }
+    return;
+  }
+  
+  try {
+    mongooseConnecting = true;
     
-    // Thêm mã xử lý lỗi cụ thể
-    if (error.code === 'ENOTFOUND') {
-      console.error('Không tìm thấy máy chủ MongoDB. Vui lòng kiểm tra URI kết nối.');
-    } else if (error.message.includes('authentication failed')) {
-      console.error('Xác thực MongoDB thất bại. Vui lòng kiểm tra tên người dùng và mật khẩu.');
+    // Lấy URI từ biến môi trường
+    const uri = process.env.MONGODB_URI;
+    if (!uri) {
+      throw new Error('MONGODB_URI không được cấu hình trong biến môi trường');
     }
     
+    // Kết nối mongoose nếu chưa kết nối
+    await mongoose.connect(uri, {
+      bufferCommands: false,
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 10000,
+      socketTimeoutMS: 45000,
+    });
+    
+    mongooseConnected = true;
+    mongooseConnecting = false;
+    
+    // Chỉ log một lần khi thực sự kết nối mới và chưa từng log trước đó
+    if (!mongooseConnectionLoggedOnce && process.env.NODE_ENV === 'development') {
+      console.log('Mongoose connected to MongoDB successfully');
+      mongooseConnectionLoggedOnce = true;
+    }
+  } catch (error) {
+    mongooseConnecting = false;
+    console.error('Mongoose connection error:', error);
     throw error;
   }
 };
 
-if (process.env.NODE_ENV === 'development') {
-  // Trong môi trường phát triển, sử dụng biến global để lưu lại kết nối
-  let globalWithMongo = global;
-
-  if (!globalWithMongo._mongoClientPromise) {
-    globalWithMongo._mongoClientPromise = connectToDatabase().catch(err => {
-      console.error('Không thể khởi tạo kết nối MongoDB trong môi trường development:', err);
-      // Trả về Promise đã rejected để các thao tác khác biết lỗi
-      return Promise.reject(err);
-    });
+// Thiết lập sự kiện đóng kết nối để cập nhật trạng thái
+mongoose.connection.on('disconnected', () => {
+  if (process.env.NODE_ENV === 'development' && mongooseConnected) {
+    console.log('Mongoose disconnected from MongoDB');
   }
-  
-  clientPromise = globalWithMongo._mongoClientPromise;
-} else {
-  // Trong môi trường sản xuất, tạo kết nối mới
-  clientPromise = connectToDatabase().catch(err => {
-    console.error('Không thể khởi tạo kết nối MongoDB trong môi trường production:', err);
-    // Trả về Promise đã rejected để các thao tác khác biết lỗi
-    return Promise.reject(err);
-  });
-}
+  mongooseConnected = false;
+  mongooseConnectionLoggedOnce = false; // Reset cờ để log nếu kết nối lại
+});
+
+// Bắt sự kiện lỗi để tránh crash ứng dụng
+mongoose.connection.on('error', (err) => {
+  console.error('Mongoose connection error:', err);
+  mongooseConnected = false;
+  mongooseConnecting = false;
+  mongooseConnectionLoggedOnce = false; // Reset cờ để log nếu kết nối lại
+});
+
+// Khai báo hàm để API vẫn có thể sử dụng (tương thích ngược)
+export const connectToDatabase = async () => {
+  return await clientPromise;
+};
 
 export default clientPromise; 

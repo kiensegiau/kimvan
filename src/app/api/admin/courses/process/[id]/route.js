@@ -3,21 +3,7 @@ import mongoose from 'mongoose';
 import Course from '@/models/Course';
 import { authMiddleware, checkAuthAndRole } from '@/lib/auth';
 import { cookies } from 'next/headers';
-
-// Đảm bảo kết nối MongoDB được thiết lập
-let isConnected = false;
-const connectDB = async () => {
-  if (isConnected) return;
-  
-  try {
-    await mongoose.connect(process.env.MONGODB_URI);
-    isConnected = true;
-    console.log('MongoDB connected successfully');
-  } catch (error) {
-    console.error('MongoDB connection error:', error);
-    throw error;
-  }
-};
+import { connectDB } from '@/lib/mongodb';
 
 // POST: Xử lý một khóa học cụ thể
 export async function POST(request, { params }) {

@@ -13,6 +13,9 @@ import { findGhostscript, cleanupTempFiles, processBatches, forceGarbageCollecti
 import { countPdfPagesWithGhostscript, addImageToPdf } from './pdf-service.js';
 import { createConvertWorker, createProcessWorker } from './workers.js';
 
+// Flag để đảm bảo đã kết nối đến MongoDB trong thread chính
+let mainThreadConnected = false;
+
 // Tối ưu hàm chính để xóa watermark
 export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
   const startTime = Date.now();
@@ -33,7 +36,7 @@ export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
     
     // Tìm GhostScript một lần và cache kết quả
     try {
-      gsPath = findGhostscript();
+      gsPath = await findGhostscript();
     } catch (gsError) {
       throw gsError;
     }
@@ -182,6 +185,9 @@ export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
         
         // Sử dụng Promise.all để xử lý nhiều batch cùng lúc
         const batchPromises = batches.map(async (batch, batchIndex) => {
+          // Thêm log để debug
+          console.log(`🔄 Bắt đầu xử lý batch ${batchIndex + 1}/${batches.length} (${batch.length} trang)`);
+          
           const batchTasks = batch.map(task => 
             createConvertWorker(gsPath, task.pdfPath, task.pngPath, task.page, numPages, optimizedConfig.dpi)
           );
@@ -205,7 +211,7 @@ export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
             
             return batchResults;
           } catch (batchError) {
-            console.error(`Lỗi xử lý batch chuyển đổi ${batchIndex}: ${batchError.message}`);
+            console.error(`Lỗi xử lý batch chuyển đổi ${batchIndex + 1}: ${batchError.message}`);
             return batch.map(() => ({
               status: 'rejected',
               reason: batchError
@@ -304,23 +310,26 @@ export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
       try {
         let processedCount = 0;
         
-        // Sử dụng Promise.all để xử lý nhiều batch cùng lúc
+        // Sử dụng Promise.all để xử lý nhiều batch song song
         const batchPromises = batches.map(async (batch, batchIndex) => {
-          const batchTasks = batch.map(conversion => 
-            createProcessWorker(conversion.pngPath, conversion.page, numPages, optimizedConfig)
+          // Thêm log để debug
+          console.log(`🔄 Bắt đầu xử lý watermark batch ${batchIndex + 1}/${batches.length} (${batch.length} trang)`);
+          
+          const batchTasks = batch.map(result => 
+            createProcessWorker(result.pngPath, result.page, successfulConversions.length, optimizedConfig)
           );
           
           try {
             const batchResults = await Promise.allSettled(batchTasks);
             
-            // Xóa các file PNG gốc đã xử lý để giải phóng bộ nhớ
-            for (const conversion of batch) {
+            // Xóa các tệp PNG đã xử lý để giải phóng bộ nhớ
+            for (const result of batch) {
               try {
-                if (fs.existsSync(conversion.pngPath)) {
-                  fs.unlinkSync(conversion.pngPath);
+                if (fs.existsSync(result.pngPath)) {
+                  fs.unlinkSync(result.pngPath);
                 }
               } catch (unlinkError) {
-                console.debug(`Không thể xóa file PNG gốc: ${unlinkError.message}`);
+                console.debug(`Không thể xóa file PNG tạm: ${unlinkError.message}`);
               }
             }
             
@@ -329,7 +338,7 @@ export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
             
             return batchResults;
           } catch (batchError) {
-            console.error(`Lỗi xử lý batch xóa watermark ${batchIndex}: ${batchError.message}`);
+            console.error(`Lỗi xử lý batch watermark ${batchIndex + 1}: ${batchError.message}`);
             return batch.map(() => ({
               status: 'rejected',
               reason: batchError
@@ -345,7 +354,7 @@ export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
         // Thúc đẩy GC sau khi hoàn thành tất cả
         forceGarbageCollection();
       } catch (parallelError) {
-        console.error(`Lỗi khi xử lý song song: ${parallelError.message}`);
+        console.error(`Lỗi khi xử lý song song watermark: ${parallelError.message}`);
         throw parallelError;
       }
     } else {

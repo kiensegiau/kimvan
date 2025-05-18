@@ -11,6 +11,9 @@ import { DEFAULT_CONFIG } from './config.js';
 
 const execPromise = promisify(exec);
 
+// Biến để kiểm soát việc kết nối đến database
+let shouldConnectDB = false;
+
 // Hàm tạo worker để chuyển đổi PDF sang PNG
 export function createConvertWorker(gsPath, pdfPath, pngPath, page, numPages, dpi) {
   return new Promise((resolve, reject) => {
@@ -23,7 +26,8 @@ export function createConvertWorker(gsPath, pdfPath, pngPath, page, numPages, dp
           pngPath,
           page,
           numPages,
-          dpi
+          dpi,
+          connectToDB: false // Thêm flag không kết nối đến DB
         }
       });
       
@@ -68,7 +72,8 @@ export function createProcessWorker(pngPath, page, numPages, config) {
           processedPngPath,
           page,
           numPages,
-          config
+          config,
+          connectToDB: false // Thêm flag không kết nối đến DB
         }
       });
       

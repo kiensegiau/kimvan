@@ -4,24 +4,10 @@ import { ObjectId } from 'mongodb';
 import CryptoJS from 'crypto-js';
 import mongoose from 'mongoose';
 import Course from '@/models/Course';
+import { connectDB } from '@/lib/mongodb';
 
 // Khóa mã hóa - phải giống với khóa ở phía client
 const ENCRYPTION_KEY = 'kimvan-secure-key-2024';
-
-// Đảm bảo kết nối MongoDB được thiết lập
-let isConnected = false;
-const connectDB = async () => {
-  if (isConnected) return;
-  
-  try {
-    await mongoose.connect(process.env.MONGODB_URI);
-    isConnected = true;
-    console.log('MongoDB connected successfully');
-  } catch (error) {
-    console.error('MongoDB connection error:', error);
-    throw error;
-  }
-};
 
 // Hàm mã hóa dữ liệu với xử lý lỗi tốt hơn
 const encryptData = (data) => {

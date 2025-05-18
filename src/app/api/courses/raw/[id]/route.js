@@ -1,25 +1,11 @@
 import { NextResponse } from 'next/server';
-import clientPromise from '@/lib/mongodb';
-import { ObjectId } from 'mongodb';
 import mongoose from 'mongoose';
 import Course from '@/models/Course';
-import { adminAuthMiddleware } from '@/app/api/admin/middleware';
+import { ObjectId } from 'mongodb';
+import { checkAuthAndRole } from '@/lib/auth';
 import { cookies } from 'next/headers';
-
-// Đảm bảo kết nối MongoDB được thiết lập
-let isConnected = false;
-const connectDB = async () => {
-  if (isConnected) return;
-  
-  try {
-    await mongoose.connect(process.env.MONGODB_URI);
-    isConnected = true;
-    console.log('MongoDB connected successfully');
-  } catch (error) {
-    console.error('MongoDB connection error:', error);
-    throw error;
-  }
-};
+import { connectDB } from '@/lib/mongodb';
+import { adminAuthMiddleware } from '@/app/api/admin/middleware';
 
 // GET: Lấy một khóa học theo ID mà không mã hóa dữ liệu - CHỈ CHO ADMIN
 export async function GET(request, { params }) {
