@@ -81,15 +81,27 @@ export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
     
     console.log(`📄 Phát hiện ${numPages} trang, đang tách PDF...`);
     
-    // Tối ưu số lượng worker dựa trên cấu hình đã tối ưu
-    const optimalWorkers = optimizedConfig.highPerformanceMode
-      ? Math.min(optimizedConfig.maxWorkers, numPages)
-      : Math.min(
-          optimizedConfig.maxWorkers,
-          Math.max(1, Math.min(Math.max(1, os.cpus().length - 2), Math.min(numPages, 2)))
-        );
+    // Xác định số lượng worker tối ưu dựa trên cấu hình
+    let optimalWorkers;
     
-    console.log(`🧠 Sử dụng ${optimalWorkers} worker(s) để xử lý`);
+    // Chế độ Ultra Performance cho hệ thống RAM cao
+    if (optimizedConfig.ultra) {
+      // Với chế độ Ultra, sử dụng nhiều worker hơn và không giới hạn quá mức
+      const maxPossibleWorkers = Math.min(numPages, optimizedConfig.maxWorkers);
+      optimalWorkers = maxPossibleWorkers;
+      console.log(`🔥 CHẾ ĐỘ ULTRA: Sử dụng ${optimalWorkers} worker(s) để tối ưu tốc độ tối đa`);
+    } else if (optimizedConfig.highPerformanceMode) {
+      // Chế độ hiệu suất cao
+      optimalWorkers = Math.min(optimizedConfig.maxWorkers, numPages);
+      console.log(`🧠 Sử dụng ${optimalWorkers} worker(s) để tối ưu hiệu suất cao`);
+    } else {
+      // Chế độ cân bằng
+      optimalWorkers = Math.min(
+        optimizedConfig.maxWorkers,
+        Math.max(1, Math.min(Math.max(1, os.cpus().length - 2), Math.min(numPages, 2)))
+      );
+      console.log(`🧠 Sử dụng ${optimalWorkers} worker(s) để cân bằng hiệu suất và ổn định`);
+    }
     
     // Tách PDF thành từng trang - sử dụng tùy chọn tối ưu cho GhostScript
     const gsCommand = `"${gsPath}" -dALLOWPSTRANSPARENCY -dBATCH -dNOPAUSE -q -dNumRenderingThreads=${optimizedConfig.gsParallel || optimalWorkers} -sDEVICE=pdfwrite -dSAFER ` +
@@ -148,48 +160,116 @@ export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
     
     // Chia trang thành các batch nhỏ hơn để xử lý
     const convertResults = [];
-    for (let i = 0; i < conversionTasks.length; i += batchSize) {
+    
+    // Sử dụng chiến lược song song khác nhau cho chế độ Ultra
+    if (optimizedConfig.ultra) {
+      console.log(`🚀 Chế độ ULTRA: Xử lý song song ${batchSize} trang cùng lúc`);
+      
+      // Xử lý nhiều batch cùng lúc
+      const numBatches = Math.ceil(conversionTasks.length / batchSize);
+      const batches = [];
+      
+      for (let i = 0; i < numBatches; i++) {
+        const startIdx = i * batchSize;
+        const endIdx = Math.min(startIdx + batchSize, conversionTasks.length);
+        batches.push(conversionTasks.slice(startIdx, endIdx));
+      }
+      
+      console.log(`🧩 Đã chia thành ${numBatches} batch để xử lý`);
+      
       try {
-        const currentBatch = conversionTasks.slice(i, i + batchSize);
-        const progress = Math.round((i / conversionTasks.length) * 100);
-        console.log(`🔄 Chuyển đổi PDF sang hình ảnh: ${progress}% (${i}/${conversionTasks.length} trang)`);
-      
-        // Xử lý batch hiện tại
-        const batchPromises = currentBatch.map(task => 
-          createConvertWorker(gsPath, task.pdfPath, task.pngPath, task.page, numPages, optimizedConfig.dpi || config.dpi)
-        );
-      
-        let batchResults;
-        try {
-          batchResults = await Promise.allSettled(batchPromises);
-        } catch (batchError) {
-          console.error(`Lỗi xử lý batch chuyển đổi: ${batchError.message}`);
-          continue;
-        }
+        let processedCount = 0;
         
-        convertResults.push(...batchResults);
-      
-        // Dọn dẹp các file PDF trang đã chuyển đổi để giải phóng bộ nhớ ngay lập tức
-        for (const task of currentBatch) {
+        // Sử dụng Promise.all để xử lý nhiều batch cùng lúc
+        const batchPromises = batches.map(async (batch, batchIndex) => {
+          const batchTasks = batch.map(task => 
+            createConvertWorker(gsPath, task.pdfPath, task.pngPath, task.page, numPages, optimizedConfig.dpi || config.dpi)
+          );
+          
           try {
-            if (fs.existsSync(task.pdfPath)) {
-              fs.unlinkSync(task.pdfPath);
+            const batchResults = await Promise.allSettled(batchTasks);
+            
+            // Xóa các tệp PDF đã xử lý để giải phóng bộ nhớ
+            for (const task of batch) {
+              try {
+                if (fs.existsSync(task.pdfPath)) {
+                  fs.unlinkSync(task.pdfPath);
+                }
+              } catch (unlinkError) {
+                console.debug(`Không thể xóa file PDF tạm: ${unlinkError.message}`);
+              }
             }
-          } catch (unlinkError) {
-            console.debug(`Không thể xóa file PDF tạm: ${unlinkError.message}`);
+            
+            processedCount += batch.length;
+            console.log(`🔄 Chuyển đổi PDF sang hình ảnh: ${Math.round((processedCount / conversionTasks.length) * 100)}% (${processedCount}/${conversionTasks.length} trang)`);
+            
+            return batchResults;
+          } catch (batchError) {
+            console.error(`Lỗi xử lý batch chuyển đổi ${batchIndex}: ${batchError.message}`);
+            return batch.map(() => ({
+              status: 'rejected',
+              reason: batchError
+            }));
           }
-        }
+        });
         
-        // Thúc đẩy GC sau mỗi batch
+        const results = await Promise.all(batchPromises);
+        results.forEach(batchResult => {
+          convertResults.push(...batchResult);
+        });
+        
+        // Thúc đẩy GC sau khi hoàn thành tất cả
         forceGarbageCollection();
+      } catch (parallelError) {
+        console.error(`Lỗi khi xử lý song song: ${parallelError.message}`);
+        throw parallelError;
+      }
+    } else {
+      // Phương pháp xử lý tuần tự dùng cho hệ thống yếu hơn
+      for (let i = 0; i < conversionTasks.length; i += batchSize) {
+        try {
+          const currentBatch = conversionTasks.slice(i, i + batchSize);
+          const progress = Math.round((i / conversionTasks.length) * 100);
+          console.log(`🔄 Chuyển đổi PDF sang hình ảnh: ${progress}% (${i}/${conversionTasks.length} trang)`);
         
-        // Thời gian chờ giữa các batch từ cấu hình đã tối ưu
-        await new Promise(resolve => setTimeout(resolve, optimizedConfig.waitTime || 300));
-      } catch (batchProcessError) {
-        console.error(`Lỗi xử lý batch chuyển đổi tại vị trí ${i}: ${batchProcessError.message}`);
-        // Vẫn tiếp tục xử lý các batch tiếp theo
+          // Xử lý batch hiện tại
+          const batchPromises = currentBatch.map(task => 
+            createConvertWorker(gsPath, task.pdfPath, task.pngPath, task.page, numPages, optimizedConfig.dpi || config.dpi)
+          );
+        
+          let batchResults;
+          try {
+            batchResults = await Promise.allSettled(batchPromises);
+          } catch (batchError) {
+            console.error(`Lỗi xử lý batch chuyển đổi: ${batchError.message}`);
+            continue;
+          }
+          
+          convertResults.push(...batchResults);
+        
+          // Dọn dẹp các file PDF trang đã chuyển đổi để giải phóng bộ nhớ ngay lập tức
+          for (const task of currentBatch) {
+            try {
+              if (fs.existsSync(task.pdfPath)) {
+                fs.unlinkSync(task.pdfPath);
+              }
+            } catch (unlinkError) {
+              console.debug(`Không thể xóa file PDF tạm: ${unlinkError.message}`);
+            }
+          }
+          
+          // Thúc đẩy GC sau mỗi batch
+          forceGarbageCollection();
+          
+          // Thời gian chờ giữa các batch từ cấu hình đã tối ưu
+          await new Promise(resolve => setTimeout(resolve, optimizedConfig.waitTime || 300));
+        } catch (batchProcessError) {
+          console.error(`Lỗi xử lý batch chuyển đổi tại vị trí ${i}: ${batchProcessError.message}`);
+          // Vẫn tiếp tục xử lý các batch tiếp theo
+        }
       }
     }
+    
     console.log(`🔄 Chuyển đổi PDF sang hình ảnh: 100% (${conversionTasks.length}/${conversionTasks.length} trang)`);
     
     // Lọc và giải phóng bộ nhớ sớm hơn
@@ -205,48 +285,115 @@ export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
     console.log('🔄 Bước 2/3: Xử lý xóa watermark trên hình ảnh...');
     const processResults = [];
     
-    for (let i = 0; i < successfulConversions.length; i += batchSize) {
+    // Kiểm tra xem có phải chế độ Ultra không
+    if (optimizedConfig.ultra) {
+      console.log(`🚀 Chế độ ULTRA: Xử lý song song xóa watermark cho ${batchSize} trang cùng lúc`);
+      
+      // Xử lý nhiều batch song song tương tự như phần chuyển đổi PDF
+      const numBatches = Math.ceil(successfulConversions.length / batchSize);
+      const batches = [];
+      
+      for (let i = 0; i < numBatches; i++) {
+        const startIdx = i * batchSize;
+        const endIdx = Math.min(startIdx + batchSize, successfulConversions.length);
+        batches.push(successfulConversions.slice(startIdx, endIdx));
+      }
+      
+      console.log(`🧩 Đã chia thành ${numBatches} batch để xử lý watermark`);
+      
       try {
-        const currentBatch = successfulConversions.slice(i, i + batchSize);
-        const progress = Math.round((i / successfulConversions.length) * 100);
-        console.log(`🔄 Xử lý xóa watermark: ${progress}% (${i}/${successfulConversions.length} trang)`);
+        let processedCount = 0;
         
-        // Xử lý batch hiện tại
-        const batchPromises = currentBatch.map(conversion => 
-          createProcessWorker(conversion.pngPath, conversion.page, numPages, optimizedConfig)
-        );
-        
-        let batchResults;
-        try {
-          batchResults = await Promise.allSettled(batchPromises);
-        } catch (batchError) {
-          console.error(`Lỗi xử lý batch xóa watermark: ${batchError.message}`);
-          continue;
-        }
-        
-        processResults.push(...batchResults);
-        
-        // Thúc đẩy GC sau mỗi batch và xóa file PNG gốc đã xử lý
-        for (const conversion of currentBatch) {
+        // Sử dụng Promise.all để xử lý nhiều batch cùng lúc
+        const batchPromises = batches.map(async (batch, batchIndex) => {
+          const batchTasks = batch.map(conversion => 
+            createProcessWorker(conversion.pngPath, conversion.page, numPages, optimizedConfig)
+          );
+          
           try {
-            if (fs.existsSync(conversion.pngPath)) {
-              fs.unlinkSync(conversion.pngPath);
+            const batchResults = await Promise.allSettled(batchTasks);
+            
+            // Xóa các file PNG gốc đã xử lý để giải phóng bộ nhớ
+            for (const conversion of batch) {
+              try {
+                if (fs.existsSync(conversion.pngPath)) {
+                  fs.unlinkSync(conversion.pngPath);
+                }
+              } catch (unlinkError) {
+                console.debug(`Không thể xóa file PNG gốc: ${unlinkError.message}`);
+              }
             }
-          } catch (unlinkError) {
-            console.debug(`Không thể xóa file PNG gốc: ${unlinkError.message}`);
+            
+            processedCount += batch.length;
+            console.log(`🔄 Xử lý xóa watermark: ${Math.round((processedCount / successfulConversions.length) * 100)}% (${processedCount}/${successfulConversions.length} trang)`);
+            
+            return batchResults;
+          } catch (batchError) {
+            console.error(`Lỗi xử lý batch xóa watermark ${batchIndex}: ${batchError.message}`);
+            return batch.map(() => ({
+              status: 'rejected',
+              reason: batchError
+            }));
           }
-        }
+        });
         
-        // Thúc đẩy GC sau mỗi batch
+        const results = await Promise.all(batchPromises);
+        results.forEach(batchResult => {
+          processResults.push(...batchResult);
+        });
+        
+        // Thúc đẩy GC sau khi hoàn thành tất cả
         forceGarbageCollection();
-        
-        // Sử dụng thời gian chờ tối ưu
-        await new Promise(resolve => setTimeout(resolve, optimizedConfig.waitTime || 300));
-      } catch (batchProcessError) {
-        console.error(`Lỗi xử lý batch xóa watermark tại vị trí ${i}: ${batchProcessError.message}`);
-        // Vẫn tiếp tục xử lý các batch tiếp theo
+      } catch (parallelError) {
+        console.error(`Lỗi khi xử lý song song: ${parallelError.message}`);
+        throw parallelError;
+      }
+    } else {
+      // Phương pháp xử lý tuần tự dùng cho hệ thống yếu hơn
+      for (let i = 0; i < successfulConversions.length; i += batchSize) {
+        try {
+          const currentBatch = successfulConversions.slice(i, i + batchSize);
+          const progress = Math.round((i / successfulConversions.length) * 100);
+          console.log(`🔄 Xử lý xóa watermark: ${progress}% (${i}/${successfulConversions.length} trang)`);
+          
+          // Xử lý batch hiện tại
+          const batchPromises = currentBatch.map(conversion => 
+            createProcessWorker(conversion.pngPath, conversion.page, numPages, optimizedConfig)
+          );
+          
+          let batchResults;
+          try {
+            batchResults = await Promise.allSettled(batchPromises);
+          } catch (batchError) {
+            console.error(`Lỗi xử lý batch xóa watermark: ${batchError.message}`);
+            continue;
+          }
+          
+          processResults.push(...batchResults);
+          
+          // Thúc đẩy GC sau mỗi batch và xóa file PNG gốc đã xử lý
+          for (const conversion of currentBatch) {
+            try {
+              if (fs.existsSync(conversion.pngPath)) {
+                fs.unlinkSync(conversion.pngPath);
+              }
+            } catch (unlinkError) {
+              console.debug(`Không thể xóa file PNG gốc: ${unlinkError.message}`);
+            }
+          }
+          
+          // Thúc đẩy GC sau mỗi batch
+          forceGarbageCollection();
+          
+          // Sử dụng thời gian chờ tối ưu
+          await new Promise(resolve => setTimeout(resolve, optimizedConfig.waitTime || 300));
+        } catch (batchProcessError) {
+          console.error(`Lỗi xử lý batch xóa watermark tại vị trí ${i}: ${batchProcessError.message}`);
+          // Vẫn tiếp tục xử lý các batch tiếp theo
+        }
       }
     }
+    
     console.log(`🔄 Xử lý xóa watermark: 100% (${successfulConversions.length}/${successfulConversions.length} trang)`);
     
     // Lọc và sắp xếp hiệu quả hơn

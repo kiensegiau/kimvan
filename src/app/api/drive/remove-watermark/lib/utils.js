@@ -286,7 +286,22 @@ export function optimizePerformance(config = {}) {
     let optimizedConfig = { ...config };
     
     // Tối ưu số lượng worker dựa trên CPU và RAM
-    if (cpuCount > 4 && freeMemory > 4) {
+    if (totalMemory >= 16 && freeMemory > 8) {
+      // Hệ thống cực mạnh: Rất nhiều RAM (>16GB)
+      console.log(`🚀🚀 Phát hiện hệ thống RAM cao (${totalMemory}GB), tối ưu cho hiệu suất tối đa`);
+      
+      optimizedConfig.maxWorkers = Math.min(cpuCount, 16); // Tối đa 16 worker
+      optimizedConfig.batchSize = Math.min(Math.floor(freeMemory / 2), 12); // Dựa vào RAM trống, tối đa 12
+      optimizedConfig.waitTime = 50; // Giảm thời gian chờ xuống tối thiểu
+      optimizedConfig.highPerformanceMode = true;
+      optimizedConfig.ultra = true; // Chế độ cực cao
+      
+      // Tối ưu thêm các thông số
+      optimizedConfig.dpi = config.dpi || 350; // DPI cao hơn
+      optimizedConfig.gsParallel = Math.min(Math.ceil(cpuCount / 2), 8); // Tối đa 8 luồng GhostScript
+      
+      console.log(`⚡ Chế độ Ultra Performance: ${optimizedConfig.maxWorkers} worker, batch ${optimizedConfig.batchSize}`);
+    } else if (cpuCount > 4 && freeMemory > 4) {
       // Hệ thống mạnh: Nhiều CPU và RAM
       console.log(`🚀 Phát hiện hệ thống mạnh, tối ưu cho hiệu suất cao`);
       
