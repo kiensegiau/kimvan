@@ -35,7 +35,7 @@ import { API_TOKEN, DEFAULT_CONFIG } from './lib/config.js';
 import { downloadFromGoogleDrive } from './lib/drive-service.js';
 import { uploadToDrive } from './lib/drive-service.js';
 import { cleanPdf, processImage } from './lib/watermark.js';
-import { cleanupTempFiles, getTokenByType, findGhostscript, escapeDriveQueryString, updateProcessedFileInDB } from './lib/utils.js';
+import { cleanupTempFiles, getTokenByType, findGhostscript, escapeDriveQueryString, updateProcessedFileInDB, forceGarbageCollection } from './lib/utils.js';
 import { processPage, convertPage } from './lib/workers.js';
 import { 
   processDriveFolder, 
