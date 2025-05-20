@@ -93,7 +93,15 @@ export default function CoursesPage() {
         
         const retryData = await retryResponse.json();
         setHasMongoConnection(true);
-        setCourses(retryData);
+        // Kiểm tra xem retryData có thuộc tính courses không
+        if (retryData && retryData.courses && Array.isArray(retryData.courses)) {
+          setCourses(retryData.courses);
+        } else if (Array.isArray(retryData)) {
+          setCourses(retryData);
+        } else {
+          console.warn('Format dữ liệu retry không như mong đợi:', retryData);
+          setCourses([]);
+        }
         setLoading(false);
         return;
       }
@@ -106,7 +114,15 @@ export default function CoursesPage() {
       }
       
       setHasMongoConnection(true);
-      setCourses(data);
+      // Kiểm tra xem data có thuộc tính courses không
+      if (data && data.courses && Array.isArray(data.courses)) {
+        setCourses(data.courses);
+      } else if (Array.isArray(data)) {
+        setCourses(data);
+      } else {
+        console.warn('Format dữ liệu không như mong đợi:', data);
+        setCourses([]);
+      }
     } catch (err) {
       console.error('Lỗi khi tải danh sách khóa học:', err);
       setError(err.message || 'Đã xảy ra lỗi khi tải dữ liệu. Vui lòng kiểm tra kết nối MongoDB.');
