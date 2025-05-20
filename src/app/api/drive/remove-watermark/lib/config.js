@@ -35,6 +35,7 @@ export const DEFAULT_CONFIG = {
   gsParallel: 2,          // Số luồng song song cho GhostScript
   highPerformanceMode: false, // Chế độ hiệu suất cao
   skipWatermarkRemoval: true, // Mặc định bỏ qua xử lý watermark
+  skipBackground: false,   // Mặc định không bỏ qua xử lý nền
   ultra: false,           // Chế độ Ultra performance (RAM cao)
   backgroundOpacity: 0.3  // Độ trong suốt của hình nền (nếu có)
 }; 

@@ -40,6 +40,7 @@ export default function CoursesPage() {
   const [syncAnalysisData, setSyncAnalysisData] = useState(null);
   const [analyzingData, setAnalyzingData] = useState(false);
   const [pendingSyncData, setPendingSyncData] = useState(null);
+  const [processingPDFs, setProcessingPDFs] = useState(false);
   
   // Thiết lập cookie admin_access khi trang được tải
   useEffect(() => {
@@ -938,6 +939,100 @@ export default function CoursesPage() {
     }
   };
 
+  // Hàm xử lý tất cả file PDF
+  const handleProcessAllPDFs = async () => {
+    try {
+      setProcessingPDFs(true);
+      setError(null);
+      
+      // Gọi API để xử lý tất cả file PDF
+      const response = await fetch('/api/admin/courses/process-pdfs', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Không thể xử lý file PDF');
+      }
+      
+      // Hiển thị kết quả xử lý
+      setProcessResult({
+        success: true,
+        message: 'Xử lý file PDF thành công',
+        summary: data.summary
+      });
+      
+      // Tải lại danh sách khóa học
+      await fetchCourses();
+      
+    } catch (err) {
+      console.error('Lỗi khi xử lý file PDF:', err);
+      setError(err.message || 'Đã xảy ra lỗi khi xử lý file PDF');
+      setProcessResult({
+        success: false,
+        message: `Lỗi: ${err.message}`,
+        summary: {
+          total: 0,
+          success: 0,
+          errors: 1
+        }
+      });
+    } finally {
+      setProcessingPDFs(false);
+    }
+  };
+
+  // Hàm xử lý PDF cho một khóa học cụ thể
+  const handleProcessPDF = async (courseId) => {
+    try {
+      setProcessingPDFs(true);
+      setError(null);
+      
+      // Gọi API để xử lý PDF cho khóa học cụ thể
+      const response = await fetch(`/api/courses/${courseId}/process-all-drive`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Không thể xử lý file PDF');
+      }
+      
+      // Hiển thị kết quả xử lý
+      setProcessResult({
+        success: true,
+        message: 'Xử lý file PDF thành công',
+        summary: data.summary
+      });
+      
+      // Tải lại danh sách khóa học
+      await fetchCourses();
+      
+    } catch (err) {
+      console.error('Lỗi khi xử lý file PDF:', err);
+      setError(err.message || 'Đã xảy ra lỗi khi xử lý file PDF');
+      setProcessResult({
+        success: false,
+        message: `Lỗi: ${err.message}`,
+        summary: {
+          total: 0,
+          success: 0,
+          errors: 1
+        }
+      });
+    } finally {
+      setProcessingPDFs(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -958,6 +1053,14 @@ export default function CoursesPage() {
           >
             <CloudArrowDownIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
             {syncing ? 'Đang đồng bộ...' : 'Đồng bộ từ Kimvan'}
+          </button>
+          <button
+            onClick={handleProcessAllPDFs}
+            disabled={processingPDFs}
+            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50"
+          >
+            <ArrowDownTrayIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
+            {processingPDFs ? 'Đang xử lý PDF...' : 'Xử lý tất cả PDF'}
           </button>
           <button
             onClick={() => setShowProcessModal(true)}
@@ -1225,6 +1328,14 @@ export default function CoursesPage() {
                             title="Xóa khóa học"
                           >
                             <TrashIcon className="h-5 w-5" />
+                          </button>
+                          <button
+                            onClick={() => handleProcessPDF(course._id)}
+                            disabled={processingPDFs}
+                            className={`text-purple-600 hover:text-purple-900 ml-2 ${processingPDFs ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            title="Xử lý PDF của khóa học này"
+                          >
+                            <ArrowDownTrayIcon className={`h-5 w-5 ${processingPDFs ? 'animate-spin' : ''}`} />
                           </button>
                         </td>
                       </tr>

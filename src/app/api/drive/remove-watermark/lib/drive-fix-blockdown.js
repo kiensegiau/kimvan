@@ -289,11 +289,14 @@ export async function downloadBlockedPDF(fileId, fileName, tempDir, watermarkCon
     try {
       console.log(`📄 Tạo file PDF từ ${processedImages.length} ảnh đã xử lý...`);
       
-      // Thêm hình nền nếu được cấu hình
-      if (config.backgroundImage && fs.existsSync(config.backgroundImage)) {
+      // Thêm hình nền nếu được cấu hình và không bỏ qua xử lý nền
+      if (!config.skipBackground && config.backgroundImage && fs.existsSync(config.backgroundImage)) {
         console.log(`🖼️ Thêm hình nền tùy chỉnh: ${config.backgroundImage}`);
         await createPDFFromProcessedImages(processedImages, outputPath, config);
       } else {
+        if (config.skipBackground) {
+          console.log('⏩ Bỏ qua xử lý hình nền theo cấu hình');
+        }
         await createPDFFromRawImages(processedImages, outputPath);
       }
     } catch (createPdfError) {
@@ -653,10 +656,12 @@ async function processAllImages(images, outputDir, config) {
     
     // Sử dụng cấu hình tối giản để tránh mất màu
     const simpleConfig = {
-      backgroundOpacity: config.backgroundOpacity || 0.15
+      backgroundOpacity: config.backgroundOpacity || 0.15,
+      skipWatermarkRemoval: config.skipWatermarkRemoval || false,
+      skipBackground: config.skipBackground || false
     };
     
-    console.log(`🔧 Sử dụng cấu hình tối giản để giữ màu sắc gốc và xử lý nhẹ watermark`);
+    console.log(`🔧 Sử dụng cấu hình tối giản để giữ màu sắc gốc và xử lý nhẹ watermark ${simpleConfig.skipWatermarkRemoval ? '(bỏ qua xử lý watermark)' : ''} ${simpleConfig.skipBackground ? '(bỏ qua xử lý nền)' : ''}`);
     
     // Xử lý từng ảnh
     for (let i = 0; i < sortedImages.length; i++) {
