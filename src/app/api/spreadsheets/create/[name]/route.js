@@ -111,66 +111,168 @@ function createDetailUrl(sheetId) {
 /**
  * Xử lý dữ liệu kết quả
  */
-function processResults() {
+async function processResults() {
+  let client;
   try {
     console.log('Đang xử lý dữ liệu...');
     
+    // Kết nối đến MongoDB
+    client = await clientPromise;
+    const db = client.db(process.env.MONGODB_DB || 'kimvan');
+    const coursesCollection = db.collection('courses');
+
     // Đọc tất cả các file trong thư mục results
     const files = fs.readdirSync(resultsDir);
     
+    // Đọc dữ liệu hiện có từ DB
+    const existingCourses = await coursesCollection.find({}).toArray();
+    console.log(`Đã tìm thấy ${existingCourses.length} khóa học trong DB`);
+
     // Khởi tạo đối tượng chứa dữ liệu đã xử lý
     const processedData = {
       timestamp: new Date().toISOString(),
       sheetLists: {},
       sheetDetails: {}
     };
+
+    // Thêm dữ liệu hiện có từ DB vào processedData
+    existingCourses.forEach(course => {
+      if (course.name) {
+        processedData.sheetLists[course.name] = {
+          source: 'database',
+          timestamp: course.updatedAt || new Date().toISOString(),
+          data: course.originalData
+        };
+      }
+      if (course.kimvanId) {
+        processedData.sheetDetails[course.kimvanId] = {
+          source: 'database',
+          timestamp: course.updatedAt || new Date().toISOString(),
+          data: course.originalData
+        };
+      }
+    });
     
     // Duyệt qua từng file
     let filesProcessed = 0;
+    let newItemsAdded = 0;
     
-    files.forEach(file => {
-      if (!file.endsWith('.json')) return;
-      
-      const filePath = path.join(resultsDir, file);
-      const fileName = path.basename(filePath);
-      console.log(`Đang xử lý file: ${fileName}`);
-      
-      try {
-        const content = fs.readFileSync(filePath, 'utf8');
-        const data = JSON.parse(content);
-        
-        // Xác định loại dữ liệu (danh sách hoặc chi tiết)
-        if (file.includes('-list.json')) {
-          // File danh sách sheet
-          const sheetName = file.replace('-list.json', '');
-          processedData.sheetLists[sheetName] = {
-            source: fileName,
-            timestamp: new Date().toISOString(),
-            data: data
-          };
-          console.log(`File ${fileName} chứa danh sách sheet cho "${sheetName}" (${Array.isArray(data) ? data.length : 0} sheets)`);
+    // Bắt đầu session để sử dụng transaction
+    const session = client.startSession();
+    
+    try {
+      await session.withTransaction(async () => {
+        for (const file of files) {
+          if (!file.endsWith('.json')) continue;
           
-        } else if (file.includes('-detail.json')) {
-          // File chi tiết sheet
-          const sheetIdMatch = fileName.match(/[^-]+-([a-zA-Z0-9_-]{10})/);
-          const sheetId = sheetIdMatch ? sheetIdMatch[1] : 'unknown';
+          const filePath = path.join(resultsDir, file);
+          const fileName = path.basename(filePath);
+          console.log(`Đang xử lý file: ${fileName}`);
           
-          processedData.sheetDetails[sheetId] = {
-            source: fileName,
-            timestamp: new Date().toISOString(),
-            data: data
-          };
-          
-          console.log(`File ${fileName} chứa chi tiết sheet với ID: ${sheetId}`);
-        } else {
-          console.log(`File ${fileName} có định dạng không xác định.`);
+          try {
+            const content = fs.readFileSync(filePath, 'utf8');
+            const data = JSON.parse(content);
+            
+            // Xác định loại dữ liệu (danh sách hoặc chi tiết)
+            if (file.includes('-list.json')) {
+              // File danh sách sheet
+              const sheetName = file.replace('-list.json', '');
+              
+              // Kiểm tra xem danh sách này đã tồn tại trong DB chưa
+              const existingCourse = await coursesCollection.findOne(
+                { name: sheetName },
+                { session }
+              );
+              
+              if (!existingCourse) {
+                // Thêm mới nếu chưa tồn tại
+                await coursesCollection.insertOne({
+                  name: sheetName,
+                  description: `Khóa học ${sheetName}`,
+                  price: 500000, // Giá mặc định
+                  status: 'active',
+                  originalData: data, // Lưu dữ liệu gốc
+                  createdAt: new Date(),
+                  updatedAt: new Date()
+                }, { session });
+                
+                processedData.sheetLists[sheetName] = {
+                  source: fileName,
+                  timestamp: new Date().toISOString(),
+                  data: data
+                };
+                
+                newItemsAdded++;
+                console.log(`Đã thêm khóa học mới "${sheetName}" vào DB (${Array.isArray(data) ? data.length : 0} sheets)`);
+              } else {
+                console.log(`Bỏ qua khóa học "${sheetName}" vì đã tồn tại trong DB`);
+              }
+              
+            } else if (file.includes('-detail.json')) {
+              // File chi tiết sheet
+              const sheetIdMatch = fileName.match(/[^-]+-([a-zA-Z0-9_-]{10})/);
+              const sheetId = sheetIdMatch ? sheetIdMatch[1] : 'unknown';
+              
+              if (sheetId === 'unknown') {
+                console.warn(`Bỏ qua file ${fileName} do không xác định được sheet ID`);
+                continue;
+              }
+              
+              // Kiểm tra xem chi tiết sheet này đã tồn tại trong DB chưa
+              const existingCourse = await coursesCollection.findOne(
+                { kimvanId: sheetId },
+                { session }
+              );
+              
+              if (!existingCourse) {
+                // Xác định tên khóa học từ dữ liệu chi tiết
+                let courseName = '';
+                if (data && typeof data === 'object') {
+                  if (data.name) {
+                    courseName = data.name;
+                  } else if (data.data && data.data.name) {
+                    courseName = data.data.name;
+                  } else if (Array.isArray(data) && data.length > 0 && data[0].name) {
+                    courseName = data[0].name;
+                  }
+                }
+                
+                // Thêm mới nếu chưa tồn tại
+                await coursesCollection.insertOne({
+                  kimvanId: sheetId,
+                  name: courseName || `Khóa học ${sheetId}`,
+                  description: courseName ? `Khóa học ${courseName}` : `Khóa học ${sheetId}`,
+                  price: 500000, // Giá mặc định
+                  status: 'active',
+                  originalData: data, // Lưu dữ liệu gốc
+                  createdAt: new Date(),
+                  updatedAt: new Date()
+                }, { session });
+                
+                processedData.sheetDetails[sheetId] = {
+                  source: fileName,
+                  timestamp: new Date().toISOString(),
+                  data: data
+                };
+                
+                newItemsAdded++;
+                console.log(`Đã thêm khóa học mới với ID: ${sheetId} vào DB`);
+              } else {
+                console.log(`Bỏ qua khóa học ID "${sheetId}" vì đã tồn tại trong DB`);
+              }
+            } else {
+              console.log(`File ${fileName} có định dạng không xác định.`);
+            }
+            
+            filesProcessed++;
+          } catch (error) {
+            console.error(`Lỗi khi xử lý file ${file}:`, error.message);
+          }
         }
-        
-        filesProcessed++;
-      } catch (error) {
-        console.error(`Lỗi khi xử lý file ${file}:`, error.message);
-      }
-    });
+      });
+    } finally {
+      await session.endSession();
+    }
     
     if (filesProcessed === 0) {
       console.log('Không tìm thấy file JSON nào để xử lý. Hãy chạy script open-browser.js trước.');
@@ -189,20 +291,24 @@ function processResults() {
       sheetListCount: Object.keys(processedData.sheetLists).length,
       sheetDetailCount: Object.keys(processedData.sheetDetails).length,
       sheetNames: Object.keys(processedData.sheetLists),
-      sheetIds: Object.keys(processedData.sheetDetails)
+      sheetIds: Object.keys(processedData.sheetDetails),
+      newItemsAdded: newItemsAdded
     };
     fs.writeFileSync(indexFilePath, JSON.stringify(indexData, null, 2));
     
-    console.log(`\nĐã xử lý ${filesProcessed} file JSON`);
-    console.log(`Tìm thấy ${Object.keys(processedData.sheetLists).length} danh sách sheet`);
-    console.log(`Tìm thấy ${Object.keys(processedData.sheetDetails).length} chi tiết sheet`);
+    console.log('\n===== THỐNG KÊ =====');
+    console.log(`Tổng số file đã xử lý: ${filesProcessed}`);
+    console.log(`Số khóa học mới đã thêm: ${newItemsAdded}`);
+    console.log(`Tổng số khóa học trong DB: ${existingCourses.length + newItemsAdded}`);
+    console.log(`- Số danh sách sheet: ${Object.keys(processedData.sheetLists).length}`);
+    console.log(`- Số chi tiết sheet: ${Object.keys(processedData.sheetDetails).length}`);
     console.log(`Dữ liệu đã xử lý được lưu tại: ${processedFilePath}`);
     console.log(`File index đã được cập nhật: ${indexFilePath}`);
     
     return processedData;
   } catch (error) {
     console.error('Lỗi khi xử lý dữ liệu:', error);
-    return null;
+    throw error;
   }
 }
 
@@ -480,7 +586,7 @@ async function autoFetchData(sheetName, options = {}) {
     
     // 4. Xử lý dữ liệu đã lấy
     console.log('\n===== XỬ LÝ DỮ LIỆU =====');
-    const processedData = processResults();
+    const processedData = await processResults();
     
     console.log('\n===== HOÀN THÀNH =====');
     console.log(`Đã tự động lấy và xử lý dữ liệu cho sheet "${sheetName}"`);

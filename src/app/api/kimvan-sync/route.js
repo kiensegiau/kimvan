@@ -68,55 +68,34 @@ export async function POST(request) {
       errors: 0
     };
 
-    // Kiểm tra trước và tạo danh sách các ID cần xử lý
-    const existingCoursesMap = {};
+    // Lấy danh sách các kimvanId đã tồn tại
     const existingCourses = await coursesCollection.find(
       { kimvanId: { $in: coursesToSync.map(course => course.kimvanId) } },
       { projection: { kimvanId: 1 } }
     ).toArray();
     
-    existingCourses.forEach(course => {
-      existingCoursesMap[course.kimvanId] = true;
-    });
+    const existingKimvanIds = new Set(existingCourses.map(course => course.kimvanId));
 
-    // Tạo các thao tác upsert cho tất cả khóa học để thực hiện hàng loạt
+    // Chỉ tạo các thao tác insert cho các khóa học chưa tồn tại
     const bulkOps = [];
 
     for (const course of coursesToSync) {
       try {
-        // Giữ lại dữ liệu gốc trong cùng document
-        // Không cần tách ra collection riêng
-        
-        // Kiểm tra xem khóa học đã tồn tại chưa
-        const exists = existingCoursesMap[course.kimvanId];
-        
-        if (exists) {
-          // Cập nhật khóa học hiện có
-          bulkOps.push({
-            updateOne: {
-              filter: { kimvanId: course.kimvanId },
-              update: {
-                $set: {
-                  ...course, // Bao gồm cả originalData
-                  updatedAt: new Date()
-                }
-              }
-            }
-          });
-          
-          syncResults.updated++;
-        } else {
-          // Tạo khóa học mới
+        if (!existingKimvanIds.has(course.kimvanId)) {
+          // Chỉ thêm mới nếu khóa học chưa tồn tại
           bulkOps.push({
             insertOne: {
               document: {
-                ...course, // Bao gồm cả originalData
-                createdAt: new Date()
+                ...course,
+                createdAt: new Date(),
+                updatedAt: new Date()
               }
             }
           });
-          
           syncResults.created++;
+        } else {
+          // Bỏ qua các khóa học đã tồn tại
+          syncResults.skipped++;
         }
       } catch (err) {
         console.error(`Lỗi khi chuẩn bị đồng bộ khóa học ID ${course.kimvanId}:`, err);
