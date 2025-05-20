@@ -949,32 +949,75 @@ export default function CoursesPage() {
       setProcessingPDFs(true);
       setError(null);
       
-      // Gọi API để xử lý tất cả file PDF
-      const response = await fetch('/api/admin/courses/process-pdfs', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      // Tạo một mảng chứa tất cả promise xử lý PDF
+      const processPromises = courses.map(async (course) => {
+        try {
+          // Đánh dấu đang xử lý cho khóa học này
+          setProcessingPDFCourses(prev => ({ ...prev, [course._id]: true }));
+          
+          // Gọi API để xử lý PDF cho khóa học cụ thể
+          const response = await fetch(`/api/courses/${course._id}/process-all-drive`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            }
+          });
+          
+          const data = await response.json();
+          
+          if (!response.ok) {
+            throw new Error(data.message || 'Không thể xử lý file PDF');
+          }
+          
+          // Đánh dấu đã xử lý xong cho khóa học này
+          setProcessingPDFCourses(prev => ({ ...prev, [course._id]: false }));
+          
+          return {
+            courseId: course._id,
+            courseName: course.name,
+            success: true,
+            summary: data.summary
+          };
+        } catch (err) {
+          console.error(`Lỗi khi xử lý PDF cho khóa học ${course.name}:`, err);
+          
+          // Đánh dấu đã xử lý xong cho khóa học này (dù bị lỗi)
+          setProcessingPDFCourses(prev => ({ ...prev, [course._id]: false }));
+          
+          return {
+            courseId: course._id,
+            courseName: course.name,
+            success: false,
+            error: err.message
+          };
         }
       });
       
-      const data = await response.json();
+      // Chờ tất cả các promise hoàn thành
+      const results = await Promise.all(processPromises);
       
-      if (!response.ok) {
-        throw new Error(data.message || 'Không thể xử lý file PDF');
-      }
+      // Tính toán tổng kết quả
+      const summary = results.reduce((acc, result) => {
+        return {
+          total: acc.total + 1,
+          success: acc.success + (result.success ? 1 : 0),
+          errors: acc.errors + (result.success ? 0 : 1)
+        };
+      }, { total: 0, success: 0, errors: 0 });
       
       // Hiển thị kết quả xử lý
       setProcessResult({
-        success: true,
-        message: 'Xử lý file PDF thành công',
-        summary: data.summary
+        success: summary.errors === 0,
+        message: `Đã xử lý ${summary.total} khóa học: ${summary.success} thành công, ${summary.errors} lỗi`,
+        summary: summary,
+        details: results
       });
       
       // Tải lại danh sách khóa học
       await fetchCourses();
       
     } catch (err) {
-      console.error('Lỗi khi xử lý file PDF:', err);
+      console.error('Lỗi khi xử lý tất cả file PDF:', err);
       setError(err.message || 'Đã xảy ra lỗi khi xử lý file PDF');
       setProcessResult({
         success: false,
