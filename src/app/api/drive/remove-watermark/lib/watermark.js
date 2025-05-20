@@ -25,6 +25,35 @@ export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
   console.log('🔄 Bắt đầu xử lý xóa watermark...');
   
   try {
+    // Kiểm tra nếu cấu hình đã bật chế độ bỏ qua xử lý watermark
+    if (config.skipWatermarkRemoval === true) {
+      console.log('⏩ Chế độ bỏ qua xử lý watermark đã được bật. Sẽ sao chép file gốc.');
+      
+      // Đảm bảo đường dẫn đầu ra tồn tại
+      if (outputPath === inputPath) {
+        outputPath = inputPath.replace('.pdf', '_copy.pdf');
+      }
+      
+      // Sao chép file gốc sang đường dẫn đích
+      try {
+        fs.copyFileSync(inputPath, outputPath);
+        console.log(`✅ Đã sao chép file gốc sang ${outputPath}`);
+        
+        // Lấy thông tin kích thước file
+        const fileSizeInMB = fs.statSync(inputPath).size / (1024 * 1024);
+        
+        return { 
+          success: true, 
+          outputPath, 
+          processingTime: '0.00',
+          originalSize: fileSizeInMB.toFixed(2) + ' MB',
+          processedSize: fileSizeInMB.toFixed(2) + ' MB'
+        };
+      } catch (copyError) {
+        throw new Error(`Không thể sao chép file gốc: ${copyError.message}`);
+      }
+    }
+    
     // Kiểm tra xem sharp có khả dụng không
     try {
       if (process.env.NODE_ENV === 'production') {
@@ -557,6 +586,21 @@ export async function processImage(inputPath, outputPath, config = DEFAULT_CONFI
       }
     } catch (mkdirError) {
       console.error(`Không thể tạo thư mục đầu ra: ${mkdirError.message}`);
+    }
+    
+    // Kiểm tra nếu cấu hình đã bật chế độ bỏ qua xử lý watermark
+    if (config.skipWatermarkRemoval === true) {
+      console.log('⏩ Chế độ bỏ qua xử lý watermark đã được bật. Sẽ sao chép ảnh gốc.');
+      
+      // Sao chép file gốc sang đường dẫn đích
+      try {
+        fs.copyFileSync(inputPath, outputPath);
+        console.log(`✅ Đã sao chép ảnh gốc sang ${outputPath}`);
+        return true;
+      } catch (copyError) {
+        console.error(`Không thể sao chép ảnh gốc: ${copyError.message}`);
+        return false;
+      }
     }
     
     // Đọc hình ảnh

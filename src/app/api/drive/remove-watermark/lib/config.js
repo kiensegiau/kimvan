@@ -25,20 +25,16 @@ try {
   maxWorkers = 1; // Giá trị mặc định an toàn
 }
 
-// Cấu hình mặc định cho việc xử lý watermark
+// Cấu hình mặc định cho xử lý watermark
 export const DEFAULT_CONFIG = {
-  dpi: 350,                // Giảm độ phân giải xuống
-  brightness: 30,          // Độ sáng - tăng từ 20 lên 30
-  contrast: 45,            // Độ tương phản - tăng từ 35 lên 45
-  threshold: 0,            // Ngưỡng (0 = giữ màu sắc)
-  gamma: 1.6,              // Gamma - tăng từ 1.4 lên 1.6
-  sharpening: 1.6,         // Độ sắc nét - tăng từ 1.3 lên 1.6
-  processCenter: false,    // Xử lý vùng trung tâm
-  centerSize: 0.8,         // Kích thước vùng trung tâm (80% của trang)
-  keepColors: true,        // Giữ màu sắc
-  cleanupTempFiles: false, // Có xóa file tạm không
-  maxWorkers: maxWorkers,  // Giảm worker xuống tối đa 2 luồng
-  backgroundImage: null,   // Đường dẫn đến hình nền tùy chỉnh
-  backgroundOpacity: 0.15, // Giảm xuống 0.15 (15% đục - đậm hơn),
-  batchSize: 3,            // Số lượng trang xử lý cùng lúc
+  dpi: 300,               // DPI cho việc xuất PDF
+  pageLimit: 0,           // Giới hạn số trang (0 = không giới hạn)
+  maxWorkers: 2,          // Số lượng worker threads tối đa
+  batchSize: 3,           // Kích thước batch cho xử lý tuần tự
+  waitTime: 300,          // Thời gian chờ giữa các batch (ms)
+  gsParallel: 2,          // Số luồng song song cho GhostScript
+  highPerformanceMode: false, // Chế độ hiệu suất cao
+  skipWatermarkRemoval: true, // Mặc định bỏ qua xử lý watermark
+  ultra: false,           // Chế độ Ultra performance (RAM cao)
+  backgroundOpacity: 0.3  // Độ trong suốt của hình nền (nếu có)
 }; 

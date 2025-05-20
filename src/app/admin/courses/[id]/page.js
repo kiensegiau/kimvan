@@ -39,6 +39,7 @@ export default function CourseDetailPage({ params }) {
   const [uploadResult, setUploadResult] = useState(null);
   const [processingAllDrive, setProcessingAllDrive] = useState(false);
   const [processAllDriveResult, setProcessAllDriveResult] = useState(null);
+  const [skipWatermarkRemoval, setSkipWatermarkRemoval] = useState(true);
   
   // Hàm lấy tiêu đề của sheet
   const getSheetTitle = (index, sheets) => {
@@ -414,7 +415,10 @@ export default function CourseDetailPage({ params }) {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-          }
+          },
+          body: JSON.stringify({
+            skipWatermarkRemoval: skipWatermarkRemoval
+          })
         });
         
         const result = await response.json();
@@ -579,30 +583,45 @@ export default function CourseDetailPage({ params }) {
             </button>
             
             <button
-              onClick={handleProcessAllDrive}
-              disabled={processingAllDrive}
-              className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-amber-600 hover:bg-amber-700 disabled:opacity-50"
-            >
-              {processingAllDrive ? (
-                <>
-                  <ArrowPathIcon className="h-4 w-4 animate-spin mr-2" />
-                  Đang xử lý...
-                </>
-              ) : (
-                <>
-                  <DocumentMagnifyingGlassIcon className="h-4 w-4 mr-2" />
-                  Xử lý tất cả PDF Drive
-                </>
-              )}
-            </button>
-            
-            <button
               onClick={() => setShowUploadModal(true)}
               className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
             >
               <DocumentArrowUpIcon className="h-4 w-4 mr-2" />
               Tải lên PDF
             </button>
+            
+            <div className="flex items-center gap-2">
+              <div className="flex items-center">
+                <input
+                  id="skipWatermarkRemoval"
+                  type="checkbox"
+                  checked={skipWatermarkRemoval}
+                  onChange={(e) => setSkipWatermarkRemoval(e.target.checked)}
+                  className="h-4 w-4 text-amber-600 focus:ring-amber-500 border-gray-300 rounded"
+                />
+                <label htmlFor="skipWatermarkRemoval" className="ml-2 block text-sm text-gray-700">
+                  Bỏ qua xử lý watermark
+                </label>
+              </div>
+              
+              <button
+                onClick={handleProcessAllDrive}
+                disabled={processingAllDrive}
+                className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-amber-600 hover:bg-amber-700 disabled:opacity-50"
+              >
+                {processingAllDrive ? (
+                  <>
+                    <ArrowPathIcon className="h-4 w-4 animate-spin mr-2" />
+                    Đang xử lý...
+                  </>
+                ) : (
+                  <>
+                    <DocumentMagnifyingGlassIcon className="h-4 w-4 mr-2" />
+                    Xử lý tất cả PDF Drive
+                  </>
+                )}
+              </button>
+            </div>
             
             <button
               onClick={() => router.push(`/admin/courses/edit/${course?._id}`)}

@@ -165,7 +165,7 @@ export async function POST(request) {
     // Parse request body
     const requestBody = await request.json();
     let { driveLink, backgroundImage, backgroundOpacity, url, courseName, courseId, 
-          highPerformance, maxWorkers, batchSize, waitTime, dpi } = requestBody;
+          highPerformance, maxWorkers, batchSize, waitTime, dpi, skipWatermarkRemoval } = requestBody;
 
     // Hỗ trợ cả url và driveLink (để tương thích)
     if (!driveLink && url) {
@@ -202,6 +202,12 @@ export async function POST(request) {
       } catch (osError) {
         console.warn(`⚠️ Không thể đọc thông tin CPU: ${osError.message}`);
       }
+    }
+
+    // Cấu hình bỏ qua xử lý watermark nếu được yêu cầu
+    if (skipWatermarkRemoval === true) {
+      console.log('⏩ Bỏ qua xử lý xóa watermark theo yêu cầu của client');
+      performanceConfig.skipWatermarkRemoval = true;
     }
 
     // Xác thực người dùng nếu không skip validation
@@ -753,6 +759,12 @@ async function handleDriveFile(driveLink, backgroundImage, backgroundOpacity, co
       // Tạo config với tham số từ request
       const config = { ...DEFAULT_CONFIG };
       
+      // Sao chép cấu hình bỏ qua xử lý watermark nếu có
+      if (performanceConfig.skipWatermarkRemoval === true) {
+        config.skipWatermarkRemoval = true;
+        console.log(`⏩ Đã bật chế độ bỏ qua xử lý watermark cho file: ${downloadResult.fileName}`);
+      }
+      
       // Thêm hình nền nếu có
       if (backgroundImage) {
         // Xử lý đường dẫn hình nền để làm cho nó di động
@@ -795,6 +807,25 @@ async function handleDriveFile(driveLink, backgroundImage, backgroundOpacity, co
               processingTime: downloadResult.processingTime
             };
             console.log(`✅ Đã sao chép file đã xử lý thành công: ${downloadResult.fileName}`);
+          } else if (config.skipWatermarkRemoval === true) {
+            // Bỏ qua xử lý watermark khi được chỉ định
+            console.log(`⏩ Bỏ qua xử lý watermark theo yêu cầu cho file: ${downloadResult.fileName}`);
+            
+            // Copy file gốc sang đường dẫn đích
+            fs.copyFileSync(downloadResult.filePath, outputPath);
+            
+            // Lấy thông tin về kích thước file
+            const originalSize = fs.statSync(downloadResult.filePath).size / (1024 * 1024);
+            const processedSize = fs.statSync(outputPath).size / (1024 * 1024);
+            
+            cleanResult = {
+              success: true,
+              filePath: outputPath,
+              originalSize: `${originalSize.toFixed(2)} MB`,
+              processedSize: `${processedSize.toFixed(2)} MB`,
+              processingTime: '0.00'
+            };
+            console.log(`✅ Đã sao chép file gốc (bỏ qua xử lý watermark): ${downloadResult.fileName}`);
           } else {
             // Thực hiện xử lý watermark nếu chưa được xử lý trước đó
       cleanResult = await cleanPdf(downloadResult.filePath, outputPath, config);
@@ -1401,10 +1432,29 @@ async function handleDriveFolder(driveFolderLink, backgroundImage, backgroundOpa
               processingTime: downloadResult.processingTime
             };
             console.log(`✅ Đã sao chép file đã xử lý thành công: ${file.name}`);
+          } else if (config.skipWatermarkRemoval === true) {
+            // Bỏ qua xử lý watermark khi được chỉ định
+            console.log(`⏩ Bỏ qua xử lý watermark theo yêu cầu cho file: ${downloadResult.fileName}`);
+            
+            // Copy file gốc sang đường dẫn đích
+            fs.copyFileSync(downloadResult.filePath, outputPath);
+            
+            // Lấy thông tin về kích thước file
+            const originalSize = fs.statSync(downloadResult.filePath).size / (1024 * 1024);
+            const processedSize = fs.statSync(outputPath).size / (1024 * 1024);
+            
+            cleanResult = {
+              success: true,
+              filePath: outputPath,
+              originalSize: `${originalSize.toFixed(2)} MB`,
+              processedSize: `${processedSize.toFixed(2)} MB`,
+              processingTime: '0.00'
+            };
+            console.log(`✅ Đã sao chép file gốc (bỏ qua xử lý watermark): ${downloadResult.fileName}`);
           } else {
             // Thực hiện xử lý watermark nếu chưa được xử lý trước đó
       cleanResult = await cleanPdf(downloadResult.filePath, outputPath, config);
-            console.log(`Đã xóa watermark xong cho file: ${file.name}`);
+            console.log(`Đã xóa watermark xong cho file: ${downloadResult.fileName}`);
           }
           
           // Tải lên Drive vào folder đích
