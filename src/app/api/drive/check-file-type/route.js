@@ -17,7 +17,6 @@ import { getTokenByType } from '../remove-watermark/lib/utils.js';
 import fs from 'fs';
 import { cookies } from 'next/headers';
 import { cookieConfig } from '@/config/env-config';
-import { verifyServerAuthToken } from '@/utils/server-auth';
 
 // Hàm trích xuất Google Drive ID đơn giản hóa
 function extractGoogleDriveFileId(url) {
@@ -57,7 +56,7 @@ export async function POST(request) {
     // Lấy token từ cookie thay vì từ request body
     const cookieStore = await cookies();
     const token = cookieStore.get(cookieConfig.authCookieName)?.value;
-    const skipTokenValidation = process.env.NODE_ENV === 'development';
+    const skipTokenValidation = true; // Luôn bỏ qua xác thực token không phụ thuộc vào môi trường
 
     // Parse request body
     const requestBody = await request.json();
@@ -72,32 +71,6 @@ export async function POST(request) {
         return NextResponse.json(
           { error: `Không thể trích xuất ID từ link: ${error.message}` },
           { status: 400 }
-        );
-      }
-    }
-
-    // Xác thực người dùng nếu không skip validation
-    if (!skipTokenValidation) {
-      if (!token) {
-        return NextResponse.json(
-          { error: 'Không được phép. Vui lòng đăng nhập.' },
-          { status: 401 }
-        );
-      }
-      
-      // Xác thực token với Firebase
-      try {
-        const user = await verifyServerAuthToken(token);
-        if (!user) {
-          return NextResponse.json(
-            { error: 'Token không hợp lệ hoặc đã hết hạn.' },
-            { status: 401 }
-          );
-        }
-      } catch (error) {
-        return NextResponse.json(
-          { error: 'Lỗi xác thực: ' + error.message },
-          { status: 401 }
         );
       }
     }

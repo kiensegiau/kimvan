@@ -197,13 +197,13 @@ export async function POST(request, { params }) {
           }
           
           // Nếu cần xử lý lại, xóa khỏi danh sách đã xử lý
-          console.log(`Chuẩn bị xử lý lại file: ${link.displayName}`);
-          const processedIndex = course.processedDriveFiles.findIndex(
-            file => file.originalUrl === link.url
-          );
-          if (processedIndex !== -1) {
-            course.processedDriveFiles.splice(processedIndex, 1);
-          }
+            console.log(`Chuẩn bị xử lý lại file: ${link.displayName}`);
+            const processedIndex = course.processedDriveFiles.findIndex(
+              file => file.originalUrl === link.url
+            );
+            if (processedIndex !== -1) {
+              course.processedDriveFiles.splice(processedIndex, 1);
+            }
         }
 
         // Kiểm tra loại nội dung trước khi xử lý
@@ -212,221 +212,202 @@ export async function POST(request, { params }) {
           // Trích xuất file ID
           const { fileId } = extractGoogleDriveFileId(link.url);
           
-          // Gọi API kiểm tra loại nội dung
-          const checkUrl = new URL('/api/drive/check-file-type', request.url).toString();
-          const checkResponse = await fetch(checkUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-              token: 'api@test-watermark',
-              fileId: fileId
-            })
-          });
-          
-          const checkData = await checkResponse.json();
-          
-          if (!checkResponse.ok) {
-            throw new Error(checkData.error || 'Không thể kiểm tra loại nội dung');
-          }
-          
-          // Nếu không phải file PDF, bỏ qua
-          if (checkData.mimeType !== 'application/pdf' && 
-              !checkData.mimeType.startsWith('image/')) {
-            // Nếu là folder, xử lý đặc biệt
-            if (checkData.mimeType === 'application/vnd.google-apps.folder') {
-              console.log(`Phát hiện thư mục: ${link.url} - Đang kiểm tra tồn tại...`);
+          // Kiểm tra file type trước khi xử lý
+          try {
+            console.log(`Kiểm tra loại nội dung của: ${link.url}`);
+            const checkUrl = new URL('/api/drive/check-file-type', request.url).toString();
+            
+            // Tạo controller với timeout ngắn hơn cho API kiểm tra file type
+            const checkController = new AbortController();
+            const checkTimeoutId = setTimeout(() => checkController.abort(), 30000); // 30 giây là đủ
+            
+            try {
+              const checkResponse = await fetch(checkUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                  token: 'api@test-watermark',
+                  fileId: fileId
+                }),
+                signal: checkController.signal
+              });
               
-              // Kiểm tra xem folder này đã được xử lý trước đó trong database hay chưa
-              // (đã kiểm tra ở trên với existingProcessed, nhưng kiểm tra kỹ lại bằng ID)
-              const folderIdToCheck = fileId;
+              clearTimeout(checkTimeoutId); // Xóa timeout khi hoàn thành
               
-              const existingProcessedById = course.processedDriveFiles.find(
-                file => file.originalUrl && file.originalUrl.includes(folderIdToCheck)
-              );
+              const checkData = await checkResponse.json();
               
-              if (existingProcessedById) {
-                console.log(`Thư mục với ID ${folderIdToCheck} đã được xử lý trước đó`);
+              if (!checkResponse.ok) {
+                throw new Error(checkData.error || 'Không thể kiểm tra loại nội dung');
+              }
+              
+              // Kiểm tra kết quả
+              if (checkData.isFolder) {
+                // Xử lý folder
+                console.log(`Xử lý folder: ${link.url}`);
+                const folderUrl = new URL('/api/drive/remove-watermark', request.url).toString();
                 
-                // Kiểm tra xem thư mục đã xử lý còn tồn tại không
-                console.log(`Kiểm tra trạng thái thư mục đã xử lý: ${existingProcessedById.processedUrl}`);
-                let needReprocessFolder = false;
+                const folderController = new AbortController();
+                const folderTimeoutId = setTimeout(() => folderController.abort(), 10 * 60 * 1000); // 10 phút
                 
                 try {
-                  const folderStatus = await checkDriveLinkStatus(existingProcessedById.processedUrl);
+                  const folderResponse = await fetch(folderUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      token: 'api@test-watermark',
+                      driveLink: link.url,
+                      courseName: course.name || 'Khóa học không tên'
+                    }),
+                    signal: folderController.signal
+                  });
                   
-                  if (!folderStatus.exists) {
-                    console.log(`Thư mục đã xử lý không còn tồn tại: ${existingProcessedById.processedUrl}`);
-                    console.log(`Lỗi: ${folderStatus.error}`);
-                    needReprocessFolder = true;
-                  } else {
-                    console.log(`Thư mục đã xử lý vẫn còn tồn tại, bỏ qua xử lý lại`);
+                  clearTimeout(folderTimeoutId);
+                  
+                  const folderData = await folderResponse.json();
+                  
+                  if (!folderResponse.ok) {
+                    throw new Error(folderData.message || 'Không thể xử lý thư mục');
                   }
-                } catch (statusError) {
-                  console.error(`Lỗi khi kiểm tra trạng thái thư mục: ${statusError.message}`);
-                  // Nếu không kiểm tra được, vẫn giả định thư mục tồn tại để tránh xử lý lại không cần thiết
-                }
-                
-                if (!needReprocessFolder) {
-                  // Thư mục vẫn còn hoạt động, bỏ qua xử lý lại
+                  
+                  console.log(`Xử lý thư mục thành công, URL mới: ${folderData.folderLink || folderData.url || folderData.driveUrl || folderData.folderUrl || 'không xác định'}`);
+                  
+                  // Lấy URL đã xử lý cho folder
+                  const folderProcessedUrl = folderData.folderLink || folderData.url || folderData.driveUrl || folderData.folderUrl;
+                  
+                  // Chuẩn bị đối tượng xử lý để lưu
+                  const processedFolder = {
+                    originalUrl: link.url,
+                    processedUrl: folderProcessedUrl,
+                    processedAt: new Date(),
+                    fileName: link.displayName,
+                    sheetIndex: link.sheetIndex,
+                    rowIndex: link.rowIndex,
+                    isFolder: true,
+                    folderInfo: folderData.folderInfo || null
+                  };
+                  
+                  // Thêm vào danh sách cục bộ
+                  course.processedDriveFiles.push(processedFolder);
+                  
                   results.push({
                     originalUrl: link.url,
                     displayName: link.displayName,
                     sheetTitle: link.sheetTitle,
-                    status: 'Thư mục đã xử lý trước đó',
-                    processedUrl: existingProcessedById.processedUrl,
+                    status: 'Xử lý thành công thư mục',
+                    processedUrl: folderProcessedUrl,
                     isFolder: true
                   });
+                  
                   successCount++;
                   continue;
+                } catch (folderError) {
+                  throw new Error(`Lỗi xử lý thư mục: ${folderError.message}`);
                 }
+              }
+              
+              // Nếu không phải folder, PDF hoặc hình ảnh, bỏ qua
+              if (!checkData.isPdf && !checkData.mimeType.startsWith('image/')) {
+                console.log(`Bỏ qua: ${link.url} - Không phải PDF, hình ảnh hoặc thư mục (${checkData.mimeType})`);
                 
-                // Nếu cần xử lý lại thư mục, xóa khỏi danh sách đã xử lý
-                console.log(`Chuẩn bị xử lý lại thư mục: ${link.displayName}`);
-                const folderProcessedIndex = course.processedDriveFiles.findIndex(
-                  file => file.originalUrl && file.originalUrl.includes(folderIdToCheck)
-                );
-                if (folderProcessedIndex !== -1) {
-                  course.processedDriveFiles.splice(folderProcessedIndex, 1);
-                }
+                // Ghi rõ loại nội dung trong thông báo
+                results.push({
+                  originalUrl: link.url,
+                  displayName: link.displayName,
+                  sheetTitle: link.sheetTitle,
+                  status: `Bỏ qua: ${checkData.mimeType}`,
+                  skipped: true
+                });
+                
+                continue;
               }
               
-              console.log(`Đang xử lý thư mục: ${link.url}`);
-              
-              // Gọi API xử lý folder
-              const folderApiUrl = new URL('/api/drive/remove-watermark', request.url).toString();
-              
-              const folderResponse = await fetch(folderApiUrl, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ 
-                  token: 'api@test-watermark',
-                  driveLink: link.url,
-                  courseName: course.name || 'Khóa học không tên'
-                })
-              });
-              
-              const folderData = await folderResponse.json();
-              
-              if (!folderResponse.ok) {
-                throw new Error(folderData.message || 'Không thể xử lý thư mục');
-              }
-              
-              console.log(`Xử lý thư mục thành công, URL mới: ${folderData.folderLink || folderData.url || folderData.driveUrl || folderData.folderUrl || 'không xác định'}`);
-              
-              // Lấy URL đã xử lý cho folder
-              const folderProcessedUrl = folderData.folderLink || folderData.url || folderData.driveUrl || folderData.folderUrl;
-              
-              // Chuẩn bị đối tượng xử lý để lưu
-              const processedFolder = {
-                originalUrl: link.url,
-                processedUrl: folderProcessedUrl,
-                processedAt: new Date(),
-                fileName: link.displayName,
-                sheetIndex: link.sheetIndex,
-                rowIndex: link.rowIndex,
-                isFolder: true,
-                folderInfo: folderData.folderInfo || null
-              };
-              
-              // Thêm vào danh sách cục bộ
-              course.processedDriveFiles.push(processedFolder);
-              
-              results.push({
-                originalUrl: link.url,
-                displayName: link.displayName,
-                sheetTitle: link.sheetTitle,
-                status: 'Xử lý thành công thư mục',
-                processedUrl: folderProcessedUrl,
-                isFolder: true
-              });
-              
-              successCount++;
-              continue;
+              console.log(`Xác nhận là PDF hoặc hình ảnh: ${link.url} (${checkData.mimeType})`);
+            } catch (innerCheckError) {
+              console.log(`Lỗi khi kiểm tra file type: ${innerCheckError.message}`);
+              // Vẫn tiếp tục xử lý
             }
-            // Nếu không phải folder, PDF hoặc hình ảnh, bỏ qua
-            console.log(`Bỏ qua: ${link.url} - Không phải PDF, hình ảnh hoặc thư mục (${checkData.mimeType})`);
+          } catch (checkError) {
+            console.log(`Không thể kiểm tra loại nội dung: ${checkError.message}`);
+            // Vẫn tiếp tục xử lý - API remove-watermark sẽ xử lý lỗi nếu không phải PDF
+          }
+
+          // Gọi API xử lý watermark
+          console.log(`Đang xử lý link: ${link.url}`);
+          const apiUrl = new URL('/api/drive/remove-watermark', request.url).toString();
+          
+          // Tạo AbortController với timeout dài hơn (10 phút)
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 10 * 60 * 1000); // 10 phút
+          
+          try {
+            const response = await fetch(apiUrl, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ 
+                token: 'api@test-watermark',
+                driveLink: link.url,
+                courseName: course.name || 'Khóa học không tên'
+              }),
+              signal: controller.signal
+            });
             
-            // Ghi rõ loại nội dung trong thông báo
+            clearTimeout(timeoutId); // Xóa timeout nếu fetch hoàn thành
+            
+            const data = await response.json();
+
+            if (!response.ok) {
+              throw new Error(data.message || 'Không thể xử lý file');
+            }
+
+            console.log(`Xử lý thành công, URL mới: ${data.webViewLink || data.viewLink || data.folderLink || data.url || data.driveUrl || 'không xác định'}`);
+
+            // Lấy URL đã xử lý (ưu tiên các trường khác nhau tùy theo loại nội dung)
+            const processedUrl = data.webViewLink || data.viewLink || data.folderLink || data.url || data.driveUrl;
+            
+            // Chuẩn bị đối tượng xử lý để lưu
+            const processedFile = {
+              originalUrl: link.url,
+              processedUrl: processedUrl,
+              processedAt: new Date(),
+              fileName: link.displayName,
+              sheetIndex: link.sheetIndex,
+              rowIndex: link.rowIndex
+            };
+            
+            // Thêm vào danh sách cục bộ
+            course.processedDriveFiles.push(processedFile);
+
             results.push({
               originalUrl: link.url,
               displayName: link.displayName,
               sheetTitle: link.sheetTitle,
-              status: `Bỏ qua: ${checkData.mimeType}`,
-              skipped: true
+              status: 'Xử lý thành công',
+              processedUrl: processedUrl
+            });
+
+            successCount++;
+          } catch (error) {
+            console.error(`Lỗi xử lý file ${link.displayName}:`, error);
+            
+            results.push({
+              originalUrl: link.url,
+              displayName: link.displayName,
+              sheetTitle: link.sheetTitle,
+              status: `Lỗi: ${error.message}`,
+              error: true
             });
             
-            continue;
+            errorCount++;
           }
-          
-          console.log(`Xác nhận là PDF hoặc hình ảnh: ${link.url} (${checkData.mimeType})`);
         } catch (checkError) {
           console.log(`Không thể kiểm tra loại nội dung: ${checkError.message}`);
           // Vẫn tiếp tục xử lý - API remove-watermark sẽ xử lý lỗi nếu không phải PDF
         }
-
-        // Gọi API xử lý watermark
-        console.log(`Đang xử lý link: ${link.url}`);
-        const apiUrl = new URL('/api/drive/remove-watermark', request.url).toString();
-        
-        const response = await fetch(apiUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ 
-            token: 'api@test-watermark',
-            driveLink: link.url,
-            courseName: course.name || 'Khóa học không tên'
-          })
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.message || 'Không thể xử lý file');
-        }
-
-        console.log(`Xử lý thành công, URL mới: ${data.webViewLink || data.viewLink || data.folderLink || data.url || data.driveUrl || 'không xác định'}`);
-
-        // Lấy URL đã xử lý (ưu tiên các trường khác nhau tùy theo loại nội dung)
-        const processedUrl = data.webViewLink || data.viewLink || data.folderLink || data.url || data.driveUrl;
-        
-        // Chuẩn bị đối tượng xử lý để lưu
-        const processedFile = {
-          originalUrl: link.url,
-          processedUrl: processedUrl,
-          processedAt: new Date(),
-          fileName: link.displayName,
-          sheetIndex: link.sheetIndex,
-          rowIndex: link.rowIndex
-        };
-        
-        // Thêm vào danh sách cục bộ
-        course.processedDriveFiles.push(processedFile);
-
-        results.push({
-          originalUrl: link.url,
-          displayName: link.displayName,
-          sheetTitle: link.sheetTitle,
-          status: 'Xử lý thành công',
-          processedUrl: processedUrl
-        });
-
-        successCount++;
       } catch (error) {
-        console.error(`Lỗi xử lý file ${link.displayName}:`, error);
-        
-        results.push({
-          originalUrl: link.url,
-          displayName: link.displayName,
-          sheetTitle: link.sheetTitle,
-          status: `Lỗi: ${error.message}`,
-          error: true
-        });
-        
-        errorCount++;
+        // Đã có phần catch trước đó, nên không cần phần này nữa
+        // Xóa toàn bộ phần catch này
       }
     }
 
