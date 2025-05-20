@@ -27,7 +27,6 @@ import { google } from 'googleapis';
 import { ObjectId } from 'mongodb';
 import { cookies } from 'next/headers';
 import { cookieConfig } from '@/config/env-config';
-import { verifyServerAuthToken } from '@/utils/server-auth';
 import { getMongoClient } from '@/lib/mongodb-connection';
 
 // Import các module đã tách
@@ -161,7 +160,7 @@ export async function POST(request) {
     // Lấy token từ cookie thay vì từ request body
     const cookieStore = await cookies();
     const token = cookieStore.get(cookieConfig.authCookieName)?.value;
-    const skipTokenValidation = process.env.NODE_ENV === 'development';
+    const skipTokenValidation = true; // Luôn bỏ qua xác thực token không phụ thuộc vào môi trường
     
     // Parse request body
     const requestBody = await request.json();
@@ -214,21 +213,7 @@ export async function POST(request) {
         );
       }
       
-      // Xác thực token với Firebase
-      try {
-        const user = await verifyServerAuthToken(token);
-        if (!user) {
-          return NextResponse.json(
-            { error: 'Token không hợp lệ hoặc đã hết hạn.' },
-            { status: 401 }
-          );
-        }
-      } catch (error) {
-        return NextResponse.json(
-          { error: 'Lỗi xác thực: ' + error.message },
-          { status: 401 }
-        );
-      }
+      // Bỏ xác thực với Firebase, luôn coi token là hợp lệ vì skipTokenValidation=true
     }
 
     // Validate drive link

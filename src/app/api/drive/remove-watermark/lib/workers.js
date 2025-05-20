@@ -14,6 +14,9 @@ const execPromise = promisify(exec);
 // Biến để kiểm soát việc kết nối đến database
 let shouldConnectDB = false;
 
+// Số lượng worker tối đa chạy đồng thời (để tránh tràn RAM)
+const MAX_CONCURRENT_WORKERS = 3;
+
 // Hàm tạo worker để chuyển đổi PDF sang PNG
 export function createConvertWorker(gsPath, pdfPath, pngPath, page, numPages, dpi) {
   return new Promise((resolve, reject) => {
@@ -57,6 +60,46 @@ export function createConvertWorker(gsPath, pdfPath, pngPath, page, numPages, dp
       reject(new Error(`Không thể tạo worker chuyển đổi PDF: ${workerError.message}`));
     }
   });
+}
+
+// Hàm xử lý chuyển đổi PDF sang PNG theo batch để tránh tràn RAM
+export async function processPDFConversionInBatches(gsPath, pdfPath, outputDir, numPages, dpi, batchSize = MAX_CONCURRENT_WORKERS) {
+  console.log(`Bắt đầu xử lý chuyển đổi PDF sang PNG theo batch, tổng số trang: ${numPages}`);
+  
+  const results = [];
+  const totalBatches = Math.ceil(numPages / batchSize);
+  
+  for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
+    const startPage = batchIndex * batchSize + 1;
+    const endPage = Math.min((batchIndex + 1) * batchSize, numPages);
+    console.log(`Đang xử lý batch ${batchIndex + 1}/${totalBatches}, trang ${startPage}-${endPage}`);
+    
+    const batchPromises = [];
+    for (let page = startPage; page <= endPage; page++) {
+      const pngPath = path.join(outputDir, `page_${page}.png`);
+      batchPromises.push(createConvertWorker(gsPath, pdfPath, pngPath, page, numPages, dpi));
+    }
+    
+    // Chờ hoàn thành xử lý batch hiện tại trước khi chuyển sang batch tiếp theo
+    const batchResults = await Promise.allSettled(batchPromises);
+    
+    batchResults.forEach((result, index) => {
+      if (result.status === 'fulfilled') {
+        results.push(result.value);
+      } else {
+        const page = startPage + index;
+        console.error(`Không thể chuyển đổi trang ${page}: ${result.reason}`);
+        results.push({ success: false, page, error: result.reason.message });
+      }
+    });
+    
+    // Giải phóng bộ nhớ giữa các batch
+    if (global.gc) {
+      global.gc();
+    }
+  }
+  
+  return results;
 }
 
 // Hàm tạo worker để xử lý một trang
@@ -103,6 +146,46 @@ export function createProcessWorker(pngPath, page, numPages, config) {
       reject(new Error(`Không thể tạo worker xử lý ảnh: ${workerError.message}`));
     }
   });
+}
+
+// Hàm xử lý ảnh PNG theo batch để tránh tràn RAM
+export async function processImagesInBatches(pagePaths, numPages, config, batchSize = MAX_CONCURRENT_WORKERS) {
+  console.log(`Bắt đầu xử lý ảnh theo batch, tổng số ảnh: ${pagePaths.length}`);
+  
+  const results = [];
+  const totalBatches = Math.ceil(pagePaths.length / batchSize);
+  
+  for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
+    const startIndex = batchIndex * batchSize;
+    const endIndex = Math.min((batchIndex + 1) * batchSize, pagePaths.length);
+    console.log(`Đang xử lý batch ${batchIndex + 1}/${totalBatches}, ảnh ${startIndex + 1}-${endIndex}`);
+    
+    const batchPromises = [];
+    for (let i = startIndex; i < endIndex; i++) {
+      const page = i + 1; // Chuyển từ index sang số trang
+      batchPromises.push(createProcessWorker(pagePaths[i], page, numPages, config));
+    }
+    
+    // Chờ hoàn thành xử lý batch hiện tại trước khi chuyển sang batch tiếp theo
+    const batchResults = await Promise.allSettled(batchPromises);
+    
+    batchResults.forEach((result, index) => {
+      if (result.status === 'fulfilled') {
+        results.push(result.value);
+      } else {
+        const page = startIndex + index + 1;
+        console.error(`Không thể xử lý ảnh trang ${page}: ${result.reason}`);
+        results.push({ success: false, page, error: result.reason.message });
+      }
+    });
+    
+    // Giải phóng bộ nhớ giữa các batch
+    if (global.gc) {
+      global.gc();
+    }
+  }
+  
+  return results.sort((a, b) => a.index - b.index); // Sắp xếp kết quả theo thứ tự trang
 }
 
 // Hàm chuyển đổi PDF sang PNG trong worker thread
