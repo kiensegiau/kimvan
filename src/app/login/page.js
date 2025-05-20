@@ -86,8 +86,8 @@ function LoginForm() {
         throw new Error(data.error || 'Đăng nhập thất bại. Vui lòng thử lại.');
       }
       
-      // Chuyển hướng người dùng sau khi đăng nhập thành công
-      router.push(returnUrl);
+      // Sử dụng window.location.href thay vì router.push để đảm bảo chuyển hướng hoạt động trên Vercel
+      window.location.href = returnUrl;
     } catch (error) {
       setError(error.message);
     } finally {
@@ -215,9 +215,10 @@ export default function LoginPage() {
     <Suspense fallback={
       <div className="flex min-h-screen flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gray-50">
         <div className="w-full max-w-md space-y-8">
-          <div className="text-center">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600 mb-4"></div>
-            <p className="text-gray-500">Đang tải...</p>
+          <div className="flex flex-col items-center justify-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-600 mb-6"></div>
+            <p className="text-xl font-medium text-gray-600">Đang tải...</p>
+            <p className="text-sm text-gray-500 mt-2">Vui lòng đợi trong giây lát</p>
           </div>
         </div>
       </div>
