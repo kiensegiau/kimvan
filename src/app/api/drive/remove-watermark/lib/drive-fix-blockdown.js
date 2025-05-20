@@ -641,7 +641,7 @@ async function convertAllImagesToPng(images, outputDir) {
  */
 async function processAllImages(images, outputDir, config) {
   try {
-    const processedImages = [];
+    let processedImages = [];
     
     // Sắp xếp ảnh theo thứ tự trang
     const sortedImages = images.sort((a, b) => {
@@ -662,39 +662,45 @@ async function processAllImages(images, outputDir, config) {
     };
     
     console.log(`🔧 Sử dụng cấu hình tối giản để giữ màu sắc gốc và xử lý nhẹ watermark ${simpleConfig.skipWatermarkRemoval ? '(bỏ qua xử lý watermark)' : ''} ${simpleConfig.skipBackground ? '(bỏ qua xử lý nền)' : ''}`);
-    
-    // Xử lý từng ảnh
-    for (let i = 0; i < sortedImages.length; i++) {
-      try {
-        const imagePath = sortedImages[i];
-        let pageNum;
+
+    // Nếu bỏ qua xử lý watermark, sử dụng trực tiếp ảnh gốc
+    if (simpleConfig.skipWatermarkRemoval) {
+      console.log('⏩ Bỏ qua xử lý watermark, sử dụng ảnh gốc...');
+      processedImages = sortedImages;
+    } else {
+      // Xử lý từng ảnh
+      for (let i = 0; i < sortedImages.length; i++) {
         try {
-          pageNum = parseInt(path.basename(imagePath).match(/page_(\d+)/)[1]);
-        } catch (parseError) {
-          console.warn(`Không thể phân tích số trang từ ${imagePath}: ${parseError.message}`);
-          pageNum = i + 1;
-        }
-        
-        // Luôn sử dụng .png cho file đã xử lý để đảm bảo tương thích
-        const processedPath = path.join(outputDir, `page_${String(pageNum).padStart(3, '0')}_processed.png`);
-        
-        try {
-          console.log(`🔍 Xử lý watermark trang ${pageNum}...`);
+          const imagePath = sortedImages[i];
+          let pageNum;
+          try {
+            pageNum = parseInt(path.basename(imagePath).match(/page_(\d+)/)[1]);
+          } catch (parseError) {
+            console.warn(`Không thể phân tích số trang từ ${imagePath}: ${parseError.message}`);
+            pageNum = i + 1;
+          }
           
-          // Sử dụng hàm processImage từ module watermark trực tiếp trên ảnh gốc
-          // Bỏ qua bước tiền xử lý để giữ màu sắc
-          await processImage(imagePath, processedPath, simpleConfig);
-          console.log(`✅ Đã xử lý xong trang ${pageNum}`);
+          // Luôn sử dụng .png cho file đã xử lý để đảm bảo tương thích
+          const processedPath = path.join(outputDir, `page_${String(pageNum).padStart(3, '0')}_processed.png`);
           
-          // Thêm vào danh sách ảnh đã xử lý
-          processedImages.push(processedPath);
-        } catch (error) {
-          console.error(`❌ Lỗi xử lý watermark trang ${pageNum}: ${error.message}`);
-          // Nếu xử lý thất bại, sử dụng ảnh gốc
-          processedImages.push(imagePath);
+          try {
+            console.log(`🔍 Xử lý watermark trang ${pageNum}...`);
+            
+            // Sử dụng hàm processImage từ module watermark trực tiếp trên ảnh gốc
+            // Bỏ qua bước tiền xử lý để giữ màu sắc
+            await processImage(imagePath, processedPath, simpleConfig);
+            console.log(`✅ Đã xử lý xong trang ${pageNum}`);
+            
+            // Thêm vào danh sách ảnh đã xử lý
+            processedImages.push(processedPath);
+          } catch (error) {
+            console.error(`❌ Lỗi xử lý watermark trang ${pageNum}: ${error.message}`);
+            // Nếu xử lý thất bại, sử dụng ảnh gốc
+            processedImages.push(imagePath);
+          }
+        } catch (pageError) {
+          console.error(`Lỗi xử lý trang thứ ${i+1}: ${pageError.message}`);
         }
-      } catch (pageError) {
-        console.error(`Lỗi xử lý trang thứ ${i+1}: ${pageError.message}`);
       }
     }
     

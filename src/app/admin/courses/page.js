@@ -41,6 +41,9 @@ export default function CoursesPage() {
   const [analyzingData, setAnalyzingData] = useState(false);
   const [pendingSyncData, setPendingSyncData] = useState(null);
   const [processingPDFs, setProcessingPDFs] = useState(false);
+  const [syncingCourses, setSyncingCourses] = useState({});
+  const [analyzingCourses, setAnalyzingCourses] = useState({});
+  const [processingPDFCourses, setProcessingPDFCourses] = useState({});
   
   // Thiết lập cookie admin_access khi trang được tải
   useEffect(() => {
@@ -641,7 +644,7 @@ export default function CoursesPage() {
   // Hàm đồng bộ dữ liệu cho một khóa học cụ thể
   const handleSyncSingleCourse = async (courseId) => {
     try {
-      setAnalyzingData(true);
+      setAnalyzingCourses(prev => ({ ...prev, [courseId]: true }));
       setError(null);
       
       console.log('🔍 Bắt đầu phân tích dữ liệu khóa học:', courseId);
@@ -713,7 +716,8 @@ export default function CoursesPage() {
           errors: 1
         }
       });
-      setAnalyzingData(false);
+    } finally {
+      setAnalyzingCourses(prev => ({ ...prev, [courseId]: false }));
     }
   };
 
@@ -989,7 +993,7 @@ export default function CoursesPage() {
   // Hàm xử lý PDF cho một khóa học cụ thể
   const handleProcessPDF = async (courseId) => {
     try {
-      setProcessingPDFs(true);
+      setProcessingPDFCourses(prev => ({ ...prev, [courseId]: true }));
       setError(null);
       
       // Gọi API để xử lý PDF cho khóa học cụ thể
@@ -1029,7 +1033,7 @@ export default function CoursesPage() {
         }
       });
     } finally {
-      setProcessingPDFs(false);
+      setProcessingPDFCourses(prev => ({ ...prev, [courseId]: false }));
     }
   };
 
@@ -1314,11 +1318,11 @@ export default function CoursesPage() {
                                   console.log('🔄 Nút đồng bộ được nhấn cho khóa học:', course.name, 'ID:', course.kimvanId);
                                   handleSyncSingleCourse(course.kimvanId);
                                 }}
-                                disabled={syncing || analyzingData}
-                                className={`text-green-600 hover:text-green-900 mr-2 ${(syncing || analyzingData) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                disabled={analyzingCourses[course.kimvanId]}
+                                className={`text-green-600 hover:text-green-900 mr-2 ${analyzingCourses[course.kimvanId] ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 title="Đồng bộ khóa học này"
                               >
-                                <ArrowPathIcon className={`h-5 w-5 ${(syncing || analyzingData) ? 'animate-spin' : ''}`} />
+                                <ArrowPathIcon className={`h-5 w-5 ${analyzingCourses[course.kimvanId] ? 'animate-spin' : ''}`} />
                               </button>
                             </>
                           )}
@@ -1331,11 +1335,11 @@ export default function CoursesPage() {
                           </button>
                           <button
                             onClick={() => handleProcessPDF(course._id)}
-                            disabled={processingPDFs}
-                            className={`text-purple-600 hover:text-purple-900 ml-2 ${processingPDFs ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            disabled={processingPDFCourses[course._id]}
+                            className={`text-purple-600 hover:text-purple-900 ml-2 ${processingPDFCourses[course._id] ? 'opacity-50 cursor-not-allowed' : ''}`}
                             title="Xử lý PDF của khóa học này"
                           >
-                            <ArrowDownTrayIcon className={`h-5 w-5 ${processingPDFs ? 'animate-spin' : ''}`} />
+                            <ArrowDownTrayIcon className={`h-5 w-5 ${processingPDFCourses[course._id] ? 'animate-spin' : ''}`} />
                           </button>
                         </td>
                       </tr>
