@@ -469,9 +469,13 @@ async function autoFetchData(sheetName, options = {}) {
       console.log(`Đã lấy xong danh sách sheet cho "${sheetName}"`);
       console.log(`Kết quả được lưu tại: ${resultsDir}`);
       
-      // Đóng trình duyệt ngay lập tức
-      await browser.close();
-      console.log('Đã đóng trình duyệt Chrome');
+      // Không đóng trình duyệt khi gặp lỗi
+      if (!keepBrowserOpen) {
+        await browser.close();
+        console.log('Đã đóng trình duyệt Chrome');
+      } else {
+        console.log('Giữ trình duyệt Chrome mở để kiểm tra');
+      }
     }
     
     // 4. Xử lý dữ liệu đã lấy
@@ -539,13 +543,13 @@ export async function GET(request, { params }) {
       // Gọi trực tiếp hàm autoFetchData 
       const options = {
         waitTime: 5000,          // Thời gian chờ giữa các request
-        keepBrowserOpen: false,  // Đóng trình duyệt Chrome sau khi hoàn thành
+        keepBrowserOpen: true,   // Giữ trình duyệt Chrome mở khi gặp lỗi
         loginTimeout: 120000     // Cho phép 2 phút để đăng nhập nếu cần
       };
       
       console.log('Đang mở Chrome để bạn quan sát quá trình...');
       console.log('Nếu chưa đăng nhập, hệ thống sẽ đợi bạn đăng nhập Gmail');
-      console.log('Trình duyệt sẽ tự động đóng sau khi hoàn thành');
+      console.log('Trình duyệt sẽ được giữ mở nếu gặp lỗi để bạn có thể kiểm tra');
       
       await autoFetchData(name, options);
       
@@ -553,7 +557,7 @@ export async function GET(request, { params }) {
       const newData = findSheetListByName(name);
       if (newData) {
         console.log(`Successfully fetched and processed data for "${name}"`);
-        console.log('Chrome đã được đóng tự động');
+        console.log('Chrome được giữ mở để bạn có thể kiểm tra');
         
         // Dọn dẹp thư mục sau khi xử lý thành công
         const filesDeleted = cleanupFolders(true); // true = giữ lại các file đã xử lý
@@ -575,7 +579,7 @@ export async function GET(request, { params }) {
             'Xử lý kết quả: node src/scripts/process-results.js',
             'Sử dụng API offline: /api/spreadsheets/from-offline/' + name
           ],
-          note: 'Chrome browser đã được đóng tự động',
+          note: 'Chrome browser được giữ mở để bạn có thể kiểm tra',
           possibleReason: 'API KimVan có thể yêu cầu đăng nhập hoặc áp dụng giới hạn tốc độ (rate limit)',
           offlineApiUrl: `/api/spreadsheets/from-offline/${name}`,
           timestamp: timestamp
@@ -606,7 +610,7 @@ export async function GET(request, { params }) {
           'Xử lý kết quả: node src/scripts/process-results.js',
           'Sử dụng API offline: /api/spreadsheets/from-offline/' + name
         ],
-        note: 'Chrome browser đã được đóng tự động',
+        note: 'Chrome browser được giữ mở để bạn có thể kiểm tra',
         error: fetchError.message,
         offlineApiUrl: `/api/spreadsheets/from-offline/${name}`,
         timestamp: timestamp
