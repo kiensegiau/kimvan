@@ -44,6 +44,8 @@ export default function CoursesPage() {
   const [syncingCourses, setSyncingCourses] = useState({});
   const [analyzingCourses, setAnalyzingCourses] = useState({});
   const [processingPDFCourses, setProcessingPDFCourses] = useState({});
+  const [initializingMiniCourses, setInitializingMiniCourses] = useState(false);
+  const [miniCoursesResult, setMiniCoursesResult] = useState(null);
   
   // Thiết lập cookie admin_access khi trang được tải
   useEffect(() => {
@@ -261,8 +263,45 @@ export default function CoursesPage() {
         originalData: item
       }));
       
+      // Đồng thời tạo danh sách minicourses không chứa originalData
+      const miniCourses = data.map((item) => ({
+        kimvanId: item.id,
+        name: item.name,
+        description: `Khóa học ${item.name}`,
+        price: 500000,
+        status: 'active',
+        // Không bao gồm originalData và processedDriveFiles để giảm kích thước
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }));
+      
       setKimvanCourses(kimvanCoursesOriginal || []);
       setShowSyncModal(true);
+      
+      // Tự động đồng bộ minicourses song song
+      try {
+        console.log('🔄 Đang đồng bộ minicourses song song...');
+        const miniCourseResponse = await fetch('/api/minicourses/sync', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            courses: miniCourses 
+          }),
+        });
+        
+        const miniCourseData = await miniCourseResponse.json();
+        
+        if (miniCourseResponse.ok) {
+          console.log('✅ Đồng bộ minicourses thành công:', miniCourseData);
+        } else {
+          console.warn('⚠️ Đồng bộ minicourses không thành công:', miniCourseData);
+        }
+      } catch (miniErr) {
+        console.error('❌ Lỗi khi đồng bộ minicourses:', miniErr);
+        // Không hiển thị lỗi này cho người dùng vì đây là quá trình chạy ngầm
+      }
     } catch (err) {
       console.error('Lỗi khi lấy danh sách khóa học từ Khoá học 6.0:', err);
       setError(err.message || 'Đã xảy ra lỗi khi lấy danh sách khóa học từ Kimvan');
@@ -603,6 +642,43 @@ export default function CoursesPage() {
       }
       
       console.log('✅ Đồng bộ thành công');
+      
+      // Đồng bộ song song với minicourses
+      try {
+        console.log('🔄 Đang đồng bộ minicourse song song...');
+        // Tạo dữ liệu minicourse không chứa originalData
+        const miniCourse = {
+          kimvanId: existingCourse.kimvanId,
+          name: existingCourse.name,
+          description: existingCourse.description,
+          price: existingCourse.price,
+          status: existingCourse.status,
+          courseId: existingCourse._id,
+          updatedAt: new Date()
+        };
+        
+        const miniCourseResponse = await fetch('/api/minicourses/sync', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            courses: [miniCourse] 
+          }),
+        });
+        
+        const miniCourseData = await miniCourseResponse.json();
+        
+        if (miniCourseResponse.ok) {
+          console.log('✅ Đồng bộ minicourse thành công:', miniCourseData);
+        } else {
+          console.warn('⚠️ Đồng bộ minicourse không thành công:', miniCourseData);
+        }
+      } catch (miniErr) {
+        console.error('❌ Lỗi khi đồng bộ minicourse:', miniErr);
+        // Không hiển thị lỗi này cho người dùng vì đây là quá trình chạy ngầm
+      }
+      
       // Hiển thị kết quả đồng bộ
       setSyncResults({
         inProgress: false,
@@ -801,6 +877,32 @@ export default function CoursesPage() {
       setError(err.message || 'Đã xảy ra lỗi khi khởi tạo cơ sở dữ liệu. Vui lòng kiểm tra kết nối MongoDB.');
     } finally {
       setInitializing(false);
+    }
+  };
+
+  // Thêm hàm khởi tạo minicourses
+  const handleInitMiniCourses = async () => {
+    try {
+      setInitializingMiniCourses(true);
+      setMiniCoursesResult(null);
+      setError(null);
+      
+      const response = await fetch('/api/db-initialize-minicourse');
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Không thể khởi tạo collection minicourses');
+      }
+      
+      // Hiển thị kết quả khởi tạo
+      setMiniCoursesResult(data);
+      
+    } catch (err) {
+      console.error('Lỗi khi khởi tạo collection minicourses:', err);
+      setError(err.message || 'Đã xảy ra lỗi khi khởi tạo collection minicourses');
+    } finally {
+      setInitializingMiniCourses(false);
     }
   };
 
@@ -1094,6 +1196,14 @@ export default function CoursesPage() {
             {initializing ? 'Đang khởi tạo...' : 'Khởi tạo DB'}
           </button>
           <button
+            onClick={handleInitMiniCourses}
+            disabled={initializingMiniCourses}
+            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50"
+          >
+            <DatabaseIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
+            {initializingMiniCourses ? 'Đang khởi tạo...' : 'Khởi tạo MiniCourses'}
+          </button>
+          <button
             onClick={handleShowSyncModal}
             disabled={syncing}
             className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
@@ -1154,6 +1264,43 @@ export default function CoursesPage() {
                     type="button"
                     onClick={() => setInitResult(null)}
                     className={`bg-${initResult.success ? 'purple' : 'red'}-50 px-2 py-1.5 rounded-md text-sm font-medium text-${initResult.success ? 'purple' : 'red'}-800 hover:bg-${initResult.success ? 'purple' : 'red'}-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-${initResult.success ? 'purple' : 'red'}-500`}
+                  >
+                    Đóng
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {miniCoursesResult && (
+        <div className={`bg-${miniCoursesResult.success ? 'teal' : 'red'}-50 p-4 rounded-md mb-4`}>
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <DatabaseIcon className={`h-5 w-5 text-${miniCoursesResult.success ? 'teal' : 'red'}-400`} aria-hidden="true" />
+            </div>
+            <div className="ml-3">
+              <h3 className={`text-sm font-medium text-${miniCoursesResult.success ? 'teal' : 'red'}-800`}>
+                {miniCoursesResult.success ? 'Khởi tạo MiniCourses thành công' : 'Lỗi khởi tạo MiniCourses'}
+              </h3>
+              <div className={`mt-2 text-sm text-${miniCoursesResult.success ? 'teal' : 'red'}-700`}>
+                <p>{miniCoursesResult.message}</p>
+                {miniCoursesResult.success && miniCoursesResult.stats && (
+                  <>
+                    <p>Đã xử lý: {miniCoursesResult.stats.processed} khóa học</p>
+                    <p>Tạo mới: {miniCoursesResult.stats.created} minicourses</p>
+                    <p>Cập nhật: {miniCoursesResult.stats.updated} minicourses</p>
+                    <p>Lỗi: {miniCoursesResult.stats.errors}</p>
+                  </>
+                )}
+              </div>
+              <div className="mt-4">
+                <div className="-mx-2 -my-1.5 flex">
+                  <button
+                    type="button"
+                    onClick={() => setMiniCoursesResult(null)}
+                    className="bg-teal-50 px-2 py-1.5 rounded-md text-sm font-medium text-teal-800 hover:bg-teal-100"
                   >
                     Đóng
                   </button>
