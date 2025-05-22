@@ -50,7 +50,7 @@ export default function CourseDetailPage({ params }) {
       
       return JSON.parse(decryptedText);
     } catch (error) {
-      console.error("Lỗi giải mã:", error);
+      // Xử lý lỗi im lặng
       throw new Error(`Không thể giải mã: ${error.message}`);
     }
   };
@@ -63,10 +63,9 @@ export default function CourseDetailPage({ params }) {
         timestamp: Date.now()
       };
       localStorage.setItem(`course-${id}`, JSON.stringify(cacheItem));
-      console.log('Đã lưu dữ liệu vào cache');
       setCacheStatus('saved');
     } catch (error) {
-      console.error('Lỗi khi lưu cache:', error);
+      // Xử lý lỗi im lặng
     }
   };
 
@@ -81,17 +80,15 @@ export default function CourseDetailPage({ params }) {
       
       // Kiểm tra xem cache có còn hiệu lực không (12 giờ)
       if (now - cacheItem.timestamp > CACHE_DURATION) {
-        console.log('Cache đã hết hạn');
         localStorage.removeItem(`course-${id}`);
         setCacheStatus('expired');
         return null;
       }
       
-      console.log('Đã tìm thấy dữ liệu trong cache');
       setCacheStatus('hit');
       return cacheItem.data;
     } catch (error) {
-      console.error('Lỗi khi đọc cache:', error);
+      // Xử lý lỗi im lặng
       return null;
     }
   };
@@ -227,7 +224,7 @@ export default function CourseDetailPage({ params }) {
       localStorage.removeItem(`course-${id}`);
       setCacheStatus('cleared');
     } catch (error) {
-      console.error('Lỗi khi xóa cache:', error);
+      // Xử lý lỗi im lặng
     }
     fetchCourseDetail();
   };

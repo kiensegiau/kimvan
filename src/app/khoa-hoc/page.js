@@ -27,10 +27,9 @@ export default function CoursesPage() {
         timestamp: Date.now()
       };
       localStorage.setItem('courses-list', JSON.stringify(cacheItem));
-      console.log('Đã lưu dữ liệu vào cache');
       setCacheStatus('saved');
     } catch (error) {
-      console.error('Lỗi khi lưu cache:', error);
+      // Xử lý lỗi im lặng
     }
   };
 
@@ -45,17 +44,15 @@ export default function CoursesPage() {
       
       // Kiểm tra xem cache có còn hiệu lực không (12 giờ)
       if (now - cacheItem.timestamp > CACHE_DURATION) {
-        console.log('Cache đã hết hạn');
         localStorage.removeItem('courses-list');
         setCacheStatus('expired');
         return null;
       }
       
-      console.log('Đã tìm thấy dữ liệu trong cache');
       setCacheStatus('hit');
       return cacheItem.data;
     } catch (error) {
-      console.error('Lỗi khi đọc cache:', error);
+      // Xử lý lỗi im lặng
       return null;
     }
   };
@@ -99,11 +96,10 @@ export default function CoursesPage() {
         // Lưu vào cache
         saveToCache(data.data.minicourses);
       } else {
-        console.warn('Định dạng dữ liệu không như mong đợi:', data);
+        // Xử lý trường hợp dữ liệu không đúng định dạng
         setCourses([]);
       }
     } catch (err) {
-      console.error('Lỗi khi tải danh sách khóa học:', err);
       setError(err.message || 'Đã xảy ra lỗi khi tải dữ liệu khóa học.');
       setCourses([]);
     } finally {
@@ -118,7 +114,7 @@ export default function CoursesPage() {
       localStorage.removeItem('courses-list');
       setCacheStatus('cleared');
     } catch (error) {
-      console.error('Lỗi khi xóa cache:', error);
+      // Xử lý lỗi im lặng
     }
     fetchCourses();
   };
