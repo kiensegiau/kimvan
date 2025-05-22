@@ -285,7 +285,7 @@ export default function CoursesPage() {
                     <div 
                       key={course._id} 
                       className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-all duration-200 flex flex-col h-full"
-                      onClick={() => router.push(`/khoa-hoc/${course._id}`)}
+                      onClick={() => router.push(`/khoa-hoc/${course.kimvanId || course._id}`)}
                       style={{ cursor: 'pointer' }}
                     >
                       <div className="h-16 bg-gradient-to-r from-indigo-600 to-purple-700 relative">

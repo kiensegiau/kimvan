@@ -91,7 +91,7 @@ export default function CourseDetailPage({ params }) {
     
     try {
       // Sử dụng tham số secure=true để nhận dữ liệu được mã hóa hoàn toàn
-      const response = await fetch(`/api/courses/${id}?type=_id&secure=true`);
+      const response = await fetch(`/api/courses/${id}?type=auto&secure=true`);
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));

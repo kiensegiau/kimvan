@@ -43,21 +43,41 @@ export async function GET(request, { params }) {
     const { id } = resolvedParams;
     
     const searchParams = request.nextUrl.searchParams;
-    const type = searchParams.get('type') || 'slug';
+    const type = searchParams.get('type') || 'auto';
     const secure = searchParams.get('secure') === 'true';
     
     // Đảm bảo kết nối đến MongoDB trước khi truy vấn
     await connectDB();
     
-    // Tìm khóa học theo ID hoặc slug
+    // Tìm khóa học theo ID hoặc kimvanId
     let course;
+    
     if (type === '_id') {
+      // Tìm theo MongoDB _id
       if (!mongoose.Types.ObjectId.isValid(id)) {
         return NextResponse.json({ error: 'ID không hợp lệ' }, { status: 400 });
       }
       course = await Course.findById(id).lean().exec();
-    } else {
+    } else if (type === 'slug') {
+      // Tìm theo slug
       course = await Course.findOne({ slug: id }).lean().exec();
+    } else if (type === 'kimvanId') {
+      // Tìm theo kimvanId
+      course = await Course.findOne({ kimvanId: id }).lean().exec();
+    } else {
+      // Tự động xác định loại ID (auto)
+      // Thử tìm theo kimvanId trước
+      course = await Course.findOne({ kimvanId: id }).lean().exec();
+      
+      // Nếu không tìm thấy và ID có vẻ là ObjectId, thử tìm theo _id
+      if (!course && mongoose.Types.ObjectId.isValid(id)) {
+        course = await Course.findById(id).lean().exec();
+      }
+      
+      // Nếu vẫn không tìm thấy, thử tìm theo slug
+      if (!course) {
+        course = await Course.findOne({ slug: id }).lean().exec();
+      }
     }
     
     if (!course) {
@@ -97,6 +117,7 @@ export async function GET(request, { params }) {
       // Giữ lại chỉ những trường cần thiết
       const publicData = {
         _id: safeResponse._id,
+        kimvanId: safeResponse.kimvanId,
         name: safeResponse.name,
         description: safeResponse.description,
         price: safeResponse.price,
@@ -139,7 +160,7 @@ export async function PUT(request, { params }) {
     
     let query = {};
     
-    // Truy vấn theo loại ID
+    // Truy vấn theo loại ID - ưu tiên kimvanId trước
     if (type === '_id') {
       // Truy vấn theo MongoDB _id 
       try {
@@ -153,6 +174,18 @@ export async function PUT(request, { params }) {
     } else {
       // Truy vấn theo kimvanId
       query = { kimvanId: id };
+      
+      // Nếu không tìm thấy bằng kimvanId, thử tìm bằng _id
+      const course = await Course.findOne(query).lean().exec();
+      if (!course) {
+        try {
+          if (mongoose.Types.ObjectId.isValid(id)) {
+            query = { _id: new ObjectId(id) };
+          }
+        } catch (err) {
+          // Nếu không phải ObjectId hợp lệ, giữ nguyên query kimvanId
+        }
+      }
     }
     
     const course = await Course.findOne(query).lean().exec();
@@ -209,7 +242,32 @@ export async function DELETE(request, { params }) {
     // Đảm bảo kết nối đến MongoDB trước khi truy vấn
     await connectDB();
     
-    const result = await Course.deleteOne({ _id: new ObjectId(id) });
+    // Kiểm tra xem có tham số type=_id không
+    const { searchParams } = new URL(request.url);
+    const type = searchParams.get('type');
+    
+    let query = {};
+    let result;
+    
+    // Truy vấn theo loại ID
+    if (type === '_id') {
+      // Xóa theo MongoDB _id
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return NextResponse.json({ 
+          success: false,
+          message: 'ID không hợp lệ' 
+        }, { status: 400 });
+      }
+      result = await Course.deleteOne({ _id: new ObjectId(id) });
+    } else {
+      // Thử xóa theo kimvanId trước
+      result = await Course.deleteOne({ kimvanId: id });
+      
+      // Nếu không tìm thấy bằng kimvanId, thử xóa bằng _id
+      if (result.deletedCount === 0 && mongoose.Types.ObjectId.isValid(id)) {
+        result = await Course.deleteOne({ _id: new ObjectId(id) });
+      }
+    }
     
     if (result.deletedCount === 0) {
       return NextResponse.json({ 
