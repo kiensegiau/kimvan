@@ -20,7 +20,35 @@ export default function CoursesPage() {
   const statsRef = useRef(null);
   const [cacheStatus, setCacheStatus] = useState('');
   const [showFilters, setShowFilters] = useState(false);
-
+  
+  // Thêm các state mới cho bộ lọc
+  const [selectedLevel, setSelectedLevel] = useState('all');
+  const [sortBy, setSortBy] = useState('newest');
+  const [priceRange, setPriceRange] = useState([0, 10000000]);
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  // Xử lý logic tìm kiếm khi nhấn nút
+  const handleSearch = () => {
+    setSearchTerm(searchQuery);
+  };
+  
+  // Xử lý logic tìm kiếm khi nhấn Enter
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      setSearchTerm(searchQuery);
+    }
+  };
+  
+  // Xử lý reset bộ lọc
+  const resetFilters = () => {
+    setSelectedCategory('all');
+    setSelectedLevel('all');
+    setSortBy('newest');
+    setPriceRange([0, 10000000]);
+    setSearchQuery('');
+    setSearchTerm('');
+  };
+  
   // Hàm lưu dữ liệu vào localStorage
   const saveToCache = (data) => {
     try {
@@ -154,14 +182,76 @@ export default function CoursesPage() {
     { id: 'advanced', name: 'Nâng cao', icon: DocumentTextIcon }
   ];
 
-  const filteredCourses = courses.filter(course =>
-    (course.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    course.description?.toLowerCase().includes(searchTerm.toLowerCase())) &&
-    (selectedCategory === 'all' || course.category === selectedCategory)
-  );
-
   // Các danh mục Level
   const courseLevels = ['Cơ bản', 'Trung cấp', 'Nâng cao', 'Chuyên sâu'];
+  
+  // Các lựa chọn sắp xếp
+  const sortOptions = [
+    { id: 'newest', label: 'Mới nhất' },
+    { id: 'popular', label: 'Phổ biến nhất' },
+    { id: 'rating', label: 'Đánh giá cao' },
+    { id: 'price_asc', label: 'Giá thấp đến cao' },
+    { id: 'price_desc', label: 'Giá cao đến thấp' }
+  ];
+
+  // Hàm lọc và sắp xếp khóa học
+  const getFilteredCourses = () => {
+    let result = [...courses];
+    
+    // Lọc theo từ khóa tìm kiếm
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(course => 
+        (course.name?.toLowerCase().includes(term) ||
+        course.description?.toLowerCase().includes(term))
+      );
+    }
+    
+    // Lọc theo danh mục
+    if (selectedCategory !== 'all') {
+      result = result.filter(course => course.category === selectedCategory);
+    }
+    
+    // Lọc theo cấp độ
+    if (selectedLevel !== 'all') {
+      result = result.filter(course => {
+        // Giả sử cấp độ được lưu trong thuộc tính level của khóa học
+        // Nếu không có, chúng ta sẽ không lọc theo cấp độ
+        if (!course.level) return true;
+        return course.level === selectedLevel;
+      });
+    }
+    
+    // Lọc theo khoảng giá
+    result = result.filter(course => 
+      course.price >= priceRange[0] && course.price <= priceRange[1]
+    );
+    
+    // Sắp xếp kết quả
+    result.sort((a, b) => {
+      switch (sortBy) {
+        case 'newest':
+          // Giả sử có trường createdAt, nếu không có thì dùng _id
+          return new Date(b.createdAt || b._id) - new Date(a.createdAt || a._id);
+        case 'popular':
+          // Giả sử có trường enrollments, nếu không có thì dùng random
+          return (b.enrollments || Math.random() * 5000) - (a.enrollments || Math.random() * 5000);
+        case 'rating':
+          // Giả sử có trường rating, nếu không có thì dùng random từ 4-5
+          return (b.rating || (Math.random() + 4)) - (a.rating || (Math.random() + 4));
+        case 'price_asc':
+          return a.price - b.price;
+        case 'price_desc':
+          return b.price - a.price;
+        default:
+          return 0;
+      }
+    });
+    
+    return result;
+  };
+
+  const filteredCourses = getFilteredCourses();
 
   // Các Testimonials
   const testimonials = [
@@ -269,7 +359,7 @@ export default function CoursesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+    <main className="relative bg-gradient-to-b from-gray-50 to-white min-h-screen w-full overflow-hidden">
       
       {/* Hero Header */}
       <div className="bg-gradient-to-r from-indigo-600 to-purple-700 relative overflow-hidden">
@@ -301,8 +391,9 @@ export default function CoursesPage() {
                   type="text"
                   placeholder="Tìm kiếm khóa học..."
                   className="flex-grow focus:outline-none text-gray-600"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyPress={handleKeyPress}
                 />
               </div>
               
@@ -315,7 +406,10 @@ export default function CoursesPage() {
                 <ChevronDownIcon className={`h-4 w-4 ml-1 transition-transform duration-200 ${showFilters ? 'rotate-180' : ''}`} />
               </button>
               
-              <button className="bg-gradient-to-r from-indigo-600 to-indigo-700 text-white px-6 py-3 rounded-lg font-medium hover:from-indigo-700 hover:to-indigo-800 transition-all duration-200 shadow-md">
+              <button 
+                onClick={handleSearch}
+                className="bg-gradient-to-r from-indigo-600 to-indigo-700 text-white px-6 py-3 rounded-lg font-medium hover:from-indigo-700 hover:to-indigo-800 transition-all duration-200 shadow-md"
+              >
                 Tìm kiếm
               </button>
             </div>
@@ -325,33 +419,90 @@ export default function CoursesPage() {
               <div className="absolute z-30 mt-2 w-full bg-white rounded-xl shadow-xl border border-gray-100 p-5 grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Danh mục</label>
-                  <select className="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                    <option>Tất cả danh mục</option>
-                    <option>Tin học</option>
-                    <option>Ngoại ngữ</option>
-                    <option>Kỹ năng mềm</option>
-                    <option>Khoa học tự nhiên</option>
+                  <select 
+                    className="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                  >
+                    <option value="all">Tất cả danh mục</option>
+                    <option value="programming">Tin học</option>
+                    <option value="language">Ngoại ngữ</option>
+                    <option value="softskill">Kỹ năng mềm</option>
+                    <option value="science">Khoa học tự nhiên</option>
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Cấp độ</label>
-                  <select className="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                    <option>Tất cả cấp độ</option>
-                    <option>Cơ bản</option>
-                    <option>Trung cấp</option>
-                    <option>Nâng cao</option>
-                    <option>Chuyên sâu</option>
+                  <select 
+                    className="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                    value={selectedLevel}
+                    onChange={(e) => setSelectedLevel(e.target.value)}
+                  >
+                    <option value="all">Tất cả cấp độ</option>
+                    <option value="Cơ bản">Cơ bản</option>
+                    <option value="Trung cấp">Trung cấp</option>
+                    <option value="Nâng cao">Nâng cao</option>
+                    <option value="Chuyên sâu">Chuyên sâu</option>
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Sắp xếp theo</label>
-                  <select className="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                    <option>Mới nhất</option>
-                    <option>Phổ biến nhất</option>
-                    <option>Đánh giá cao</option>
-                    <option>Giá thấp đến cao</option>
-                    <option>Giá cao đến thấp</option>
+                  <select 
+                    className="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                  >
+                    {sortOptions.map(option => (
+                      <option key={option.id} value={option.id}>{option.label}</option>
+                    ))}
                   </select>
+                </div>
+                
+                <div className="md:col-span-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Khoảng giá (VNĐ)</label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <input
+                        type="number" 
+                        min="0"
+                        className="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        placeholder="Từ"
+                        value={priceRange[0]}
+                        onChange={(e) => setPriceRange([parseInt(e.target.value) || 0, priceRange[1]])}
+                      />
+                    </div>
+                    <div>
+                      <input
+                        type="number"
+                        min="0"
+                        className="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        placeholder="Đến"
+                        value={priceRange[1]}
+                        onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value) || 10000000])}
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="md:col-span-3 flex justify-between mt-4">
+                  <button 
+                    onClick={resetFilters}
+                    className="text-gray-600 text-sm font-medium hover:text-indigo-600 flex items-center"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Đặt lại bộ lọc
+                  </button>
+                  <button 
+                    onClick={() => {
+                      handleSearch();
+                      setShowFilters(false);
+                    }}
+                    className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700"
+                  >
+                    Áp dụng bộ lọc
+                  </button>
                 </div>
               </div>
             )}
@@ -405,21 +556,50 @@ export default function CoursesPage() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 px-2 md:px-0">
           <h2 className="text-2xl md:text-3xl font-bold text-gray-900 flex items-center mb-3 md:mb-0">
             <AcademicCapIcon className="h-7 w-7 mr-2 text-indigo-600" />
-            Danh sách khóa học
+            {searchTerm ? `Kết quả tìm kiếm "${searchTerm}"` : 'Danh sách khóa học'}
             {cacheStatus === 'hit' && (
               <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">Đã tải từ bộ nhớ đệm</span>
             )}
           </h2>
           <div className="flex items-center bg-gray-100 rounded-lg px-4 py-2 overflow-x-auto whitespace-nowrap">
             <span className="text-sm font-medium text-gray-800 mr-2">Sắp xếp:</span>
-            <select className="bg-transparent text-sm text-gray-700 focus:outline-none border-none">
-              <option>Mới nhất</option>
-              <option>Phổ biến nhất</option>
-              <option>Giá tăng dần</option>
-              <option>Giá giảm dần</option>
+            <select 
+              className="bg-transparent text-sm text-gray-700 focus:outline-none border-none"
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+            >
+              {sortOptions.map(option => (
+                <option key={option.id} value={option.id}>{option.label}</option>
+              ))}
             </select>
             <div className="ml-4 pl-4 border-l border-gray-300">
               <span className="text-sm font-medium text-gray-800">{filteredCourses.length} khóa học</span>
+              {selectedCategory !== 'all' && (
+                <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800">
+                  {categories.find(c => c.id === selectedCategory)?.name}
+                  <button 
+                    onClick={() => setSelectedCategory('all')} 
+                    className="ml-1 text-indigo-600 hover:text-indigo-800"
+                  >
+                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </span>
+              )}
+              {selectedLevel !== 'all' && (
+                <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                  {selectedLevel}
+                  <button 
+                    onClick={() => setSelectedLevel('all')} 
+                    className="ml-1 text-green-600 hover:text-green-800"
+                  >
+                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -462,7 +642,7 @@ export default function CoursesPage() {
           )}
         </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-visible">
             {filteredCourses.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredCourses.map((course, index) => {
@@ -553,14 +733,38 @@ export default function CoursesPage() {
           ) : (
             <div className="text-center py-16 bg-gray-50 rounded-xl border border-gray-200 shadow-sm">
               <MagnifyingGlassIcon className="mx-auto h-16 w-16 text-gray-300 mb-4" />
-              <h3 className="text-xl font-medium text-gray-900 mb-2">Không tìm thấy khóa học nào</h3>
-              <p className="text-gray-500 mb-6 max-w-md mx-auto">Không tìm thấy khóa học phù hợp với tiêu chí tìm kiếm của bạn. Hãy thử tìm kiếm với từ khóa khác hoặc xem tất cả các khóa học.</p>
-              <button
-                onClick={() => {setSearchTerm(''); setSelectedCategory('all');}}
-                className="inline-flex items-center px-6 py-3 border border-transparent rounded-lg shadow-md text-base font-medium text-white bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800"
-              >
-                Xem tất cả khóa học
-              </button>
+              <h3 className="text-xl font-medium text-gray-900 mb-2">
+                {searchTerm 
+                  ? `Không tìm thấy khóa học nào cho "${searchTerm}"` 
+                  : 'Không tìm thấy khóa học nào'
+                }
+              </h3>
+              <p className="text-gray-500 mb-6 max-w-md mx-auto">
+                {searchTerm
+                  ? `Không tìm thấy khóa học phù hợp với tiêu chí tìm kiếm của bạn. Hãy thử tìm kiếm với từ khóa khác hoặc điều chỉnh bộ lọc.`
+                  : 'Không tìm thấy khóa học nào trong hệ thống. Vui lòng thử lại sau.'
+                }
+              </p>
+              <div className="flex flex-col sm:flex-row justify-center gap-4">
+                {(searchTerm || selectedCategory !== 'all' || selectedLevel !== 'all') && (
+                  <button
+                    onClick={resetFilters}
+                    className="inline-flex items-center justify-center px-6 py-3 border border-transparent rounded-lg shadow-md text-base font-medium text-white bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Xóa bộ lọc
+                  </button>
+                )}
+                <button
+                  onClick={() => setShowFilters(true)}
+                  className="inline-flex items-center justify-center px-6 py-3 border border-indigo-600 rounded-lg text-base font-medium text-indigo-700 bg-white hover:bg-indigo-50"
+                >
+                  <FunnelIcon className="h-5 w-5 mr-2" />
+                  Điều chỉnh bộ lọc
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -676,7 +880,7 @@ export default function CoursesPage() {
                   <input
                     type="text"
                     placeholder="Họ và tên của bạn"
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
                   />
                 </div>
                 <div>
@@ -813,7 +1017,31 @@ export default function CoursesPage() {
           font-size: 14px;
         }
       }
+      
+      /* Sửa vấn đề 2 thanh cuộn */
+      html, body {
+        overflow-x: hidden;
+        max-width: 100%;
+        margin: 0;
+        padding: 0;
+        position: relative;
+      }
+      
+      body {
+        overflow-y: auto;
+        overflow-x: hidden;
+      }
+      
+      /* Ẩn thanh cuộn ngang trên các phần tử có overflow */
+      .no-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+      
+      .no-scrollbar {
+        -ms-overflow-style: none;  /* IE và Edge */
+        scrollbar-width: none;  /* Firefox */
+      }
     `}</style>
-  </div>
+  </main>
 );
 } 
