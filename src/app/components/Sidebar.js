@@ -129,13 +129,15 @@ const Sidebar = ({ closeSidebar }) => {
       name: 'Thư viện', 
       path: '/thu-vien', 
       icon: <BookOpenIcon className="w-5 h-5" />,
-      badge: null
+      badge: null,
+      disabled: true
     },
     { 
       name: 'Thống kê', 
       path: '/thong-ke', 
       icon: <ChartBarIcon className="w-5 h-5" />,
-      badge: null
+      badge: null,
+      disabled: true
     },
   ];
 
@@ -211,45 +213,80 @@ const Sidebar = ({ closeSidebar }) => {
             <ul className="space-y-1.5">
               {menuItems.map((item) => (
                 <li key={item.path}>
-                  <Link
-                    href={item.path}
-                    className={`flex items-center ${collapsed ? 'justify-center px-2 py-3' : 'px-3 py-2.5'} rounded-lg transition-all duration-150 relative group
-                    ${pathname === item.path
-                      ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-md'
-                      : 'text-indigo-100 hover:bg-indigo-700/50 hover:text-white'
-                    }`}
-                    onClick={handleMenuItemClick}
-                  >
-                    <span className={`${collapsed ? '' : 'mr-3'} ${pathname === item.path ? 'text-white' : 'text-indigo-300 group-hover:text-white'}`}>
-                      {item.icon}
-                    </span>
-                    
-                    {!collapsed && (
-                      <>
-                        <span className="font-medium">{item.name}</span>
-                        {item.badge && (
-                          <span className={`ml-2 text-xs px-1.5 py-0.5 rounded-full ${item.badge.color} text-white`}>
-                            {item.badge.text}
-                          </span>
-                        )}
-                        {pathname === item.path ? (
-                          <ChevronRightIcon className="ml-auto w-4 h-4" />
-                        ) : null}
-                      </>
-                    )}
-                    
-                    {/* Tooltip for collapsed state */}
-                    {collapsed && (
-                      <div className="absolute left-full ml-3 -translate-x-2 opacity-0 group-hover:opacity-100 group-hover:translate-x-0 transition-all bg-indigo-900 text-white text-sm py-1.5 px-3 rounded whitespace-nowrap pointer-events-none">
-                        {item.name}
-                        {item.badge && (
-                          <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${item.badge.color} text-white`}>
-                            {item.badge.text}
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </Link>
+                  {item.disabled ? (
+                    <button
+                      className={`flex items-center ${collapsed ? 'justify-center px-2 py-3' : 'px-3 py-2.5'} rounded-lg transition-all duration-150 relative group w-full
+                      text-indigo-100 hover:bg-indigo-700/30 hover:text-white opacity-70`}
+                      onClick={() => alert(`Tính năng ${item.name} đang được phát triển!`)}
+                    >
+                      <span className={`${collapsed ? '' : 'mr-3'} text-indigo-300 group-hover:text-white`}>
+                        {item.icon}
+                      </span>
+                      
+                      {!collapsed && (
+                        <>
+                          <span className="font-medium">{item.name}</span>
+                          {item.badge && (
+                            <span className={`ml-2 text-xs px-1.5 py-0.5 rounded-full ${item.badge.color} text-white`}>
+                              {item.badge.text}
+                            </span>
+                          )}
+                        </>
+                      )}
+                      
+                      {/* Tooltip for collapsed state */}
+                      {collapsed && (
+                        <div className="absolute left-full ml-3 -translate-x-2 opacity-0 group-hover:opacity-100 group-hover:translate-x-0 transition-all bg-indigo-900 text-white text-sm py-1.5 px-3 rounded whitespace-nowrap pointer-events-none">
+                          {item.name}
+                          {item.badge && (
+                            <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${item.badge.color} text-white`}>
+                              {item.badge.text}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </button>
+                  ) : (
+                    <Link
+                      href={item.path}
+                      className={`flex items-center ${collapsed ? 'justify-center px-2 py-3' : 'px-3 py-2.5'} rounded-lg transition-all duration-150 relative group
+                      ${pathname === item.path
+                        ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-md'
+                        : 'text-indigo-100 hover:bg-indigo-700/50 hover:text-white'
+                      }`}
+                      onClick={handleMenuItemClick}
+                    >
+                      <span className={`${collapsed ? '' : 'mr-3'} ${pathname === item.path ? 'text-white' : 'text-indigo-300 group-hover:text-white'}`}>
+                        {item.icon}
+                      </span>
+                      
+                      {!collapsed && (
+                        <>
+                          <span className="font-medium">{item.name}</span>
+                          {item.badge && (
+                            <span className={`ml-2 text-xs px-1.5 py-0.5 rounded-full ${item.badge.color} text-white`}>
+                              {item.badge.text}
+                            </span>
+                          )}
+                          {pathname === item.path ? (
+                            <ChevronRightIcon className="ml-auto w-4 h-4" />
+                          ) : null}
+                        </>
+                      )}
+                      
+                      {/* Tooltip for collapsed state */}
+                      {collapsed && (
+                        <div className="absolute left-full ml-3 -translate-x-2 opacity-0 group-hover:opacity-100 group-hover:translate-x-0 transition-all bg-indigo-900 text-white text-sm py-1.5 px-3 rounded whitespace-nowrap pointer-events-none">
+                          {item.name}
+                          {item.badge && (
+                            <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${item.badge.color} text-white`}>
+                              {item.badge.text}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </Link>
+                  )}
                 </li>
               ))}
             </ul>
@@ -259,31 +296,22 @@ const Sidebar = ({ closeSidebar }) => {
                 <p className="text-xs font-semibold text-indigo-300 uppercase tracking-wider mt-6 mb-2 px-3">Phụ trợ</p>
                 <ul className="space-y-1.5">
                   <li>
-                    <Link
-                      href="/thong-bao"
-                      className={`flex items-center px-3 py-2.5 rounded-lg transition-all duration-150
-                      ${pathname === '/thong-bao'
-                        ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-md'
-                        : 'text-indigo-100 hover:bg-indigo-700/50 hover:text-white'
-                      }`}
-                      onClick={handleMenuItemClick}
+                    <button
+                      className="flex items-center px-3 py-2.5 rounded-lg transition-all duration-150 text-indigo-100 hover:bg-indigo-700/30 hover:text-white opacity-70 w-full"
+                      onClick={() => alert('Tính năng Thông báo đang được phát triển!')}
                     >
-                      <BellIcon className={`mr-3 w-5 h-5 ${pathname === '/thong-bao' ? 'text-white' : 'text-indigo-300'}`} />
+                      <BellIcon className="mr-3 w-5 h-5 text-indigo-300" />
                       <span className="font-medium">Thông báo</span>
                       <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-medium text-white">3</span>
-                    </Link>
+                    </button>
                   </li>
                   <li>
                     <Link
-                      href="/cai-dat"
-                      className={`flex items-center px-3 py-2.5 rounded-lg transition-all duration-150
-                      ${pathname === '/cai-dat'
-                        ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-md'
-                        : 'text-indigo-100 hover:bg-indigo-700/50 hover:text-white'
-                      }`}
+                      href="/ca-nhan"
+                      className="flex items-center px-3 py-2.5 rounded-lg transition-all duration-150 text-indigo-100 hover:bg-indigo-700/50 hover:text-white w-full"
                       onClick={handleMenuItemClick}
                     >
-                      <CogIcon className={`mr-3 w-5 h-5 ${pathname === '/cai-dat' ? 'text-white' : 'text-indigo-300'}`} />
+                      <CogIcon className="mr-3 w-5 h-5 text-indigo-300" />
                       <span className="font-medium">Cài đặt</span>
                     </Link>
                   </li>
