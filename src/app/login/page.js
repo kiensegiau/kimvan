@@ -24,6 +24,7 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [csrfToken, setCsrfToken] = useState('');
+  const [showRegisterModal, setShowRegisterModal] = useState(false);
   
   // Lấy CSRF token khi component mount
   useEffect(() => {
@@ -94,12 +95,68 @@ function LoginForm() {
       setLoading(false);
     }
   };
+
+  const handleRegisterClick = (e) => {
+    e.preventDefault();
+    setShowRegisterModal(true);
+  };
   
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       {/* Trang trí nền */}
       <div className="absolute inset-0 bg-grid-slate-100 [mask-image:linear-gradient(0deg,#fff,rgba(255,255,255,0.5))] z-0"></div>
       <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 via-blue-500 to-teal-400"></div>
+      
+      {/* Modal đăng ký */}
+      {showRegisterModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 transform transition-all">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-xl font-semibold text-gray-900">Đăng ký tài khoản</h3>
+              <button
+                type="button"
+                className="text-gray-400 hover:text-gray-500 focus:outline-none"
+                onClick={() => setShowRegisterModal(false)}
+              >
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="text-center mb-6">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Vui lòng liên hệ Admin</h3>
+              <p className="text-sm text-gray-500">
+                Hiện tại, việc đăng ký tài khoản mới cần được phê duyệt trực tiếp từ quản trị viên. Vui lòng liên hệ với chúng tôi qua Facebook để được hỗ trợ.
+              </p>
+            </div>
+            <div className="mt-5">
+              <a
+                href="https://www.facebook.com/khoahoc6.0"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 mr-2">
+                  <path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-2c-.55 0-1 .45-1 1v2h3v3h-3v6.95c5.05-.5 9-4.76 9-9.95z" />
+                </svg>
+                Nhắn tin Admin qua Facebook
+              </a>
+              <button
+                type="button"
+                onClick={() => setShowRegisterModal(false)}
+                className="mt-3 w-full inline-flex justify-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Vùng chính */}
       <div className="flex flex-col md:flex-row w-full">
@@ -115,16 +172,16 @@ function LoginForm() {
             </div>
             <h1 className="text-4xl font-bold mb-6">Chào mừng trở lại!</h1>
             <p className="text-lg mb-8 opacity-90">
-              Đăng nhập để tiếp tục trải nghiệm dịch vụ của chúng tôi với nhiều tính năng hấp dẫn đang chờ đón bạn.
+              Đăng nhập để tiếp tục học tập với các khóa học trực tuyến chất lượng cao. Hàng trăm bài giảng đang chờ đón bạn.
             </p>
             <div className="grid grid-cols-3 gap-4 mb-8">
               <div className="bg-white/20 backdrop-blur-sm p-4 rounded-lg">
-                <div className="text-3xl font-bold mb-2">100+</div>
-                <div className="text-sm">Tính năng</div>
+                <div className="text-3xl font-bold mb-2">50+</div>
+                <div className="text-sm">Khóa học</div>
               </div>
               <div className="bg-white/20 backdrop-blur-sm p-4 rounded-lg">
-                <div className="text-3xl font-bold mb-2">10k+</div>
-                <div className="text-sm">Người dùng</div>
+                <div className="text-3xl font-bold mb-2">5k+</div>
+                <div className="text-sm">Học viên</div>
               </div>
               <div className="bg-white/20 backdrop-blur-sm p-4 rounded-lg">
                 <div className="text-3xl font-bold mb-2">24/7</div>
@@ -306,9 +363,9 @@ function LoginForm() {
             
             <p className="mt-8 text-center text-sm text-gray-600">
               Chưa có tài khoản?{' '}
-              <Link href={routes.register} className="font-medium text-blue-600 hover:text-blue-500 transition duration-150 ease-in-out">
+              <a href="#" onClick={handleRegisterClick} className="font-medium text-blue-600 hover:text-blue-500 transition duration-150 ease-in-out">
                 Đăng ký ngay
-              </Link>
+              </a>
             </p>
           </div>
         </div>
