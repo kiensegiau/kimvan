@@ -287,8 +287,9 @@ const YouTubeModal = ({ isOpen, videoId, onClose }) => {
               loadingSpinner.classList.remove('hidden');
               loadingText.classList.remove('hidden');
               
-              // Thiết lập iframe với tham số để ngăn chặn chuyển hướng và ẩn các phần tử không mong muốn
-              youtubeIframe.src = 'https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&fs=1&color=white&iv_load_policy=3&playlist=${videoId}&controls=1&showinfo=0&disablekb=0&version=3&origin=' + window.location.origin + '&enablejsapi=1&nologo=1&cc_load_policy=0&iv_load_policy=3&referrer=no-referrer&autohide=0';
+              // Thiết lập iframe với tham số đơn giản hơn
+              const videoSrc = "https://www.youtube.com/embed/" + "${videoId}" + "?autoplay=1&rel=0";
+              youtubeIframe.src = videoSrc;
               
               // Lắng nghe sự kiện khi iframe đã tải xong
               youtubeIframe.onload = function() {
@@ -306,8 +307,10 @@ const YouTubeModal = ({ isOpen, videoId, onClose }) => {
             }
 
             // Tự động phát video khi trang được tải
-            document.addEventListener('DOMContentLoaded', function() {
-              loadYouTubeVideo();
+            // Thay đổi cách tự động phát để đảm bảo hoạt động đúng
+            window.addEventListener('load', function() {
+              // Đợi một chút trước khi kích hoạt để đảm bảo trang đã tải hoàn toàn
+              setTimeout(loadYouTubeVideo, 300);
             });
           </script>
         </body>
