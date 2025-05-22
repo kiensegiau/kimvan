@@ -108,7 +108,7 @@ export default function RootLayout({ children }) {
             )}
             
             {/* Main content */}
-            <main className="flex-1 overflow-y-auto p-4 w-full">
+            <main className="flex-1 overflow-y-auto  w-full">
               {children}
             </main>
           </div>
