@@ -35,16 +35,23 @@ export default function Home() {
         setLoading(true);
         setError(null);
         
-        const response = await fetch('/api/courses');
-        const data = await response.json();
+        const response = await fetch('/api/minicourses');
         
         if (!response.ok) {
-          throw new Error(data.message || 'Không thể tải dữ liệu khóa học');
+          throw new Error('Không thể tải dữ liệu khóa học');
         }
         
-        // Lấy 3 khóa học nổi bật (có thể lọc theo các tiêu chí khác)
-        const featured = data.slice(0, 3);
-        setFeaturedCourses(featured);
+        const data = await response.json();
+        
+        // Kiểm tra cấu trúc dữ liệu trả về từ API mới
+        if (data && data.success && data.data && Array.isArray(data.data.minicourses)) {
+          // Lấy 3 khóa học nổi bật
+          const featured = data.data.minicourses.slice(0, 3);
+          setFeaturedCourses(featured);
+        } else {
+          console.warn('Định dạng dữ liệu không như mong đợi:', data);
+          setFeaturedCourses([]);
+        }
       } catch (err) {
         console.error('Lỗi khi tải danh sách khóa học:', err);
         setError(err.message || 'Đã xảy ra lỗi khi tải dữ liệu khóa học.');

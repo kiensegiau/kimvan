@@ -4,10 +4,6 @@ import { useState, useEffect, useRef } from 'react';
 import { ExclamationCircleIcon, MagnifyingGlassIcon, AcademicCapIcon, CheckCircleIcon, UserCircleIcon, ArrowRightIcon, ClockIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
 import { StarIcon, FireIcon } from '@heroicons/react/24/solid';
 import { useRouter } from 'next/navigation';
-import CryptoJS from 'crypto-js';
-
-// Khóa mã hóa - phải giống với khóa ở phía server
-const ENCRYPTION_KEY = 'kimvan-secure-key-2024';
 
 export default function CoursesPage() {
   const router = useRouter();
@@ -19,44 +15,18 @@ export default function CoursesPage() {
   const [isInView, setIsInView] = useState(false);
   const statsRef = useRef(null);
 
-  // Hàm giải mã dữ liệu với xử lý lỗi tốt hơn
-  const decryptData = (encryptedData) => {
-    try {
-      if (!encryptedData) {
-        throw new Error("Không có dữ liệu được mã hóa");
-      }
-      
-      // Giải mã dữ liệu
-      const decryptedBytes = CryptoJS.AES.decrypt(encryptedData, ENCRYPTION_KEY);
-      if (!decryptedBytes) {
-        throw new Error("Giải mã không thành công");
-      }
-      
-      const decryptedText = decryptedBytes.toString(CryptoJS.enc.Utf8);
-      if (!decryptedText || decryptedText.length === 0) {
-        throw new Error("Dữ liệu giải mã không hợp lệ");
-      }
-      
-      return JSON.parse(decryptedText);
-    } catch (error) {
-      console.error("Lỗi giải mã:", error);
-      throw new Error(`Không thể giải mã: ${error.message}`);
-    }
-  };
-
   // Hàm để tải danh sách khóa học từ API
   const fetchCourses = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      // Gọi API không cần tham số secure nữa vì server luôn mã hóa
-      const response = await fetch('/api/courses');
+      // Gọi API mới
+      const response = await fetch('/api/minicourses');
       
       if (!response.ok) {
         // Xử lý trường hợp lỗi 401 (chưa đăng nhập)
         if (response.status === 401) {
-          // Chuyển hướng đến trang đăng nhập hoặc hiển thị thông báo
           setError('Bạn cần đăng nhập để xem danh sách khóa học');
           setCourses([]);
           setLoading(false);
@@ -68,20 +38,14 @@ export default function CoursesPage() {
         throw new Error(errorMessage);
       }
       
-      const encryptedResponse = await response.json();
+      const data = await response.json();
       
-      // Kiểm tra nếu nhận được dữ liệu được mã hóa
-      if (encryptedResponse._secureData) {
-        try {
-          // Giải mã dữ liệu
-          const coursesData = decryptData(encryptedResponse._secureData);
-          setCourses(coursesData);
-        } catch (decryptError) {
-          throw new Error(`Không thể giải mã dữ liệu khóa học: ${decryptError.message}`);
-        }
+      // Kiểm tra cấu trúc dữ liệu trả về từ API mới
+      if (data && data.success && data.data && Array.isArray(data.data.minicourses)) {
+        setCourses(data.data.minicourses);
       } else {
-        // Trường hợp lỗi - không nên xảy ra vì server luôn mã hóa
-        throw new Error('Dữ liệu không được mã hóa đúng định dạng');
+        console.warn('Định dạng dữ liệu không như mong đợi:', data);
+        setCourses([]);
       }
     } catch (err) {
       console.error('Lỗi khi tải danh sách khóa học:', err);
