@@ -48,7 +48,7 @@ export default function CoursesPage() {
     setSearchQuery('');
     setSearchTerm('');
   };
-  
+
   // Hàm lưu dữ liệu vào localStorage
   const saveToCache = (data) => {
     try {
@@ -602,60 +602,60 @@ export default function CoursesPage() {
               )}
             </div>
           </div>
-        </div>
+          </div>
 
-        {error && (
-        <div className="bg-red-50 p-4 mb-6 rounded-md shadow">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <ExclamationCircleIcon className="h-5 w-5 text-red-400" aria-hidden="true" />
-              </div>
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-red-800">
-                  Đã xảy ra lỗi
-                </h3>
-                <div className="mt-2 text-sm text-red-700">
-                  <p>{error}</p>
+          {error && (
+          <div className="bg-red-50 p-4 mb-6 rounded-md shadow">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <ExclamationCircleIcon className="h-5 w-5 text-red-400" aria-hidden="true" />
                 </div>
-                <div className="mt-3">
-                  <button
-                    onClick={handleRetry}
-                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="-ml-0.5 mr-1.5 h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                    Thử lại
-                  </button>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-red-800">
+                    Đã xảy ra lỗi
+                  </h3>
+                  <div className="mt-2 text-sm text-red-700">
+                    <p>{error}</p>
+                  </div>
+                  <div className="mt-3">
+                    <button
+                      onClick={handleRetry}
+                      className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="-ml-0.5 mr-1.5 h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      Thử lại
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
-
-        {loading ? (
-        <div className="text-center py-20">
-          <div className="inline-block animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-indigo-600 mb-5"></div>
-          <p className="text-gray-500 text-lg font-medium">Đang tải dữ liệu khóa học...</p>
-          {cacheStatus === 'hit' && (
-            <p className="text-xs text-green-600 mt-2">Đang tải từ bộ nhớ đệm...</p>
           )}
-        </div>
-        ) : (
+
+          {loading ? (
+          <div className="text-center py-20">
+            <div className="inline-block animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-indigo-600 mb-5"></div>
+            <p className="text-gray-500 text-lg font-medium">Đang tải dữ liệu khóa học...</p>
+            {cacheStatus === 'hit' && (
+              <p className="text-xs text-green-600 mt-2">Đang tải từ bộ nhớ đệm...</p>
+            )}
+          </div>
+          ) : (
           <div className="overflow-visible">
-            {filteredCourses.length > 0 ? (
+              {filteredCourses.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredCourses.map((course, index) => {
-                const rating = getRandomRating();
-                const level = getRandomLevel();
-                const students = getRandomStudentCount();
+                {filteredCourses.map((course, index) => {
+                  const rating = getRandomRating();
+                  const level = getRandomLevel();
+                  const students = getRandomStudentCount();
                 const lessons = getRandomLessonCount();
-                
-                return (
-                  <div 
-                    key={course._id} 
+                  
+                  return (
+                    <div 
+                      key={course._id} 
                     className="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col h-full group cursor-pointer"
-                    onClick={() => router.push(`/khoa-hoc/${course.kimvanId || course._id}`)}
+                      onClick={() => router.push(`/khoa-hoc/${course.kimvanId || course._id}`)}
                   >
                     <div className="h-40 bg-gradient-to-r from-indigo-600 to-purple-700 relative overflow-hidden">
                       {/* Background pattern */}
@@ -664,7 +664,7 @@ export default function CoursesPage() {
                       {/* Course level badge */}
                       <div className="absolute top-3 right-3 px-3 py-1 bg-black bg-opacity-30 backdrop-blur-sm text-white text-xs rounded-full font-medium">
                         {level}
-                      </div>
+                        </div>
                       
                       {/* Course icon */}
                       <div className="absolute inset-0 flex items-center justify-center">
@@ -725,13 +725,13 @@ export default function CoursesPage() {
                         <span>Chi tiết</span>
                         <ArrowRightIcon className="ml-1.5 h-4 w-4" />
                       </button>
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="text-center py-16 bg-gray-50 rounded-xl border border-gray-200 shadow-sm">
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-16 bg-gray-50 rounded-xl border border-gray-200 shadow-sm">
               <MagnifyingGlassIcon className="mx-auto h-16 w-16 text-gray-300 mb-4" />
               <h3 className="text-xl font-medium text-gray-900 mb-2">
                 {searchTerm 
@@ -757,23 +757,23 @@ export default function CoursesPage() {
                     Xóa bộ lọc
                   </button>
                 )}
-                <button
+                    <button
                   onClick={() => setShowFilters(true)}
                   className="inline-flex items-center justify-center px-6 py-3 border border-indigo-600 rounded-lg text-base font-medium text-indigo-700 bg-white hover:bg-indigo-50"
                 >
                   <FunnelIcon className="h-5 w-5 mr-2" />
                   Điều chỉnh bộ lọc
-                </button>
+                    </button>
               </div>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
-    {/* Testimonials */}
+      {/* Testimonials */}
     <div className="bg-gradient-to-b from-white to-indigo-50 py-16 md:py-24">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12 md:mb-16">
           <span className="inline-block px-3 py-1 bg-indigo-100 text-indigo-700 text-sm font-medium rounded-full mb-3">
             Phản hồi từ học viên
@@ -781,10 +781,10 @@ export default function CoursesPage() {
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4 tracking-tight">
             Học viên nói gì về chúng tôi?
           </h2>
-          <p className="text-base md:text-lg text-gray-600 max-w-3xl mx-auto">
+            <p className="text-base md:text-lg text-gray-600 max-w-3xl mx-auto">
             Hàng ngàn học viên đã cải thiện kỹ năng và phát triển sự nghiệp thông qua các khóa học chất lượng cao của chúng tôi
-          </p>
-        </div>
+            </p>
+          </div>
         
         <div className="relative">
           {/* Decorative elements */}
@@ -830,11 +830,11 @@ export default function CoursesPage() {
               <ArrowRightIcon className="ml-2 h-5 w-5" />
             </button>
           </div>
+          </div>
         </div>
       </div>
-    </div>
-          
-    {/* Phần khuyến mãi */}
+            
+      {/* Phần khuyến mãi */}
     <div className="bg-gradient-to-r from-indigo-600 to-purple-700 py-16 md:py-24 relative overflow-hidden">
       {/* Tạo mẫu nền */}
       <div className="absolute inset-0 bg-grid-white/10 bg-[size:20px_20px] opacity-10"></div>
@@ -844,14 +844,14 @@ export default function CoursesPage() {
       <div className="hidden md:block absolute bottom-10 right-10 w-40 h-40 bg-purple-300 bg-opacity-10 rounded-full blur-3xl"></div>
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="lg:flex lg:items-center lg:justify-between">
-          <div className="max-w-xl">
+          <div className="lg:flex lg:items-center lg:justify-between">
+            <div className="max-w-xl">
             <span className="inline-block px-3 py-1 bg-white bg-opacity-20 text-white text-sm font-medium rounded-full mb-3 backdrop-blur-sm">
               Ưu đãi đặc biệt
             </span>
             <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight text-white mb-4">
               Sẵn sàng nâng cao kỹ năng của bạn?
-            </h2>
+              </h2>
             <p className="text-base md:text-lg text-indigo-100 mb-6 lg:mb-0">
               Đăng ký ngay hôm nay và nhận ưu đãi <span className="font-bold text-yellow-300">giảm 20%</span> cho tất cả các khóa học cao cấp. Cơ hội học tập chất lượng với chi phí tiết kiệm!
             </p>
@@ -929,8 +929,8 @@ export default function CoursesPage() {
                 <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84" />
                 </svg>
-              </a>
-            </div>
+                </a>
+              </div>
           </div>
           
           <div>
@@ -993,7 +993,7 @@ export default function CoursesPage() {
                   </svg>
                 </button>
               </div>
-            </div>
+              </div>
           </div>
         </div>
         
@@ -1005,18 +1005,18 @@ export default function CoursesPage() {
               <li><a href="#" className="hover:text-white transition-colors duration-200">Chính sách bảo mật</a></li>
               <li><a href="#" className="hover:text-white transition-colors duration-200">Cookie</a></li>
             </ul>
-          </div>
+      </div>
         </div>
       </div>
     </footer>
 
-    {/* Thêm meta viewport để đảm bảo responsive trên mobile */}
-    <style jsx global>{`
-      @media (max-width: 640px) {
-        html {
-          font-size: 14px;
+      {/* Thêm meta viewport để đảm bảo responsive trên mobile */}
+      <style jsx global>{`
+        @media (max-width: 640px) {
+          html {
+            font-size: 14px;
+          }
         }
-      }
       
       /* Sửa vấn đề 2 thanh cuộn */
       html, body {
@@ -1041,7 +1041,7 @@ export default function CoursesPage() {
         -ms-overflow-style: none;  /* IE và Edge */
         scrollbar-width: none;  /* Firefox */
       }
-    `}</style>
+      `}</style>
   </main>
-);
+  );
 } 
