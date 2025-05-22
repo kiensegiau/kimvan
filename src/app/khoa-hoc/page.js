@@ -5,6 +5,9 @@ import { ExclamationCircleIcon, MagnifyingGlassIcon, AcademicCapIcon, CheckCircl
 import { StarIcon, FireIcon } from '@heroicons/react/24/solid';
 import { useRouter } from 'next/navigation';
 
+// Thời gian cache - 12 giờ tính bằng milliseconds
+const CACHE_DURATION = 12 * 60 * 60 * 1000;
+
 export default function CoursesPage() {
   const router = useRouter();
   const [courses, setCourses] = useState([]);
@@ -14,14 +17,64 @@ export default function CoursesPage() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [isInView, setIsInView] = useState(false);
   const statsRef = useRef(null);
+  const [cacheStatus, setCacheStatus] = useState('');
+
+  // Hàm lưu dữ liệu vào localStorage
+  const saveToCache = (data) => {
+    try {
+      const cacheItem = {
+        data: data,
+        timestamp: Date.now()
+      };
+      localStorage.setItem('courses-list', JSON.stringify(cacheItem));
+      console.log('Đã lưu dữ liệu vào cache');
+      setCacheStatus('saved');
+    } catch (error) {
+      console.error('Lỗi khi lưu cache:', error);
+    }
+  };
+
+  // Hàm lấy dữ liệu từ localStorage
+  const getFromCache = () => {
+    try {
+      const cachedData = localStorage.getItem('courses-list');
+      if (!cachedData) return null;
+      
+      const cacheItem = JSON.parse(cachedData);
+      const now = Date.now();
+      
+      // Kiểm tra xem cache có còn hiệu lực không (12 giờ)
+      if (now - cacheItem.timestamp > CACHE_DURATION) {
+        console.log('Cache đã hết hạn');
+        localStorage.removeItem('courses-list');
+        setCacheStatus('expired');
+        return null;
+      }
+      
+      console.log('Đã tìm thấy dữ liệu trong cache');
+      setCacheStatus('hit');
+      return cacheItem.data;
+    } catch (error) {
+      console.error('Lỗi khi đọc cache:', error);
+      return null;
+    }
+  };
 
   // Hàm để tải danh sách khóa học từ API
   const fetchCourses = async () => {
     try {
       setLoading(true);
-      setError(null);
+      setError(null); // Reset error trước khi fetch
       
-      // Gọi API mới
+      // Kiểm tra cache trước
+      const cachedCourses = getFromCache();
+      if (cachedCourses) {
+        setCourses(cachedCourses);
+        setLoading(false);
+        return;
+      }
+      
+      // Nếu không có cache hoặc cache hết hạn, fetch từ API
       const response = await fetch('/api/minicourses');
       
       if (!response.ok) {
@@ -43,6 +96,8 @@ export default function CoursesPage() {
       // Kiểm tra cấu trúc dữ liệu trả về từ API mới
       if (data && data.success && data.data && Array.isArray(data.data.minicourses)) {
         setCourses(data.data.minicourses);
+        // Lưu vào cache
+        saveToCache(data.data.minicourses);
       } else {
         console.warn('Định dạng dữ liệu không như mong đợi:', data);
         setCourses([]);
@@ -58,6 +113,13 @@ export default function CoursesPage() {
 
   // Thử lại khi gặp lỗi
   const handleRetry = () => {
+    // Xóa cache khi thử lại để đảm bảo lấy dữ liệu mới
+    try {
+      localStorage.removeItem('courses-list');
+      setCacheStatus('cleared');
+    } catch (error) {
+      console.error('Lỗi khi xóa cache:', error);
+    }
     fetchCourses();
   };
 
@@ -222,6 +284,9 @@ export default function CoursesPage() {
           <h2 className="text-2xl md:text-3xl font-bold text-gray-900 flex items-center mb-3 md:mb-0">
             <AcademicCapIcon className="h-7 w-7 mr-2 text-indigo-600" />
             Danh sách khóa học
+            {cacheStatus === 'hit' && (
+              <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">Đã tải từ bộ nhớ đệm</span>
+            )}
           </h2>
           <div className="flex items-center bg-gray-100 rounded-lg px-4 py-2 overflow-x-auto whitespace-nowrap">
             <span className="text-sm font-medium text-gray-800 mr-2">Sắp xếp:</span>
@@ -271,7 +336,10 @@ export default function CoursesPage() {
             <div className="inline-block animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-indigo-600 mb-5"></div>
             <p className="text-gray-500 text-lg font-medium">Đang tải dữ liệu khóa học...</p>
             <p className="text-gray-400">Vui lòng đợi trong giây lát</p>
-            </div>
+            {cacheStatus === 'hit' && (
+              <p className="text-xs text-green-600 mt-2">Đang tải từ bộ nhớ đệm...</p>
+            )}
+          </div>
           ) : (
             <div className="overflow-x-auto">
               {filteredCourses.length > 0 ? (

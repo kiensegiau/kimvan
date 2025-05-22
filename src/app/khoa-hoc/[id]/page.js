@@ -11,6 +11,8 @@ import CryptoJS from 'crypto-js';
 
 // Khóa mã hóa - phải giống với khóa ở phía server
 const ENCRYPTION_KEY = 'kimvan-secure-key-2024';
+// Thời gian cache - 12 giờ tính bằng milliseconds
+const CACHE_DURATION = 12 * 60 * 60 * 1000;
 
 export default function CourseDetailPage({ params }) {
   const router = useRouter();
@@ -26,6 +28,7 @@ export default function CourseDetailPage({ params }) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [processingLink, setProcessingLink] = useState(false);
   const [viewMode, setViewMode] = useState('table');
+  const [cacheStatus, setCacheStatus] = useState('');
   
   // Hàm giải mã dữ liệu với xử lý lỗi tốt hơn
   const decryptData = (encryptedData) => {
@@ -49,6 +52,47 @@ export default function CourseDetailPage({ params }) {
     } catch (error) {
       console.error("Lỗi giải mã:", error);
       throw new Error(`Không thể giải mã: ${error.message}`);
+    }
+  };
+
+  // Hàm lưu dữ liệu vào localStorage
+  const saveToCache = (data) => {
+    try {
+      const cacheItem = {
+        data: data,
+        timestamp: Date.now()
+      };
+      localStorage.setItem(`course-${id}`, JSON.stringify(cacheItem));
+      console.log('Đã lưu dữ liệu vào cache');
+      setCacheStatus('saved');
+    } catch (error) {
+      console.error('Lỗi khi lưu cache:', error);
+    }
+  };
+
+  // Hàm lấy dữ liệu từ localStorage
+  const getFromCache = () => {
+    try {
+      const cachedData = localStorage.getItem(`course-${id}`);
+      if (!cachedData) return null;
+      
+      const cacheItem = JSON.parse(cachedData);
+      const now = Date.now();
+      
+      // Kiểm tra xem cache có còn hiệu lực không (12 giờ)
+      if (now - cacheItem.timestamp > CACHE_DURATION) {
+        console.log('Cache đã hết hạn');
+        localStorage.removeItem(`course-${id}`);
+        setCacheStatus('expired');
+        return null;
+      }
+      
+      console.log('Đã tìm thấy dữ liệu trong cache');
+      setCacheStatus('hit');
+      return cacheItem.data;
+    } catch (error) {
+      console.error('Lỗi khi đọc cache:', error);
+      return null;
     }
   };
 
@@ -90,6 +134,21 @@ export default function CourseDetailPage({ params }) {
     setError(null); // Reset error trước khi fetch
     
     try {
+      // Kiểm tra cache trước
+      const cachedCourse = getFromCache();
+      if (cachedCourse) {
+        setCourse(cachedCourse);
+        setLoading(false);
+        
+        // Hiệu ứng fade-in
+        setTimeout(() => {
+          setIsLoaded(true);
+        }, 100);
+        
+        return;
+      }
+      
+      // Nếu không có cache hoặc cache hết hạn, fetch từ API
       // Sử dụng tham số secure=true để nhận dữ liệu được mã hóa hoàn toàn
       const response = await fetch(`/api/courses/${id}?type=auto&secure=true`);
       
@@ -100,13 +159,16 @@ export default function CourseDetailPage({ params }) {
       }
       
       const encryptedResponse = await response.json();
+      let fullCourseData;
       
       // Kiểm tra nếu nhận được dữ liệu được mã hóa hoàn toàn
       if (encryptedResponse._secureData) {
         try {
           // Giải mã toàn bộ đối tượng
-          const fullCourseData = decryptData(encryptedResponse._secureData);
+          fullCourseData = decryptData(encryptedResponse._secureData);
           setCourse(fullCourseData);
+          // Lưu vào cache
+          saveToCache(fullCourseData);
         } catch (decryptError) {
           setError(`Không thể giải mã dữ liệu khóa học: ${decryptError.message}. Vui lòng liên hệ quản trị viên.`);
           setLoading(false);
@@ -119,13 +181,15 @@ export default function CourseDetailPage({ params }) {
           const decryptedData = decryptData(encryptedResponse._encryptedData);
           
           // Khôi phục dữ liệu gốc
-          const fullCourseData = {
+          fullCourseData = {
             ...encryptedResponse,
             originalData: decryptedData
           };
           delete fullCourseData._encryptedData;
           
           setCourse(fullCourseData);
+          // Lưu vào cache
+          saveToCache(fullCourseData);
         } catch (decryptError) {
           setError(`Không thể giải mã dữ liệu khóa học: ${decryptError.message}. Vui lòng liên hệ quản trị viên.`);
           setLoading(false);
@@ -138,7 +202,10 @@ export default function CourseDetailPage({ params }) {
         return;
       } else {
         // Trường hợp dữ liệu không được mã hóa
-        setCourse(encryptedResponse);
+        fullCourseData = encryptedResponse;
+        setCourse(fullCourseData);
+        // Lưu vào cache
+        saveToCache(fullCourseData);
       }
       
       // Hiệu ứng fade-in
@@ -155,6 +222,13 @@ export default function CourseDetailPage({ params }) {
 
   // Thử lại khi gặp lỗi
   const handleRetry = () => {
+    // Xóa cache khi thử lại để đảm bảo lấy dữ liệu mới
+    try {
+      localStorage.removeItem(`course-${id}`);
+      setCacheStatus('cleared');
+    } catch (error) {
+      console.error('Lỗi khi xóa cache:', error);
+    }
     fetchCourseDetail();
   };
 
@@ -373,6 +447,9 @@ export default function CourseDetailPage({ params }) {
               <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600 mb-4"></div>
               <p className="text-lg text-gray-700 font-medium">Đang tải thông tin khóa học...</p>
               <p className="text-gray-500 text-sm">Vui lòng đợi trong giây lát</p>
+              {cacheStatus === 'hit' && (
+                <p className="text-xs text-indigo-600 mt-2">Đang tải từ bộ nhớ đệm...</p>
+              )}
             </div>
           </div>
           <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-indigo-500 to-purple-600 animate-pulse"></div>
