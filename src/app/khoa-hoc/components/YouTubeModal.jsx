@@ -83,13 +83,24 @@ const YouTubeModal = ({ isOpen, videoId, onClose }) => {
             <iframe 
               id="youtube-iframe"
               class="youtube-iframe"
-              src="https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&iv_load_policy=3&color=white"
+              src="https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&iv_load_policy=3&color=white&showinfo=0&controls=1"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowfullscreen
             ></iframe>
             
             <!-- Tên kênh tùy chỉnh -->
-            <div class="custom-channel-name">Khóa học 6.0</div>
+            
+            <!-- Lớp phủ để che phần tiêu đề -->
+            <div class="title-overlay" style="
+              position: absolute;
+              top: 0;
+              left: 0;
+              width: 100%;
+              height: 60px;
+              background-color: transparent;
+              z-index: 9999;
+              pointer-events: auto;
+            "></div>
           </div>
           
           <script>
@@ -107,10 +118,41 @@ const YouTubeModal = ({ isOpen, videoId, onClose }) => {
                 // Tạo style element
                 const style = document.createElement('style');
                 style.textContent = \`
-                  .ytp-title-channel {
+                  /* Ẩn tất cả các phần tử liên quan đến kênh và tiêu đề */
+                  .ytp-title-channel, 
+                  .ytp-title-channel-logo, 
+                  .ytp-title-text,
+                  ytd-video-owner-renderer,
+                  #owner,
+                  #upload-info,
+                  .ytp-ce-channel-title,
+                  .ytp-title-link,
+                  .ytp-title {
                     display: none !important;
                     visibility: hidden !important;
                     opacity: 0 !important;
+                    pointer-events: none !important;
+                    padding-left: 1000px !important;
+                  }
+                  
+                  /* Selector riêng cho ytp-title-text */
+                  .ytp-title-text {
+                    display: none !important;
+                    visibility: hidden !important;
+                    opacity: 0 !important;
+                    width: 0 !important;
+                    height: 0 !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    position: absolute !important;
+                    left: -9999px !important;
+                  }
+                  
+                  /* Đảm bảo ẩn cả container chứa */
+                  .ytp-chrome-top {
+                    height: 0 !important;
+                    overflow: hidden !important;
+                    padding-left: 1000px !important;
                   }
                 \`;
                 
