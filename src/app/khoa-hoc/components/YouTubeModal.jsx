@@ -200,7 +200,7 @@ const YouTubeModal = ({ isOpen, videoId, onClose }) => {
       >
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-10 p-2 rounded-full bg-black bg-opacity-50 text-white hover:bg-opacity-70 transition-all"
+          className="absolute top-4 right-4 z-[10000] p-2 rounded-full bg-black bg-opacity-50 text-white hover:bg-opacity-70 transition-all"
           aria-label="Đóng"
         >
           <XMarkIcon className="h-6 w-6" />
