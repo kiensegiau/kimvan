@@ -718,7 +718,7 @@ export default function CoursesPage() {
                     
                     <div className="border-t border-gray-100 p-5 flex items-center justify-between bg-gray-50">
                       <div className="font-bold text-indigo-600 text-lg">
-                        {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(course.price)}
+                        {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(100000)}
                       </div>
                       
                       <button className="inline-flex items-center justify-center px-3 py-1.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors group-hover:bg-indigo-700">
