@@ -6,8 +6,9 @@ import { StarIcon, FireIcon } from '@heroicons/react/24/solid';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
-// Thời gian cache - 12 giờ tính bằng milliseconds
-const CACHE_DURATION = 12 * 60 * 60 * 1000;
+// Thời gian cache - Có thể điều chỉnh dễ dàng
+const CACHE_DURATION = 12 * 60 * 60 * 1000; // 12 giờ 
+const MAX_CACHE_ITEMS = 5; // Giữ tối đa 5 cache items
 
 export default function CoursesPage() {
   const router = useRouter();
@@ -53,17 +54,75 @@ export default function CoursesPage() {
     setSearchTerm('');
   };
 
-  // Hàm lưu dữ liệu vào localStorage
+  // Hàm lưu dữ liệu vào localStorage với quản lý cache
   const saveToCache = (data) => {
     try {
+      // Tạo đối tượng cache với dữ liệu và thời gian
       const cacheItem = {
         data: data,
         timestamp: Date.now()
       };
+      
+      // Lưu dữ liệu khóa học vào cache
       localStorage.setItem('courses-list', JSON.stringify(cacheItem));
+      
+      // Dọn dẹp cache cũ
+      cleanupOldCaches();
+      
       setCacheStatus('saved');
     } catch (error) {
-      // Xử lý lỗi im lặng
+      console.error('Lỗi khi lưu cache:', error);
+      // Thử xóa cache và lưu lại
+      try {
+        localStorage.removeItem('courses-list');
+        localStorage.setItem('courses-list', JSON.stringify({
+          data: data,
+          timestamp: Date.now()
+        }));
+      } catch (e) {
+        // Xử lý lỗi im lặng nếu vẫn không thể lưu
+      }
+    }
+  };
+
+  // Hàm dọn dẹp các cache cũ
+  const cleanupOldCaches = () => {
+    try {
+      // Lấy tất cả keys trong localStorage
+      const keys = Object.keys(localStorage);
+      
+      // Lọc các key liên quan đến cache khóa học
+      const courseCacheKeys = keys.filter(key => 
+        key.startsWith('courses-') || key === 'courses-list'
+      );
+      
+             // Nếu có quá nhiều cache (sử dụng hằng số MAX_CACHE_ITEMS)
+      if (courseCacheKeys.length > MAX_CACHE_ITEMS) {
+        // Tạo mảng các đối tượng cache với key và timestamp
+        const cacheItems = [];
+        
+        for (const key of courseCacheKeys) {
+          try {
+            const item = JSON.parse(localStorage.getItem(key));
+            if (item && item.timestamp) {
+              cacheItems.push({ key, timestamp: item.timestamp });
+            }
+          } catch (e) {
+            // Bỏ qua cache không hợp lệ
+            localStorage.removeItem(key);
+          }
+        }
+        
+        // Sắp xếp theo thời gian, cũ nhất lên đầu
+        cacheItems.sort((a, b) => a.timestamp - b.timestamp);
+        
+        // Xóa các cache cũ nhất, giữ lại số lượng cache theo MAX_CACHE_ITEMS
+        for (let i = 0; i < cacheItems.length - MAX_CACHE_ITEMS; i++) {
+          localStorage.removeItem(cacheItems[i].key);
+        }
+      }
+    } catch (e) {
+      // Bỏ qua lỗi khi dọn dẹp cache
     }
   };
 
@@ -85,8 +144,15 @@ export default function CoursesPage() {
       
       setCacheStatus('hit');
       return cacheItem.data;
-    } catch (error) {
-      // Xử lý lỗi im lặng
+          } catch (error) {
+      console.error('Lỗi khi đọc cache:', error);
+      // Xóa cache lỗi
+      try {
+        localStorage.removeItem('courses-list');
+        console.log('Đã xóa cache lỗi');
+      } catch (e) {
+        // Bỏ qua nếu không thể xóa
+      }
       return null;
     }
   };
@@ -137,13 +203,8 @@ export default function CoursesPage() {
         console.error('Lỗi khi lấy khóa học đã đăng ký:', enrollError);
       }
       
-      // Kiểm tra cache trước
-      const cachedCourses = getFromCache();
-      if (cachedCourses) {
-        setCourses(cachedCourses);
-        setLoading(false);
-        return;
-      }
+      // Tránh kiểm tra cache ở đây vì đã kiểm tra trong useEffect 
+      // để tránh việc fetch lại API không cần thiết
       
       // Nếu không có cache hoặc cache hết hạn, fetch từ API
       const response = await fetch('/api/minicourses');
@@ -183,18 +244,33 @@ export default function CoursesPage() {
 
   // Thử lại khi gặp lỗi
   const handleRetry = () => {
+    setLoading(true);
+    
     // Xóa cache khi thử lại để đảm bảo lấy dữ liệu mới
     try {
       localStorage.removeItem('courses-list');
       setCacheStatus('cleared');
+      console.log('Đã xóa cache khóa học');
     } catch (error) {
-      // Xử lý lỗi im lặng
+      console.error('Lỗi khi xóa cache:', error);
     }
-    fetchCourses();
+    
+    // Chờ 300ms để hiển thị trạng thái loading trước khi fetch
+    setTimeout(() => {
+      fetchCourses();
+    }, 300);
   };
 
   useEffect(() => {
-    fetchCourses();
+    // Kiểm tra xem có dữ liệu trong cache không trước khi fetch
+    const cachedData = getFromCache();
+    if (cachedData) {
+      setCourses(cachedData);
+      setLoading(false);
+      console.log('Đã tải dữ liệu khóa học từ cache');
+    } else {
+      fetchCourses();
+    }
     
     // Thêm intersection observer để animation khi scroll vào view
     const observer = new IntersectionObserver(
@@ -211,6 +287,7 @@ export default function CoursesPage() {
       observer.observe(statsRef.current);
     }
     
+    // Hàm dọn dẹp tự động chạy khi component bị hủy
     return () => {
       if (statsRef.current) {
         observer.unobserve(statsRef.current);
@@ -240,8 +317,11 @@ export default function CoursesPage() {
 
   // Hàm lọc và sắp xếp khóa học
   const getFilteredCourses = () => {
-    // Lấy tất cả khóa học để xử lý
+    // Tạo bản sao để tránh thay đổi trực tiếp mảng gốc
     let result = [...courses];
+    
+    // Thêm thông tin để debug
+    console.log(`Đang lọc ${courses.length} khóa học`);
     
     // Lọc các khóa học đã đăng ký nếu chế độ chỉ hiển thị khóa học đã đăng ký được bật
     if (enrolledOnly && enrolledCourses.length > 0) {
@@ -250,15 +330,17 @@ export default function CoursesPage() {
         enrolledCourseIds.includes(course._id) || 
         enrolledCourseIds.includes(course.courseId)
       );
+      console.log(`Sau khi lọc theo đăng ký: ${result.length} khóa học`);
     }
     
-    // Lọc theo từ khóa tìm kiếm
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
+    // Lọc theo từ khóa tìm kiếm - tối ưu để không phải lọc nếu không có từ khóa
+    if (searchTerm && searchTerm.trim() !== '') {
+      const term = searchTerm.toLowerCase().trim();
       result = result.filter(course => 
         (course.name?.toLowerCase().includes(term) ||
         course.description?.toLowerCase().includes(term))
       );
+      console.log(`Sau khi lọc theo từ khóa "${term}": ${result.length} khóa học`);
     }
     
     // Lọc theo danh mục
