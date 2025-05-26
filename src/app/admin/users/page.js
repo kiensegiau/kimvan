@@ -294,6 +294,44 @@ export default function UsersPage() {
     setCourseError(null);
     
     try {
+      // Kiểm tra xem người dùng có firebaseId không
+      if (!user.firebaseId) {
+        // Hiển thị thông báo và tự động khởi tạo firebaseId dựa trên id
+        toast('Đang khởi tạo thông tin người dùng...', {
+          icon: '🔄',
+          style: {
+            borderRadius: '10px',
+            background: '#3b82f6',
+            color: '#fff',
+          },
+        });
+        
+        // Cập nhật thông tin người dùng với firebaseId mới
+        const updateResponse = await fetch(`/api/users?id=${user.id}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            firebaseId: user.id, // Sử dụng ID hiện tại làm firebaseId
+          }),
+        });
+        
+        if (!updateResponse.ok) {
+          throw new Error('Không thể cập nhật thông tin người dùng');
+        }
+        
+        // Cập nhật thông tin người dùng hiện tại
+        setCurrentUser({
+          ...user,
+          firebaseId: user.id
+        });
+        
+        // Sử dụng ID đã cập nhật
+        user.firebaseId = user.id;
+        toast.success('Đã khởi tạo thông tin người dùng thành công');
+      }
+      
       // Lấy danh sách khóa học đã đăng ký của người dùng
       const enrollmentsResponse = await fetch(`/api/admin/enrollments?userId=${user.firebaseId}`);
       
@@ -316,6 +354,7 @@ export default function UsersPage() {
     } catch (err) {
       console.error('Lỗi khi lấy thông tin khóa học:', err);
       setCourseError(err.message);
+      toast.error(`Lỗi: ${err.message}`);
     } finally {
       setLoadingCourses(false);
     }
