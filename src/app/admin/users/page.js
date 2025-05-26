@@ -513,46 +513,158 @@ export default function UsersPage() {
               <p className="text-gray-500">Đang tải dữ liệu...</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Người dùng</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Điện thoại</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vai trò</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Ngày tạo</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredUsers.length > 0 ? (
-                    filteredUsers.map((user) => (
-                      <tr key={user.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="flex-shrink-0 h-10 w-10">
-                              {user.photoURL ? (
-                                <img className="h-10 w-10 rounded-full" src={user.photoURL} alt={user.displayName || 'User'} />
-                              ) : (
-                                <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
-                                  <UserIcon className="h-6 w-6 text-gray-500" />
+            <>
+              {/* Hiển thị dạng bảng trên màn hình lớn */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden">Người dùng</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden">Điện thoại</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden">Vai trò</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden">Trạng thái</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày tạo</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {filteredUsers.length > 0 ? (
+                      filteredUsers.map((user) => (
+                        <tr key={user.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap hidden">
+                            <div className="flex items-center">
+                              <div className="flex-shrink-0 h-10 w-10">
+                                {user.photoURL ? (
+                                  <img className="h-10 w-10 rounded-full" src={user.photoURL} alt={user.displayName || 'User'} />
+                                ) : (
+                                  <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+                                    <UserIcon className="h-6 w-6 text-gray-500" />
+                                  </div>
+                                )}
+                              </div>
+                              <div className="ml-4">
+                                <div className="text-sm font-medium text-gray-900">
+                                  {user.displayName || 'Chưa có tên'}
                                 </div>
-                              )}
-                            </div>
-                            <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">
-                                {user.displayName || 'Chưa có tên'}
-                              </div>
-                              <div className="text-sm text-gray-500">
-                                ID: {user.id.substring(0, 8)}...
+                                <div className="text-sm text-gray-500">
+                                  ID: {user.id.substring(0, 8)}...
+                                </div>
                               </div>
                             </div>
-                          </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">{user.email}</div>
+                            <div className="text-xs text-gray-500">
+                              {user.emailVerified ? 
+                                <span className="text-green-600">Đã xác thực</span> : 
+                                <span className="flex items-center text-yellow-600">
+                                  Chưa xác thực
+                                  <button
+                                    onClick={() => handleVerifyEmail(user.id)}
+                                    className="ml-1 text-blue-600 hover:text-blue-800"
+                                    title="Đánh dấu đã xác thực"
+                                  >
+                                    <EnvelopeIcon className="h-4 w-4" />
+                                  </button>
+                                </span>}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap hidden">
+                            <div className="text-sm text-gray-900">{user.phoneNumber || '—'}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap hidden">
+                            {user.role === 'admin' ? (
+                              <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
+                                <ShieldCheckIcon className="h-4 w-4 mr-1" />
+                                Quản trị viên
+                              </span>
+                            ) : user.role === 'editor' ? (
+                              <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                Biên tập viên
+                              </span>
+                            ) : (
+                              <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                                Người dùng
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap hidden">
+                            {user.disabled ? (
+                              <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                Đã vô hiệu hóa
+                              </span>
+                            ) : (
+                              <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                Đang hoạt động
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <div className="flex items-center space-x-2">
+                              <button
+                                onClick={() => handleEdit(user)}
+                                className="text-indigo-600 hover:text-indigo-900"
+                                title="Chỉnh sửa"
+                              >
+                                <PencilIcon className="h-5 w-5" />
+                              </button>
+                              <button
+                                onClick={() => handleResetPassword(user)}
+                                className="text-yellow-600 hover:text-yellow-900"
+                                title="Đặt lại mật khẩu"
+                              >
+                                <KeyIcon className="h-5 w-5" />
+                              </button>
+                              <button
+                                onClick={() => handleManageCourses(user)}
+                                className="text-blue-600 hover:text-blue-900"
+                                title="Quản lý khóa học"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                                </svg>
+                              </button>
+                              <button
+                                onClick={() => handleDelete(user.id)}
+                                className="text-red-600 hover:text-red-900"
+                                title="Xóa"
+                              >
+                                <TrashIcon className="h-5 w-5" />
+                              </button>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">
+                              {new Date(user.createdAt).toLocaleDateString('vi-VN')}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {new Date(user.createdAt).toLocaleTimeString('vi-VN')}
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="7" className="px-6 py-4 text-center text-sm text-gray-500">
+                          {searchTerm || roleFilter !== 'all' || statusFilter !== 'all' ? 
+                            'Không tìm thấy người dùng phù hợp với bộ lọc.' : 
+                            'Chưa có người dùng nào trong hệ thống.'}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{user.email}</div>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              
+              {/* Hiển thị dạng card trên thiết bị di động */}
+              <div className="md:hidden">
+                {filteredUsers.length > 0 ? (
+                  <div className="grid grid-cols-1 gap-4">
+                    {filteredUsers.map((user) => (
+                      <div key={user.id} className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
+                        <div className="mb-2">
+                          <div className="text-sm font-medium text-gray-900">{user.email}</div>
                           <div className="text-xs text-gray-500">
                             {user.emailVerified ? 
                               <span className="text-green-600">Đã xác thực</span> : 
@@ -561,99 +673,60 @@ export default function UsersPage() {
                                 <button
                                   onClick={() => handleVerifyEmail(user.id)}
                                   className="ml-1 text-blue-600 hover:text-blue-800"
-                                  title="Đánh dấu đã xác thực"
                                 >
                                   <EnvelopeIcon className="h-4 w-4" />
                                 </button>
                               </span>}
                           </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap hidden sm:table-cell">
-                          <div className="text-sm text-gray-900">{user.phoneNumber || '—'}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {user.role === 'admin' ? (
-                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
-                              <ShieldCheckIcon className="h-4 w-4 mr-1" />
-                              Quản trị viên
-                            </span>
-                          ) : user.role === 'editor' ? (
-                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                              Biên tập viên
-                            </span>
-                          ) : (
-                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
-                              Người dùng
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {user.disabled ? (
-                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                              Đã vô hiệu hóa
-                            </span>
-                          ) : (
-                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                              Đang hoạt động
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap hidden sm:table-cell">
-                          <div className="text-sm text-gray-900">
-                            {new Date(user.createdAt).toLocaleDateString('vi-VN')}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {new Date(user.createdAt).toLocaleTimeString('vi-VN')}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <div className="flex items-center space-x-2">
+                        </div>
+                        
+                        <div className="flex justify-between items-center">
+                          <div className="flex space-x-2">
                             <button
                               onClick={() => handleEdit(user)}
-                              className="text-indigo-600 hover:text-indigo-900"
-                              title="Chỉnh sửa"
+                              className="p-1.5 bg-indigo-100 text-indigo-600 rounded-md hover:bg-indigo-200"
                             >
-                              <PencilIcon className="h-5 w-5" />
+                              <PencilIcon className="h-4 w-4" />
                             </button>
                             <button
                               onClick={() => handleResetPassword(user)}
-                              className="text-yellow-600 hover:text-yellow-900"
-                              title="Đặt lại mật khẩu"
+                              className="p-1.5 bg-yellow-100 text-yellow-600 rounded-md hover:bg-yellow-200"
                             >
-                              <KeyIcon className="h-5 w-5" />
+                              <KeyIcon className="h-4 w-4" />
                             </button>
                             <button
                               onClick={() => handleManageCourses(user)}
-                              className="text-blue-600 hover:text-blue-900"
-                              title="Quản lý khóa học"
+                              className="p-1.5 bg-blue-100 text-blue-600 rounded-md hover:bg-blue-200"
                             >
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                               </svg>
                             </button>
                             <button
                               onClick={() => handleDelete(user.id)}
-                              className="text-red-600 hover:text-red-900"
-                              title="Xóa"
+                              className="p-1.5 bg-red-100 text-red-600 rounded-md hover:bg-red-200"
                             >
-                              <TrashIcon className="h-5 w-5" />
+                              <TrashIcon className="h-4 w-4" />
                             </button>
                           </div>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan="7" className="px-6 py-4 text-center text-sm text-gray-500">
-                        {searchTerm || roleFilter !== 'all' || statusFilter !== 'all' ? 
-                          'Không tìm thấy người dùng phù hợp với bộ lọc.' : 
-                          'Chưa có người dùng nào trong hệ thống.'}
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                          <div className="text-xs text-gray-500">
+                            {new Date(user.createdAt).toLocaleDateString('vi-VN')}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-6 bg-gray-50 rounded-lg">
+                    <p className="text-gray-500">
+                      {searchTerm || roleFilter !== 'all' || statusFilter !== 'all' ? 
+                        'Không tìm thấy người dùng phù hợp với bộ lọc.' : 
+                        'Chưa có người dùng nào trong hệ thống.'}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </>
           )}
         </div>
       </div>
