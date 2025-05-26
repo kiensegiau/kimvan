@@ -528,17 +528,37 @@ export default function CourseDetailPage({ params }) {
       <div className="mx-auto bg-white rounded-xl shadow-lg">
         {/* Tiêu đề và thông tin khóa học */}
         <div className="pt-6 px-4 sm:px-8 pb-3 border-b border-gray-200 bg-gradient-to-r from-indigo-50 to-indigo-100">
-          <button
-            onClick={() => router.push('/khoa-hoc')}
-            className="inline-flex items-center text-indigo-600 hover:text-indigo-800 mb-4 transition-colors"
-          >
-            <ArrowLeftIcon className="h-4 w-4 mr-1" />
-            <span className="text-sm font-medium">Quay lại</span>
-          </button>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            {course.name || 'Chi tiết khóa học'}
-          </h1>
-          
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <button
+                onClick={() => router.push('/khoa-hoc')}
+                className="inline-flex items-center text-indigo-600 hover:text-indigo-800 mb-4 transition-colors"
+              >
+                <ArrowLeftIcon className="h-4 w-4 mr-1" />
+                <span className="text-sm font-medium">Quay lại</span>
+              </button>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                {course.name || 'Chi tiết khóa học'}
+              </h1>
+            </div>
+            <button
+              onClick={handleRetry}
+              className="flex items-center px-3 py-2 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition-colors mb-2 sm:mb-0"
+              title="Làm mới dữ liệu"
+              disabled={loading}
+            >
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                className={`h-5 w-5 mr-1 ${loading ? 'animate-spin' : ''}`} 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              {loading ? 'Đang tải...' : 'Làm mới'}
+            </button>
+          </div>
         </div>
         
         {/* Dữ liệu khóa học */}
