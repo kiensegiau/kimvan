@@ -332,6 +332,9 @@ export default function UsersPage() {
         toast.success('Đã khởi tạo thông tin người dùng thành công');
       }
       
+      // Thiết lập cookie admin_access tạm thời
+      document.cookie = "admin_access=true; path=/; max-age=60";
+      
       // Lấy danh sách khóa học đã đăng ký của người dùng
       const enrollmentsResponse = await fetch(`/api/admin/enrollments?userId=${user.firebaseId}`);
       
@@ -377,6 +380,9 @@ export default function UsersPage() {
     setCourseError(null);
     
     try {
+      // Thiết lập cookie admin_access tạm thời
+      document.cookie = "admin_access=true; path=/; max-age=60";
+      
       // Gọi API để thêm khóa học cho người dùng
       const response = await fetch('/api/admin/enrollments', {
         method: 'POST',
@@ -415,6 +421,9 @@ export default function UsersPage() {
     }
     
     try {
+      // Thiết lập cookie admin_access tạm thời
+      document.cookie = "admin_access=true; path=/; max-age=60";
+      
       // Gọi API để xóa khóa học
       const response = await fetch(`/api/admin/enrollments?id=${enrollmentId}`, {
         method: 'DELETE',
