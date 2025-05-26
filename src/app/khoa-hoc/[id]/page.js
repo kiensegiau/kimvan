@@ -29,6 +29,7 @@ export default function CourseDetailPage({ params }) {
   const [processingLink, setProcessingLink] = useState(false);
   const [viewMode, setViewMode] = useState('table');
   const [cacheStatus, setCacheStatus] = useState('');
+  const [permissionChecked, setPermissionChecked] = useState(false);
   
   // Hàm giải mã dữ liệu với xử lý lỗi tốt hơn
   const decryptData = (encryptedData) => {
@@ -66,6 +67,7 @@ export default function CourseDetailPage({ params }) {
       if (cachedCourse) {
         // Sử dụng dữ liệu cache
         setCourse(cachedCourse);
+        setPermissionChecked(true); // Đánh dấu đã kiểm tra quyền khi dùng cache
         setLoading(false);
         
         // Hiệu ứng fade-in
@@ -131,10 +133,12 @@ export default function CourseDetailPage({ params }) {
           // Giải mã toàn bộ đối tượng
           fullCourseData = decryptData(encryptedResponse._secureData);
           setCourse(fullCourseData);
+          setPermissionChecked(true);
           // Lưu vào cache
           saveToCache(fullCourseData);
         } catch (decryptError) {
           setError(`Không thể giải mã dữ liệu khóa học: ${decryptError.message}. Vui lòng liên hệ quản trị viên.`);
+          setPermissionChecked(false);
           if (showLoading) setLoading(false);
           return;
         }
@@ -152,10 +156,12 @@ export default function CourseDetailPage({ params }) {
           delete fullCourseData._encryptedData;
           
           setCourse(fullCourseData);
+          setPermissionChecked(true);
           // Lưu vào cache
           saveToCache(fullCourseData);
         } catch (decryptError) {
           setError(`Không thể giải mã dữ liệu khóa học: ${decryptError.message}. Vui lòng liên hệ quản trị viên.`);
+          setPermissionChecked(false);
           if (showLoading) setLoading(false);
           return;
         }
@@ -163,6 +169,7 @@ export default function CourseDetailPage({ params }) {
         // Trường hợp API trả về yêu cầu đăng ký
         fullCourseData = encryptedResponse;
         setCourse(fullCourseData);
+        setPermissionChecked(true);
         // Lưu vào cache
         saveToCache(fullCourseData);
       } else if (!encryptedResponse.originalData) {
@@ -174,6 +181,7 @@ export default function CourseDetailPage({ params }) {
         // Trường hợp dữ liệu không được mã hóa
         fullCourseData = encryptedResponse;
         setCourse(fullCourseData);
+        setPermissionChecked(true);
         // Lưu vào cache
         saveToCache(fullCourseData);
       }
@@ -662,7 +670,7 @@ export default function CourseDetailPage({ params }) {
   }
   
   // Kiểm tra quyền truy cập - nếu khóa học chưa đăng ký và người dùng không có quyền xem tất cả khóa học, hiển thị thông báo yêu cầu đăng ký
-  if (!course.isEnrolled && !course.canViewAllCourses) {
+  if (!loading && course && permissionChecked && !course.isEnrolled && !course.canViewAllCourses) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white p-6">
         <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
