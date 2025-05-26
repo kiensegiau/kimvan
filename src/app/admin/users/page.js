@@ -70,7 +70,7 @@ export default function UsersPage() {
     fetchUsers();
   }, []);
 
-  // Lọc người dùng theo từ khóa tìm kiếm, vai trò và trạng thái
+  // Lọc người dùng theo từ khóa tìm kiếm và vai trò
   const filteredUsers = users.filter(user => {
     // Lọc theo từ khóa tìm kiếm
     const matchesSearch = 
@@ -82,7 +82,9 @@ export default function UsersPage() {
     const matchesRole = roleFilter === 'all' || user.role === roleFilter;
     
     return matchesSearch && matchesRole;
-  });
+  })
+  // Sắp xếp người dùng mới nhất lên trên đầu
+  .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
   // Hàm mở modal chỉnh sửa
   const handleEdit = (user) => {
@@ -786,6 +788,30 @@ export default function UsersPage() {
                                   <EnvelopeIcon className="h-4 w-4" />
                                 </button>
                               </span>}
+                          </div>
+                        </div>
+                        
+                        {/* Quyền xem khóa học */}
+                        <div className="mb-3">
+                          <div className="flex items-center justify-between">
+                            <div className="text-sm text-gray-700">Quyền xem tất cả khóa học:</div>
+                            <div>
+                              <button
+                                onClick={() => handleToggleViewAllCourses(user.id, user.canViewAllCourses)}
+                                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+                                  user.canViewAllCourses ? 'bg-indigo-600' : 'bg-gray-200'
+                                }`}
+                                role="switch"
+                                aria-checked={user.canViewAllCourses}
+                              >
+                                <span
+                                  aria-hidden="true"
+                                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                    user.canViewAllCourses ? 'translate-x-5' : 'translate-x-0'
+                                  }`}
+                                ></span>
+                              </button>
+                            </div>
                           </div>
                         </div>
                         
