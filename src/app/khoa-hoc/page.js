@@ -22,6 +22,8 @@ export default function CoursesPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [enrolledOnly, setEnrolledOnly] = useState(false); // Mặc định hiển thị tất cả khóa học
   const [enrolledCourses, setEnrolledCourses] = useState([]);
+  const [canViewAllCourses, setCanViewAllCourses] = useState(false); // Quyền xem tất cả khóa học
+  const [viewAllMode, setViewAllMode] = useState(false); // Công tắc bật/tắt chế độ xem tất cả
   
   // Thêm các state mới cho bộ lọc
   const [selectedLevel, setSelectedLevel] = useState('all');
@@ -89,11 +91,32 @@ export default function CoursesPage() {
     }
   };
 
+  // Hàm kiểm tra quyền xem tất cả khóa học
+  const checkViewAllPermission = async () => {
+    try {
+      const response = await fetch('/api/users/me');
+      if (response.ok) {
+        const userData = await response.json();
+        if (userData && userData.user) {
+          setCanViewAllCourses(!!userData.user.canViewAllCourses);
+          return !!userData.user.canViewAllCourses;
+        }
+      }
+      return false;
+    } catch (error) {
+      console.error('Lỗi khi kiểm tra quyền xem tất cả khóa học:', error);
+      return false;
+    }
+  };
+
   // Hàm để tải danh sách khóa học từ API
   const fetchCourses = async () => {
     try {
       setLoading(true);
       setError(null); // Reset error trước khi fetch
+      
+      // Kiểm tra quyền xem tất cả khóa học
+      const hasViewAllPermission = await checkViewAllPermission();
       
       // Trước tiên lấy danh sách khóa học đã đăng ký
       try {
@@ -248,36 +271,36 @@ export default function CoursesPage() {
       result = result.filter(course => {
         // Giả sử cấp độ được lưu trong thuộc tính level của khóa học
         // Nếu không có, chúng ta sẽ không lọc theo cấp độ
-        if (!course.level) return true;
         return course.level === selectedLevel;
       });
     }
     
     // Lọc theo khoảng giá
-    result = result.filter(course => 
-      course.price >= priceRange[0] && course.price <= priceRange[1]
-    );
-    
-    // Sắp xếp kết quả
-    result.sort((a, b) => {
-      switch (sortBy) {
-        case 'newest':
-          // Giả sử có trường createdAt, nếu không có thì dùng _id
-          return new Date(b.createdAt || b._id) - new Date(a.createdAt || a._id);
-        case 'popular':
-          // Giả sử có trường enrollments, nếu không có thì dùng random
-          return (b.enrollments || Math.random() * 5000) - (a.enrollments || Math.random() * 5000);
-        case 'rating':
-          // Giả sử có trường rating, nếu không có thì dùng random từ 4-5
-          return (b.rating || (Math.random() + 4)) - (a.rating || (Math.random() + 4));
-        case 'price_asc':
-          return a.price - b.price;
-        case 'price_desc':
-          return b.price - a.price;
-        default:
-          return 0;
-      }
+    result = result.filter(course => {
+      const price = course.price || 0;
+      return price >= priceRange[0] && price <= priceRange[1];
     });
+    
+    // Sắp xếp khóa học
+    switch (sortBy) {
+      case 'newest':
+        result.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+        break;
+      case 'popular':
+        result.sort((a, b) => (b.enrollmentCount || 0) - (a.enrollmentCount || 0));
+        break;
+      case 'rating':
+        result.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+        break;
+      case 'price_asc':
+        result.sort((a, b) => (a.price || 0) - (b.price || 0));
+        break;
+      case 'price_desc':
+        result.sort((a, b) => (b.price || 0) - (a.price || 0));
+        break;
+      default:
+        break;
+    }
     
     return result;
   };

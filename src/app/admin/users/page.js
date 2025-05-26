@@ -436,6 +436,40 @@ export default function UsersPage() {
     }
   };
 
+  const handleToggleViewAllCourses = async (userId, currentValue) => {
+    try {
+      // Gọi API để cập nhật quyền xem tất cả khóa học
+      const response = await fetch(`/api/users?id=${userId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          canViewAllCourses: !currentValue
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Lỗi khi cập nhật quyền xem khóa học');
+      }
+      
+      // Cập nhật danh sách người dùng
+      setUsers(users.map(user => 
+        user.id === userId 
+          ? { ...user, canViewAllCourses: !currentValue } 
+          : user
+      ));
+      
+      toast.success(`Đã ${!currentValue ? 'bật' : 'tắt'} quyền xem tất cả khóa học`);
+      
+    } catch (err) {
+      console.error('Lỗi khi cập nhật quyền xem khóa học:', err);
+      toast.error(`Lỗi: ${err.message}`);
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Toaster cho thông báo */}
@@ -561,10 +595,11 @@ export default function UsersPage() {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden">Người dùng</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden">Điện thoại</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden">Vai trò</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden">Trạng thái</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày tạo</th>
+                                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vai trò</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quyền xem khóa học</th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày tạo</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -612,6 +647,40 @@ export default function UsersPage() {
                           <td className="px-6 py-4 whitespace-nowrap hidden">
                             <div className="text-sm text-gray-900">{user.phoneNumber || '—'}</div>
                           </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="text-sm text-gray-500">{user.role || 'user'}</span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              user.disabled || user.status === 'inactive'
+                                ? 'bg-red-100 text-red-800'
+                                : 'bg-green-100 text-green-800'
+                            }`}>
+                              {user.disabled || user.status === 'inactive' ? 'Vô hiệu hóa' : 'Đang hoạt động'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <button
+                                onClick={() => handleToggleViewAllCourses(user.id, user.canViewAllCourses)}
+                                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+                                  user.canViewAllCourses ? 'bg-indigo-600' : 'bg-gray-200'
+                                }`}
+                                role="switch"
+                                aria-checked={user.canViewAllCourses}
+                              >
+                                <span
+                                  aria-hidden="true"
+                                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                    user.canViewAllCourses ? 'translate-x-5' : 'translate-x-0'
+                                  }`}
+                                ></span>
+                              </button>
+                              <span className="ml-2 text-xs">
+                                {user.canViewAllCourses ? 'Có' : 'Không'}
+                              </span>
+                            </div>
+                          </td>
                           <td className="px-6 py-4 whitespace-nowrap hidden">
                             {user.role === 'admin' ? (
                               <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
@@ -629,15 +698,37 @@ export default function UsersPage() {
                             )}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap hidden">
-                            {user.disabled ? (
-                              <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                                Đã vô hiệu hóa
+                            <div className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                user.disabled || user.status === 'inactive'
+                                  ? 'bg-red-100 text-red-800'
+                                  : 'bg-green-100 text-green-800'
+                              }`}>
+                                {user.disabled || user.status === 'inactive' ? 'Vô hiệu hóa' : 'Đang hoạt động'}
                               </span>
-                            ) : (
-                              <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                Đang hoạt động
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap hidden">
+                            <div className="flex items-center">
+                              <button
+                                onClick={() => handleToggleViewAllCourses(user.id, user.canViewAllCourses)}
+                                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+                                  user.canViewAllCourses ? 'bg-indigo-600' : 'bg-gray-200'
+                                }`}
+                                role="switch"
+                                aria-checked={user.canViewAllCourses}
+                              >
+                                <span
+                                  aria-hidden="true"
+                                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                    user.canViewAllCourses ? 'translate-x-5' : 'translate-x-0'
+                                  }`}
+                                ></span>
+                              </button>
+                              <span className="ml-2 text-xs">
+                                {user.canViewAllCourses ? 'Có' : 'Không'}
                               </span>
-                            )}
+                            </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             <div className="flex items-center space-x-2">
@@ -893,6 +984,28 @@ export default function UsersPage() {
                     <option value="active">Đang hoạt động</option>
                     <option value="inactive">Vô hiệu hóa</option>
                   </select>
+                </div>
+                
+                {/* Quyền xem tất cả khóa học */}
+                <div className="flex items-start">
+                  <div className="flex items-center h-5">
+                    <input
+                      id="canViewAllCourses"
+                      name="canViewAllCourses"
+                      type="checkbox"
+                      checked={currentUser.canViewAllCourses || false}
+                      onChange={(e) => setCurrentUser({...currentUser, canViewAllCourses: e.target.checked})}
+                      className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"
+                    />
+                  </div>
+                  <div className="ml-3 text-sm">
+                    <label htmlFor="canViewAllCourses" className="font-medium text-gray-700">
+                      Quyền xem tất cả khóa học
+                    </label>
+                    <p className="text-gray-500">
+                      Cho phép người dùng này xem nội dung của tất cả khóa học mà không cần đăng ký
+                    </p>
+                  </div>
                 </div>
               </div>
               

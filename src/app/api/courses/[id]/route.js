@@ -90,6 +90,7 @@ export async function GET(request, { params }) {
     // Kiểm tra xác thực người dùng (không bắt buộc)
     let user = null;
     let isEnrolled = false;
+    let canViewAllCourses = false; // Biến mới để kiểm tra quyền xem tất cả khóa học
     
     try {
       user = await authMiddleware(request);
@@ -102,6 +103,31 @@ export async function GET(request, { params }) {
         }).lean().exec();
         
         isEnrolled = !!enrollment;
+        
+        // Kiểm tra quyền xem tất cả khóa học
+        // 1. Kiểm tra trường canViewAllCourses trong user
+        canViewAllCourses = !!user.canViewAllCourses;
+        
+        // 2. Nếu không có trường đó, kiểm tra quyền admin (để tương thích ngược)
+        if (!canViewAllCourses && user.role === 'admin') {
+          canViewAllCourses = true;
+        }
+        
+        // Lấy thông tin chi tiết người dùng từ MongoDB để kiểm tra quyền đặc biệt
+        if (!canViewAllCourses) {
+          try {
+            const client = await clientPromise;
+            const db = client.db(process.env.MONGODB_DB || 'kimvan');
+            const userDetails = await db.collection('users').findOne({ firebaseId: user.uid });
+            
+            // Kiểm tra quyền xem tất cả khóa học từ dữ liệu MongoDB
+            if (userDetails && userDetails.canViewAllCourses) {
+              canViewAllCourses = true;
+            }
+          } catch (dbError) {
+            console.log('Lỗi khi kiểm tra quyền từ MongoDB:', dbError.message);
+          }
+        }
       }
     } catch (authError) {
       console.log('Không có thông tin xác thực người dùng:', authError.message);
@@ -121,14 +147,19 @@ export async function GET(request, { params }) {
       createdAt: course.createdAt,
       updatedAt: course.updatedAt,
       processedDriveFiles: course.processedDriveFiles || [],
-      isEnrolled: isEnrolled
+      isEnrolled: isEnrolled,
+      canViewAllCourses: canViewAllCourses // Thêm trường này để client biết người dùng có quyền xem tất cả khóa học không
     };
     
-    // Thêm dữ liệu gốc nếu yêu cầu VÀ người dùng đã đăng ký hoặc không yêu cầu đăng ký
-    if ((responseType === 'full' || responseType === 'auto') && (!requireEnrollment || isEnrolled)) {
+    // Thêm dữ liệu gốc nếu:
+    // 1. Yêu cầu dữ liệu đầy đủ VÀ
+    // 2. (Không yêu cầu đăng ký HOẶC người dùng đã đăng ký HOẶC người dùng có quyền xem tất cả khóa học)
+    if ((responseType === 'full' || responseType === 'auto') && 
+        (!requireEnrollment || isEnrolled || canViewAllCourses)) {
       responseData.originalData = course.originalData;
-    } else if (requireEnrollment && !isEnrolled && (responseType === 'full' || responseType === 'auto')) {
-      // Nếu yêu cầu đăng ký nhưng người dùng chưa đăng ký, không trả về originalData
+    } else if (requireEnrollment && !isEnrolled && !canViewAllCourses && 
+               (responseType === 'full' || responseType === 'auto')) {
+      // Nếu yêu cầu đăng ký nhưng người dùng chưa đăng ký và không có quyền xem tất cả khóa học
       responseData.requiresEnrollment = true;
     }
     

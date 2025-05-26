@@ -258,7 +258,7 @@ export async function PATCH(request) {
     
     // Lấy dữ liệu từ request
     const body = await request.json();
-    const { displayName, phoneNumber, role, status, additionalInfo } = body;
+    const { displayName, phoneNumber, role, status, additionalInfo, canViewAllCourses } = body;
     
     // Kết nối đến MongoDB
     const client = await clientPromise;
@@ -305,6 +305,7 @@ export async function PATCH(request) {
       if (role !== undefined) mongoUpdateData.role = role;
       if (status !== undefined) mongoUpdateData.status = status;
       if (additionalInfo !== undefined) mongoUpdateData.additionalInfo = additionalInfo;
+      if (canViewAllCourses !== undefined) mongoUpdateData.canViewAllCourses = canViewAllCourses;
       
       // Kiểm tra xem bản ghi đã tồn tại trong MongoDB chưa
       const existingUser = await db.collection('users').findOne({ firebaseId: id });
