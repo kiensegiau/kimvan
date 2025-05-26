@@ -53,6 +53,7 @@ export async function GET(request, { params }) {
     const secure = searchParams.get('secure') === 'true';
     const responseType = queryType || 'full';
     const requireEnrollment = searchParams.get('requireEnrollment') !== 'false'; // Mặc định yêu cầu đăng ký
+    const checkViewPermission = searchParams.get('checkViewPermission') === 'true'; // Kiểm tra quyền xem
     
     let query = {};
     
@@ -104,28 +105,48 @@ export async function GET(request, { params }) {
         
         isEnrolled = !!enrollment;
         
-        // Kiểm tra quyền xem tất cả khóa học
-        // 1. Kiểm tra trường canViewAllCourses trong user
-        canViewAllCourses = !!user.canViewAllCourses;
-        
-        // 2. Nếu không có trường đó, kiểm tra quyền admin (để tương thích ngược)
-        if (!canViewAllCourses && user.role === 'admin') {
-          canViewAllCourses = true;
-        }
-        
-        // Lấy thông tin chi tiết người dùng từ MongoDB để kiểm tra quyền đặc biệt
-        if (!canViewAllCourses) {
+        // Kiểm tra quyền xem tất cả khóa học từ MongoDB
+        if (checkViewPermission) {
           try {
             const client = await clientPromise;
             const db = client.db(process.env.MONGODB_DB || 'kimvan');
             const userDetails = await db.collection('users').findOne({ firebaseId: user.uid });
             
-            // Kiểm tra quyền xem tất cả khóa học từ dữ liệu MongoDB
-            if (userDetails && userDetails.canViewAllCourses) {
-              canViewAllCourses = true;
-            }
+            // Sử dụng trường canViewAllCourses từ MongoDB
+            canViewAllCourses = !!(userDetails && userDetails.canViewAllCourses);
+            
+            // Debug log
+            console.log('DEBUG - Quyền xem tất cả khóa học:');
+            console.log('User ID:', user.uid);
+            console.log('User details from MongoDB:', userDetails);
+            console.log('canViewAllCourses:', canViewAllCourses);
           } catch (dbError) {
             console.log('Lỗi khi kiểm tra quyền từ MongoDB:', dbError.message);
+          }
+        } else {
+          // Kiểm tra quyền xem tất cả khóa học
+          // 1. Kiểm tra trường canViewAllCourses trong user
+          canViewAllCourses = !!user.canViewAllCourses;
+          
+          // 2. Nếu không có trường đó, kiểm tra quyền admin (để tương thích ngược)
+          if (!canViewAllCourses && user.role === 'admin') {
+            canViewAllCourses = true;
+          }
+          
+          // Lấy thông tin chi tiết người dùng từ MongoDB để kiểm tra quyền đặc biệt
+          if (!canViewAllCourses) {
+            try {
+              const client = await clientPromise;
+              const db = client.db(process.env.MONGODB_DB || 'kimvan');
+              const userDetails = await db.collection('users').findOne({ firebaseId: user.uid });
+              
+              // Kiểm tra quyền xem tất cả khóa học từ dữ liệu MongoDB
+              if (userDetails && userDetails.canViewAllCourses) {
+                canViewAllCourses = true;
+              }
+            } catch (dbError) {
+              console.log('Lỗi khi kiểm tra quyền từ MongoDB:', dbError.message);
+            }
           }
         }
       }

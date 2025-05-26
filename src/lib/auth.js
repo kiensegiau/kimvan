@@ -47,6 +47,29 @@ export async function authMiddleware(req) {
   }
   
   const user = await verifyServerAuthToken(token);
+  
+  if (user) {
+    try {
+      // Kết nối đến MongoDB để lấy thông tin bổ sung
+      const { connectDB } = require('./mongodb');
+      await connectDB();
+      
+      const mongoose = require('mongoose');
+      const db = mongoose.connection.db;
+      const userCollection = db.collection('users');
+      
+      // Tìm thông tin người dùng trong MongoDB
+      const userDetails = await userCollection.findOne({ firebaseId: user.uid });
+      
+      // Thêm thông tin canViewAllCourses vào đối tượng user
+      if (userDetails) {
+        user.canViewAllCourses = !!userDetails.canViewAllCourses;
+      }
+    } catch (error) {
+      console.error('Lỗi khi lấy thông tin bổ sung từ MongoDB:', error);
+    }
+  }
+  
   return user;
 }
 

@@ -148,7 +148,7 @@ export default function CourseDetailPage({ params }) {
       // Nếu không có cache hoặc cache hết hạn, fetch từ API
       // Sử dụng tham số secure=true để nhận dữ liệu được mã hóa hoàn toàn
       // Thêm tham số requireEnrollment=true để kiểm tra quyền truy cập
-      const response = await fetch(`/api/courses/${id}?type=auto&secure=true&requireEnrollment=true`);
+      const response = await fetch(`/api/courses/${id}?type=auto&secure=true&requireEnrollment=true&checkViewPermission=true`);
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -172,6 +172,14 @@ export default function CourseDetailPage({ params }) {
         try {
           // Giải mã toàn bộ đối tượng
           fullCourseData = decryptData(encryptedResponse._secureData);
+          console.log('DEBUG - Dữ liệu khóa học sau khi giải mã:', {
+            id: fullCourseData._id,
+            name: fullCourseData.name,
+            isEnrolled: fullCourseData.isEnrolled,
+            canViewAllCourses: fullCourseData.canViewAllCourses,
+            hasOriginalData: !!fullCourseData.originalData,
+            requiresEnrollment: fullCourseData.requiresEnrollment
+          });
           setCourse(fullCourseData);
           // Lưu vào cache
           saveToCache(fullCourseData);
@@ -568,6 +576,11 @@ export default function CourseDetailPage({ params }) {
   
   // Kiểm tra quyền truy cập - nếu khóa học chưa đăng ký và người dùng không có quyền xem tất cả khóa học, hiển thị thông báo yêu cầu đăng ký
   if (!course.isEnrolled && !course.canViewAllCourses) {
+    console.log('DEBUG - Kiểm tra quyền truy cập khóa học:');
+    console.log('isEnrolled:', course.isEnrolled);
+    console.log('canViewAllCourses:', course.canViewAllCourses);
+    console.log('Hiển thị trang yêu cầu đăng ký');
+    
     return (
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white p-6">
         <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
