@@ -20,6 +20,8 @@ export default function CoursesPage() {
   const statsRef = useRef(null);
   const [cacheStatus, setCacheStatus] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+  const [enrolledOnly, setEnrolledOnly] = useState(true); // Mặc định chỉ hiển thị khóa học đã đăng ký
+  const [enrolledCourses, setEnrolledCourses] = useState([]);
   
   // Thêm các state mới cho bộ lọc
   const [selectedLevel, setSelectedLevel] = useState('all');
@@ -92,6 +94,25 @@ export default function CoursesPage() {
     try {
       setLoading(true);
       setError(null); // Reset error trước khi fetch
+      
+      // Trước tiên lấy danh sách khóa học đã đăng ký
+      try {
+        const enrollmentsResponse = await fetch('/api/enrollments');
+        
+        if (enrollmentsResponse.ok) {
+          const enrollmentsData = await enrollmentsResponse.json();
+          if (enrollmentsData.success && enrollmentsData.data) {
+            setEnrolledCourses(enrollmentsData.data);
+          }
+        } else if (enrollmentsResponse.status === 401) {
+          // Người dùng chưa đăng nhập
+          setError('Bạn cần đăng nhập để xem khóa học đã đăng ký');
+          setLoading(false);
+          return;
+        }
+      } catch (enrollError) {
+        console.error('Lỗi khi lấy khóa học đã đăng ký:', enrollError);
+      }
       
       // Kiểm tra cache trước
       const cachedCourses = getFromCache();
@@ -196,7 +217,17 @@ export default function CoursesPage() {
 
   // Hàm lọc và sắp xếp khóa học
   const getFilteredCourses = () => {
+    // Nếu chỉ hiển thị khóa học đã đăng ký và có danh sách khóa học đã đăng ký
     let result = [...courses];
+    
+    if (enrolledOnly && enrolledCourses.length > 0) {
+      // Lọc các khóa học đã đăng ký
+      const enrolledCourseIds = enrolledCourses.map(enrollment => enrollment.courseId);
+      result = result.filter(course => 
+        enrolledCourseIds.includes(course._id) || 
+        enrolledCourseIds.includes(course.courseId)
+      );
+    }
     
     // Lọc theo từ khóa tìm kiếm
     if (searchTerm) {
@@ -368,10 +399,16 @@ export default function CoursesPage() {
           <div className="text-center md:text-left md:flex md:items-center md:justify-between">
             <div className="mb-8 md:mb-0 md:max-w-2xl">
               <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-white mb-4 tracking-tight">
-                Khám phá kho tàng <span className="text-yellow-300">kiến thức</span> cùng chúng tôi
+                {enrolledOnly 
+                  ? <><span className="text-yellow-300">Khóa học</span> đã đăng ký</>
+                  : <>Khám phá <span className="text-yellow-300">khóa học</span> cùng chúng tôi</>
+                }
               </h1>
               <p className="text-indigo-100 text-lg md:text-xl max-w-2xl mx-auto md:mx-0">
-                Hàng trăm khóa học chất lượng cao trong nhiều lĩnh vực khác nhau. Bắt đầu hành trình học tập của bạn ngay hôm nay!
+                {enrolledOnly
+                  ? 'Danh sách các khóa học bạn đã đăng ký. Tiếp tục học tập và nâng cao kỹ năng của bạn!'
+                  : 'Hàng trăm khóa học chất lượng cao trong nhiều lĩnh vực khác nhau. Bắt đầu hành trình học tập của bạn ngay hôm nay!'
+                }
               </p>
             </div>
             <div className="hidden lg:block relative w-64 h-64">
@@ -511,16 +548,20 @@ export default function CoursesPage() {
           {/* Các con số thống kê */}
           <div className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
             <div className="bg-white bg-opacity-10 rounded-lg p-4">
-              <div className="text-2xl md:text-3xl font-bold text-white">20+</div>
-              <div className="text-indigo-100 text-sm">Danh mục</div>
+              <div className="text-2xl md:text-3xl font-bold text-white">{enrolledCourses.length}</div>
+              <div className="text-indigo-100 text-sm">Khóa học đã đăng ký</div>
             </div>
             <div className="bg-white bg-opacity-10 rounded-lg p-4">
-              <div className="text-2xl md:text-3xl font-bold text-white">300+</div>
-              <div className="text-indigo-100 text-sm">Khóa học</div>
+              <div className="text-2xl md:text-3xl font-bold text-white">{courses.length}</div>
+              <div className="text-indigo-100 text-sm">Tổng số khóa học</div>
             </div>
             <div className="bg-white bg-opacity-10 rounded-lg p-4">
-              <div className="text-2xl md:text-3xl font-bold text-white">50K+</div>
-              <div className="text-indigo-100 text-sm">Học viên</div>
+              <div className="text-2xl md:text-3xl font-bold text-white">
+                {enrolledOnly ? filteredCourses.length : courses.length}
+              </div>
+              <div className="text-indigo-100 text-sm">
+                {enrolledOnly ? 'Khóa học hiển thị' : 'Khóa học có sẵn'}
+              </div>
             </div>
             <div className="bg-white bg-opacity-10 rounded-lg p-4">
               <div className="text-2xl md:text-3xl font-bold text-white">4.8</div>
@@ -556,10 +597,42 @@ export default function CoursesPage() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 px-2 md:px-0">
           <h2 className="text-2xl md:text-3xl font-bold text-gray-900 flex items-center mb-3 md:mb-0">
             <AcademicCapIcon className="h-7 w-7 mr-2 text-indigo-600" />
-            {searchTerm ? `Kết quả tìm kiếm "${searchTerm}"` : 'Danh sách khóa học'}
-            
+            {searchTerm 
+              ? `Kết quả tìm kiếm "${searchTerm}"` 
+              : enrolledOnly 
+                ? 'Khóa học đã đăng ký' 
+                : 'Tất cả khóa học'
+            }
           </h2>
           <div className="flex items-center gap-2">
+            <div className="bg-gray-100 rounded-lg p-1 flex items-center">
+              <button
+                onClick={() => setEnrolledOnly(true)}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                  enrolledOnly 
+                    ? 'bg-indigo-600 text-white' 
+                    : 'text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                <span className="flex items-center">
+                  <CheckCircleIcon className="h-4 w-4 mr-1.5" />
+                  Đã đăng ký
+                </span>
+              </button>
+              <button
+                onClick={() => setEnrolledOnly(false)}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                  !enrolledOnly 
+                    ? 'bg-indigo-600 text-white' 
+                    : 'text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                <span className="flex items-center">
+                  <AcademicCapIcon className="h-4 w-4 mr-1.5" />
+                  Tất cả khóa học
+                </span>
+              </button>
+            </div>
             <button
               onClick={handleRetry}
               className="flex items-center px-3 py-2 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition-colors"
@@ -596,19 +669,6 @@ export default function CoursesPage() {
                     <button 
                       onClick={() => setSelectedCategory('all')} 
                       className="ml-1 text-indigo-600 hover:text-indigo-800"
-                    >
-                      <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </span>
-                )}
-                {selectedLevel !== 'all' && (
-                  <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-                    {selectedLevel}
-                    <button 
-                      onClick={() => setSelectedLevel('all')} 
-                      className="ml-1 text-green-600 hover:text-green-800"
                     >
                       <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -690,6 +750,12 @@ export default function CoursesPage() {
                       </div>
                     </div>
                     
+                    {/* Enrolled badge */}
+                    <div className="absolute top-3 left-3 px-3 py-1 bg-green-500 bg-opacity-90 backdrop-blur-sm text-white text-xs rounded-full font-medium flex items-center">
+                      <CheckCircleIcon className="h-3 w-3 mr-1" />
+                      Đã đăng ký
+                    </div>
+                    
                     {/* Gradient overlay at bottom */}
                     <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-indigo-900 to-transparent opacity-70"></div>
                   </div>
@@ -739,7 +805,7 @@ export default function CoursesPage() {
                     </div>
                     
                     <button className="inline-flex items-center justify-center px-3 py-1.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors group-hover:bg-indigo-700">
-                      <span>Chi tiết</span>
+                      <span>Tiếp tục học</span>
                       <ArrowRightIcon className="ml-1.5 h-4 w-4" />
                     </button>
                     </div>
@@ -753,13 +819,17 @@ export default function CoursesPage() {
             <h3 className="text-xl font-medium text-gray-900 mb-2">
               {searchTerm 
                 ? `Không tìm thấy khóa học nào cho "${searchTerm}"` 
-                : 'Không tìm thấy khóa học nào'
+                : enrolledOnly
+                  ? 'Bạn chưa đăng ký khóa học nào'
+                  : 'Không tìm thấy khóa học nào'
               }
             </h3>
             <p className="text-gray-500 mb-6 max-w-md mx-auto">
               {searchTerm
                 ? `Không tìm thấy khóa học phù hợp với tiêu chí tìm kiếm của bạn. Hãy thử tìm kiếm với từ khóa khác hoặc điều chỉnh bộ lọc.`
-                : 'Không tìm thấy khóa học nào trong hệ thống. Vui lòng thử lại sau.'
+                : enrolledOnly
+                  ? 'Bạn chưa đăng ký khóa học nào. Hãy khám phá và đăng ký các khóa học để bắt đầu hành trình học tập của bạn.'
+                  : 'Không tìm thấy khóa học nào trong hệ thống. Vui lòng thử lại sau.'
               }
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
@@ -774,13 +844,13 @@ export default function CoursesPage() {
                   Xóa bộ lọc
                 </button>
               )}
-                  <button
-                onClick={() => setShowFilters(true)}
+              <button
+                onClick={() => enrolledOnly ? setEnrolledOnly(false) : router.push('/khoa-hoc-all')}
                 className="inline-flex items-center justify-center px-6 py-3 border border-indigo-600 rounded-lg text-base font-medium text-indigo-700 bg-white hover:bg-indigo-50"
               >
-                <FunnelIcon className="h-5 w-5 mr-2" />
-                Điều chỉnh bộ lọc
-                  </button>
+                <AcademicCapIcon className="h-5 w-5 mr-2" />
+                {enrolledOnly ? 'Xem tất cả khóa học' : 'Khám phá khóa học'}
+              </button>
             </div>
             </div>
           )}
@@ -1002,7 +1072,7 @@ export default function CoursesPage() {
               <input
                 type="email"
                 placeholder="Email của bạn"
-                className="px-3 py-2 w-full text-sm bg-gray-800 border border-gray-700 rounded-l-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 text-white"
+                className="px-3 py-2 w-full text-sm bg-gray-800 border border-gray-700 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-white"
               />
               <button className="bg-indigo-600 px-4 rounded-r-lg hover:bg-indigo-700 transition-colors duration-200">
                 <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
