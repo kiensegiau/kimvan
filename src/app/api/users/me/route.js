@@ -71,7 +71,7 @@ export async function GET(request) {
       }, { status: 404 });
     }
 
-    // Lấy thông tin khóa học đã đăng ký
+    // Lấy thông tin khóa học đã đăng ký từ collection enrollments
     const enrolledCourses = await db.collection('enrollments')
       .aggregate([
         { $match: { userId: user.uid } },
@@ -110,14 +110,16 @@ export async function GET(request) {
       data: {
         ...userData,
         enrolledCourses: enrolledCourses.map(course => ({
-          id: course.courseDetails._id,
+          id: course._id,
+          courseId: course.courseDetails._id,
           name: course.courseDetails.name,
           progress: course.progress || 0,
           lastAccessed: course.lastAccessedAt,
           image: course.courseDetails.image,
           instructor: course.courseDetails.instructor,
           completedLessons: course.completedLessons || 0,
-          totalLessons: course.courseDetails.totalLessons || 0
+          totalLessons: course.courseDetails.totalLessons || 0,
+          status: course.status || 'active'
         })),
         certificates: certificates.map(cert => ({
           id: cert._id,

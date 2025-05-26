@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { PlusIcon, PencilIcon, TrashIcon, ExclamationCircleIcon, ArrowPathIcon, ShieldCheckIcon, UserIcon, KeyIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, PencilIcon, TrashIcon, ExclamationCircleIcon, ArrowPathIcon, ShieldCheckIcon, UserIcon, KeyIcon, EnvelopeIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { auth } from '@/lib/firebase';
 import { toast } from 'react-hot-toast';
 import { Toaster } from 'react-hot-toast';
@@ -22,6 +22,13 @@ export default function UsersPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [hasMongoConnection, setHasMongoConnection] = useState(true);
   const [newPassword, setNewPassword] = useState('');
+  const [showCoursesModal, setShowCoursesModal] = useState(false);
+  const [userCourses, setUserCourses] = useState([]);
+  const [loadingCourses, setLoadingCourses] = useState(false);
+  const [availableCourses, setAvailableCourses] = useState([]);
+  const [selectedCourseId, setSelectedCourseId] = useState('');
+  const [addingCourse, setAddingCourse] = useState(false);
+  const [courseError, setCourseError] = useState(null);
 
   // Hàm lấy danh sách người dùng
   const fetchUsers = async () => {
@@ -279,8 +286,119 @@ export default function UsersPage() {
     }
   };
 
+  // Hàm mở modal quản lý khóa học
+  const handleManageCourses = async (user) => {
+    setCurrentUser(user);
+    setShowCoursesModal(true);
+    setLoadingCourses(true);
+    setCourseError(null);
+    
+    try {
+      // Lấy danh sách khóa học đã đăng ký của người dùng
+      const enrollmentsResponse = await fetch(`/api/admin/enrollments?userId=${user.firebaseId}`);
+      
+      if (!enrollmentsResponse.ok) {
+        throw new Error('Không thể lấy danh sách khóa học đã đăng ký');
+      }
+      
+      const enrollmentsData = await enrollmentsResponse.json();
+      setUserCourses(enrollmentsData.data || []);
+      
+      // Lấy danh sách tất cả khóa học
+      const coursesResponse = await fetch('/api/admin/courses');
+      
+      if (!coursesResponse.ok) {
+        throw new Error('Không thể lấy danh sách khóa học');
+      }
+      
+      const coursesData = await coursesResponse.json();
+      setAvailableCourses(coursesData.courses || []);
+    } catch (err) {
+      console.error('Lỗi khi lấy thông tin khóa học:', err);
+      setCourseError(err.message);
+    } finally {
+      setLoadingCourses(false);
+    }
+  };
+  
+  // Hàm thêm khóa học cho người dùng
+  const handleAddCourse = async () => {
+    if (!selectedCourseId) {
+      setCourseError('Vui lòng chọn khóa học');
+      return;
+    }
+    
+    if (!currentUser || !currentUser.firebaseId) {
+      setCourseError('Không có thông tin người dùng hợp lệ');
+      toast.error('Không có thông tin người dùng hợp lệ');
+      return;
+    }
+    
+    setAddingCourse(true);
+    setCourseError(null);
+    
+    try {
+      // Gọi API để thêm khóa học cho người dùng
+      const response = await fetch('/api/admin/enrollments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: currentUser.firebaseId,
+          courseId: selectedCourseId
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || data.message || 'Không thể thêm khóa học cho người dùng');
+      }
+      
+      // Cập nhật danh sách khóa học
+      setUserCourses(prev => [...prev, data.data]);
+      setSelectedCourseId('');
+      toast.success('Đã thêm khóa học cho người dùng');
+    } catch (err) {
+      console.error('Lỗi khi thêm khóa học:', err);
+      setCourseError(err.message);
+      toast.error(`Lỗi: ${err.message}`);
+    } finally {
+      setAddingCourse(false);
+    }
+  };
+  
+  // Hàm xóa khóa học của người dùng
+  const handleRemoveCourse = async (enrollmentId) => {
+    if (!window.confirm('Bạn có chắc chắn muốn xóa khóa học này khỏi người dùng?')) {
+      return;
+    }
+    
+    try {
+      // Gọi API để xóa khóa học
+      const response = await fetch(`/api/admin/enrollments?id=${enrollmentId}`, {
+        method: 'DELETE',
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Không thể xóa khóa học');
+      }
+      
+      // Cập nhật danh sách khóa học
+      setUserCourses(prev => prev.filter(course => course.id !== enrollmentId));
+      toast.success('Đã xóa khóa học khỏi người dùng');
+    } catch (err) {
+      console.error('Lỗi khi xóa khóa học:', err);
+      setCourseError(err.message);
+      toast.error(`Lỗi: ${err.message}`);
+    }
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="container mx-auto px-4 py-8">
       {/* Toaster cho thông báo */}
       <div>
         <Toaster
@@ -489,27 +607,38 @@ export default function UsersPage() {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <button
-                            onClick={() => handleResetPassword(user)}
-                            className="text-blue-600 hover:text-blue-900 mr-3"
-                            title="Đặt lại mật khẩu"
-                          >
-                            <KeyIcon className="h-5 w-5" />
-                          </button>
-                          <button
-                            onClick={() => handleEdit(user)}
-                            className="text-indigo-600 hover:text-indigo-900 mr-3"
-                            title="Chỉnh sửa"
-                          >
-                            <PencilIcon className="h-5 w-5" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(user.id)}
-                            className="text-red-600 hover:text-red-900"
-                            title="Xóa"
-                          >
-                            <TrashIcon className="h-5 w-5" />
-                          </button>
+                          <div className="flex items-center space-x-2">
+                            <button
+                              onClick={() => handleEdit(user)}
+                              className="text-indigo-600 hover:text-indigo-900"
+                              title="Chỉnh sửa"
+                            >
+                              <PencilIcon className="h-5 w-5" />
+                            </button>
+                            <button
+                              onClick={() => handleResetPassword(user)}
+                              className="text-yellow-600 hover:text-yellow-900"
+                              title="Đặt lại mật khẩu"
+                            >
+                              <KeyIcon className="h-5 w-5" />
+                            </button>
+                            <button
+                              onClick={() => handleManageCourses(user)}
+                              className="text-blue-600 hover:text-blue-900"
+                              title="Quản lý khóa học"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => handleDelete(user.id)}
+                              className="text-red-600 hover:text-red-900"
+                              title="Xóa"
+                            >
+                              <TrashIcon className="h-5 w-5" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -766,6 +895,164 @@ export default function UsersPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal quản lý khóa học */}
+      {showCoursesModal && currentUser && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+              <h3 className="text-lg font-medium text-gray-900">
+                Quản lý khóa học - {currentUser.displayName || currentUser.email}
+              </h3>
+              <button
+                onClick={() => setShowCoursesModal(false)}
+                className="text-gray-400 hover:text-gray-500"
+              >
+                <XMarkIcon className="h-6 w-6" />
+              </button>
+            </div>
+            
+            <div className="px-6 py-4 max-h-[calc(90vh-120px)] overflow-y-auto">
+              {loadingCourses ? (
+                <div className="flex justify-center items-center py-8">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+                </div>
+              ) : courseError ? (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
+                  <p>{courseError}</p>
+                </div>
+              ) : (
+                <>
+                  {/* Thêm khóa học mới */}
+                  <div className="mb-6 bg-gray-50 p-4 rounded-lg">
+                    <h4 className="text-base font-medium text-gray-900 mb-3">Thêm khóa học mới</h4>
+                    <div className="flex items-center space-x-2">
+                      <select
+                        value={selectedCourseId}
+                        onChange={(e) => setSelectedCourseId(e.target.value)}
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                      >
+                        <option value="">-- Chọn khóa học --</option>
+                        {Array.isArray(availableCourses) ? availableCourses.map((course) => (
+                          <option key={course._id} value={course._id}>
+                            {course.name}
+                          </option>
+                        )) : null}
+                      </select>
+                      <button
+                        onClick={handleAddCourse}
+                        disabled={addingCourse || !selectedCourseId}
+                        className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white ${
+                          addingCourse || !selectedCourseId
+                            ? 'bg-gray-400'
+                            : 'bg-indigo-600 hover:bg-indigo-700'
+                        }`}
+                      >
+                        {addingCourse ? (
+                          <>
+                            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Đang thêm...
+                          </>
+                        ) : (
+                          'Thêm khóa học'
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {/* Danh sách khóa học đã đăng ký */}
+                  <h4 className="text-base font-medium text-gray-900 mb-3">Khóa học đã đăng ký ({userCourses.length})</h4>
+                  {userCourses.length === 0 ? (
+                    <div className="text-center py-6 bg-gray-50 rounded-lg">
+                      <p className="text-gray-500">Người dùng này chưa đăng ký khóa học nào</p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Tên khóa học
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Tiến độ
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Trạng thái
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Ngày đăng ký
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Thao tác
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {userCourses.map((course) => (
+                            <tr key={course.id}>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                {course.courseName}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <div className="flex items-center">
+                                  <div className="w-full bg-gray-200 rounded-full h-2.5">
+                                    <div 
+                                      className="bg-indigo-600 h-2.5 rounded-full" 
+                                      style={{ width: `${course.progress || 0}%` }}
+                                    ></div>
+                                  </div>
+                                  <span className="ml-2">{course.progress || 0}%</span>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                  course.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                  course.status === 'active' ? 'bg-blue-100 text-blue-800' :
+                                  course.status === 'expired' ? 'bg-red-100 text-red-800' :
+                                  'bg-gray-100 text-gray-800'
+                                }`}>
+                                  {course.status === 'completed' ? 'Hoàn thành' :
+                                   course.status === 'active' ? 'Đang học' :
+                                   course.status === 'expired' ? 'Hết hạn' :
+                                   course.status || 'Không xác định'}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {new Date(course.enrolledAt).toLocaleDateString('vi-VN')}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <button
+                                  onClick={() => handleRemoveCourse(course.id)}
+                                  className="text-red-600 hover:text-red-900"
+                                >
+                                  <TrashIcon className="h-5 w-5" />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+            
+            <div className="px-6 py-4 border-t border-gray-200 flex justify-end">
+              <button
+                onClick={() => setShowCoursesModal(false)}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+              >
+                Đóng
+              </button>
+            </div>
           </div>
         </div>
       )}

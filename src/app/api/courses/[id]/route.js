@@ -5,6 +5,8 @@ import CryptoJS from 'crypto-js';
 import mongoose from 'mongoose';
 import Course from '@/models/Course';
 import { connectDB } from '@/lib/mongodb';
+import Enrollment from '@/models/Enrollment';
+import { authMiddleware } from '@/lib/auth';
 
 // Khóa mã hóa - phải giống với khóa ở phía client
 const ENCRYPTION_KEY = 'kimvan-secure-key-2024';
@@ -38,101 +40,98 @@ const encryptEntireObject = (obj) => {
 // GET: Lấy một khóa học theo ID
 export async function GET(request, { params }) {
   try {
-    // Đảm bảo params được awaited
-    const resolvedParams = await Promise.resolve(params);
-    const { id } = resolvedParams;
+    const { id } = params;
     
-    const searchParams = request.nextUrl.searchParams;
-    const type = searchParams.get('type') || 'auto';
-    const secure = searchParams.get('secure') === 'true';
+    // Kiểm tra ID hợp lệ
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return NextResponse.json({ 
+        success: false,
+        message: 'ID khóa học không hợp lệ' 
+      }, { status: 400 });
+    }
     
     // Đảm bảo kết nối đến MongoDB trước khi truy vấn
     await connectDB();
     
-    // Tìm khóa học theo ID hoặc kimvanId
-    let course;
-    
-    if (type === '_id') {
-      // Tìm theo MongoDB _id
-      if (!mongoose.Types.ObjectId.isValid(id)) {
-        return NextResponse.json({ error: 'ID không hợp lệ' }, { status: 400 });
-      }
-      course = await Course.findById(id).lean().exec();
-    } else if (type === 'slug') {
-      // Tìm theo slug
-      course = await Course.findOne({ slug: id }).lean().exec();
-    } else if (type === 'kimvanId') {
-      // Tìm theo kimvanId
-      course = await Course.findOne({ kimvanId: id }).lean().exec();
-    } else {
-      // Tự động xác định loại ID (auto)
-      // Thử tìm theo kimvanId trước
-      course = await Course.findOne({ kimvanId: id }).lean().exec();
-      
-      // Nếu không tìm thấy và ID có vẻ là ObjectId, thử tìm theo _id
-      if (!course && mongoose.Types.ObjectId.isValid(id)) {
-        course = await Course.findById(id).lean().exec();
-      }
-      
-      // Nếu vẫn không tìm thấy, thử tìm theo slug
-      if (!course) {
-        course = await Course.findOne({ slug: id }).lean().exec();
-      }
-    }
+    // Tìm khóa học theo ID
+    const course = await Course.findById(id).lean().exec();
     
     if (!course) {
-      return NextResponse.json({ error: 'Không tìm thấy khóa học' }, { status: 404 });
+      return NextResponse.json({ 
+        success: false,
+        message: 'Không tìm thấy khóa học' 
+      }, { status: 404 });
     }
     
-    // Tạo một bản sao an toàn để không ảnh hưởng đến đối tượng gốc
-    const safeResponse = { ...course };
+    // Kiểm tra xác thực người dùng (không bắt buộc)
+    let user = null;
+    let isEnrolled = false;
     
-    // Loại bỏ các trường nhạy cảm khỏi phản hồi chính
-    if (secure) {
-      // Mã hóa toàn bộ đối tượng nếu yêu cầu bảo mật cao
-      const encryptedFullData = encryptEntireObject(course);
-      return NextResponse.json({ _secureData: encryptedFullData });
-    } else {
-      // Mã hóa chỉ dữ liệu nhạy cảm
-      if (safeResponse.originalData) {
-        try {
-          // Sử dụng hàm mã hóa đã được cải thiện
-          const encryptedData = encryptData(safeResponse.originalData);
-          
-          // Thay thế dữ liệu gốc bằng dữ liệu đã mã hóa
-          safeResponse._encryptedData = encryptedData;
-          delete safeResponse.originalData;
-        } catch (encryptError) {
-          console.error("Lỗi khi mã hóa dữ liệu:", encryptError);
-          return NextResponse.json({ 
-            error: 'Lỗi khi xử lý dữ liệu khóa học',
-            message: encryptError.message 
-          }, { status: 500 });
-        }
+    try {
+      user = await authMiddleware(request);
+      
+      if (user) {
+        // Kiểm tra xem người dùng đã đăng ký khóa học này chưa
+        const enrollment = await Enrollment.findOne({
+          userId: user.uid,
+          courseId: id
+        }).lean().exec();
+        
+        isEnrolled = !!enrollment;
       }
-      
-      // Loại bỏ thêm các trường nhạy cảm khác
-      delete safeResponse.__v;
-      
-      // Giữ lại chỉ những trường cần thiết
-      const publicData = {
-        _id: safeResponse._id,
-        kimvanId: safeResponse.kimvanId,
-        name: safeResponse.name,
-        description: safeResponse.description,
-        price: safeResponse.price,
-        status: safeResponse.status,
-        updatedAt: safeResponse.updatedAt,
-        _encryptedData: safeResponse._encryptedData
-      };
-      
-      return NextResponse.json(publicData);
+    } catch (authError) {
+      console.log('Không có thông tin xác thực người dùng:', authError.message);
+      // Không trả về lỗi, chỉ tiếp tục với thông tin khóa học
     }
+    
+    // Lấy tham số truy vấn từ URL
+    const { searchParams } = new URL(request.url);
+    const secure = searchParams.get('secure') === 'true';
+    const type = searchParams.get('type') || 'full';
+    
+    // Tạo dữ liệu trả về
+    const responseData = {
+      _id: course._id,
+      name: course.name,
+      description: course.description,
+      price: course.price,
+      originalPrice: course.originalPrice,
+      status: course.status,
+      kimvanId: course.kimvanId,
+      spreadsheetId: course.spreadsheetId,
+      createdAt: course.createdAt,
+      updatedAt: course.updatedAt,
+      processedDriveFiles: course.processedDriveFiles || [],
+      isEnrolled: isEnrolled
+    };
+    
+    // Thêm dữ liệu gốc nếu yêu cầu
+    if (type === 'full' || type === 'auto') {
+      responseData.originalData = course.originalData;
+    }
+    
+    // Mã hóa dữ liệu nếu yêu cầu
+    if (secure) {
+      try {
+        const encryptedData = encryptData(responseData);
+        return NextResponse.json({ _secureData: encryptedData });
+      } catch (encryptError) {
+        console.error("Lỗi khi mã hóa dữ liệu:", encryptError);
+        return NextResponse.json({ 
+          error: 'Lỗi khi xử lý dữ liệu khóa học',
+          message: encryptError.message 
+        }, { status: 500 });
+      }
+    }
+    
+    // Trả về dữ liệu không mã hóa
+    return NextResponse.json(responseData);
   } catch (error) {
     console.error('Lỗi khi lấy thông tin khóa học:', error);
     return NextResponse.json({ 
-      error: 'Lỗi server', 
-      message: error.message 
+      success: false,
+      message: 'Đã xảy ra lỗi khi lấy thông tin khóa học',
+      error: error.message 
     }, { status: 500 });
   }
 }

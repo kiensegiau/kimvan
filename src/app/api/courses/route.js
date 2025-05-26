@@ -3,6 +3,7 @@ import clientPromise from '@/lib/mongodb';
 import CryptoJS from 'crypto-js';
 import mongoose from 'mongoose';
 import Course from '@/models/Course';
+import Enrollment from '@/models/Enrollment';
 import { authMiddleware } from '@/lib/auth';
 import { connectDB } from '@/lib/mongodb';
 
@@ -28,18 +29,53 @@ const encryptData = (data) => {
 export async function GET(request) {
   try {
     // Kiểm tra xác thực người dùng sử dụng Firebase Auth
-    const user = await authMiddleware(request);
+    let user = null;
+    let userEnrollments = [];
     
-    // Luôn mã hóa dữ liệu, bất kể người dùng đã đăng nhập hay chưa
+    try {
+      user = await authMiddleware(request);
+      
+      if (user) {
+        // Kết nối đến MongoDB
+        await connectDB();
+        
+        // Lấy danh sách khóa học đã đăng ký của người dùng
+        userEnrollments = await Enrollment.find({ userId: user.uid })
+          .lean()
+          .exec();
+      }
+    } catch (authError) {
+      console.log('Không có thông tin xác thực người dùng:', authError.message);
+      // Không trả về lỗi, chỉ tiếp tục với thông tin khóa học
+    }
+    
     // Đảm bảo kết nối đến MongoDB trước khi truy vấn
     await connectDB();
     
     // Lấy danh sách khóa học từ MongoDB
     const courses = await Course.find({}).lean().exec();
     
+    // Thêm thông tin đăng ký vào từng khóa học
+    const coursesWithEnrollment = courses.map(course => {
+      const isEnrolled = userEnrollments.some(
+        enrollment => enrollment.courseId.toString() === course._id.toString()
+      );
+      
+      const enrollment = isEnrolled 
+        ? userEnrollments.find(e => e.courseId.toString() === course._id.toString())
+        : null;
+      
+      return {
+        ...course,
+        isEnrolled,
+        enrollmentProgress: enrollment ? enrollment.progress : 0,
+        enrollmentStatus: enrollment ? enrollment.status : null
+      };
+    });
+    
     // Luôn mã hóa dữ liệu, bất kể tham số secure là gì
     try {
-      const encryptedData = encryptData(courses);
+      const encryptedData = encryptData(coursesWithEnrollment);
       return NextResponse.json({ _secureData: encryptedData });
     } catch (encryptError) {
       console.error("Lỗi khi mã hóa dữ liệu:", encryptError);
