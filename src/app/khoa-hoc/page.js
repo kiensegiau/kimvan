@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { ExclamationCircleIcon, MagnifyingGlassIcon, AcademicCapIcon, CheckCircleIcon, UserCircleIcon, ArrowRightIcon, ClockIcon, DocumentTextIcon, FunnelIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
+import { ExclamationCircleIcon, MagnifyingGlassIcon, AcademicCapIcon, CheckCircleIcon, UserCircleIcon, ArrowRightIcon, ClockIcon, DocumentTextIcon, FunnelIcon, ChevronDownIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { StarIcon, FireIcon } from '@heroicons/react/24/solid';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
@@ -20,7 +20,7 @@ export default function CoursesPage() {
   const statsRef = useRef(null);
   const [cacheStatus, setCacheStatus] = useState('');
   const [showFilters, setShowFilters] = useState(false);
-  const [enrolledOnly, setEnrolledOnly] = useState(true); // Luôn chỉ hiển thị khóa học đã đăng ký
+  const [enrolledOnly, setEnrolledOnly] = useState(false); // Mặc định hiển thị tất cả khóa học
   const [enrolledCourses, setEnrolledCourses] = useState([]);
   
   // Thêm các state mới cho bộ lọc
@@ -217,19 +217,16 @@ export default function CoursesPage() {
 
   // Hàm lọc và sắp xếp khóa học
   const getFilteredCourses = () => {
-    // Chỉ lấy các khóa học đã đăng ký
+    // Lấy tất cả khóa học để xử lý
     let result = [...courses];
     
-    // Lọc các khóa học đã đăng ký
-    if (enrolledCourses.length > 0) {
+    // Lọc các khóa học đã đăng ký nếu chế độ chỉ hiển thị khóa học đã đăng ký được bật
+    if (enrolledOnly && enrolledCourses.length > 0) {
       const enrolledCourseIds = enrolledCourses.map(enrollment => enrollment.courseId);
       result = result.filter(course => 
         enrolledCourseIds.includes(course._id) || 
         enrolledCourseIds.includes(course.courseId)
       );
-    } else {
-      // Nếu không có khóa học đã đăng ký, trả về mảng rỗng
-      result = [];
     }
     
     // Lọc theo từ khóa tìm kiếm
@@ -402,10 +399,16 @@ export default function CoursesPage() {
           <div className="text-center md:text-left md:flex md:items-center md:justify-between">
             <div className="mb-8 md:mb-0 md:max-w-2xl">
               <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-white mb-4 tracking-tight">
-                <span className="text-yellow-300">Khóa học</span> đã đăng ký
+                <span className="text-yellow-300">
+                  {enrolledOnly ? "Khóa học" : "Tất cả khóa học"}
+                </span>
+                {enrolledOnly ? " đã đăng ký" : " có sẵn"}
               </h1>
               <p className="text-indigo-100 text-lg md:text-xl max-w-2xl mx-auto md:mx-0">
-                Danh sách các khóa học bạn đã đăng ký. Tiếp tục học tập và nâng cao kỹ năng của bạn!
+                {enrolledOnly 
+                  ? "Danh sách các khóa học bạn đã đăng ký. Tiếp tục học tập và nâng cao kỹ năng của bạn!"
+                  : "Khám phá và đăng ký các khóa học chất lượng cao để nâng cao kiến thức và kỹ năng của bạn."
+                }
               </p>
             </div>
             <div className="hidden lg:block relative w-64 h-64">
@@ -594,9 +597,36 @@ export default function CoursesPage() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 px-2 md:px-0">
           <h2 className="text-2xl md:text-3xl font-bold text-gray-900 flex items-center mb-3 md:mb-0">
             <AcademicCapIcon className="h-7 w-7 mr-2 text-indigo-600" />
-            {searchTerm ? `Kết quả tìm kiếm "${searchTerm}"` : 'Khóa học đã đăng ký'}
+            {searchTerm 
+              ? `Kết quả tìm kiếm "${searchTerm}"` 
+              : enrolledOnly 
+                ? 'Khóa học đã đăng ký' 
+                : 'Tất cả khóa học'
+            }
           </h2>
           <div className="flex items-center gap-2">
+            <div className="bg-gray-100 rounded-lg p-1 flex items-center">
+              <button
+                onClick={() => setEnrolledOnly(true)}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                  enrolledOnly 
+                    ? 'bg-indigo-600 text-white shadow-md' 
+                    : 'text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Đã đăng ký
+              </button>
+              <button
+                onClick={() => setEnrolledOnly(false)}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                  !enrolledOnly 
+                    ? 'bg-indigo-600 text-white shadow-md' 
+                    : 'text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Tất cả
+              </button>
+            </div>
             <button
               onClick={handleRetry}
               className="flex items-center px-3 py-2 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition-colors"
@@ -690,88 +720,104 @@ export default function CoursesPage() {
                 const rating = getRandomRating();
                 const level = getRandomLevel();
                 const students = getRandomStudentCount();
-              const lessons = getRandomLessonCount();
+                const lessons = getRandomLessonCount();
+                
+                // Kiểm tra xem khóa học đã đăng ký chưa
+                const isEnrolled = enrolledCourses.some(enrollment => 
+                  enrollment.courseId === course._id || enrollment.courseId === course.courseId
+                );
                 
                 return (
                   <div 
                     key={course._id} 
-                  className="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col h-full group cursor-pointer"
+                    className="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col h-full group cursor-pointer"
                     onClick={() => router.push(`/khoa-hoc/${course.kimvanId || course._id}`)}
                   >
-                  <div className="h-40 bg-gradient-to-r from-indigo-600 to-purple-700 relative overflow-hidden">
-                    {/* Background pattern */}
-                    <div className="absolute inset-0 bg-grid-white/10 bg-[size:20px_20px] opacity-20"></div>
-                    
-                    {/* Course level badge */}
-                    <div className="absolute top-3 right-3 px-3 py-1 bg-black bg-opacity-30 backdrop-blur-sm text-white text-xs rounded-full font-medium">
-                      {level}
+                    <div className="h-40 bg-gradient-to-r from-indigo-600 to-purple-700 relative overflow-hidden">
+                      {/* Background pattern */}
+                      <div className="absolute inset-0 bg-grid-white/10 bg-[size:20px_20px] opacity-20"></div>
+                      
+                      {/* Course level badge */}
+                      <div className="absolute top-3 right-3 px-3 py-1 bg-black bg-opacity-30 backdrop-blur-sm text-white text-xs rounded-full font-medium">
+                        {level}
                       </div>
+                      
+                      {/* Course icon */}
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="h-20 w-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                          <AcademicCapIcon className="h-10 w-10 text-white" />
+                        </div>
+                      </div>
+                      
+                      {/* Enrolled badge */}
+                      {isEnrolled && (
+                        <div className="absolute top-3 left-3 px-3 py-1 bg-green-500 bg-opacity-90 backdrop-blur-sm text-white text-xs rounded-full font-medium flex items-center">
+                          <CheckCircleIcon className="h-3 w-3 mr-1" />
+                          Đã đăng ký
+                        </div>
+                      )}
+                      
+                      {/* Gradient overlay at bottom */}
+                      <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-indigo-900 to-transparent opacity-70"></div>
+                    </div>
                     
-                    {/* Course icon */}
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="h-20 w-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                        <AcademicCapIcon className="h-10 w-10 text-white" />
+                    <div className="p-5 flex-grow">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center space-x-1">
+                          {renderStars(rating)}
+                          <span className="text-xs text-gray-500 ml-1">({rating.toFixed(1)})</span>
+                        </div>
+                        <span className="text-xs font-medium text-indigo-600 bg-indigo-50 px-2 py-1 rounded-full">
+                          {course.category || 'Khóa học'}
+                        </span>
+                      </div>
+                      
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-indigo-600 transition-colors line-clamp-2">
+                        {course.name}
+                      </h3>
+                      
+                      <p className="text-sm text-gray-500 mb-4 line-clamp-2">
+                        {course.description || 'Khóa học chất lượng cao được thiết kế bởi các chuyên gia hàng đầu.'}
+                      </p>
+                      
+                      <div className="grid grid-cols-2 gap-3 mb-3">
+                        <div className="flex items-center text-xs text-gray-500">
+                          <UserCircleIcon className="h-3.5 w-3.5 mr-1.5 text-gray-400" />
+                          <span>{students.toLocaleString()} học viên</span>
+                        </div>
+                        <div className="flex items-center text-xs text-gray-500">
+                          <DocumentTextIcon className="h-3.5 w-3.5 mr-1.5 text-gray-400" />
+                          <span>{lessons} bài học</span>
+                        </div>
+                        <div className="flex items-center text-xs text-gray-500">
+                          <ClockIcon className="h-3.5 w-3.5 mr-1.5 text-gray-400" />
+                          <span>{Math.round(lessons * 0.4)} giờ học</span>
+                        </div>
+                        <div className="flex items-center text-xs text-gray-500">
+                          <FireIcon className="h-3.5 w-3.5 mr-1.5 text-orange-400" />
+                          <span>Mới cập nhật</span>
+                        </div>
                       </div>
                     </div>
                     
-                    {/* Enrolled badge */}
-                    <div className="absolute top-3 left-3 px-3 py-1 bg-green-500 bg-opacity-90 backdrop-blur-sm text-white text-xs rounded-full font-medium flex items-center">
-                      <CheckCircleIcon className="h-3 w-3 mr-1" />
-                      Đã đăng ký
-                    </div>
-                    
-                    {/* Gradient overlay at bottom */}
-                    <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-indigo-900 to-transparent opacity-70"></div>
-                  </div>
-                  
-                  <div className="p-5 flex-grow">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center space-x-1">
-                        {renderStars(rating)}
-                        <span className="text-xs text-gray-500 ml-1">({rating.toFixed(1)})</span>
+                    <div className="border-t border-gray-100 p-5 flex items-center justify-between bg-gray-50">
+                      <div className="font-bold text-indigo-600 text-lg">
+                        {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(100000)}
                       </div>
-                      <span className="text-xs font-medium text-indigo-600 bg-indigo-50 px-2 py-1 rounded-full">
-                        {course.category || 'Khóa học'}
-                      </span>
-                    </div>
-                    
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-indigo-600 transition-colors line-clamp-2">
-                      {course.name}
-                    </h3>
-                    
-                    <p className="text-sm text-gray-500 mb-4 line-clamp-2">
-                      {course.description || 'Khóa học chất lượng cao được thiết kế bởi các chuyên gia hàng đầu.'}
-                    </p>
-                    
-                    <div className="grid grid-cols-2 gap-3 mb-3">
-                      <div className="flex items-center text-xs text-gray-500">
-                        <UserCircleIcon className="h-3.5 w-3.5 mr-1.5 text-gray-400" />
-                        <span>{students.toLocaleString()} học viên</span>
-                      </div>
-                      <div className="flex items-center text-xs text-gray-500">
-                        <DocumentTextIcon className="h-3.5 w-3.5 mr-1.5 text-gray-400" />
-                        <span>{lessons} bài học</span>
-                      </div>
-                      <div className="flex items-center text-xs text-gray-500">
-                        <ClockIcon className="h-3.5 w-3.5 mr-1.5 text-gray-400" />
-                        <span>{Math.round(lessons * 0.4)} giờ học</span>
-                      </div>
-                      <div className="flex items-center text-xs text-gray-500">
-                        <FireIcon className="h-3.5 w-3.5 mr-1.5 text-orange-400" />
-                        <span>Mới cập nhật</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="border-t border-gray-100 p-5 flex items-center justify-between bg-gray-50">
-                    <div className="font-bold text-indigo-600 text-lg">
-                      {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(100000)}
-                    </div>
-                    
-                    <button className="inline-flex items-center justify-center px-3 py-1.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors group-hover:bg-indigo-700">
-                      <span>Tiếp tục học</span>
-                      <ArrowRightIcon className="ml-1.5 h-4 w-4" />
-                    </button>
+                      
+                      <button className="inline-flex items-center justify-center px-3 py-1.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors group-hover:bg-indigo-700">
+                        {isEnrolled ? (
+                          <>
+                            <span>Tiếp tục học</span>
+                            <ArrowRightIcon className="ml-1.5 h-4 w-4" />
+                          </>
+                        ) : (
+                          <>
+                            <span>Đăng ký</span>
+                            <PlusIcon className="ml-1.5 h-4 w-4" />
+                          </>
+                        )}
+                      </button>
                     </div>
                   </div>
                 );
@@ -779,39 +825,45 @@ export default function CoursesPage() {
             </div>
           ) : (
             <div className="text-center py-16 bg-gray-50 rounded-xl border border-gray-200 shadow-sm">
-            <MagnifyingGlassIcon className="mx-auto h-16 w-16 text-gray-300 mb-4" />
-            <h3 className="text-xl font-medium text-gray-900 mb-2">
-              {searchTerm 
-                ? `Không tìm thấy khóa học nào cho "${searchTerm}"` 
-                : 'Bạn chưa đăng ký khóa học nào'
-              }
-            </h3>
-            <p className="text-gray-500 mb-6 max-w-md mx-auto">
-              {searchTerm
-                ? `Không tìm thấy khóa học phù hợp với tiêu chí tìm kiếm của bạn. Hãy thử tìm kiếm với từ khóa khác hoặc điều chỉnh bộ lọc.`
-                : 'Bạn chưa đăng ký khóa học nào. Hãy khám phá và đăng ký các khóa học để bắt đầu hành trình học tập của bạn.'
-              }
-            </p>
-            <div className="flex flex-col sm:flex-row justify-center gap-4">
-              {(searchTerm || selectedCategory !== 'all' || selectedLevel !== 'all') && (
-                <button
-                  onClick={resetFilters}
-                  className="inline-flex items-center justify-center px-6 py-3 border border-transparent rounded-lg shadow-md text-base font-medium text-white bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                  Xóa bộ lọc
-                </button>
-              )}
-              <button
-                onClick={() => router.push('/khoa-hoc-all')}
-                className="inline-flex items-center justify-center px-6 py-3 border border-indigo-600 rounded-lg text-base font-medium text-indigo-700 bg-white hover:bg-indigo-50"
-              >
-                <AcademicCapIcon className="h-5 w-5 mr-2" />
-                Khám phá khóa học
-              </button>
-            </div>
+              <MagnifyingGlassIcon className="mx-auto h-16 w-16 text-gray-300 mb-4" />
+              <h3 className="text-xl font-medium text-gray-900 mb-2">
+                {searchTerm 
+                  ? `Không tìm thấy khóa học nào cho "${searchTerm}"` 
+                  : enrolledOnly
+                    ? 'Bạn chưa đăng ký khóa học nào'
+                    : 'Không tìm thấy khóa học nào'
+                }
+              </h3>
+              <p className="text-gray-500 mb-6 max-w-md mx-auto">
+                {searchTerm
+                  ? `Không tìm thấy khóa học phù hợp với tiêu chí tìm kiếm của bạn. Hãy thử tìm kiếm với từ khóa khác hoặc điều chỉnh bộ lọc.`
+                  : enrolledOnly
+                    ? 'Bạn chưa đăng ký khóa học nào. Hãy khám phá và đăng ký các khóa học để bắt đầu hành trình học tập của bạn.'
+                    : 'Không tìm thấy khóa học nào. Vui lòng thử lại sau hoặc liên hệ với quản trị viên.'
+                }
+              </p>
+              <div className="flex flex-col sm:flex-row justify-center gap-4">
+                {(searchTerm || selectedCategory !== 'all' || selectedLevel !== 'all') && (
+                  <button
+                    onClick={resetFilters}
+                    className="inline-flex items-center justify-center px-6 py-3 border border-transparent rounded-lg shadow-md text-base font-medium text-white bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Xóa bộ lọc
+                  </button>
+                )}
+                {enrolledOnly && (
+                  <button
+                    onClick={() => setEnrolledOnly(false)}
+                    className="inline-flex items-center justify-center px-6 py-3 border border-indigo-600 rounded-lg text-base font-medium text-indigo-700 bg-white hover:bg-indigo-50"
+                  >
+                    <AcademicCapIcon className="h-5 w-5 mr-2" />
+                    Xem tất cả khóa học
+                  </button>
+                )}
+              </div>
             </div>
           )}
         </div>

@@ -52,6 +52,7 @@ export async function GET(request, { params }) {
     const queryType = searchParams.get('type');
     const secure = searchParams.get('secure') === 'true';
     const responseType = queryType || 'full';
+    const requireEnrollment = searchParams.get('requireEnrollment') !== 'false'; // Mặc định yêu cầu đăng ký
     
     let query = {};
     
@@ -123,9 +124,12 @@ export async function GET(request, { params }) {
       isEnrolled: isEnrolled
     };
     
-    // Thêm dữ liệu gốc nếu yêu cầu
-    if (responseType === 'full' || responseType === 'auto') {
+    // Thêm dữ liệu gốc nếu yêu cầu VÀ người dùng đã đăng ký hoặc không yêu cầu đăng ký
+    if ((responseType === 'full' || responseType === 'auto') && (!requireEnrollment || isEnrolled)) {
       responseData.originalData = course.originalData;
+    } else if (requireEnrollment && !isEnrolled && (responseType === 'full' || responseType === 'auto')) {
+      // Nếu yêu cầu đăng ký nhưng người dùng chưa đăng ký, không trả về originalData
+      responseData.requiresEnrollment = true;
     }
     
     // Mã hóa dữ liệu nếu yêu cầu

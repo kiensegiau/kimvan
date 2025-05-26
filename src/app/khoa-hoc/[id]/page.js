@@ -147,7 +147,8 @@ export default function CourseDetailPage({ params }) {
       
       // Nếu không có cache hoặc cache hết hạn, fetch từ API
       // Sử dụng tham số secure=true để nhận dữ liệu được mã hóa hoàn toàn
-      const response = await fetch(`/api/courses/${id}?type=auto&secure=true`);
+      // Thêm tham số requireEnrollment=true để kiểm tra quyền truy cập
+      const response = await fetch(`/api/courses/${id}?type=auto&secure=true&requireEnrollment=true`);
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -200,6 +201,12 @@ export default function CourseDetailPage({ params }) {
           setLoading(false);
           return;
         }
+      } else if (!encryptedResponse.originalData && encryptedResponse.requiresEnrollment) {
+        // Trường hợp API trả về yêu cầu đăng ký
+        fullCourseData = encryptedResponse;
+        setCourse(fullCourseData);
+        // Lưu vào cache
+        saveToCache(fullCourseData);
       } else if (!encryptedResponse.originalData) {
         // Kiểm tra nếu không có dữ liệu gốc
         setError("Khóa học không có dữ liệu. Vui lòng liên hệ quản trị viên.");
@@ -418,6 +425,11 @@ export default function CourseDetailPage({ params }) {
     }
   };
 
+  // Hàm đăng ký khóa học - chỉ hiển thị thông báo
+  const enrollCourse = async () => {
+    alert('Chỉ quản trị viên mới có thể đăng ký khóa học cho người dùng. Vui lòng liên hệ quản trị viên để được hỗ trợ.');
+  };
+
   // Tải thông tin khóa học khi component được tạo
   useEffect(() => {
     fetchCourseDetail();
@@ -548,6 +560,131 @@ export default function CourseDetailPage({ params }) {
               <ArrowLeftIcon className="-ml-0.5 mr-2 h-5 w-5" />
               Quay lại danh sách khóa học
             </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  // Kiểm tra quyền truy cập - nếu khóa học chưa đăng ký, hiển thị thông báo yêu cầu đăng ký
+  if (!course.isEnrolled) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white p-6">
+        <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
+          {/* Header với thông tin cơ bản của khóa học */}
+          <div className="bg-gradient-to-r from-indigo-600 to-purple-700 p-6 md:p-8 relative">
+            <div className="absolute inset-0 bg-grid-white/10 bg-[size:20px_20px] opacity-10"></div>
+            <button
+              onClick={() => router.push('/khoa-hoc')}
+              className="inline-flex items-center text-white hover:text-indigo-100 mb-4 transition-colors"
+            >
+              <ArrowLeftIcon className="h-4 w-4 mr-1" />
+              <span className="text-sm font-medium">Quay lại danh sách</span>
+            </button>
+            <h1 className="text-2xl md:text-3xl font-bold text-white mb-3">
+              {course.name || 'Chi tiết khóa học'}
+            </h1>
+            <p className="text-indigo-100 text-base md:text-lg mb-4 max-w-3xl">
+              {course.description || 'Khóa học chất lượng cao được thiết kế bởi các chuyên gia hàng đầu.'}
+            </p>
+            <div className="flex items-center text-white bg-white bg-opacity-20 rounded-lg px-4 py-2 inline-block">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              <span className="font-medium">Yêu cầu đăng ký</span>
+            </div>
+          </div>
+          
+          {/* Nội dung thông báo yêu cầu đăng ký */}
+          <div className="p-6 md:p-8">
+            <div className="bg-yellow-50 border-l-4 border-yellow-400 p-6 rounded-lg mb-6">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <div className="ml-4">
+                  <h3 className="text-lg font-medium text-yellow-800">Truy cập bị hạn chế</h3>
+                  <p className="mt-2 text-yellow-700">
+                    Bạn cần đăng ký khóa học này để xem nội dung chi tiết. Vui lòng liên hệ quản trị viên để được đăng ký.
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            {/* Thông tin khóa học */}
+            <div className="mb-8">
+              <h2 className="text-xl font-bold text-gray-800 mb-4">Thông tin khóa học</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-gray-50 p-5 rounded-lg">
+                  <h3 className="text-lg font-medium text-gray-900 mb-3">Tổng quan</h3>
+                  <ul className="space-y-3">
+                    <li className="flex items-start">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-indigo-600 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span>Khóa học chất lượng cao</span>
+                    </li>
+                    <li className="flex items-start">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-indigo-600 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span>Nội dung được cập nhật thường xuyên</span>
+                    </li>
+                    <li className="flex items-start">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-indigo-600 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span>Hỗ trợ từ giảng viên</span>
+                    </li>
+                  </ul>
+                </div>
+                <div className="bg-gray-50 p-5 rounded-lg">
+                  <h3 className="text-lg font-medium text-gray-900 mb-3">Bạn sẽ học được gì</h3>
+                  <ul className="space-y-3">
+                    <li className="flex items-start">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-indigo-600 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span>Kiến thức chuyên sâu về chủ đề</span>
+                    </li>
+                    <li className="flex items-start">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-indigo-600 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span>Kỹ năng thực hành qua các bài tập</span>
+                    </li>
+                    <li className="flex items-start">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-indigo-600 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span>Chứng chỉ hoàn thành khóa học</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            
+            {/* Nút quay lại */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <button 
+                onClick={() => router.push('/khoa-hoc')}
+                className="inline-flex items-center justify-center px-6 py-3 border border-indigo-600 rounded-lg text-base font-medium text-indigo-700 bg-white hover:bg-indigo-50 transition-colors"
+              >
+                <ArrowLeftIcon className="h-5 w-5 mr-2" />
+                Quay lại danh sách
+              </button>
+              <button 
+                onClick={enrollCourse}
+                className="inline-flex items-center justify-center px-6 py-3 border border-transparent rounded-lg text-base font-medium text-white bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 shadow-md"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Thông tin đăng ký
+              </button>
+            </div>
           </div>
         </div>
       </div>
