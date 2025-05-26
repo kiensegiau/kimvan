@@ -62,28 +62,45 @@ export default function CourseDetailPage({ params }) {
     setError(null); // Reset error trước khi fetch
     
     try {
-      // Kiểm tra cache trước
-      const cachedCourse = getFromCache();
-      if (cachedCourse) {
-        // Sử dụng dữ liệu cache
-        setCourse(cachedCourse);
-        setPermissionChecked(true); // Đánh dấu đã kiểm tra quyền khi dùng cache
-        setLoading(false);
-        
-        // Hiệu ứng fade-in
-        setTimeout(() => {
-          setIsLoaded(true);
-        }, 50); // Giảm thời gian chờ xuống 50ms
-        
-        // Tải lại dữ liệu mới trong nền nếu cache đã cũ (> 6 giờ)
-        const now = Date.now();
-        const cacheItem = JSON.parse(localStorage.getItem(`course-${id}`));
-        if (cacheItem && now - cacheItem.timestamp > CACHE_DURATION / 2) {
-          // Tải lại dữ liệu mới trong nền nhưng không hiển thị loading
-          refreshCourseData(false);
+      // Kiểm tra xem đã đăng nhập hay chưa và lấy thông tin quyền truy cập
+      let hasPermissionChange = false;
+      try {
+        const permissionResponse = await fetch('/api/users/me');
+        if (permissionResponse.ok) {
+          const userData = await permissionResponse.json();
+          // Kiểm tra xem người dùng có quyền xem tất cả khóa học không
+          if (userData && userData.canViewAllCourses) {
+            // Xóa cache không cần kiểm tra để đảm bảo luôn tải dữ liệu mới nhất
+            try {
+              localStorage.removeItem(`course-${id}`);
+              hasPermissionChange = true;
+            } catch (cacheError) {
+              // Bỏ qua lỗi khi xóa cache
+            }
+          }
         }
-        
-        return;
+      } catch (permError) {
+        // Bỏ qua lỗi khi kiểm tra quyền
+      }
+
+      // Kiểm tra cache trước nếu không có thay đổi quyền
+      if (!hasPermissionChange) {
+        const cachedCourse = getFromCache();
+        if (cachedCourse) {
+          // Sử dụng dữ liệu cache
+          setCourse(cachedCourse);
+          setPermissionChecked(true); // Đánh dấu đã kiểm tra quyền khi dùng cache
+          setLoading(false);
+          
+          // Hiệu ứng fade-in
+          setTimeout(() => {
+            setIsLoaded(true);
+          }, 50); // Giảm thời gian chờ xuống 50ms
+          
+          // Tải lại dữ liệu mới ngay lập tức nếu đã đăng nhập để cập nhật quyền
+          refreshCourseData(false);
+          return;
+        }
       }
       
       // Nếu không có cache hoặc cache hết hạn, fetch từ API
@@ -133,7 +150,7 @@ export default function CourseDetailPage({ params }) {
           // Giải mã toàn bộ đối tượng
           fullCourseData = decryptData(encryptedResponse._secureData);
           setCourse(fullCourseData);
-          setPermissionChecked(true);
+          setPermissionChecked(true); // Đánh dấu đã kiểm tra quyền
           // Lưu vào cache
           saveToCache(fullCourseData);
         } catch (decryptError) {
@@ -156,7 +173,7 @@ export default function CourseDetailPage({ params }) {
           delete fullCourseData._encryptedData;
           
           setCourse(fullCourseData);
-          setPermissionChecked(true);
+          setPermissionChecked(true); // Đánh dấu đã kiểm tra quyền
           // Lưu vào cache
           saveToCache(fullCourseData);
         } catch (decryptError) {
@@ -169,7 +186,7 @@ export default function CourseDetailPage({ params }) {
         // Trường hợp API trả về yêu cầu đăng ký
         fullCourseData = encryptedResponse;
         setCourse(fullCourseData);
-        setPermissionChecked(true);
+        setPermissionChecked(true); // Đánh dấu đã kiểm tra quyền
         // Lưu vào cache
         saveToCache(fullCourseData);
       } else if (!encryptedResponse.originalData) {
@@ -181,7 +198,7 @@ export default function CourseDetailPage({ params }) {
         // Trường hợp dữ liệu không được mã hóa
         fullCourseData = encryptedResponse;
         setCourse(fullCourseData);
-        setPermissionChecked(true);
+        setPermissionChecked(true); // Đánh dấu đã kiểm tra quyền
         // Lưu vào cache
         saveToCache(fullCourseData);
       }
