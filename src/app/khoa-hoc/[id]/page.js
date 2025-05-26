@@ -151,8 +151,16 @@ export default function CourseDetailPage({ params }) {
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        const errorMessage = errorData.error || `Lỗi ${response.status}: ${response.statusText}`;
-        throw new Error(errorMessage);
+        
+        // Xử lý các mã lỗi cụ thể
+        if (response.status === 400) {
+          throw new Error(`ID khóa học không hợp lệ. Vui lòng kiểm tra lại đường dẫn.`);
+        } else if (response.status === 404) {
+          throw new Error(`Không tìm thấy khóa học với ID: ${id}`);
+        } else {
+          const errorMessage = errorData.message || errorData.error || `Lỗi ${response.status}: ${response.statusText}`;
+          throw new Error(errorMessage);
+        }
       }
       
       const encryptedResponse = await response.json();
@@ -212,8 +220,16 @@ export default function CourseDetailPage({ params }) {
       
       setLoading(false);
     } catch (error) {
+      console.error('Lỗi khi lấy thông tin khóa học:', error);
       setError(`Không thể lấy thông tin khóa học: ${error.message}`);
       setLoading(false);
+      
+      // Xóa cache nếu có lỗi để buộc tải lại dữ liệu trong lần tới
+      try {
+        localStorage.removeItem(`course-${id}`);
+      } catch (e) {
+        // Bỏ qua lỗi khi xóa cache
+      }
     }
   };
 
@@ -223,10 +239,18 @@ export default function CourseDetailPage({ params }) {
     try {
       localStorage.removeItem(`course-${id}`);
       setCacheStatus('cleared');
+      // Hiển thị thông báo đang tải lại
+      setLoading(true);
+      setError(null);
+      
+      // Thêm một chút độ trễ để người dùng thấy được thông báo đang tải
+      setTimeout(() => {
+        fetchCourseDetail();
+      }, 500);
     } catch (error) {
-      // Xử lý lỗi im lặng
+      // Xử lý lỗi im lặng và vẫn tiếp tục fetch
+      fetchCourseDetail();
     }
-    fetchCourseDetail();
   };
 
   // Hàm trích xuất YouTube video ID từ URL
@@ -468,8 +492,18 @@ export default function CourseDetailPage({ params }) {
                 <h3 className="text-xl font-bold text-red-800 mb-2">Đã xảy ra lỗi</h3>
                 <div className="mt-2 text-sm text-red-700 mb-4">
                   <p>{error}</p>
+                  {error.includes('ID khóa học không hợp lệ') && (
+                    <p className="mt-2 text-gray-600">
+                      ID khóa học không đúng định dạng hoặc không hợp lệ. Vui lòng kiểm tra lại đường dẫn hoặc quay lại danh sách khóa học.
+                    </p>
+                  )}
+                  {error.includes('Bad Request') && (
+                    <p className="mt-2 text-gray-600">
+                      Yêu cầu không hợp lệ. Có thể ID khóa học không đúng định dạng hoặc có lỗi trong quá trình xử lý.
+                    </p>
+                  )}
                 </div>
-                <div className="mt-4 flex space-x-3">
+                <div className="mt-4 flex flex-wrap gap-3">
                   <button
                     onClick={handleRetry}
                     className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-xl text-white bg-gradient-to-r from-red-600 to-red-800 hover:from-red-700 hover:to-red-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200 shadow-md"

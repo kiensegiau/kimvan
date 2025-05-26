@@ -40,21 +40,44 @@ const encryptEntireObject = (obj) => {
 // GET: Lấy một khóa học theo ID
 export async function GET(request, { params }) {
   try {
-    const { id } = params;
-    
-    // Kiểm tra ID hợp lệ
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return NextResponse.json({ 
-        success: false,
-        message: 'ID khóa học không hợp lệ' 
-      }, { status: 400 });
-    }
+    // Đảm bảo params được awaited
+    const resolvedParams = await Promise.resolve(params);
+    const { id } = resolvedParams;
     
     // Đảm bảo kết nối đến MongoDB trước khi truy vấn
     await connectDB();
     
-    // Tìm khóa học theo ID
-    const course = await Course.findById(id).lean().exec();
+    // Kiểm tra xem có tham số type=_id không
+    const { searchParams } = new URL(request.url);
+    const queryType = searchParams.get('type');
+    const secure = searchParams.get('secure') === 'true';
+    const responseType = queryType || 'full';
+    
+    let query = {};
+    
+    // Truy vấn theo loại ID - ưu tiên kimvanId trước
+    if (queryType === '_id') {
+      // Truy vấn theo MongoDB _id 
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return NextResponse.json({ 
+          success: false,
+          message: 'ID khóa học không hợp lệ' 
+        }, { status: 400 });
+      }
+      query = { _id: new ObjectId(id) };
+    } else {
+      // Truy vấn theo kimvanId
+      query = { kimvanId: id };
+      
+      // Nếu không tìm thấy bằng kimvanId, thử tìm bằng _id
+      const courseByKimvanId = await Course.findOne(query).lean().exec();
+      if (!courseByKimvanId && mongoose.Types.ObjectId.isValid(id)) {
+        query = { _id: new ObjectId(id) };
+      }
+    }
+    
+    // Tìm khóa học theo query đã xác định
+    const course = await Course.findOne(query).lean().exec();
     
     if (!course) {
       return NextResponse.json({ 
@@ -74,7 +97,7 @@ export async function GET(request, { params }) {
         // Kiểm tra xem người dùng đã đăng ký khóa học này chưa
         const enrollment = await Enrollment.findOne({
           userId: user.uid,
-          courseId: id
+          courseId: course._id.toString()
         }).lean().exec();
         
         isEnrolled = !!enrollment;
@@ -83,11 +106,6 @@ export async function GET(request, { params }) {
       console.log('Không có thông tin xác thực người dùng:', authError.message);
       // Không trả về lỗi, chỉ tiếp tục với thông tin khóa học
     }
-    
-    // Lấy tham số truy vấn từ URL
-    const { searchParams } = new URL(request.url);
-    const secure = searchParams.get('secure') === 'true';
-    const type = searchParams.get('type') || 'full';
     
     // Tạo dữ liệu trả về
     const responseData = {
@@ -106,7 +124,7 @@ export async function GET(request, { params }) {
     };
     
     // Thêm dữ liệu gốc nếu yêu cầu
-    if (type === 'full' || type === 'auto') {
+    if (responseType === 'full' || responseType === 'auto') {
       responseData.originalData = course.originalData;
     }
     

@@ -20,7 +20,7 @@ export default function CoursesPage() {
   const statsRef = useRef(null);
   const [cacheStatus, setCacheStatus] = useState('');
   const [showFilters, setShowFilters] = useState(false);
-  const [enrolledOnly, setEnrolledOnly] = useState(true); // Mặc định chỉ hiển thị khóa học đã đăng ký
+  const [enrolledOnly, setEnrolledOnly] = useState(true); // Luôn chỉ hiển thị khóa học đã đăng ký
   const [enrolledCourses, setEnrolledCourses] = useState([]);
   
   // Thêm các state mới cho bộ lọc
@@ -217,16 +217,19 @@ export default function CoursesPage() {
 
   // Hàm lọc và sắp xếp khóa học
   const getFilteredCourses = () => {
-    // Nếu chỉ hiển thị khóa học đã đăng ký và có danh sách khóa học đã đăng ký
+    // Chỉ lấy các khóa học đã đăng ký
     let result = [...courses];
     
-    if (enrolledOnly && enrolledCourses.length > 0) {
-      // Lọc các khóa học đã đăng ký
+    // Lọc các khóa học đã đăng ký
+    if (enrolledCourses.length > 0) {
       const enrolledCourseIds = enrolledCourses.map(enrollment => enrollment.courseId);
       result = result.filter(course => 
         enrolledCourseIds.includes(course._id) || 
         enrolledCourseIds.includes(course.courseId)
       );
+    } else {
+      // Nếu không có khóa học đã đăng ký, trả về mảng rỗng
+      result = [];
     }
     
     // Lọc theo từ khóa tìm kiếm
@@ -399,16 +402,10 @@ export default function CoursesPage() {
           <div className="text-center md:text-left md:flex md:items-center md:justify-between">
             <div className="mb-8 md:mb-0 md:max-w-2xl">
               <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-white mb-4 tracking-tight">
-                {enrolledOnly 
-                  ? <><span className="text-yellow-300">Khóa học</span> đã đăng ký</>
-                  : <>Khám phá <span className="text-yellow-300">khóa học</span> cùng chúng tôi</>
-                }
+                <span className="text-yellow-300">Khóa học</span> đã đăng ký
               </h1>
               <p className="text-indigo-100 text-lg md:text-xl max-w-2xl mx-auto md:mx-0">
-                {enrolledOnly
-                  ? 'Danh sách các khóa học bạn đã đăng ký. Tiếp tục học tập và nâng cao kỹ năng của bạn!'
-                  : 'Hàng trăm khóa học chất lượng cao trong nhiều lĩnh vực khác nhau. Bắt đầu hành trình học tập của bạn ngay hôm nay!'
-                }
+                Danh sách các khóa học bạn đã đăng ký. Tiếp tục học tập và nâng cao kỹ năng của bạn!
               </p>
             </div>
             <div className="hidden lg:block relative w-64 h-64">
@@ -557,10 +554,10 @@ export default function CoursesPage() {
             </div>
             <div className="bg-white bg-opacity-10 rounded-lg p-4">
               <div className="text-2xl md:text-3xl font-bold text-white">
-                {enrolledOnly ? filteredCourses.length : courses.length}
+                {filteredCourses.length}
               </div>
               <div className="text-indigo-100 text-sm">
-                {enrolledOnly ? 'Khóa học hiển thị' : 'Khóa học có sẵn'}
+                Khóa học hiển thị
               </div>
             </div>
             <div className="bg-white bg-opacity-10 rounded-lg p-4">
@@ -597,42 +594,9 @@ export default function CoursesPage() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 px-2 md:px-0">
           <h2 className="text-2xl md:text-3xl font-bold text-gray-900 flex items-center mb-3 md:mb-0">
             <AcademicCapIcon className="h-7 w-7 mr-2 text-indigo-600" />
-            {searchTerm 
-              ? `Kết quả tìm kiếm "${searchTerm}"` 
-              : enrolledOnly 
-                ? 'Khóa học đã đăng ký' 
-                : 'Tất cả khóa học'
-            }
+            {searchTerm ? `Kết quả tìm kiếm "${searchTerm}"` : 'Khóa học đã đăng ký'}
           </h2>
           <div className="flex items-center gap-2">
-            <div className="bg-gray-100 rounded-lg p-1 flex items-center">
-              <button
-                onClick={() => setEnrolledOnly(true)}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                  enrolledOnly 
-                    ? 'bg-indigo-600 text-white' 
-                    : 'text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                <span className="flex items-center">
-                  <CheckCircleIcon className="h-4 w-4 mr-1.5" />
-                  Đã đăng ký
-                </span>
-              </button>
-              <button
-                onClick={() => setEnrolledOnly(false)}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                  !enrolledOnly 
-                    ? 'bg-indigo-600 text-white' 
-                    : 'text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                <span className="flex items-center">
-                  <AcademicCapIcon className="h-4 w-4 mr-1.5" />
-                  Tất cả khóa học
-                </span>
-              </button>
-            </div>
             <button
               onClick={handleRetry}
               className="flex items-center px-3 py-2 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition-colors"
@@ -819,17 +783,13 @@ export default function CoursesPage() {
             <h3 className="text-xl font-medium text-gray-900 mb-2">
               {searchTerm 
                 ? `Không tìm thấy khóa học nào cho "${searchTerm}"` 
-                : enrolledOnly
-                  ? 'Bạn chưa đăng ký khóa học nào'
-                  : 'Không tìm thấy khóa học nào'
+                : 'Bạn chưa đăng ký khóa học nào'
               }
             </h3>
             <p className="text-gray-500 mb-6 max-w-md mx-auto">
               {searchTerm
                 ? `Không tìm thấy khóa học phù hợp với tiêu chí tìm kiếm của bạn. Hãy thử tìm kiếm với từ khóa khác hoặc điều chỉnh bộ lọc.`
-                : enrolledOnly
-                  ? 'Bạn chưa đăng ký khóa học nào. Hãy khám phá và đăng ký các khóa học để bắt đầu hành trình học tập của bạn.'
-                  : 'Không tìm thấy khóa học nào trong hệ thống. Vui lòng thử lại sau.'
+                : 'Bạn chưa đăng ký khóa học nào. Hãy khám phá và đăng ký các khóa học để bắt đầu hành trình học tập của bạn.'
               }
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
@@ -845,11 +805,11 @@ export default function CoursesPage() {
                 </button>
               )}
               <button
-                onClick={() => enrolledOnly ? setEnrolledOnly(false) : router.push('/khoa-hoc-all')}
+                onClick={() => router.push('/khoa-hoc-all')}
                 className="inline-flex items-center justify-center px-6 py-3 border border-indigo-600 rounded-lg text-base font-medium text-indigo-700 bg-white hover:bg-indigo-50"
               >
                 <AcademicCapIcon className="h-5 w-5 mr-2" />
-                {enrolledOnly ? 'Xem tất cả khóa học' : 'Khám phá khóa học'}
+                Khám phá khóa học
               </button>
             </div>
             </div>
