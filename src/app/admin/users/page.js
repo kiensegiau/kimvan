@@ -19,7 +19,6 @@ export default function UsersPage() {
   const [apiError, setApiError] = useState(null);
   const [saving, setSaving] = useState(false);
   const [roleFilter, setRoleFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
   const [hasMongoConnection, setHasMongoConnection] = useState(true);
   const [newPassword, setNewPassword] = useState('');
   const [showCoursesModal, setShowCoursesModal] = useState(false);
@@ -82,12 +81,7 @@ export default function UsersPage() {
     // Lọc theo vai trò
     const matchesRole = roleFilter === 'all' || user.role === roleFilter;
     
-    // Lọc theo trạng thái
-    const matchesStatus = statusFilter === 'all' || 
-      (statusFilter === 'active' && !user.disabled) ||
-      (statusFilter === 'inactive' && user.disabled);
-    
-    return matchesSearch && matchesRole && matchesStatus;
+    return matchesSearch && matchesRole;
   });
 
   // Hàm mở modal chỉnh sửa
@@ -558,7 +552,7 @@ export default function UsersPage() {
               />
             </div>
             <div>
-              <select
+                                  <select
                 value={roleFilter}
                 onChange={(e) => setRoleFilter(e.target.value)}
                 className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
@@ -567,17 +561,6 @@ export default function UsersPage() {
                 <option value="admin">Quản trị viên</option>
                 <option value="user">Người dùng</option>
                 <option value="editor">Biên tập viên</option>
-              </select>
-            </div>
-            <div>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-              >
-                <option value="all">Tất cả trạng thái</option>
-                <option value="active">Đang hoạt động</option>
-                <option value="inactive">Đã vô hiệu hóa</option>
               </select>
             </div>
           </div>
@@ -604,8 +587,6 @@ export default function UsersPage() {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden">Người dùng</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden">Điện thoại</th>
-                                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vai trò</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quyền xem khóa học</th>
                         <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày tạo</th>
@@ -656,18 +637,7 @@ export default function UsersPage() {
                           <td className="px-6 py-4 whitespace-nowrap hidden">
                             <div className="text-sm text-gray-900">{user.phoneNumber || '—'}</div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="text-sm text-gray-500">{user.role || 'user'}</span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              user.disabled || user.status === 'inactive'
-                                ? 'bg-red-100 text-red-800'
-                                : 'bg-green-100 text-green-800'
-                            }`}>
-                              {user.disabled || user.status === 'inactive' ? 'Vô hiệu hóa' : 'Đang hoạt động'}
-                            </span>
-                          </td>
+
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
                               <button
@@ -785,8 +755,8 @@ export default function UsersPage() {
                       ))
                     ) : (
                       <tr>
-                        <td colSpan="7" className="px-6 py-4 text-center text-sm text-gray-500">
-                          {searchTerm || roleFilter !== 'all' || statusFilter !== 'all' ? 
+                        <td colSpan="5" className="px-6 py-4 text-center text-sm text-gray-500">
+                          {searchTerm || roleFilter !== 'all' ? 
                             'Không tìm thấy người dùng phù hợp với bộ lọc.' : 
                             'Chưa có người dùng nào trong hệ thống.'}
                         </td>
@@ -858,7 +828,7 @@ export default function UsersPage() {
                 ) : (
                   <div className="text-center py-6 bg-gray-50 rounded-lg">
                     <p className="text-gray-500">
-                      {searchTerm || roleFilter !== 'all' || statusFilter !== 'all' ? 
+                      {searchTerm || roleFilter !== 'all' ? 
                         'Không tìm thấy người dùng phù hợp với bộ lọc.' : 
                         'Chưa có người dùng nào trong hệ thống.'}
                     </p>
