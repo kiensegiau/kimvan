@@ -114,12 +114,6 @@ export async function GET(request, { params }) {
             
             // Sử dụng trường canViewAllCourses từ MongoDB
             canViewAllCourses = !!(userDetails && userDetails.canViewAllCourses);
-            
-            // Debug log
-            console.log('DEBUG - Quyền xem tất cả khóa học:');
-            console.log('User ID:', user.uid);
-            console.log('User details from MongoDB:', userDetails);
-            console.log('canViewAllCourses:', canViewAllCourses);
           } catch (dbError) {
             console.log('Lỗi khi kiểm tra quyền từ MongoDB:', dbError.message);
           }

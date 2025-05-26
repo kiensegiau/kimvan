@@ -55,15 +55,225 @@ export default function CourseDetailPage({ params }) {
     }
   };
 
+  // Hàm lấy thông tin chi tiết của khóa học
+  const fetchCourseDetail = async () => {
+    setLoading(true);
+    setError(null); // Reset error trước khi fetch
+    
+    try {
+      // Kiểm tra cache trước
+      const cachedCourse = getFromCache();
+      if (cachedCourse) {
+        // Sử dụng dữ liệu cache
+        setCourse(cachedCourse);
+        setLoading(false);
+        
+        // Hiệu ứng fade-in
+        setTimeout(() => {
+          setIsLoaded(true);
+        }, 50); // Giảm thời gian chờ xuống 50ms
+        
+        // Tải lại dữ liệu mới trong nền nếu cache đã cũ (> 6 giờ)
+        const now = Date.now();
+        const cacheItem = JSON.parse(localStorage.getItem(`course-${id}`));
+        if (cacheItem && now - cacheItem.timestamp > CACHE_DURATION / 2) {
+          // Tải lại dữ liệu mới trong nền nhưng không hiển thị loading
+          refreshCourseData(false);
+        }
+        
+        return;
+      }
+      
+      // Nếu không có cache hoặc cache hết hạn, fetch từ API
+      await refreshCourseData(true);
+      
+    } catch (error) {
+      console.error('Lỗi khi lấy thông tin khóa học:', error);
+      setError(`Không thể lấy thông tin khóa học: ${error.message}`);
+      setLoading(false);
+      
+      // Xóa cache nếu có lỗi để buộc tải lại dữ liệu trong lần tới
+      try {
+        localStorage.removeItem(`course-${id}`);
+      } catch (e) {
+        // Bỏ qua lỗi khi xóa cache
+      }
+    }
+  };
+  
+  // Hàm tải lại dữ liệu từ API
+  const refreshCourseData = async (showLoading = true) => {
+    try {
+      // Sử dụng tham số secure=true để nhận dữ liệu được mã hóa hoàn toàn
+      // Thêm tham số requireEnrollment=true để kiểm tra quyền truy cập
+      const response = await fetch(`/api/courses/${id}?type=auto&secure=true&requireEnrollment=true&checkViewPermission=true`);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        
+        // Xử lý các mã lỗi cụ thể
+        if (response.status === 400) {
+          throw new Error(`ID khóa học không hợp lệ. Vui lòng kiểm tra lại đường dẫn.`);
+        } else if (response.status === 404) {
+          throw new Error(`Không tìm thấy khóa học với ID: ${id}`);
+        } else {
+          const errorMessage = errorData.message || errorData.error || `Lỗi ${response.status}: ${response.statusText}`;
+          throw new Error(errorMessage);
+        }
+      }
+      
+      const encryptedResponse = await response.json();
+      let fullCourseData;
+      
+      // Kiểm tra nếu nhận được dữ liệu được mã hóa hoàn toàn
+      if (encryptedResponse._secureData) {
+        try {
+          // Giải mã toàn bộ đối tượng
+          fullCourseData = decryptData(encryptedResponse._secureData);
+          setCourse(fullCourseData);
+          // Lưu vào cache
+          saveToCache(fullCourseData);
+        } catch (decryptError) {
+          setError(`Không thể giải mã dữ liệu khóa học: ${decryptError.message}. Vui lòng liên hệ quản trị viên.`);
+          if (showLoading) setLoading(false);
+          return;
+        }
+      } else if (encryptedResponse._encryptedData) {
+        // Xử lý trường hợp chỉ mã hóa dữ liệu nhạy cảm
+        try {
+          // Giải mã dữ liệu nhạy cảm
+          const decryptedData = decryptData(encryptedResponse._encryptedData);
+          
+          // Khôi phục dữ liệu gốc
+          fullCourseData = {
+            ...encryptedResponse,
+            originalData: decryptedData
+          };
+          delete fullCourseData._encryptedData;
+          
+          setCourse(fullCourseData);
+          // Lưu vào cache
+          saveToCache(fullCourseData);
+        } catch (decryptError) {
+          setError(`Không thể giải mã dữ liệu khóa học: ${decryptError.message}. Vui lòng liên hệ quản trị viên.`);
+          if (showLoading) setLoading(false);
+          return;
+        }
+      } else if (!encryptedResponse.originalData && encryptedResponse.requiresEnrollment) {
+        // Trường hợp API trả về yêu cầu đăng ký
+        fullCourseData = encryptedResponse;
+        setCourse(fullCourseData);
+        // Lưu vào cache
+        saveToCache(fullCourseData);
+      } else if (!encryptedResponse.originalData) {
+        // Kiểm tra nếu không có dữ liệu gốc
+        setError("Khóa học không có dữ liệu. Vui lòng liên hệ quản trị viên.");
+        if (showLoading) setLoading(false);
+        return;
+      } else {
+        // Trường hợp dữ liệu không được mã hóa
+        fullCourseData = encryptedResponse;
+        setCourse(fullCourseData);
+        // Lưu vào cache
+        saveToCache(fullCourseData);
+      }
+      
+      // Hiệu ứng fade-in
+      setTimeout(() => {
+        setIsLoaded(true);
+      }, showLoading ? 100 : 0);
+      
+      if (showLoading) setLoading(false);
+    } catch (error) {
+      if (showLoading) {
+        setError(`Không thể lấy thông tin khóa học: ${error.message}`);
+        setLoading(false);
+      }
+    }
+  };
+
   // Hàm lưu dữ liệu vào localStorage
   const saveToCache = (data) => {
     try {
+      // Tạo bản sao của dữ liệu để tránh tham chiếu
+      const cacheData = JSON.parse(JSON.stringify(data));
+      
+      // Loại bỏ dữ liệu lớn không cần thiết để giảm kích thước cache
+      if (cacheData.originalData && cacheData.originalData.sheets) {
+        // Giữ lại tối đa 2 sheets đầu tiên để tiết kiệm không gian
+        if (cacheData.originalData.sheets.length > 2) {
+          cacheData.originalData.sheets = cacheData.originalData.sheets.slice(0, 2);
+        }
+        
+        // Giới hạn số lượng dòng trong mỗi sheet
+        cacheData.originalData.sheets.forEach(sheet => {
+          if (sheet.data && sheet.data[0] && sheet.data[0].rowData && sheet.data[0].rowData.length > 50) {
+            sheet.data[0].rowData = sheet.data[0].rowData.slice(0, 50);
+          }
+        });
+      }
+      
       const cacheItem = {
-        data: data,
+        data: cacheData,
         timestamp: Date.now()
       };
-      localStorage.setItem(`course-${id}`, JSON.stringify(cacheItem));
-      setCacheStatus('saved');
+      
+      // Kiểm tra kích thước dữ liệu trước khi lưu
+      const cacheString = JSON.stringify(cacheItem);
+      const cacheSize = new Blob([cacheString]).size;
+      
+      // Giới hạn kích thước cache là 2MB
+      if (cacheSize > 2 * 1024 * 1024) {
+        return;
+      }
+      
+      // Xóa các cache cũ để giải phóng không gian
+      try {
+        const keys = Object.keys(localStorage);
+        const courseCacheKeys = keys.filter(key => key.startsWith('course-'));
+        
+        // Nếu có nhiều hơn 5 cache khóa học, xóa các cache cũ nhất
+        if (courseCacheKeys.length > 5) {
+          const cacheItems = courseCacheKeys.map(key => {
+            try {
+              const item = JSON.parse(localStorage.getItem(key));
+              return { key, timestamp: item.timestamp };
+            } catch (e) {
+              return { key, timestamp: 0 };
+            }
+          });
+          
+          // Sắp xếp theo thời gian, cũ nhất lên đầu
+          cacheItems.sort((a, b) => a.timestamp - b.timestamp);
+          
+          // Xóa các cache cũ nhất
+          for (let i = 0; i < cacheItems.length - 5; i++) {
+            localStorage.removeItem(cacheItems[i].key);
+          }
+        }
+      } catch (e) {
+        // Bỏ qua lỗi khi dọn dẹp cache
+      }
+      
+      // Thử lưu cache
+      try {
+        localStorage.setItem(`course-${id}`, cacheString);
+        setCacheStatus('saved');
+      } catch (storageError) {
+        // Nếu vẫn bị lỗi, xóa tất cả cache khóa học và thử lại
+        const keys = Object.keys(localStorage);
+        keys.filter(key => key.startsWith('course-')).forEach(key => {
+          localStorage.removeItem(key);
+        });
+        
+        // Thử lưu lại một lần nữa
+        try {
+          localStorage.setItem(`course-${id}`, cacheString);
+          setCacheStatus('saved');
+        } catch (finalError) {
+          // Nếu vẫn lỗi, bỏ qua việc cache
+        }
+      }
     } catch (error) {
       // Xử lý lỗi im lặng
     }
@@ -73,7 +283,9 @@ export default function CourseDetailPage({ params }) {
   const getFromCache = () => {
     try {
       const cachedData = localStorage.getItem(`course-${id}`);
-      if (!cachedData) return null;
+      if (!cachedData) {
+        return null;
+      }
       
       const cacheItem = JSON.parse(cachedData);
       const now = Date.now();
@@ -125,129 +337,6 @@ export default function CourseDetailPage({ params }) {
     return { url: originalUrl, isProcessed: false };
   };
 
-  // Lấy thông tin chi tiết của khóa học
-  const fetchCourseDetail = async () => {
-    setLoading(true);
-    setError(null); // Reset error trước khi fetch
-    
-    try {
-      // Kiểm tra cache trước
-      const cachedCourse = getFromCache();
-      if (cachedCourse) {
-        setCourse(cachedCourse);
-        setLoading(false);
-        
-        // Hiệu ứng fade-in
-        setTimeout(() => {
-          setIsLoaded(true);
-        }, 100);
-        
-        return;
-      }
-      
-      // Nếu không có cache hoặc cache hết hạn, fetch từ API
-      // Sử dụng tham số secure=true để nhận dữ liệu được mã hóa hoàn toàn
-      // Thêm tham số requireEnrollment=true để kiểm tra quyền truy cập
-      const response = await fetch(`/api/courses/${id}?type=auto&secure=true&requireEnrollment=true&checkViewPermission=true`);
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        
-        // Xử lý các mã lỗi cụ thể
-        if (response.status === 400) {
-          throw new Error(`ID khóa học không hợp lệ. Vui lòng kiểm tra lại đường dẫn.`);
-        } else if (response.status === 404) {
-          throw new Error(`Không tìm thấy khóa học với ID: ${id}`);
-        } else {
-          const errorMessage = errorData.message || errorData.error || `Lỗi ${response.status}: ${response.statusText}`;
-          throw new Error(errorMessage);
-        }
-      }
-      
-      const encryptedResponse = await response.json();
-      let fullCourseData;
-      
-      // Kiểm tra nếu nhận được dữ liệu được mã hóa hoàn toàn
-      if (encryptedResponse._secureData) {
-        try {
-          // Giải mã toàn bộ đối tượng
-          fullCourseData = decryptData(encryptedResponse._secureData);
-          console.log('DEBUG - Dữ liệu khóa học sau khi giải mã:', {
-            id: fullCourseData._id,
-            name: fullCourseData.name,
-            isEnrolled: fullCourseData.isEnrolled,
-            canViewAllCourses: fullCourseData.canViewAllCourses,
-            hasOriginalData: !!fullCourseData.originalData,
-            requiresEnrollment: fullCourseData.requiresEnrollment
-          });
-          setCourse(fullCourseData);
-          // Lưu vào cache
-          saveToCache(fullCourseData);
-        } catch (decryptError) {
-          setError(`Không thể giải mã dữ liệu khóa học: ${decryptError.message}. Vui lòng liên hệ quản trị viên.`);
-          setLoading(false);
-          return;
-        }
-      } else if (encryptedResponse._encryptedData) {
-        // Xử lý trường hợp chỉ mã hóa dữ liệu nhạy cảm
-        try {
-          // Giải mã dữ liệu nhạy cảm
-          const decryptedData = decryptData(encryptedResponse._encryptedData);
-          
-          // Khôi phục dữ liệu gốc
-          fullCourseData = {
-            ...encryptedResponse,
-            originalData: decryptedData
-          };
-          delete fullCourseData._encryptedData;
-          
-          setCourse(fullCourseData);
-          // Lưu vào cache
-          saveToCache(fullCourseData);
-        } catch (decryptError) {
-          setError(`Không thể giải mã dữ liệu khóa học: ${decryptError.message}. Vui lòng liên hệ quản trị viên.`);
-          setLoading(false);
-          return;
-        }
-      } else if (!encryptedResponse.originalData && encryptedResponse.requiresEnrollment) {
-        // Trường hợp API trả về yêu cầu đăng ký
-        fullCourseData = encryptedResponse;
-        setCourse(fullCourseData);
-        // Lưu vào cache
-        saveToCache(fullCourseData);
-      } else if (!encryptedResponse.originalData) {
-        // Kiểm tra nếu không có dữ liệu gốc
-        setError("Khóa học không có dữ liệu. Vui lòng liên hệ quản trị viên.");
-        setLoading(false);
-        return;
-      } else {
-        // Trường hợp dữ liệu không được mã hóa
-        fullCourseData = encryptedResponse;
-        setCourse(fullCourseData);
-        // Lưu vào cache
-        saveToCache(fullCourseData);
-      }
-      
-      // Hiệu ứng fade-in
-      setTimeout(() => {
-        setIsLoaded(true);
-      }, 100);
-      
-      setLoading(false);
-    } catch (error) {
-      console.error('Lỗi khi lấy thông tin khóa học:', error);
-      setError(`Không thể lấy thông tin khóa học: ${error.message}`);
-      setLoading(false);
-      
-      // Xóa cache nếu có lỗi để buộc tải lại dữ liệu trong lần tới
-      try {
-        localStorage.removeItem(`course-${id}`);
-      } catch (e) {
-        // Bỏ qua lỗi khi xóa cache
-      }
-    }
-  };
-
   // Thử lại khi gặp lỗi
   const handleRetry = () => {
     // Xóa cache khi thử lại để đảm bảo lấy dữ liệu mới
@@ -258,13 +347,11 @@ export default function CourseDetailPage({ params }) {
       setLoading(true);
       setError(null);
       
-      // Thêm một chút độ trễ để người dùng thấy được thông báo đang tải
-      setTimeout(() => {
-        fetchCourseDetail();
-      }, 500);
+      // Sử dụng hàm refreshCourseData để tải lại dữ liệu
+      refreshCourseData(true);
     } catch (error) {
       // Xử lý lỗi im lặng và vẫn tiếp tục fetch
-      fetchCourseDetail();
+      refreshCourseData(true);
     }
   };
 
@@ -576,11 +663,6 @@ export default function CourseDetailPage({ params }) {
   
   // Kiểm tra quyền truy cập - nếu khóa học chưa đăng ký và người dùng không có quyền xem tất cả khóa học, hiển thị thông báo yêu cầu đăng ký
   if (!course.isEnrolled && !course.canViewAllCourses) {
-    console.log('DEBUG - Kiểm tra quyền truy cập khóa học:');
-    console.log('isEnrolled:', course.isEnrolled);
-    console.log('canViewAllCourses:', course.canViewAllCourses);
-    console.log('Hiển thị trang yêu cầu đăng ký');
-    
     return (
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white p-6">
         <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
