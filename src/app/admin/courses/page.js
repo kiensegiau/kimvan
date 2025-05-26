@@ -44,6 +44,10 @@ export default function CoursesPage() {
   const [syncingCourses, setSyncingCourses] = useState({});
   const [analyzingCourses, setAnalyzingCourses] = useState({});
   const [processingPDFCourses, setProcessingPDFCourses] = useState({});
+  const [autoSyncInProgress, setAutoSyncInProgress] = useState(false);
+  const [currentAutoSyncIndex, setCurrentAutoSyncIndex] = useState(0);
+  const [autoSyncTotal, setAutoSyncTotal] = useState(0);
+  const [autoSyncResults, setAutoSyncResults] = useState([]);
   
   // Thiết lập cookie admin_access khi trang được tải
   useEffect(() => {
@@ -1154,6 +1158,193 @@ export default function CoursesPage() {
     }
   };
 
+  // Hàm đồng bộ tất cả khóa học tự động với độ trễ
+  const handleAutoSyncAllCourses = async () => {
+    try {
+      // Lọc ra các khóa học có kimvanId
+      const coursesWithKimvanId = courses.filter(course => course.kimvanId);
+      
+      if (coursesWithKimvanId.length === 0) {
+        alert('Không có khóa học nào có ID Kimvan để đồng bộ');
+        return;
+      }
+      
+      setAutoSyncInProgress(true);
+      setCurrentAutoSyncIndex(0);
+      setAutoSyncTotal(coursesWithKimvanId.length);
+      setAutoSyncResults([]);
+      setError(null);
+      
+      // Hàm đệ quy để đồng bộ từng khóa học một với độ trễ
+      const syncNextCourse = async (index) => {
+        if (index >= coursesWithKimvanId.length) {
+          // Đã hoàn thành tất cả
+          setAutoSyncInProgress(false);
+          setSyncResults({
+            inProgress: false,
+            success: true,
+            message: `Đã hoàn thành đồng bộ ${autoSyncResults.filter(r => r.success).length}/${coursesWithKimvanId.length} khóa học`,
+            summary: {
+              total: coursesWithKimvanId.length,
+              created: 0,
+              updated: autoSyncResults.filter(r => r.success).length,
+              errors: autoSyncResults.filter(r => !r.success).length
+            }
+          });
+          return;
+        }
+        
+        const currentCourse = coursesWithKimvanId[index];
+        setCurrentAutoSyncIndex(index);
+        
+        // Hiển thị thông báo đang đồng bộ
+        setSyncResults({
+          inProgress: true,
+          success: true,
+          message: `Đang đồng bộ khóa học ${index + 1}/${coursesWithKimvanId.length}: ${currentCourse.name}`,
+          summary: {
+            total: coursesWithKimvanId.length,
+            created: 0,
+            updated: autoSyncResults.filter(r => r.success).length,
+            errors: autoSyncResults.filter(r => !r.success).length
+          }
+        });
+        
+        try {
+          console.log(`🔄 Bắt đầu đồng bộ khóa học ${index + 1}/${coursesWithKimvanId.length}: ${currentCourse.name}`);
+          
+          // Đánh dấu đang phân tích
+          setAnalyzingCourses(prev => ({ ...prev, [currentCourse.kimvanId]: true }));
+          
+          // Gọi API để lấy dữ liệu chi tiết từ Kimvan
+          const response = await fetch(`/api/spreadsheets/${currentCourse.kimvanId}`);
+          if (!response.ok) {
+            throw new Error(`Lỗi khi lấy dữ liệu từ Kimvan: ${response.status}`);
+          }
+          
+          const kimvanData = await response.json();
+          console.log('✅ Đã nhận dữ liệu từ Kimvan');
+          
+          // Phân tích dữ liệu
+          const analysis = analyzeKimvanData(kimvanData);
+          
+          // Định dạng dữ liệu để đồng bộ
+          const courseToSync = {
+            _id: currentCourse._id,
+            kimvanId: currentCourse.kimvanId,
+            name: currentCourse.name,
+            description: currentCourse.description,
+            price: currentCourse.price,
+            status: currentCourse.status,
+            originalData: kimvanData,
+            updatedAt: new Date()
+          };
+          
+          // Gọi API để đồng bộ với MongoDB
+          const syncResponse = await fetch(`/api/admin/courses/${currentCourse._id}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(courseToSync),
+          });
+          
+          const syncData = await syncResponse.json();
+          
+          if (!syncResponse.ok) {
+            throw new Error(syncData.message || 'Không thể đồng bộ dữ liệu');
+          }
+          
+          console.log(`✅ Đồng bộ khóa học ${currentCourse.name} thành công`);
+          
+          // Đồng bộ song song với minicourses
+          try {
+            const miniCourse = {
+              kimvanId: currentCourse.kimvanId,
+              name: currentCourse.name,
+              description: currentCourse.description,
+              price: currentCourse.price,
+              status: currentCourse.status,
+              courseId: currentCourse._id,
+              updatedAt: new Date()
+            };
+            
+            const miniCourseResponse = await fetch('/api/minicourses/sync', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ 
+                courses: [miniCourse] 
+              }),
+            });
+            
+            if (!miniCourseResponse.ok) {
+              console.warn('⚠️ Đồng bộ minicourse không thành công');
+            }
+          } catch (miniErr) {
+            console.error('❌ Lỗi khi đồng bộ minicourse:', miniErr);
+          }
+          
+          // Thêm kết quả thành công
+          setAutoSyncResults(prev => [...prev, { 
+            courseId: currentCourse._id, 
+            courseName: currentCourse.name,
+            success: true,
+            message: 'Đồng bộ thành công',
+            analysis: analysis
+          }]);
+          
+        } catch (err) {
+          console.error(`❌ Lỗi khi đồng bộ khóa học ${currentCourse.name}:`, err);
+          
+          // Thêm kết quả lỗi
+          setAutoSyncResults(prev => [...prev, { 
+            courseId: currentCourse._id, 
+            courseName: currentCourse.name,
+            success: false,
+            message: err.message || 'Đã xảy ra lỗi khi đồng bộ',
+          }]);
+        } finally {
+          // Đánh dấu đã xong phân tích
+          setAnalyzingCourses(prev => ({ ...prev, [currentCourse.kimvanId]: false }));
+          
+          // Đợi 1 phút trước khi xử lý khóa học tiếp theo
+          console.log(`⏱️ Đợi 1 phút trước khi xử lý khóa học tiếp theo...`);
+          setTimeout(() => {
+            syncNextCourse(index + 1);
+          }, 60000); // 60000ms = 1 phút
+        }
+      };
+      
+      // Bắt đầu quy trình đồng bộ với khóa học đầu tiên
+      syncNextCourse(0);
+      
+    } catch (err) {
+      console.error('Lỗi khi khởi tạo đồng bộ tự động:', err);
+      setError(err.message || 'Đã xảy ra lỗi khi khởi tạo đồng bộ tự động');
+      setAutoSyncInProgress(false);
+    }
+  };
+
+  // Hàm dừng quá trình đồng bộ tự động
+  const handleStopAutoSync = () => {
+    if (window.confirm('Bạn có chắc chắn muốn dừng quá trình đồng bộ tự động?')) {
+      setAutoSyncInProgress(false);
+      setSyncResults({
+        inProgress: false,
+        success: true,
+        message: `Đã dừng quá trình đồng bộ tự động sau ${autoSyncResults.length}/${autoSyncTotal} khóa học`,
+        summary: {
+          total: autoSyncTotal,
+          created: 0,
+          updated: autoSyncResults.filter(r => r.success).length,
+          errors: autoSyncResults.filter(r => !r.success).length
+        }
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -1170,12 +1361,32 @@ export default function CoursesPage() {
           
           <button
             onClick={handleShowSyncModal}
-            disabled={syncing}
+            disabled={syncing || autoSyncInProgress}
             className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
           >
             <CloudArrowDownIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
             {syncing ? 'Đang đồng bộ...' : 'Đồng bộ từ Kimvan'}
           </button>
+          
+          <button
+            onClick={handleAutoSyncAllCourses}
+            disabled={autoSyncInProgress || syncing}
+            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+          >
+            <ArrowPathIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
+            Đồng bộ tự động tất cả
+          </button>
+          
+          {autoSyncInProgress && (
+            <button
+              onClick={handleStopAutoSync}
+              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+            >
+              <XMarkIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
+              Dừng đồng bộ
+            </button>
+          )}
+          
           <button
             onClick={handleProcessAllPDFs}
             disabled={processingPDFs}
@@ -1262,6 +1473,44 @@ export default function CoursesPage() {
                     <p>Khóa học cập nhật: {syncResults.summary.updated}</p>
                     <p>Tổng số lỗi: {syncResults.summary.errors}</p>
                   </>
+                )}
+                
+                {autoSyncInProgress && (
+                  <div className="mt-2">
+                    <div className="w-full bg-gray-200 rounded-full h-2.5">
+                      <div 
+                        className="bg-blue-600 h-2.5 rounded-full" 
+                        style={{ width: `${(currentAutoSyncIndex + 1) / autoSyncTotal * 100}%` }}
+                      ></div>
+                    </div>
+                    <p className="mt-1 text-xs text-gray-500">
+                      Tiến trình: {currentAutoSyncIndex + 1}/{autoSyncTotal} khóa học ({Math.round((currentAutoSyncIndex + 1) / autoSyncTotal * 100)}%)
+                    </p>
+                  </div>
+                )}
+                
+                {autoSyncResults.length > 0 && (
+                  <div className="mt-4">
+                    <p className="font-medium mb-2">Chi tiết đồng bộ:</p>
+                    <div className="max-h-60 overflow-y-auto">
+                      {autoSyncResults.map((result, index) => (
+                        <div 
+                          key={index} 
+                          className={`p-2 mb-1 rounded text-sm ${result.success ? 'bg-green-100' : 'bg-red-100'}`}
+                        >
+                          <p className="font-medium">{result.courseName}</p>
+                          <p>{result.message}</p>
+                          {result.analysis && (
+                            <p className="text-xs text-gray-600">
+                              Links: YouTube ({result.analysis.youtubeLinks}), 
+                              Drive ({result.analysis.driveLinks}), 
+                              PDF ({result.analysis.pdfLinks || 0})
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 )}
               </div>
               <div className="mt-4">
