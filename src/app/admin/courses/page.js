@@ -1228,6 +1228,27 @@ export default function CoursesPage() {
           // Phân tích dữ liệu
           const analysis = analyzeKimvanData(kimvanData);
           
+          // Kiểm tra xem khóa học có link YouTube không
+          if (!analysis || analysis.youtubeLinks === 0) {
+            console.log(`⚠️ Khóa học ${currentCourse.name} không có link YouTube, bỏ qua đồng bộ`);
+            
+            // Thêm kết quả bỏ qua
+            setAutoSyncResults(prev => [...prev, { 
+              courseId: currentCourse._id, 
+              courseName: currentCourse.name,
+              success: false,
+              message: 'Bỏ qua đồng bộ: Không có link YouTube',
+              analysis: analysis
+            }]);
+            
+            // Chuyển sang khóa học tiếp theo sau 1 phút
+            setTimeout(() => {
+              syncNextCourse(index + 1);
+            }, 60000); // 60000ms = 1 phút
+            
+            return;
+          }
+          
           // Định dạng dữ liệu để đồng bộ
           const courseToSync = {
             _id: currentCourse._id,
