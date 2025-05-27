@@ -29,114 +29,6 @@ const MAX_RETRIES = 3;
 const RETRY_DELAY = 5000;
 const BATCH_SIZE = 5;
 
-// Thêm biến quản lý browser toàn cục
-let globalBrowser = null;
-let activeTabs = new Map(); // Map để theo dõi các tab đang xử lý
-
-// Hàm để lấy hoặc tạo browser instance
-async function getOrCreateBrowser() {
-  try {
-    if (globalBrowser) {
-      try {
-        // Kiểm tra xem browser còn hoạt động không
-        await globalBrowser.pages();
-        return globalBrowser;
-      } catch (err) {
-        console.log('Browser hiện tại không phản hồi, tạo mới...');
-        globalBrowser = null;
-      }
-    }
-
-    const chromePath = getChromePath();
-    const profilePath = createChromeUserProfile();
-
-    globalBrowser = await puppeteer.launch({
-      headless: false,
-      channel: "chrome",
-      executablePath: chromePath,
-      args: [
-        "--start-maximized",
-        `--user-data-dir=${profilePath}`,
-        "--enable-extensions",
-        "--remote-debugging-port=9222",
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-web-security",
-        "--disable-features=IsolateOrigins,site-per-process",
-        "--disable-site-isolation-trials",
-        "--disable-features=BlockInsecurePrivateNetworkRequests",
-        "--disable-features=SameSiteByDefaultCookies,CookiesWithoutSameSiteMustBeSecure",
-        "--no-first-run",
-        "--no-default-browser-check",
-        "--disable-popup-blocking",
-        "--disable-notifications",
-        "--disable-infobars",
-        "--disable-translate",
-        "--allow-running-insecure-content",
-        "--password-store=basic",
-        // Thêm các flag mới để ngăn thông báo bảo mật
-        "--use-fake-ui-for-media-stream",
-        "--use-fake-device-for-media-stream",
-        "--allow-file-access-from-files",
-        "--allow-insecure-localhost",
-        "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
-        "--disable-blink-features=AutomationControlled"
-      ],
-      defaultViewport: null,
-      ignoreDefaultArgs: ["--enable-automation"],
-      // Tăng timeout lên 120s cho máy yếu
-      timeout: 120000,
-      // Thêm slowMo để làm chậm puppeteer cho máy yếu
-      slowMo: 100,
-    });
-
-    return globalBrowser;
-  } catch (error) {
-    console.error('Lỗi khởi tạo browser:', error);
-    throw error;
-  }
-}
-
-// Hàm để lấy tab mới cho một file
-async function getNewTab(fileId) {
-  try {
-    const browser = await getOrCreateBrowser();
-    
-    // Kiểm tra nếu đã có tab đang xử lý file này
-    if (activeTabs.has(fileId)) {
-      try {
-        const existingTab = activeTabs.get(fileId);
-        await existingTab.evaluate(() => true); // Kiểm tra tab còn hoạt động không
-        return existingTab;
-      } catch (err) {
-        console.log(`Tab cũ cho file ${fileId} không còn hoạt động, tạo mới...`);
-        activeTabs.delete(fileId);
-      }
-    }
-
-    const page = await browser.newPage();
-    await page.setDefaultNavigationTimeout(60000);
-    activeTabs.set(fileId, page);
-    return page;
-  } catch (error) {
-    console.error('Lỗi tạo tab mới:', error);
-    throw error;
-  }
-}
-
-// Hàm để đóng tab sau khi xử lý xong
-async function closeTab(fileId) {
-  try {
-    if (activeTabs.has(fileId)) {
-      const page = activeTabs.get(fileId);
-      await page.close().catch(() => {});
-      activeTabs.delete(fileId);
-    }
-  } catch (error) {
-    console.warn(`Lỗi đóng tab cho file ${fileId}:`, error);
-  }
-}
-
 // Đường dẫn Chrome mặc định dựa trên hệ điều hành
 function getChromePath() {
   try {
@@ -185,15 +77,13 @@ function createChromeUserProfile() {
  * @returns {Promise<{success: boolean, filePath: string, error: string}>}
  */
 export async function downloadBlockedPDF(fileId, fileName, tempDir, watermarkConfig = {}) {
-  const processId = uuidv4(); // Tạo ID duy nhất cho phiên xử lý
+  let browser = null;
   let page = null;
   let downloadedImages = [];
   let processedImages = [];
   const pageRequests = new Map();
   let cookies = null;
   let userAgent = null;
-  
-  console.log(`🔄 Bắt đầu xử lý file ${fileName} (ID: ${processId})`);
   
   // Tạo thư mục tạm nếu chưa tồn tại
   if (!tempDir) {
@@ -239,8 +129,70 @@ export async function downloadBlockedPDF(fileId, fileName, tempDir, watermarkCon
   try {
     console.log(`🔍 Bắt đầu xử lý file bị chặn: ${fileName}`);
     
-    // Lấy tab mới cho file này
-    page = await getNewTab(fileId);
+    // Cấu hình mở rộng cho Puppeteer
+    let chromePath;
+    try {
+      chromePath = getChromePath();
+      console.log(`🌐 Sử dụng Chrome: ${chromePath}`);
+    } catch (chromePathError) {
+      console.error(`Lỗi tìm Chrome: ${chromePathError.message}`);
+      throw new Error(`Không tìm thấy Chrome: ${chromePathError.message}`);
+    }
+    
+    // Khởi tạo trình duyệt với cấu hình nâng cao
+    try {
+      browser = await puppeteer.launch({
+        headless: false,
+        channel: "chrome",
+        executablePath: chromePath,
+        args: [
+          "--start-maximized",
+          `--user-data-dir=${profilePath}`,
+          "--enable-extensions",
+          "--remote-debugging-port=9222",
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+          "--disable-web-security",
+          "--disable-features=IsolateOrigins,site-per-process",
+          "--disable-site-isolation-trials",
+          "--disable-features=BlockInsecurePrivateNetworkRequests",
+          "--disable-features=SameSiteByDefaultCookies,CookiesWithoutSameSiteMustBeSecure",
+          "--no-first-run",
+          "--no-default-browser-check",
+          "--disable-popup-blocking",
+          "--disable-notifications",
+          "--disable-infobars",
+          "--disable-translate",
+          "--allow-running-insecure-content",
+          "--password-store=basic",
+          // Thêm các flag mới để ngăn thông báo bảo mật
+          "--use-fake-ui-for-media-stream",
+          "--use-fake-device-for-media-stream",
+          "--allow-file-access-from-files",
+          "--allow-insecure-localhost",
+          "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+          "--disable-blink-features=AutomationControlled"
+        ],
+        defaultViewport: null,
+        ignoreDefaultArgs: ["--enable-automation"],
+        // Tăng timeout lên 120s cho máy yếu
+        timeout: 120000,
+        // Thêm slowMo để làm chậm puppeteer cho máy yếu
+        slowMo: 100,
+      });
+    } catch (browserError) {
+      console.error(`Lỗi khởi tạo trình duyệt: ${browserError.message}`);
+      throw new Error(`Không thể khởi động Chrome: ${browserError.message}`);
+    }
+    
+    // Tạo tab mới
+    try {
+      page = await browser.newPage();
+      await page.setDefaultNavigationTimeout(60000);
+    } catch (pageError) {
+      console.error(`Lỗi tạo tab mới: ${pageError.message}`);
+      throw new Error(`Không thể tạo tab trình duyệt: ${pageError.message}`);
+    }
     
     // Theo dõi các request ảnh
     try {
@@ -337,14 +289,11 @@ export async function downloadBlockedPDF(fileId, fileName, tempDir, watermarkCon
     try {
       console.log(`📄 Tạo file PDF từ ${processedImages.length} ảnh đã xử lý...`);
       
-      // Thêm hình nền nếu được cấu hình và không bỏ qua xử lý nền
-      if (!config.skipBackground && config.backgroundImage && fs.existsSync(config.backgroundImage)) {
+      // Thêm hình nền nếu được cấu hình
+      if (config.backgroundImage && fs.existsSync(config.backgroundImage)) {
         console.log(`🖼️ Thêm hình nền tùy chỉnh: ${config.backgroundImage}`);
         await createPDFFromProcessedImages(processedImages, outputPath, config);
       } else {
-        if (config.skipBackground) {
-          console.log('⏩ Bỏ qua xử lý hình nền theo cấu hình');
-        }
         await createPDFFromRawImages(processedImages, outputPath);
       }
     } catch (createPdfError) {
@@ -378,29 +327,53 @@ export async function downloadBlockedPDF(fileId, fileName, tempDir, watermarkCon
       fileName: `${path.basename(fileName, '.pdf')}_clean.pdf`,
       originalSize: 0, // Không thể biết kích thước gốc
       processedSize: fileSize,
-      processingTime: processingTime.toFixed(2),
-      processId
+      processingTime: processingTime.toFixed(2)
     };
   } catch (error) {
-    console.error(`❌ Lỗi xử lý file ${fileName} (ID: ${processId}):`, error);
+    console.error(`❌ Lỗi tải file bị chặn: ${error.message}`);
     return {
       success: false,
-      error: error.message,
-      processId
+      error: error.message
     };
   } finally {
-    // Đóng tab sau khi xử lý xong
-    await closeTab(fileId);
+    // Đóng browser nếu còn mở
+    if (page) {
+      try {
+        await page.close().catch(() => {});
+      } catch (closeError) {
+        console.warn(`Lỗi đóng tab: ${closeError.message}`);
+      }
+    }
+    if (browser) {
+      try {
+        await browser.close().catch(() => {});
+      } catch (closeError) {
+        console.warn(`Lỗi đóng trình duyệt: ${closeError.message}`);
+      }
+    }
     
-    // Dọn dẹp các file tạm
+    // Dọn dẹp các file ảnh tạm
     try {
       for (const image of [...downloadedImages, ...processedImages]) {
         if (fs.existsSync(image)) {
-          fs.unlinkSync(image);
+          try {
+            fs.unlinkSync(image);
+          } catch (unlinkError) {
+            console.warn(`Lỗi xóa file ảnh tạm ${image}: ${unlinkError.message}`);
+          }
         }
       }
     } catch (cleanupError) {
-      console.warn(`⚠️ Lỗi dọn dẹp file tạm cho ${fileName} (ID: ${processId}):`, cleanupError);
+      console.warn(`⚠️ Lỗi khi dọn dẹp ảnh tạm: ${cleanupError.message}`);
+    }
+    
+    // Dọn dẹp thư mục hồ sơ Chrome
+    try {
+      // Không xóa thư mục hồ sơ Chrome nữa để giữ lại dữ liệu đăng nhập
+      console.log(`✅ Giữ lại hồ sơ Chrome để lưu đăng nhập cho lần sau: ${profilePath}`);
+      // cleanupTempFiles(profilePath);
+    } catch (cleanupError) {
+      console.warn(`⚠️ Lỗi khi dọn dẹp thư mục hồ sơ Chrome: ${cleanupError.message}`);
     }
   }
 }
@@ -665,7 +638,7 @@ async function convertAllImagesToPng(images, outputDir) {
  */
 async function processAllImages(images, outputDir, config) {
   try {
-    let processedImages = [];
+    const processedImages = [];
     
     // Sắp xếp ảnh theo thứ tự trang
     const sortedImages = images.sort((a, b) => {
@@ -680,51 +653,43 @@ async function processAllImages(images, outputDir, config) {
     
     // Sử dụng cấu hình tối giản để tránh mất màu
     const simpleConfig = {
-      backgroundOpacity: config.backgroundOpacity || 0.15,
-      skipWatermarkRemoval: config.skipWatermarkRemoval || false,
-      skipBackground: config.skipBackground || false
+      backgroundOpacity: config.backgroundOpacity || 0.15
     };
     
-    console.log(`🔧 Sử dụng cấu hình tối giản để giữ màu sắc gốc và xử lý nhẹ watermark ${simpleConfig.skipWatermarkRemoval ? '(bỏ qua xử lý watermark)' : ''} ${simpleConfig.skipBackground ? '(bỏ qua xử lý nền)' : ''}`);
-
-    // Nếu bỏ qua xử lý watermark, sử dụng trực tiếp ảnh gốc
-    if (simpleConfig.skipWatermarkRemoval) {
-      console.log('⏩ Bỏ qua xử lý watermark, sử dụng ảnh gốc...');
-      processedImages = sortedImages;
-    } else {
-      // Xử lý từng ảnh
-      for (let i = 0; i < sortedImages.length; i++) {
+    console.log(`🔧 Sử dụng cấu hình tối giản để giữ màu sắc gốc và xử lý nhẹ watermark`);
+    
+    // Xử lý từng ảnh
+    for (let i = 0; i < sortedImages.length; i++) {
+      try {
+        const imagePath = sortedImages[i];
+        let pageNum;
         try {
-          const imagePath = sortedImages[i];
-          let pageNum;
-          try {
-            pageNum = parseInt(path.basename(imagePath).match(/page_(\d+)/)[1]);
-          } catch (parseError) {
-            console.warn(`Không thể phân tích số trang từ ${imagePath}: ${parseError.message}`);
-            pageNum = i + 1;
-          }
-          
-          // Luôn sử dụng .png cho file đã xử lý để đảm bảo tương thích
-          const processedPath = path.join(outputDir, `page_${String(pageNum).padStart(3, '0')}_processed.png`);
-          
-          try {
-            console.log(`🔍 Xử lý watermark trang ${pageNum}...`);
-            
-            // Sử dụng hàm processImage từ module watermark trực tiếp trên ảnh gốc
-            // Bỏ qua bước tiền xử lý để giữ màu sắc
-            await processImage(imagePath, processedPath, simpleConfig);
-            console.log(`✅ Đã xử lý xong trang ${pageNum}`);
-            
-            // Thêm vào danh sách ảnh đã xử lý
-            processedImages.push(processedPath);
-          } catch (error) {
-            console.error(`❌ Lỗi xử lý watermark trang ${pageNum}: ${error.message}`);
-            // Nếu xử lý thất bại, sử dụng ảnh gốc
-            processedImages.push(imagePath);
-          }
-        } catch (pageError) {
-          console.error(`Lỗi xử lý trang thứ ${i+1}: ${pageError.message}`);
+          pageNum = parseInt(path.basename(imagePath).match(/page_(\d+)/)[1]);
+        } catch (parseError) {
+          console.warn(`Không thể phân tích số trang từ ${imagePath}: ${parseError.message}`);
+          pageNum = i + 1;
         }
+        
+        // Luôn sử dụng .png cho file đã xử lý để đảm bảo tương thích
+        const processedPath = path.join(outputDir, `page_${String(pageNum).padStart(3, '0')}_processed.png`);
+        
+        try {
+          console.log(`🔍 Xử lý watermark trang ${pageNum}...`);
+          
+          // Sử dụng hàm processImage từ module watermark trực tiếp trên ảnh gốc
+          // Bỏ qua bước tiền xử lý để giữ màu sắc
+          await processImage(imagePath, processedPath, simpleConfig);
+          console.log(`✅ Đã xử lý xong trang ${pageNum}`);
+          
+          // Thêm vào danh sách ảnh đã xử lý
+          processedImages.push(processedPath);
+        } catch (error) {
+          console.error(`❌ Lỗi xử lý watermark trang ${pageNum}: ${error.message}`);
+          // Nếu xử lý thất bại, sử dụng ảnh gốc
+          processedImages.push(imagePath);
+        }
+      } catch (pageError) {
+        console.error(`Lỗi xử lý trang thứ ${i+1}: ${pageError.message}`);
       }
     }
     
