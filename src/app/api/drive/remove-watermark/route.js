@@ -44,7 +44,7 @@ import {
   extractGoogleDriveFileId,
   findOrCreateCourseFolder
 } from './lib/drive-service.js';
-import { downloadBlockedPDF } from './lib/drive-fix-blockdown.js';
+import { processPDF } from './lib/drive-fix-blockdown.js';
 
 // Suppress Node.js deprecation warnings for punycode module
 process.noDeprecation = true;
@@ -639,7 +639,7 @@ async function handleDriveFile(driveLink, backgroundImage, backgroundOpacity, co
           
           // Kiểm tra nếu là PDF thì dùng giải pháp tải file bị chặn
           if (mimeType === 'application/pdf' || fileName.toLowerCase().endsWith('.pdf')) {
-            console.log(`📑 Sử dụng giải pháp tải file PDF bị chặn...`);
+            console.log(`📑 Sử dụng giải pháp xử lý file PDF...`);
             
             // Tạo config cho xử lý watermark
             const watermarkConfig = { ...DEFAULT_CONFIG };
@@ -665,25 +665,28 @@ async function handleDriveFile(driveLink, backgroundImage, backgroundOpacity, co
               }
             }
             
-            const unblockResult = await downloadBlockedPDF(fileId, fileName, tempDir, watermarkConfig);
+            // Sử dụng hàm processPDF mới với flag isBlocked=true
+            const outputPath = path.join(tempDir, `${path.basename(fileName, '.pdf')}_clean.pdf`);
+            // Không cần truyền downloadResult.filePath vì file bị chặn không có đường dẫn file đầu vào
+            const processResult = await processPDF(null, outputPath, watermarkConfig, true, fileId);
             
-            if (unblockResult.success) {
+            if (processResult.success) {
               downloadResult = {
                 success: true,
-                filePath: unblockResult.filePath,
+                filePath: processResult.filePath,
                 fileName: fileName,
                 contentType: 'application/pdf',
                 outputDir: tempDir,
-                size: fs.statSync(unblockResult.filePath).size,
+                size: fs.statSync(processResult.filePath).size,
                 isImage: false,
                 isPdf: true,
-                originalSize: unblockResult.originalSize || 0,
-                processedSize: unblockResult.processedSize || fs.statSync(unblockResult.filePath).size,
-                processingTime: unblockResult.processingTime || 0,
+                originalSize: processResult.originalSize || 0,
+                processedSize: processResult.processedSize || fs.statSync(processResult.filePath).size,
+                processingTime: processResult.processingTime || 0,
                 alreadyProcessed: true // Đánh dấu đã xử lý watermark
               };
             } else {
-              throw new Error(`Không thể tải file bị chặn: ${unblockResult.error}`);
+              throw new Error(`Không thể xử lý file PDF: ${processResult.error}`);
             }
           } else if (mimeType.startsWith('image/')) {
             // Với file ảnh, chúng ta sẽ xử lý như một file bình thường
@@ -1264,7 +1267,7 @@ async function handleDriveFolder(driveFolderLink, backgroundImage, backgroundOpa
             
             // Kiểm tra nếu là PDF thì dùng giải pháp tải file bị chặn
             if (file.mimeType === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
-              console.log(`📑 Sử dụng giải pháp tải file PDF bị chặn...`);
+              console.log(`📑 Sử dụng giải pháp xử lý file PDF...`);
               
               // Tạo config cho xử lý watermark
               const watermarkConfig = { ...DEFAULT_CONFIG };
@@ -1290,26 +1293,29 @@ async function handleDriveFolder(driveFolderLink, backgroundImage, backgroundOpa
                 }
               }
               
-              const unblockResult = await downloadBlockedPDF(file.id, file.name, fileOutputDir, watermarkConfig);
+              // Sử dụng hàm processPDF mới với flag isBlocked=true
+              const outputPath = path.join(fileOutputDir, `${path.basename(file.name, '.pdf')}_clean.pdf`);
+              // Không cần truyền downloadResult.filePath vì file bị chặn không có đường dẫn file đầu vào
+              const processResult = await processPDF(null, outputPath, watermarkConfig, true, file.id);
               
-              if (unblockResult.success) {
+              if (processResult.success) {
                 downloadResult = {
                   success: true,
-                  filePath: unblockResult.filePath,
+                  filePath: processResult.filePath,
                   fileName: file.name,
                   contentType: 'application/pdf',
                   outputDir: fileOutputDir,
-                  size: fs.statSync(unblockResult.filePath).size,
+                  size: fs.statSync(processResult.filePath).size,
                   isImage: false,
                   isPdf: true,
-                  originalSize: unblockResult.originalSize || 0,
-                  processedSize: unblockResult.processedSize || fs.statSync(unblockResult.filePath).size,
-                  processingTime: unblockResult.processingTime || 0,
+                  originalSize: processResult.originalSize || 0,
+                  processedSize: processResult.processedSize || fs.statSync(processResult.filePath).size,
+                  processingTime: processResult.processingTime || 0,
                   alreadyProcessed: true // Đánh dấu đã xử lý watermark
                 };
                 console.log(`✅ Đã tải và xử lý thành công file ${file.name} bằng phương pháp chụp PDF`);
               } else {
-                throw new Error(`Không thể tải file bị chặn: ${unblockResult.error}`);
+                throw new Error(`Không thể xử lý file PDF: ${processResult.error}`);
               }
             } else if (file.mimeType.startsWith('image/')) {
               // Xử lý file ảnh bị chặn

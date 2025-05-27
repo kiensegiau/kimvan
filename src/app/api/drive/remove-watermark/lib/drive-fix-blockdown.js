@@ -12,7 +12,7 @@ import { v4 as uuidv4 } from 'uuid';
 import PDFDocument from 'pdfkit';
 import sharp from 'sharp';
 import axios from 'axios';
-import { cleanupTempFiles } from './utils.js';
+import { cleanupTempFiles, processBatches } from './utils.js';
 import { DEFAULT_CONFIG } from './config.js';
 
 // Import các hàm xử lý watermark từ module watermark.js
@@ -20,7 +20,8 @@ import {
   processImage, 
   addCustomBackground,
   createPDFFromProcessedImages,
-  createPDFFromRawImages
+  createPDFFromRawImages,
+  cleanPdf
 } from './watermark.js';
 
 // Hằng số
@@ -65,6 +66,112 @@ function createChromeUserProfile() {
     const tempProfilePath = path.join(os.tmpdir(), `chrome-profile-${Date.now()}`);
     fs.mkdirSync(tempProfilePath, { recursive: true });
     return tempProfilePath;
+  }
+}
+
+/**
+ * Xử lý file PDF đồng nhất - sử dụng cho cả PDF thông thường và PDF bị chặn
+ * Hàm này sẽ phân tích loại PDF và gọi phương thức xử lý phù hợp
+ * @param {string} inputPath - Đường dẫn đến file PDF đầu vào
+ * @param {string} outputPath - Đường dẫn để lưu file PDF đầu ra
+ * @param {Object} config - Cấu hình xử lý watermark
+ * @param {boolean} isBlocked - Có phải PDF bị chặn không
+ * @param {string} fileId - ID của file Google Drive (nếu là PDF bị chặn)
+ * @returns {Promise<{success: boolean, filePath: string, error: string}>}
+ */
+export async function processPDF(inputPath, outputPath, config = DEFAULT_CONFIG, isBlocked = false, fileId = null) {
+  try {
+    console.log(`🔄 Bắt đầu xử lý PDF: ${inputPath || 'PDF bị chặn từ Google Drive'}`);
+    
+    // Kiểm tra file tồn tại (chỉ khi không phải PDF bị chặn)
+    if (!isBlocked && !inputPath) {
+      throw new Error(`Đường dẫn file đầu vào không được cung cấp`);
+    }
+    
+    if (!isBlocked && !fs.existsSync(inputPath)) {
+      throw new Error(`File không tồn tại: ${inputPath}`);
+    }
+    
+    // Nếu không cung cấp đường dẫn đầu ra, tạo đường dẫn mặc định
+    if (!outputPath) {
+      if (inputPath) {
+        outputPath = inputPath.replace('.pdf', '_clean.pdf');
+      } else if (isBlocked && fileId) {
+        // Tạo đường dẫn mặc định cho file bị chặn
+        const tempDir = path.join(os.tmpdir(), uuidv4());
+        fs.mkdirSync(tempDir, { recursive: true });
+        outputPath = path.join(tempDir, `blocked_${fileId}_clean.pdf`);
+      } else {
+        throw new Error('Không thể xác định đường dẫn đầu ra');
+      }
+    }
+    
+    // Ghi lại thời gian bắt đầu
+    const startTime = Date.now();
+    
+    let result;
+    
+    // Xử lý dựa trên loại PDF
+    if (isBlocked && fileId) {
+      // Xử lý PDF bị chặn từ Google Drive
+      console.log(`🔒 Phát hiện PDF bị chặn từ Google Drive, sử dụng phương pháp đặc biệt...`);
+      const fileName = inputPath ? path.basename(inputPath) : `blocked_${fileId}.pdf`;
+      result = await downloadBlockedPDF(fileId, fileName, path.dirname(outputPath), config);
+    } else {
+      // Xử lý PDF thông thường
+      console.log(`📄 Xử lý PDF thông thường với phương pháp loại bỏ watermark...`);
+      
+      // Sử dụng hàm cleanPdf từ module watermark.js
+      try {
+        await cleanPdf(inputPath, outputPath, config);
+        
+        // Kiểm tra kết quả
+        if (fs.existsSync(outputPath)) {
+          const fileSize = fs.statSync(outputPath).size;
+          const processingTime = (Date.now() - startTime) / 1000;
+          
+          result = {
+            success: true,
+            filePath: outputPath,
+            fileName: path.basename(outputPath),
+            originalSize: fs.statSync(inputPath).size,
+            processedSize: fileSize,
+            processingTime: processingTime.toFixed(2)
+          };
+        } else {
+          throw new Error('Không thể tạo file PDF đã xử lý');
+        }
+      } catch (cleanError) {
+        console.error(`❌ Lỗi khi xử lý PDF thông thường: ${cleanError.message}`);
+        throw cleanError;
+      }
+    }
+    
+    // Thêm hình nền nếu được cấu hình
+    if (result.success && config.backgroundImage && fs.existsSync(config.backgroundImage)) {
+      try {
+        console.log(`🖼️ Thêm hình nền tùy chỉnh: ${config.backgroundImage}`);
+        const bgOutputPath = await addCustomBackground(result.filePath, config.backgroundImage, config);
+        
+        // Cập nhật kết quả với file mới có hình nền
+        if (fs.existsSync(bgOutputPath)) {
+          result.filePath = bgOutputPath;
+          result.fileName = path.basename(bgOutputPath);
+          result.processedSize = fs.statSync(bgOutputPath).size;
+        }
+      } catch (bgError) {
+        console.warn(`⚠️ Không thể thêm hình nền: ${bgError.message}`);
+        // Tiếp tục sử dụng file đã xử lý mà không có hình nền
+      }
+    }
+    
+    return result;
+  } catch (error) {
+    console.error(`❌ Lỗi xử lý PDF: ${error.message}`);
+    return {
+      success: false,
+      error: error.message
+    };
   }
 }
 
