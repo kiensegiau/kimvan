@@ -312,12 +312,12 @@ export async function downloadBlockedPDF(fileId, fileName, tempDir, watermarkCon
     // Thêm cài đặt đặc biệt cho file bị khóa
     isBlockedFile: true,
     enhancedMode: true,
-    // Điều chỉnh các thông số để giữ màu sắc và độ rõ nét
-    brightnessBoost: watermarkConfig.brightnessBoost || 1.2,    // Giảm từ 1.3 xuống 1.2
-    contrastBoost: watermarkConfig.contrastBoost || 1.25,       // Giảm từ 1.35 xuống 1.25
-    sharpenAmount: watermarkConfig.sharpenAmount || 0.8,        // Giảm từ 1.0 xuống 0.8
-    saturationAdjust: watermarkConfig.saturationAdjust || 1.2,  // Tăng từ 1.1 lên 1.2 để giữ màu sắc
-    preserveColors: true,                                       // Thêm tham số giữ màu sắc
+    // Điều chỉnh các thông số để tăng độ nét và giảm mức độ xử lý watermark
+    brightnessBoost: watermarkConfig.brightnessBoost || 1.05,   // Giảm từ 1.1 xuống 1.05 để giữ nội dung
+    contrastBoost: watermarkConfig.contrastBoost || 1.2,        // Giảm từ 1.35 xuống 1.2 để không mất chi tiết
+    sharpenAmount: watermarkConfig.sharpenAmount || 1.5,        // Tăng từ 1.2 lên 1.5 để tăng độ nét
+    saturationAdjust: watermarkConfig.saturationAdjust || 1.3,  // Tăng từ 1.2 lên 1.3 để tăng màu sắc
+    preserveColors: true,                                       // Giữ nguyên tham số giữ màu sắc
     extraWhitening: false,                                      // Tắt chế độ làm trắng thêm
     aggressiveWatermarkRemoval: false                           // Tắt chế độ xử lý mạnh nhất
   };
@@ -863,11 +863,11 @@ async function processAllImages(images, outputDir, config) {
       backgroundOpacity: config.backgroundOpacity || 0.15,
       // Thêm các tham số xử lý nâng cao
       enhancedMode: true,
-      contrastBoost: config.contrastBoost || 1.25,     // Giảm độ tương phản
-      brightnessBoost: config.brightnessBoost || 1.2,   // Giảm độ sáng mạnh hơn
-      sharpenAmount: config.sharpenAmount || 0.8,     // Giảm độ sắc nét
-      saturationAdjust: config.saturationAdjust || 1.2,  // Tăng từ 1.1 lên 1.2 để giữ màu sắc
-      preserveColors: true,                                       // Thêm tham số giữ màu sắc
+      contrastBoost: config.contrastBoost || 1.2,     // Giảm từ 1.35 xuống 1.2 để không mất chi tiết
+      brightnessBoost: config.brightnessBoost || 1.05,   // Giảm từ 1.1 xuống 1.05 để giữ nội dung
+      sharpenAmount: config.sharpenAmount || 1.5,        // Tăng từ 1.2 lên 1.5 để tăng độ nét
+      saturationAdjust: config.saturationAdjust || 1.3,  // Tăng từ 1.2 lên 1.3 để tăng màu sắc
+      preserveColors: true,                                       // Giữ nguyên tham số giữ màu sắc
       extraWhitening: false,                                      // Tắt chế độ làm trắng thêm
       aggressiveWatermarkRemoval: false                           // Tắt chế độ xử lý mạnh nhất
     };
@@ -986,18 +986,19 @@ async function processAllImages(images, outputDir, config) {
               processedBuffer = await sharp(processedBuffer)
                 // Tăng độ sắc nét để làm rõ nội dung
                 .sharpen({
-                  sigma: 0.7,
-                  m1: 0.3,
-                  m2: 0.5
+                  sigma: 1.5,  // Tăng từ 1.2 lên 1.5
+                  m1: 0.5,     // Tăng từ 0.4 lên 0.5
+                  m2: 0.7      // Tăng từ 0.6 lên 0.7
                 })
                 // Tăng độ tương phản nhẹ để làm rõ văn bản
                 .linear(
-                  1.15, // Độ dốc thấp
-                  -0.05 // Điểm cắt âm rất nhỏ
+                  1.2, // Giảm từ 1.25 xuống 1.2 để giữ chi tiết
+                  -0.03 // Giảm từ -0.05 xuống -0.03 để giữ chi tiết
                 )
                 // Tăng độ bão hòa màu một chút nữa
                 .modulate({
-                  saturation: 1.1
+                  saturation: 1.3, // Tăng từ 1.1 lên 1.3
+                  brightness: 1.05 // Thêm tham số độ sáng nhẹ
                 })
                 .png({ quality: 100 })
                 .toBuffer();

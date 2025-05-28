@@ -698,8 +698,8 @@ export async function processImage(inputPath, outputPath, config = DEFAULT_CONFI
           // Chế độ nâng cao cho file bị khóa
           try {
             // Tăng độ sáng và độ bão hòa
-            const brightness = config.brightnessBoost || 1.2;
-            const saturation = config.saturationAdjust || 1.2;
+            const brightness = config.brightnessBoost || 1.05;  // Giảm từ 1.1 xuống 1.05 để giữ nội dung
+            const saturation = config.saturationAdjust || 1.3;  // Tăng từ 1.2 lên 1.3 để tăng màu sắc
             
             processedImage = processedImage.modulate({
               brightness: brightness,
@@ -712,10 +712,10 @@ export async function processImage(inputPath, outputPath, config = DEFAULT_CONFI
           
           try {
             // Tăng độ tương phản vừa phải
-            const contrastBoost = config.contrastBoost || 1.25;
+            const contrastBoost = config.contrastBoost || 1.2;  // Giảm từ 1.35 xuống 1.2 để không mất chi tiết
             processedImage = processedImage.linear(
               contrastBoost, 
-              -(128 * contrastBoost - 128) / 255
+              -(128 * contrastBoost - 128) / 255 * 0.8  // Giảm hệ số xuống 80% để giữ chi tiết
             );
             console.log(`Đã áp dụng tăng độ tương phản (${contrastBoost})`);
           } catch (contrastError) {
@@ -723,15 +723,15 @@ export async function processImage(inputPath, outputPath, config = DEFAULT_CONFI
           }
           
           try {
-            // Tăng độ sắc nét nhẹ nhàng
-            const sharpenAmount = config.sharpenAmount || 0.8;
+            // Tăng độ sắc nét mạnh hơn
+            const sharpenAmount = config.sharpenAmount || 1.5;  // Tăng từ 1.2 lên 1.5 để tăng độ nét
             processedImage = processedImage.sharpen({
               sigma: sharpenAmount,
-              m1: 0.2,
-              m2: 0.4,
+              m1: 0.5,  // Tăng từ 0.3 lên 0.5
+              m2: 0.7,  // Tăng từ 0.5 lên 0.7
               x1: 2,
-              y2: 5,
-              y3: 5
+              y2: 6,
+              y3: 6
             });
             console.log(`Đã áp dụng tăng độ nét nâng cao (${sharpenAmount})`);
           } catch (sharpenError) {
@@ -755,64 +755,10 @@ export async function processImage(inputPath, outputPath, config = DEFAULT_CONFI
           if (isBlockedFile) {
             try {
               // Thử áp dụng bộ lọc medianFilter để giảm nhiễu
-              processedImage = processedImage.median(2); // Giảm từ 3 xuống 2
+              processedImage = processedImage.median(1);  // Giữ nguyên 1 để giữ chi tiết
               console.log(`Đã áp dụng bộ lọc median để giảm nhiễu`);
             } catch (medianError) {
               console.warn(`Bỏ qua bước lọc median do lỗi: ${medianError.message}`);
-            }
-            
-            // Thêm các kỹ thuật xử lý mạnh hơn cho file bị khóa
-            if (config.extraWhitening === true) {
-              try {
-                console.log(`Áp dụng xử lý làm trắng thêm cho file bị khóa (chế độ cân bằng)...`);
-                
-                // Áp dụng ngưỡng để loại bỏ các vùng xám nhạt
-                const thresholdValue = 240; // Tăng ngưỡng để chỉ loại bỏ watermark mờ
-                processedImage = processedImage.threshold(thresholdValue);
-                
-                // Tăng độ tương phản lần nữa
-                processedImage = processedImage.linear(
-                  1.2, // Độ dốc thấp hơn
-                  -0.1 // Điểm cắt âm nhỏ hơn
-                );
-                
-                // Giảm nhiễu nhẹ
-                processedImage = processedImage.median(2);
-                
-                console.log(`Đã áp dụng xử lý làm trắng cân bằng với ngưỡng ${thresholdValue}`);
-              } catch (whiteningError) {
-                console.warn(`Bỏ qua bước làm trắng thêm do lỗi: ${whiteningError.message}`);
-              }
-            }
-            
-            // Xử lý mạnh nhất nếu được cấu hình
-            if (config.aggressiveWatermarkRemoval === true) {
-              try {
-                console.log(`Áp dụng xử lý mạnh để loại bỏ watermark (chế độ cân bằng)...`);
-                
-                // Áp dụng bộ lọc màu để giảm độ xám của watermark
-                processedImage = processedImage.tint({ r: 250, g: 250, b: 250 }); // Giảm xuống để giữ lại văn bản
-                
-                // Tăng độ tương phản cao hơn nữa
-                processedImage = processedImage.linear(
-                  1.3, // Độ dốc vừa phải
-                  -0.1 // Điểm cắt âm nhỏ hơn
-                );
-                
-                // Làm mịn ảnh để giảm nhiễu
-                processedImage = processedImage.blur(0.2);
-                
-                // Tăng độ sắc nét lần cuối
-                processedImage = processedImage.sharpen({
-                  sigma: 1.0,
-                  m1: 0.3,
-                  m2: 0.5
-                });
-                
-                console.log(`Đã áp dụng xử lý mạnh cân bằng để loại bỏ watermark`);
-              } catch (aggressiveError) {
-                console.warn(`Bỏ qua bước xử lý mạnh do lỗi: ${aggressiveError.message}`);
-              }
             }
             
             // Xử lý đặc biệt cho watermark khi giữ màu sắc
@@ -822,20 +768,21 @@ export async function processImage(inputPath, outputPath, config = DEFAULT_CONFI
                 
                 // Tăng độ sắc nét để làm rõ nội dung
                 processedImage = processedImage.sharpen({
-                  sigma: 0.7,
-                  m1: 0.3,
-                  m2: 0.5
+                  sigma: 1.5,  // Tăng từ 1.2 lên 1.5
+                  m1: 0.5,     // Tăng từ 0.4 lên 0.5
+                  m2: 0.7      // Tăng từ 0.6 lên 0.7
                 });
                 
                 // Tăng độ tương phản nhẹ để làm rõ văn bản
                 processedImage = processedImage.linear(
-                  1.15, // Độ dốc thấp
-                  -0.05 // Điểm cắt âm rất nhỏ
+                  1.2,  // Giảm từ 1.25 xuống 1.2 để giữ chi tiết
+                  -0.03 // Giảm từ -0.05 xuống -0.03 để giữ chi tiết
                 );
                 
                 // Tăng độ bão hòa màu một chút nữa
                 processedImage = processedImage.modulate({
-                  saturation: 1.1
+                  saturation: 1.3, // Tăng từ 1.1 lên 1.3
+                  brightness: 1.05 // Thêm tham số độ sáng nhẹ
                 });
                 
                 console.log(`Đã áp dụng xử lý giữ màu sắc cho file bị khóa`);
@@ -848,15 +795,17 @@ export async function processImage(inputPath, outputPath, config = DEFAULT_CONFI
           // Chế độ cơ bản
           try {
             processedImage = processedImage.modulate({
-              brightness: 1.15  // Tăng độ sáng 15%
+              brightness: 1.1,  // Giảm từ 1.15 xuống 1.1
+              saturation: 1.2   // Thêm tham số độ bão hòa
             });
-            console.log(`Đã áp dụng tăng độ sáng cơ bản`);
+            console.log(`Đã áp dụng tăng độ sáng và bão hòa cơ bản`);
           } catch (modulateError) {
             console.warn(`Bỏ qua bước modulate do lỗi: ${modulateError.message}`);
           }
           
           try {
-            processedImage = processedImage.sharpen({ sigma: 0.5, m1: 0.2, m2: 0.3 });
+            // Tăng độ sắc nét cho chế độ cơ bản
+            processedImage = processedImage.sharpen({ sigma: 1.2, m1: 0.4, m2: 0.6 });  // Tăng từ 1.0/0.3/0.5 lên 1.2/0.4/0.6
             console.log(`Đã áp dụng tăng độ nét cơ bản`);
           } catch (sharpenError) {
             console.warn(`Bỏ qua bước sharpen do lỗi: ${sharpenError.message}`);
