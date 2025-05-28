@@ -150,8 +150,8 @@ export async function addImageToPdf(pdfDoc, pngPath, index, totalPages, config) 
     const isProcessedImage = pngPath.includes('_processed');
     
     // Bây giờ thêm hình nền *SAU* nội dung (để hiển thị trên cùng)
-    // Chỉ thêm nếu không phải là ảnh đã xử lý
-    if (!isProcessedImage && config.backgroundImage && fs.existsSync(config.backgroundImage)) {
+    // Luôn thêm logo, không quan tâm đến việc ảnh đã xử lý hay chưa
+    if (config.backgroundImage && fs.existsSync(config.backgroundImage)) {
       try {
         console.log(`Thêm logo vào trang ${index + 1}/${totalPages}`);
         // Đọc hình nền
@@ -206,8 +206,8 @@ export async function addImageToPdf(pdfDoc, pngPath, index, totalPages, config) 
         console.error(`Lỗi khi xử lý hình nền: ${backgroundError.message}`);
         // Just continue without background on error
       }
-    } else if (isProcessedImage) {
-      console.log(`Bỏ qua thêm logo cho trang ${index + 1}/${totalPages} vì ảnh đã được xử lý trước đó`);
+    } else {
+      console.log(`Không thể thêm logo vào trang ${index + 1}/${totalPages}: không tìm thấy file logo hoặc không được cấu hình`);
     }
     
     return true;
