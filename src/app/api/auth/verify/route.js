@@ -44,7 +44,7 @@ export async function POST(request) {
   } catch (error) {
     console.error('Lỗi xác thực token:', error);
     return NextResponse.json(
-      { valid: false, error: 'Lỗi xác thực token' },
+      { valid: false, error: 'Lỗi xác thực token: ' + error.message },
       { status: 500 }
     );
   }
@@ -93,7 +93,7 @@ export async function GET(request) {
   } catch (error) {
     console.error('Lỗi xác thực token:', error);
     return NextResponse.json(
-      { authenticated: false, error: 'Lỗi xác thực token' },
+      { authenticated: false, error: 'Lỗi xác thực token: ' + error.message },
       { status: 500 }
     );
   }

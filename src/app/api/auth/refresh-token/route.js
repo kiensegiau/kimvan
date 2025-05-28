@@ -10,9 +10,16 @@ import { verifyServerAuthToken } from '@/utils/server-auth';
  */
 export async function POST(request) {
   try {
+    // Lấy dữ liệu từ request body
+    const body = await request.json();
+    const { token: tokenFromBody, rememberMe } = body;
+    
     // Lấy token hiện tại từ cookie hoặc request body
     const cookieStore = cookies();
-    const currentToken = cookieStore.get(cookieConfig.authCookieName)?.value;
+    const tokenFromCookie = cookieStore.get(cookieConfig.authCookieName)?.value;
+    
+    // Ưu tiên sử dụng token từ body nếu có
+    const currentToken = tokenFromBody || tokenFromCookie;
     
     // Nếu không có token, trả về lỗi
     if (!currentToken) {
@@ -31,10 +38,6 @@ export async function POST(request) {
         { status: 401 }
       );
     }
-
-    // Lấy thông tin từ request body
-    const body = await request.json();
-    const { rememberMe } = body;
 
     // Tạo token mới với thời gian sống dài hơn
     const customToken = await firebaseAdmin.auth().createCustomToken(user.uid);
@@ -81,15 +84,16 @@ export async function POST(request) {
       sameSite: cookieConfig.sameSite,
     });
 
-    // Trả về kết quả thành công
+    // Trả về kết quả thành công với token mới
     return NextResponse.json({
       success: true,
-      message: 'Token đã được làm mới thành công'
+      message: 'Token đã được làm mới thành công',
+      token: newIdToken
     });
   } catch (error) {
     console.error('Lỗi khi làm mới token:', error);
     return NextResponse.json(
-      { success: false, error: 'Lỗi khi làm mới token' },
+      { success: false, error: 'Lỗi khi làm mới token: ' + error.message },
       { status: 500 }
     );
   }

@@ -204,18 +204,35 @@ export async function middleware(request) {
         const refreshResponse = await fetch(`${baseUrl}${TOKEN_REFRESH_API}`, {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify({ 
+            token, // Truyền token hiện tại vào body
             rememberMe: true // Mặc định sử dụng thời gian sống dài
-          }),
-          credentials: 'same-origin'
+          })
         });
+        
+        const refreshData = await refreshResponse.json();
         
         if (refreshResponse.ok) {
           console.log('✅ Làm mới token thành công');
+          
+          // Cập nhật cookie với token mới
+          if (refreshData.token) {
+            // Thiết lập cookie mới cho response
+            const maxAge = 60 * 60 * 24 * 30; // 30 ngày
+            response.cookies.set({
+              name: cookieConfig.authCookieName,
+              value: refreshData.token,
+              path: '/',
+              maxAge: maxAge,
+              httpOnly: true,
+              secure: cookieConfig.secure,
+              sameSite: cookieConfig.sameSite,
+            });
+          }
         } else {
-          console.error('❌ Không thể làm mới token');
+          console.error('❌ Không thể làm mới token:', refreshData.error);
         }
       } catch (refreshError) {
         console.error('❌ Lỗi khi làm mới token:', refreshError);
