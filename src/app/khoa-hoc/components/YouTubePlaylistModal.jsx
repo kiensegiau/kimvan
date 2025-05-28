@@ -16,6 +16,7 @@ const YouTubePlaylistModal = ({ isOpen, playlistId, videoId, onClose, title }) =
   const [currentIndex, setCurrentIndex] = useState(0);
   const autoCloseTimerRef = useRef(null);
   const [sortOrder, setSortOrder] = useState('asc'); // Mặc định sắp xếp theo A-Z
+  const [showTooltip, setShowTooltip] = useState(false);
 
   // Xử lý click ngoài modal
   useEffect(() => {
@@ -43,6 +44,13 @@ const YouTubePlaylistModal = ({ isOpen, playlistId, videoId, onClose, title }) =
       // Tự động đóng sau 3 giây
       autoCloseTimerRef.current = setTimeout(() => {
         setShowPlaylist(false);
+        
+        // Hiển thị tooltip hướng dẫn sau khi đóng danh sách phát
+        setShowTooltip(true);
+        // Ẩn tooltip sau 3 giây
+        setTimeout(() => {
+          setShowTooltip(false);
+        }, 3000);
       }, 3000);
     }
     
@@ -412,6 +420,14 @@ const YouTubePlaylistModal = ({ isOpen, playlistId, videoId, onClose, title }) =
                   {playlistItems.length}
                 </span>
               )}
+              
+              {/* Tooltip hướng dẫn */}
+              {showTooltip && !showPlaylist && (
+                <div className="absolute top-full mt-2 right-0 bg-white text-gray-800 rounded-lg shadow-xl px-3 py-2 text-sm whitespace-nowrap z-50 animate-pulse">
+                  <div className="absolute -top-2 right-2 w-0 h-0 border-l-8 border-r-8 border-b-8 border-l-transparent border-r-transparent border-b-white"></div>
+                  Nhấn vào đây để xem danh sách phát
+                </div>
+              )}
             </button>
             <button
               onClick={onClose}
@@ -586,6 +602,15 @@ const YouTubePlaylistModal = ({ isOpen, playlistId, videoId, onClose, title }) =
         
         .animate-slideIn {
           animation: slideIn 0.3s ease-out forwards;
+        }
+        
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.8; }
+        }
+        
+        .animate-pulse {
+          animation: pulse 1.5s infinite;
         }
       `}</style>
     </div>
