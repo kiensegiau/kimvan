@@ -43,6 +43,7 @@ const publicPathCache = new Map();
 
 // Đường dẫn API xác thực token
 const TOKEN_VERIFY_API = '/api/auth/verify';
+const TOKEN_REFRESH_API = '/api/auth/refresh-token';
 
 // Email được phép truy cập trang admin
 const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'phanhuukien2001@gmail.com';
@@ -63,8 +64,9 @@ export async function middleware(request) {
   const { pathname } = request.nextUrl;
   console.log('🚨 MIDDLEWARE EXECUTED FOR:', pathname);
 
-  // Bỏ qua middleware cho API verify token để tránh vòng lặp vô hạn
+  // Bỏ qua middleware cho API verify token và refresh token để tránh vòng lặp vô hạn
   if (pathname === TOKEN_VERIFY_API || 
+      pathname === TOKEN_REFRESH_API ||
       pathname === '/api/auth/logout' || 
       pathname === '/api/auth/admin/check-permission') {
     return NextResponse.next();
@@ -184,6 +186,40 @@ export async function middleware(request) {
       });
       
       return addSecurityHeaders(redirectResponse);
+    }
+    
+    // Kiểm tra xem token có sắp hết hạn không
+    // Lấy thời gian hết hạn từ payload token
+    const tokenPayload = verifyData.user;
+    const tokenExpiration = tokenPayload.tokenExpiration;
+    const now = Date.now();
+    const timeLeft = tokenExpiration - now;
+    
+    // Nếu token sắp hết hạn (còn dưới 30 phút), làm mới token
+    if (timeLeft < 30 * 60 * 1000) {
+      console.log('🔄 Token sắp hết hạn, tiến hành làm mới token');
+      
+      try {
+        // Gọi API làm mới token
+        const refreshResponse = await fetch(`${baseUrl}${TOKEN_REFRESH_API}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            rememberMe: true // Mặc định sử dụng thời gian sống dài
+          }),
+          credentials: 'same-origin'
+        });
+        
+        if (refreshResponse.ok) {
+          console.log('✅ Làm mới token thành công');
+        } else {
+          console.error('❌ Không thể làm mới token');
+        }
+      } catch (refreshError) {
+        console.error('❌ Lỗi khi làm mới token:', refreshError);
+      }
     }
   } catch (error) {
     console.error('❌ Lỗi khi xác thực token:', error);

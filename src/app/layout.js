@@ -6,6 +6,7 @@ import Sidebar from './components/Sidebar';
 import { useState, useEffect } from 'react';
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 import { usePathname } from 'next/navigation';
+import { setupTokenRefreshInterval } from '@/utils/auth-client';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -62,6 +63,17 @@ export default function RootLayout({ children }) {
       setSidebarOpen(true);
     }
   }, [isMobile, isAuthPage]);
+
+  // Thêm cơ chế tự động làm mới token
+  useEffect(() => {
+    // Thiết lập interval kiểm tra token mỗi 15 phút
+    const intervalId = setupTokenRefreshInterval(15);
+    
+    // Dọn dẹp khi component unmount
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, []);
 
   return (
     <html lang="vi">

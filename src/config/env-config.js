@@ -47,8 +47,8 @@ export const firebaseAdminConfig = {
 // Cấu hình Cookie
 export const cookieConfig = {
   authCookieName: 'auth-token',
-  defaultMaxAge: 60 * 60 * 24 * 7, // 7 ngày (thay vì 1 ngày)
-  extendedMaxAge: 60 * 60 * 24 * 90, // 90 ngày (thay vì 30 ngày)
+  defaultMaxAge: 60 * 60 * 24 * 30, // 30 ngày (thay vì 7 ngày)
+  extendedMaxAge: 60 * 60 * 24 * 180, // 180 ngày (thay vì 90 ngày)
   secure: process.env.NODE_ENV === 'production',
   httpOnly: true,
   sameSite: 'lax'

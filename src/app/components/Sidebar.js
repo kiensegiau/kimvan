@@ -11,7 +11,9 @@ import {
   InformationCircleIcon,
   UserCircleIcon,
   ChevronRightIcon,
-  ClipboardDocumentListIcon
+  ClipboardDocumentListIcon,
+  ArrowRightOnRectangleIcon,
+  Cog6ToothIcon
 } from '@heroicons/react/24/outline';
 import { useState, useEffect } from 'react';
 import { logout } from '@/utils/auth-client';
@@ -45,12 +47,8 @@ const Sidebar = ({ closeSidebar }) => {
         const response = await fetch('/api/users/me');
         const result = await response.json();
 
-        if (result.success && result.user) {
-          setUserData({
-            name: result.user?.displayName || '',
-            email: result.user?.email || '',
-            role: result.user?.role || 'user'
-          });
+        if (result.success) {
+          setUserData(result.user);
         }
       } catch (error) {
         console.error('Lỗi khi lấy thông tin người dùng:', error);
@@ -166,9 +164,9 @@ const Sidebar = ({ closeSidebar }) => {
               </div>
             ) : (
               <>
-                {userData?.name && (
-                  <p className="font-medium truncate text-white">{userData.name}</p>
-                )}
+                {userData?.displayName ? (
+                  <p className="font-medium truncate text-white">{userData.displayName}</p>
+                ) : null}
                 <p className="text-xs text-indigo-200 truncate">{userData?.email || 'Chưa đăng nhập'}</p>
                 {userData?.role && (
                   <div className="mt-1">
@@ -202,9 +200,7 @@ const Sidebar = ({ closeSidebar }) => {
             disabled={isLoggingOut}
             className="w-full flex items-center p-2 rounded-lg hover:bg-indigo-800 transition-colors text-indigo-100 disabled:opacity-50"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-indigo-300 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-            </svg>
+            <ArrowRightOnRectangleIcon className="mr-3 h-5 w-5 text-indigo-300" />
             <span className="text-sm">{isLoggingOut ? 'Đang đăng xuất...' : 'Đăng xuất'}</span>
           </button>
         </div>

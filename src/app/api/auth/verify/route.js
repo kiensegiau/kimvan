@@ -37,6 +37,7 @@ export async function POST(request) {
         displayName: user.displayName,
         photoURL: user.photoURL,
         role: user.role || 'user',
+        tokenExpiration: user.tokenExpiration || null,
       }
     });
 
@@ -85,6 +86,7 @@ export async function GET(request) {
         displayName: user.displayName,
         photoURL: user.photoURL,
         role: user.role || 'user',
+        tokenExpiration: user.tokenExpiration || null,
       }
     });
 

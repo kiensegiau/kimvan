@@ -59,6 +59,8 @@ export async function verifyServerAuthToken(token) {
       displayName: userRecord.displayName,
       photoURL: userRecord.photoURL,
       role: userRecord.customClaims?.role || 'user',
+      // Thêm thông tin về thời gian hết hạn của token
+      tokenExpiration: decodedToken.exp * 1000, // Chuyển từ giây sang mili giây
     };
     
     // Lưu kết quả xác thực vào cache
@@ -71,6 +73,25 @@ export async function verifyServerAuthToken(token) {
   } catch (error) {
     console.error('Lỗi xác thực token:', error.message);
     return null;
+  }
+}
+
+// Hàm kiểm tra token sắp hết hạn
+export async function isTokenExpiringSoon(token, thresholdMinutes = 30) {
+  if (!token) return true;
+  
+  try {
+    const user = await verifyServerAuthToken(token);
+    if (!user || !user.tokenExpiration) return true;
+    
+    const now = Date.now();
+    const thresholdMs = thresholdMinutes * 60 * 1000;
+    
+    // Token sắp hết hạn nếu thời gian còn lại nhỏ hơn ngưỡng
+    return (user.tokenExpiration - now) < thresholdMs;
+  } catch (error) {
+    console.error('Lỗi kiểm tra thời hạn token:', error);
+    return true;
   }
 }
 

@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/lib/firebase-admin';
+import firebaseAdmin from '@/lib/firebase-admin';
 import { cookies } from 'next/headers';
 
 export async function POST(request) {
   try {
-    // Lấy token từ cookie
-    const cookieStore = cookies();
+    // Lấy token từ cookie - sử dụng await
+    const cookieStore = await cookies();
     const token = cookieStore.get('auth-token')?.value;
 
     if (!token) {
@@ -15,8 +15,8 @@ export async function POST(request) {
       }, { status: 401 });
     }
 
-    // Xác thực token với Firebase
-    const decodedToken = await auth.verifyIdToken(token);
+    // Xác thực token với Firebase - sửa cách gọi auth
+    const decodedToken = await firebaseAdmin.auth().verifyIdToken(token);
     const firebaseId = decodedToken.uid;
 
     // Lấy dữ liệu từ request
@@ -29,8 +29,8 @@ export async function POST(request) {
       }, { status: 400 });
     }
 
-    // Thay đổi mật khẩu trong Firebase
-    await auth.updateUser(firebaseId, {
+    // Thay đổi mật khẩu trong Firebase - sửa cách gọi auth
+    await firebaseAdmin.auth().updateUser(firebaseId, {
       password: newPassword
     });
 

@@ -254,4 +254,108 @@ export const onAuthStateChanged = (callback) => {
   
   // Trả về hàm hủy theo dõi (không làm gì cả trong trường hợp này)
   return () => {};
+};
+
+/**
+ * Làm mới token xác thực
+ * @param {boolean} rememberMe - Có sử dụng thời gian sống dài hơn không
+ * @returns {Promise<boolean>} - Kết quả làm mới token
+ */
+export const refreshToken = async (rememberMe = true) => {
+  try {
+    // Gọi API làm mới token
+    const response = await fetch('/api/auth/refresh-token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ rememberMe }),
+      credentials: 'same-origin'
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error || 'Không thể làm mới token');
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Lỗi làm mới token:', error);
+    return false;
+  }
+};
+
+/**
+ * Kiểm tra thời gian hết hạn của token và tự động làm mới nếu cần
+ * @param {number} thresholdMinutes - Ngưỡng thời gian (phút) trước khi token hết hạn để làm mới
+ * @returns {Promise<boolean>} - Kết quả kiểm tra và làm mới token
+ */
+export const checkAndRefreshTokenIfNeeded = async (thresholdMinutes = 30) => {
+  try {
+    // Gọi API kiểm tra token
+    const response = await fetch('/api/auth/verify', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'same-origin'
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok || !data.valid) {
+      console.log('Token không hợp lệ hoặc đã hết hạn');
+      return false;
+    }
+    
+    // Kiểm tra thời gian còn lại của token
+    const user = data.user;
+    if (!user || !user.tokenExpiration) {
+      console.log('Không có thông tin về thời hạn token');
+      return false;
+    }
+    
+    const now = Date.now();
+    const thresholdMs = thresholdMinutes * 60 * 1000;
+    const timeLeft = user.tokenExpiration - now;
+    
+    // Nếu token sắp hết hạn, làm mới token
+    if (timeLeft < thresholdMs) {
+      console.log(`Token sắp hết hạn (còn ${Math.floor(timeLeft / 60000)} phút), tiến hành làm mới`);
+      return await refreshToken(true); // Sử dụng thời gian sống dài
+    }
+    
+    // Token vẫn còn hiệu lực và chưa cần làm mới
+    console.log(`Token còn hiệu lực (còn ${Math.floor(timeLeft / 60000)} phút)`);
+    return true;
+  } catch (error) {
+    console.error('Lỗi kiểm tra thời hạn token:', error);
+    return false;
+  }
+};
+
+/**
+ * Thiết lập kiểm tra token định kỳ
+ * @param {number} intervalMinutes - Khoảng thời gian (phút) giữa các lần kiểm tra
+ * @returns {number} - ID của interval để có thể hủy sau này
+ */
+export const setupTokenRefreshInterval = (intervalMinutes = 15) => {
+  if (typeof window === 'undefined') return null;
+  
+  // Chuyển đổi phút thành mili giây
+  const intervalMs = intervalMinutes * 60 * 1000;
+  
+  // Thiết lập interval để kiểm tra và làm mới token định kỳ
+  const intervalId = setInterval(async () => {
+    const user = getCurrentUser();
+    if (user) {
+      await checkAndRefreshTokenIfNeeded();
+    } else {
+      // Nếu không có người dùng, hủy interval
+      clearInterval(intervalId);
+    }
+  }, intervalMs);
+  
+  return intervalId;
 }; 
