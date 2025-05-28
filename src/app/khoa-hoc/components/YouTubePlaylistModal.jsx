@@ -2,18 +2,20 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { XMarkIcon, ArrowLeftIcon, ArrowRightIcon } from '@heroicons/react/24/outline';
-import { ExclamationTriangleIcon, ListBulletIcon } from '@heroicons/react/24/solid';
+import { ExclamationTriangleIcon, ListBulletIcon, ArrowsUpDownIcon } from '@heroicons/react/24/solid';
 
 const YouTubePlaylistModal = ({ isOpen, playlistId, videoId, onClose, title }) => {
   const modalRef = useRef(null);
   const [loading, setLoading] = useState(true);
   const [playlistItems, setPlaylistItems] = useState([]);
+  const [originalPlaylistItems, setOriginalPlaylistItems] = useState([]);
   const [currentVideoId, setCurrentVideoId] = useState(videoId);
   const [isLoadingPlaylist, setIsLoadingPlaylist] = useState(true);
   const [error, setError] = useState(null);
   const [showPlaylist, setShowPlaylist] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const autoCloseTimerRef = useRef(null);
+  const [sortOrder, setSortOrder] = useState('asc'); // Mặc định sắp xếp theo A-Z
 
   // Xử lý click ngoài modal
   useEffect(() => {
@@ -64,6 +66,21 @@ const YouTubePlaylistModal = ({ isOpen, playlistId, videoId, onClose, title }) =
     setShowPlaylist(!showPlaylist);
   };
 
+  // Sắp xếp danh sách theo thứ tự hiện tại
+  const sortPlaylist = (items, order) => {
+    if (order === 'default') {
+      return [...items];
+    } else if (order === 'asc') {
+      return [...items].sort((a, b) => 
+        a.snippet.title.localeCompare(b.snippet.title, 'vi')
+      );
+    } else {
+      return [...items].sort((a, b) => 
+        b.snippet.title.localeCompare(a.snippet.title, 'vi')
+      );
+    }
+  };
+
   // Lấy dữ liệu playlist từ API
   useEffect(() => {
     if (!playlistId) return;
@@ -82,16 +99,21 @@ const YouTubePlaylistModal = ({ isOpen, playlistId, videoId, onClose, title }) =
         const data = await response.json();
         
         if (data.items && data.items.length > 0) {
-          setPlaylistItems(data.items);
+          // Lưu trữ danh sách gốc
+          setOriginalPlaylistItems(data.items);
+          
+          // Sắp xếp danh sách theo thứ tự hiện tại (mặc định là A-Z)
+          const sortedItems = sortPlaylist(data.items, sortOrder);
+          setPlaylistItems(sortedItems);
           
           // Nếu không có videoId ban đầu, sử dụng video đầu tiên từ playlist
-          if (!currentVideoId && data.items[0].snippet.resourceId.videoId) {
-            setCurrentVideoId(data.items[0].snippet.resourceId.videoId);
+          if (!currentVideoId && sortedItems[0].snippet.resourceId.videoId) {
+            setCurrentVideoId(sortedItems[0].snippet.resourceId.videoId);
           }
           
           // Tìm index của video hiện tại trong playlist
           if (currentVideoId) {
-            const index = data.items.findIndex(
+            const index = sortedItems.findIndex(
               item => item.snippet.resourceId.videoId === currentVideoId
             );
             if (index !== -1) {
@@ -110,7 +132,43 @@ const YouTubePlaylistModal = ({ isOpen, playlistId, videoId, onClose, title }) =
     };
 
     fetchPlaylistData();
-  }, [playlistId, videoId]);
+  }, [playlistId, videoId, sortOrder]);
+
+  // Sắp xếp danh sách phát
+  const handleSortPlaylist = () => {
+    // Xóa timer tự động đóng nếu đang có
+    if (autoCloseTimerRef.current) {
+      clearTimeout(autoCloseTimerRef.current);
+      autoCloseTimerRef.current = null;
+    }
+    
+    // Xác định thứ tự sắp xếp tiếp theo
+    let newSortOrder;
+    if (sortOrder === 'default') {
+      newSortOrder = 'asc';
+    } else if (sortOrder === 'asc') {
+      newSortOrder = 'desc';
+    } else {
+      newSortOrder = 'default';
+    }
+    
+    // Sắp xếp danh sách theo thứ tự mới
+    const sortedItems = sortPlaylist(originalPlaylistItems, newSortOrder);
+    
+    // Cập nhật state
+    setSortOrder(newSortOrder);
+    setPlaylistItems(sortedItems);
+    
+    // Cập nhật lại chỉ số của video hiện tại
+    if (currentVideoId) {
+      const newIndex = sortedItems.findIndex(
+        item => item.snippet.resourceId.videoId === currentVideoId
+      );
+      if (newIndex !== -1) {
+        setCurrentIndex(newIndex);
+      }
+    }
+  };
 
   // Xử lý chuyển đến video tiếp theo
   const handleNextVideo = () => {
@@ -325,8 +383,24 @@ const YouTubePlaylistModal = ({ isOpen, playlistId, videoId, onClose, title }) =
                 {currentIndex + 1}/{playlistItems.length}
               </span>
             )}
+            <span className="ml-2 text-xs bg-yellow-500 text-black px-1.5 py-0.5 rounded">
+              {sortOrder === 'asc' ? 'A-Z' : sortOrder === 'desc' ? 'Z-A' : 'Gốc'}
+            </span>
           </div>
           <div className="flex items-center space-x-2">
+            <button
+              onClick={handleSortPlaylist}
+              className={`p-1.5 rounded-full bg-white bg-opacity-20 hover:bg-opacity-30 transition-all relative ${sortOrder !== 'default' ? 'text-yellow-300' : ''}`}
+              title={
+                sortOrder === 'default' 
+                  ? "Sắp xếp A-Z" 
+                  : sortOrder === 'asc' 
+                    ? "Sắp xếp Z-A" 
+                    : "Trở về thứ tự ban đầu"
+              }
+            >
+              <ArrowsUpDownIcon className="h-5 w-5" />
+            </button>
             <button
               onClick={handlePlaylistToggle}
               className={`p-1.5 rounded-full ${showPlaylist ? 'bg-white text-indigo-600' : 'bg-white bg-opacity-20 hover:bg-opacity-30'} transition-all relative`}
@@ -416,13 +490,35 @@ const YouTubePlaylistModal = ({ isOpen, playlistId, videoId, onClose, title }) =
           {showPlaylist && (
             <div className="absolute top-0 right-0 bottom-0 w-full md:w-2/3 lg:w-1/2 bg-black bg-opacity-95 z-50 overflow-y-auto border-l border-gray-800 shadow-2xl animate-slideIn">
               <div className="p-3 sticky top-0 bg-gradient-to-r from-gray-900 to-black border-b border-gray-800 flex justify-between items-center">
-                <h3 className="text-white font-medium">Danh sách phát</h3>
-                <button 
-                  onClick={handlePlaylistToggle} 
-                  className="p-1 rounded-full hover:bg-gray-800 text-gray-400 hover:text-white transition-colors"
-                >
-                  <XMarkIcon className="h-5 w-5" />
-                </button>
+                <h3 className="text-white font-medium">
+                  Danh sách phát
+                  {sortOrder !== 'default' && (
+                    <span className="ml-2 text-xs bg-yellow-500 text-black px-1.5 py-0.5 rounded">
+                      {sortOrder === 'asc' ? 'A-Z' : 'Z-A'}
+                    </span>
+                  )}
+                </h3>
+                <div className="flex items-center space-x-2">
+                  <button 
+                    onClick={handleSortPlaylist}
+                    className={`p-1 rounded-full hover:bg-gray-800 text-gray-400 hover:text-white transition-colors ${sortOrder !== 'default' ? 'text-yellow-300' : ''}`}
+                    title={
+                      sortOrder === 'default' 
+                        ? "Sắp xếp A-Z" 
+                        : sortOrder === 'asc' 
+                          ? "Sắp xếp Z-A" 
+                          : "Trở về thứ tự ban đầu"
+                    }
+                  >
+                    <ArrowsUpDownIcon className="h-5 w-5" />
+                  </button>
+                  <button 
+                    onClick={handlePlaylistToggle} 
+                    className="p-1 rounded-full hover:bg-gray-800 text-gray-400 hover:text-white transition-colors"
+                  >
+                    <XMarkIcon className="h-5 w-5" />
+                  </button>
+                </div>
               </div>
               
               {isLoadingPlaylist ? (
