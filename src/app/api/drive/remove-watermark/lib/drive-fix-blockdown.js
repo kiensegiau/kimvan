@@ -313,10 +313,10 @@ export async function downloadBlockedPDF(fileId, fileName, tempDir, watermarkCon
     isBlockedFile: true,
     enhancedMode: true,
     // Điều chỉnh các thông số để tăng độ nét và giảm mức độ xử lý watermark
-    brightnessBoost: watermarkConfig.brightnessBoost || 1.05,   // Giảm từ 1.1 xuống 1.05 để giữ nội dung
-    contrastBoost: watermarkConfig.contrastBoost || 1.2,        // Giảm từ 1.35 xuống 1.2 để không mất chi tiết
-    sharpenAmount: watermarkConfig.sharpenAmount || 1.5,        // Tăng từ 1.2 lên 1.5 để tăng độ nét
-    saturationAdjust: watermarkConfig.saturationAdjust || 1.3,  // Tăng từ 1.2 lên 1.3 để tăng màu sắc
+    brightnessBoost: watermarkConfig.brightnessBoost || 1.05,   // Giữ nguyên để giữ nội dung
+    contrastBoost: watermarkConfig.contrastBoost || 1.25,       // Tăng từ 1.2 lên 1.25 để tăng độ nét
+    sharpenAmount: watermarkConfig.sharpenAmount || 1.8,        // Tăng từ 1.5 lên 1.8 để tăng độ nét tối đa
+    saturationAdjust: watermarkConfig.saturationAdjust || 1.3,  // Giữ nguyên để giữ màu sắc
     preserveColors: true,                                       // Giữ nguyên tham số giữ màu sắc
     extraWhitening: false,                                      // Tắt chế độ làm trắng thêm
     aggressiveWatermarkRemoval: false                           // Tắt chế độ xử lý mạnh nhất
@@ -863,10 +863,10 @@ async function processAllImages(images, outputDir, config) {
       backgroundOpacity: config.backgroundOpacity || 0.15,
       // Thêm các tham số xử lý nâng cao
       enhancedMode: true,
-      contrastBoost: config.contrastBoost || 1.2,     // Giảm từ 1.35 xuống 1.2 để không mất chi tiết
-      brightnessBoost: config.brightnessBoost || 1.05,   // Giảm từ 1.1 xuống 1.05 để giữ nội dung
-      sharpenAmount: config.sharpenAmount || 1.5,        // Tăng từ 1.2 lên 1.5 để tăng độ nét
-      saturationAdjust: config.saturationAdjust || 1.3,  // Tăng từ 1.2 lên 1.3 để tăng màu sắc
+      contrastBoost: config.contrastBoost || 1.25,     // Tăng từ 1.2 lên 1.25 để tăng độ nét
+      brightnessBoost: config.brightnessBoost || 1.05,   // Giữ nguyên để giữ nội dung
+      sharpenAmount: config.sharpenAmount || 1.8,        // Tăng từ 1.5 lên 1.8 để tăng độ nét tối đa
+      saturationAdjust: config.saturationAdjust || 1.3,  // Giữ nguyên để giữ màu sắc
       preserveColors: true,                                       // Giữ nguyên tham số giữ màu sắc
       extraWhitening: false,                                      // Tắt chế độ làm trắng thêm
       aggressiveWatermarkRemoval: false                           // Tắt chế độ xử lý mạnh nhất
@@ -986,20 +986,26 @@ async function processAllImages(images, outputDir, config) {
               processedBuffer = await sharp(processedBuffer)
                 // Tăng độ sắc nét để làm rõ nội dung
                 .sharpen({
-                  sigma: 1.5,  // Tăng từ 1.2 lên 1.5
-                  m1: 0.5,     // Tăng từ 0.4 lên 0.5
-                  m2: 0.7      // Tăng từ 0.6 lên 0.7
+                  sigma: 1.8,  // Tăng từ 1.5 lên 1.8
+                  m1: 0.6,     // Tăng từ 0.5 lên 0.6
+                  m2: 0.8      // Tăng từ 0.7 lên 0.8
                 })
                 // Tăng độ tương phản nhẹ để làm rõ văn bản
                 .linear(
-                  1.2, // Giảm từ 1.25 xuống 1.2 để giữ chi tiết
-                  -0.03 // Giảm từ -0.05 xuống -0.03 để giữ chi tiết
+                  1.25, // Tăng từ 1.2 lên 1.25
+                  -0.03 // Giữ nguyên
                 )
                 // Tăng độ bão hòa màu một chút nữa
                 .modulate({
-                  saturation: 1.3, // Tăng từ 1.1 lên 1.3
-                  brightness: 1.05 // Thêm tham số độ sáng nhẹ
+                  saturation: 1.3, // Giữ nguyên
+                  brightness: 1.05 // Giữ nguyên
                 })
+                // Thêm bước xử lý cuối cùng để tăng độ nét
+                .recomb([
+                  [1.1, 0, 0],    // Tăng kênh đỏ lên 10%
+                  [0, 1.1, 0],    // Tăng kênh xanh lá lên 10%
+                  [0, 0, 1.1]     // Tăng kênh xanh dương lên 10%
+                ])
                 .png({ quality: 100 })
                 .toBuffer();
             }

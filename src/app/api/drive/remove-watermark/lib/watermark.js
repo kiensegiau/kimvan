@@ -724,14 +724,14 @@ export async function processImage(inputPath, outputPath, config = DEFAULT_CONFI
           
           try {
             // Tăng độ sắc nét mạnh hơn
-            const sharpenAmount = config.sharpenAmount || 1.5;  // Tăng từ 1.2 lên 1.5 để tăng độ nét
+            const sharpenAmount = config.sharpenAmount || 1.8;  // Tăng từ 1.5 lên 1.8 để tăng độ nét tối đa
             processedImage = processedImage.sharpen({
               sigma: sharpenAmount,
-              m1: 0.5,  // Tăng từ 0.3 lên 0.5
-              m2: 0.7,  // Tăng từ 0.5 lên 0.7
+              m1: 0.6,  // Tăng từ 0.5 lên 0.6
+              m2: 0.8,  // Tăng từ 0.7 lên 0.8
               x1: 2,
-              y2: 6,
-              y3: 6
+              y2: 7,    // Tăng từ 6 lên 7
+              y3: 7     // Tăng từ 6 lên 7
             });
             console.log(`Đã áp dụng tăng độ nét nâng cao (${sharpenAmount})`);
           } catch (sharpenError) {
@@ -768,15 +768,15 @@ export async function processImage(inputPath, outputPath, config = DEFAULT_CONFI
                 
                 // Tăng độ sắc nét để làm rõ nội dung
                 processedImage = processedImage.sharpen({
-                  sigma: 1.5,  // Tăng từ 1.2 lên 1.5
-                  m1: 0.5,     // Tăng từ 0.4 lên 0.5
-                  m2: 0.7      // Tăng từ 0.6 lên 0.7
+                  sigma: 1.8,  // Tăng từ 1.5 lên 1.8
+                  m1: 0.6,     // Tăng từ 0.5 lên 0.6
+                  m2: 0.8      // Tăng từ 0.7 lên 0.8
                 });
                 
                 // Tăng độ tương phản nhẹ để làm rõ văn bản
                 processedImage = processedImage.linear(
-                  1.2,  // Giảm từ 1.25 xuống 1.2 để giữ chi tiết
-                  -0.03 // Giảm từ -0.05 xuống -0.03 để giữ chi tiết
+                  1.25,  // Tăng từ 1.2 lên 1.25
+                  -0.03  // Giữ nguyên
                 );
                 
                 // Tăng độ bão hòa màu một chút nữa
@@ -805,10 +805,25 @@ export async function processImage(inputPath, outputPath, config = DEFAULT_CONFI
           
           try {
             // Tăng độ sắc nét cho chế độ cơ bản
-            processedImage = processedImage.sharpen({ sigma: 1.2, m1: 0.4, m2: 0.6 });  // Tăng từ 1.0/0.3/0.5 lên 1.2/0.4/0.6
+            processedImage = processedImage.sharpen({ 
+              sigma: 1.5,  // Tăng từ 1.2 lên 1.5
+              m1: 0.5,     // Tăng từ 0.4 lên 0.5
+              m2: 0.7      // Tăng từ 0.6 lên 0.7
+            });
             console.log(`Đã áp dụng tăng độ nét cơ bản`);
           } catch (sharpenError) {
             console.warn(`Bỏ qua bước sharpen do lỗi: ${sharpenError.message}`);
+          }
+          
+          // Thêm bước xử lý tăng độ nét thứ hai cho chế độ cơ bản
+          try {
+            processedImage = processedImage.linear(
+              1.15,  // Tăng độ tương phản nhẹ
+              -0.02  // Điểm cắt âm nhỏ để giữ chi tiết
+            );
+            console.log(`Đã áp dụng tăng độ tương phản nhẹ cho chế độ cơ bản`);
+          } catch (contrastError) {
+            console.warn(`Bỏ qua bước tăng tương phản do lỗi: ${contrastError.message}`);
           }
         }
         
