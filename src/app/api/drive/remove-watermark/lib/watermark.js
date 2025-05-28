@@ -500,6 +500,30 @@ export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
       processedSize = 'Unknown (error reading file size)';
     }
     
+    // Thêm hình nền/logo nếu được cấu hình
+    if (config.backgroundImage && fs.existsSync(config.backgroundImage)) {
+      try {
+        console.log(`🖼️ Thêm hình nền/logo tùy chỉnh: ${config.backgroundImage}`);
+        const bgOutputPath = await addCustomBackground(outputPath, config.backgroundImage, {
+          ...config,
+          backgroundOpacity: config.backgroundOpacity || 0.15, // Sử dụng độ mờ từ config hoặc mặc định
+          forceAddLogo: config.forceAddLogo // Chuyển tiếp tham số forceAddLogo
+        });
+        
+        if (fs.existsSync(bgOutputPath)) {
+          console.log(`✅ Đã thêm logo thành công: ${bgOutputPath}`);
+          // Cập nhật đường dẫn đầu ra
+          outputPath = bgOutputPath;
+          // Cập nhật kích thước file
+          processedSize = (fs.statSync(outputPath).size / (1024 * 1024)).toFixed(2) + ' MB';
+        }
+      } catch (bgError) {
+        console.warn(`⚠️ Không thể thêm hình nền/logo: ${bgError.message}`);
+      }
+    } else {
+      console.log(`ℹ️ Không có hình nền/logo được cấu hình hoặc file không tồn tại`);
+    }
+    
     return { 
       success: true, 
       outputPath, 
@@ -674,8 +698,8 @@ export async function processImage(inputPath, outputPath, config = DEFAULT_CONFI
           // Chế độ nâng cao cho file bị khóa
           try {
             // Tăng độ sáng và độ bão hòa
-            const brightness = config.brightnessBoost || 1.25;
-            const saturation = config.saturationAdjust || 1.1;
+            const brightness = config.brightnessBoost || 1.2;
+            const saturation = config.saturationAdjust || 1.2;
             
             processedImage = processedImage.modulate({
               brightness: brightness,
@@ -687,8 +711,8 @@ export async function processImage(inputPath, outputPath, config = DEFAULT_CONFI
           }
           
           try {
-            // Tăng độ tương phản
-            const contrastBoost = config.contrastBoost || 1.2;
+            // Tăng độ tương phản vừa phải
+            const contrastBoost = config.contrastBoost || 1.25;
             processedImage = processedImage.linear(
               contrastBoost, 
               -(128 * contrastBoost - 128) / 255
@@ -699,12 +723,12 @@ export async function processImage(inputPath, outputPath, config = DEFAULT_CONFI
           }
           
           try {
-            // Tăng độ sắc nét mạnh hơn
-            const sharpenAmount = config.sharpenAmount || 1.0;
+            // Tăng độ sắc nét nhẹ nhàng
+            const sharpenAmount = config.sharpenAmount || 0.8;
             processedImage = processedImage.sharpen({
               sigma: sharpenAmount,
               m1: 0.2,
-              m2: 0.5,
+              m2: 0.4,
               x1: 2,
               y2: 5,
               y3: 5
@@ -714,22 +738,110 @@ export async function processImage(inputPath, outputPath, config = DEFAULT_CONFI
             console.warn(`Bỏ qua bước sharpen nâng cao do lỗi: ${sharpenError.message}`);
           }
           
-          try {
-            // Cân bằng màu
-            processedImage = processedImage.normalise();
-            console.log(`Đã áp dụng cân bằng màu`);
-          } catch (normaliseError) {
-            console.warn(`Bỏ qua bước cân bằng màu do lỗi: ${normaliseError.message}`);
+          // Bỏ qua bước cân bằng màu nếu cần giữ màu sắc
+          if (!config.preserveColors) {
+            try {
+              // Cân bằng màu
+              processedImage = processedImage.normalise();
+              console.log(`Đã áp dụng cân bằng màu`);
+            } catch (normaliseError) {
+              console.warn(`Bỏ qua bước cân bằng màu do lỗi: ${normaliseError.message}`);
+            }
+          } else {
+            console.log(`Đã bỏ qua bước cân bằng màu để giữ màu sắc`);
           }
           
           // Nếu là file bị khóa, thử áp dụng thêm các kỹ thuật xử lý đặc biệt
           if (isBlockedFile) {
             try {
               // Thử áp dụng bộ lọc medianFilter để giảm nhiễu
-              processedImage = processedImage.median(3);
+              processedImage = processedImage.median(2); // Giảm từ 3 xuống 2
               console.log(`Đã áp dụng bộ lọc median để giảm nhiễu`);
             } catch (medianError) {
               console.warn(`Bỏ qua bước lọc median do lỗi: ${medianError.message}`);
+            }
+            
+            // Thêm các kỹ thuật xử lý mạnh hơn cho file bị khóa
+            if (config.extraWhitening === true) {
+              try {
+                console.log(`Áp dụng xử lý làm trắng thêm cho file bị khóa (chế độ cân bằng)...`);
+                
+                // Áp dụng ngưỡng để loại bỏ các vùng xám nhạt
+                const thresholdValue = 240; // Tăng ngưỡng để chỉ loại bỏ watermark mờ
+                processedImage = processedImage.threshold(thresholdValue);
+                
+                // Tăng độ tương phản lần nữa
+                processedImage = processedImage.linear(
+                  1.2, // Độ dốc thấp hơn
+                  -0.1 // Điểm cắt âm nhỏ hơn
+                );
+                
+                // Giảm nhiễu nhẹ
+                processedImage = processedImage.median(2);
+                
+                console.log(`Đã áp dụng xử lý làm trắng cân bằng với ngưỡng ${thresholdValue}`);
+              } catch (whiteningError) {
+                console.warn(`Bỏ qua bước làm trắng thêm do lỗi: ${whiteningError.message}`);
+              }
+            }
+            
+            // Xử lý mạnh nhất nếu được cấu hình
+            if (config.aggressiveWatermarkRemoval === true) {
+              try {
+                console.log(`Áp dụng xử lý mạnh để loại bỏ watermark (chế độ cân bằng)...`);
+                
+                // Áp dụng bộ lọc màu để giảm độ xám của watermark
+                processedImage = processedImage.tint({ r: 250, g: 250, b: 250 }); // Giảm xuống để giữ lại văn bản
+                
+                // Tăng độ tương phản cao hơn nữa
+                processedImage = processedImage.linear(
+                  1.3, // Độ dốc vừa phải
+                  -0.1 // Điểm cắt âm nhỏ hơn
+                );
+                
+                // Làm mịn ảnh để giảm nhiễu
+                processedImage = processedImage.blur(0.2);
+                
+                // Tăng độ sắc nét lần cuối
+                processedImage = processedImage.sharpen({
+                  sigma: 1.0,
+                  m1: 0.3,
+                  m2: 0.5
+                });
+                
+                console.log(`Đã áp dụng xử lý mạnh cân bằng để loại bỏ watermark`);
+              } catch (aggressiveError) {
+                console.warn(`Bỏ qua bước xử lý mạnh do lỗi: ${aggressiveError.message}`);
+              }
+            }
+            
+            // Xử lý đặc biệt cho watermark khi giữ màu sắc
+            if (config.preserveColors === true) {
+              try {
+                console.log(`Áp dụng xử lý giữ màu sắc cho file bị khóa...`);
+                
+                // Tăng độ sắc nét để làm rõ nội dung
+                processedImage = processedImage.sharpen({
+                  sigma: 0.7,
+                  m1: 0.3,
+                  m2: 0.5
+                });
+                
+                // Tăng độ tương phản nhẹ để làm rõ văn bản
+                processedImage = processedImage.linear(
+                  1.15, // Độ dốc thấp
+                  -0.05 // Điểm cắt âm rất nhỏ
+                );
+                
+                // Tăng độ bão hòa màu một chút nữa
+                processedImage = processedImage.modulate({
+                  saturation: 1.1
+                });
+                
+                console.log(`Đã áp dụng xử lý giữ màu sắc cho file bị khóa`);
+              } catch (colorError) {
+                console.warn(`Bỏ qua bước xử lý giữ màu sắc do lỗi: ${colorError.message}`);
+              }
             }
           }
         } else {
@@ -877,6 +989,18 @@ export async function addCustomBackground(pdfPath, backgroundPath, config = DEFA
     }
     
     const outputPath = pdfPath.replace('.pdf', '_with_bg.pdf');
+    console.log(`🖼️ Thêm logo vào PDF: ${path.basename(pdfPath)} -> ${path.basename(outputPath)}`);
+    
+    // Kiểm tra xem có phải là file PDF đã xử lý trước đó không
+    const isProcessedFile = pdfPath.includes('_processed') || pdfPath.includes('_clean');
+    
+    // Nếu là file đã xử lý và không có tham số forceAddLogo, bỏ qua
+    if (isProcessedFile && !config.forceAddLogo) {
+      console.log(`⚠️ Bỏ qua thêm logo vì file đã được xử lý trước đó: ${pdfPath}`);
+      // Sao chép file gốc làm kết quả
+      fs.copyFileSync(pdfPath, outputPath);
+      return outputPath;
+    }
     
     // Đọc PDF gốc
     let pdfBytes;
@@ -888,7 +1012,10 @@ export async function addCustomBackground(pdfPath, backgroundPath, config = DEFA
     
     let pdfDoc;
     try {
-      pdfDoc = await PDFDocument.load(pdfBytes);
+      pdfDoc = await PDFDocument.load(pdfBytes, { 
+        ignoreEncryption: true,
+        updateMetadata: false
+      });
     } catch (loadError) {
       throw new Error(`Không thể tải file PDF: ${loadError.message}`);
     }
@@ -920,17 +1047,22 @@ export async function addCustomBackground(pdfPath, backgroundPath, config = DEFA
     // Xử lý từng trang PDF
     try {
       const pages = pdfDoc.getPages();
+      console.log(`📄 Thêm logo vào ${pages.length} trang...`);
+      
+      // Độ mờ của logo
+      const opacity = config.backgroundOpacity !== undefined ? config.backgroundOpacity : 0.15;
+      console.log(`🔍 Sử dụng độ mờ logo: ${opacity}`);
       
       for (const page of pages) {
         try {
           const { width, height } = page.getSize();
           
           // Tính kích thước và vị trí để hình nền vừa với trang
-          const scale = Math.min(width / bgDimensions.width, height / bgDimensions.height);
+          const scale = Math.min(width / bgDimensions.width, height / bgDimensions.height) * 0.5; // Giảm kích thước logo xuống 50%
           const bgWidth = bgDimensions.width * scale;
           const bgHeight = bgDimensions.height * scale;
           
-          // Đặt hình nền ở giữa trang
+          // Đặt logo ở giữa trang
           const xOffset = (width - bgWidth) / 2;
           const yOffset = (height - bgHeight) / 2;
           
@@ -940,10 +1072,10 @@ export async function addCustomBackground(pdfPath, backgroundPath, config = DEFA
             y: yOffset,
             width: bgWidth,
             height: bgHeight,
-            opacity: config.backgroundOpacity || 0.3
+            opacity: opacity
           });
         } catch (pageError) {
-          console.warn(`Lỗi xử lý hình nền trên một trang: ${pageError.message}`);
+          console.warn(`⚠️ Lỗi xử lý logo trên một trang: ${pageError.message}`);
           // Tiếp tục với trang tiếp theo
         }
       }
@@ -953,8 +1085,12 @@ export async function addCustomBackground(pdfPath, backgroundPath, config = DEFA
     
     // Lưu PDF đã xử lý
     try {
-      const modifiedPdfBytes = await pdfDoc.save();
+      const modifiedPdfBytes = await pdfDoc.save({
+        updateMetadata: false,
+        addDefaultPage: false
+      });
       fs.writeFileSync(outputPath, modifiedPdfBytes);
+      console.log(`✅ Đã lưu PDF với logo: ${outputPath}`);
     } catch (saveError) {
       throw new Error(`Không thể lưu PDF đã xử lý: ${saveError.message}`);
     }

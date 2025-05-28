@@ -168,7 +168,11 @@ export async function processPDF(inputPath, outputPath, config = DEFAULT_CONFIG,
       
       // Sử dụng hàm cleanPdf từ module watermark.js
       try {
-        await cleanPdf(inputPath, outputPath, config);
+        await cleanPdf(inputPath, outputPath, {
+          ...config,
+          // Đảm bảo logo luôn được thêm vào file PDF thông thường
+          forceAddLogo: true
+        });
         
         // Kiểm tra kết quả
         if (fs.existsSync(outputPath)) {
@@ -207,6 +211,29 @@ export async function processPDF(inputPath, outputPath, config = DEFAULT_CONFIG,
       } catch (bgError) {
         console.warn(`⚠️ Không thể thêm hình nền: ${bgError.message}`);
         // Tiếp tục sử dụng file đã xử lý mà không có hình nền
+      }
+    } else if (!isBlocked && result.success) {
+      // Đảm bảo file PDF thường (không bị khóa) luôn có logo
+      try {
+        console.log(`🖼️ Thêm logo vào file PDF thường: ${config.backgroundImage}`);
+        // Kiểm tra xem có hình nền được cấu hình không
+        if (config.backgroundImage && fs.existsSync(config.backgroundImage)) {
+          const bgOutputPath = await addCustomBackground(result.filePath, config.backgroundImage, {
+            ...config,
+            backgroundOpacity: 0.15 // Đặt độ mờ mặc định cho logo
+          });
+          
+          // Cập nhật kết quả với file mới có hình nền
+          if (fs.existsSync(bgOutputPath)) {
+            result.filePath = bgOutputPath;
+            result.fileName = path.basename(bgOutputPath);
+            result.processedSize = fs.statSync(bgOutputPath).size;
+          }
+        } else {
+          console.warn(`⚠️ Không tìm thấy file logo: ${config.backgroundImage}`);
+        }
+      } catch (logoError) {
+        console.warn(`⚠️ Không thể thêm logo: ${logoError.message}`);
       }
     }
     
@@ -285,11 +312,14 @@ export async function downloadBlockedPDF(fileId, fileName, tempDir, watermarkCon
     // Thêm cài đặt đặc biệt cho file bị khóa
     isBlockedFile: true,
     enhancedMode: true,
-    // Tăng cường xử lý watermark cho file bị khóa
-    brightnessBoost: watermarkConfig.brightnessBoost || 1.25,
-    contrastBoost: watermarkConfig.contrastBoost || 1.2,
-    sharpenAmount: watermarkConfig.sharpenAmount || 1.0,
-    saturationAdjust: watermarkConfig.saturationAdjust || 1.1
+    // Điều chỉnh các thông số để giữ màu sắc và độ rõ nét
+    brightnessBoost: watermarkConfig.brightnessBoost || 1.2,    // Giảm từ 1.3 xuống 1.2
+    contrastBoost: watermarkConfig.contrastBoost || 1.25,       // Giảm từ 1.35 xuống 1.25
+    sharpenAmount: watermarkConfig.sharpenAmount || 0.8,        // Giảm từ 1.0 xuống 0.8
+    saturationAdjust: watermarkConfig.saturationAdjust || 1.2,  // Tăng từ 1.1 lên 1.2 để giữ màu sắc
+    preserveColors: true,                                       // Thêm tham số giữ màu sắc
+    extraWhitening: false,                                      // Tắt chế độ làm trắng thêm
+    aggressiveWatermarkRemoval: false                           // Tắt chế độ xử lý mạnh nhất
   };
   
   let fileSize = 0; // Khai báo fileSize ở phạm vi rộng hơn
@@ -833,12 +863,13 @@ async function processAllImages(images, outputDir, config) {
       backgroundOpacity: config.backgroundOpacity || 0.15,
       // Thêm các tham số xử lý nâng cao
       enhancedMode: true,
-      contrastBoost: 1.2,     // Tăng độ tương phản
-      brightnessBoost: 1.25,  // Tăng độ sáng mạnh hơn
-      sharpenAmount: 1.0,     // Tăng độ sắc nét
-      saturationAdjust: 1.1,  // Tăng độ bão hòa màu
-      // Thêm tham số để nhận biết đây là file bị khóa
-      isBlockedFile: true
+      contrastBoost: config.contrastBoost || 1.25,     // Giảm độ tương phản
+      brightnessBoost: config.brightnessBoost || 1.2,   // Giảm độ sáng mạnh hơn
+      sharpenAmount: config.sharpenAmount || 0.8,     // Giảm độ sắc nét
+      saturationAdjust: config.saturationAdjust || 1.2,  // Tăng từ 1.1 lên 1.2 để giữ màu sắc
+      preserveColors: true,                                       // Thêm tham số giữ màu sắc
+      extraWhitening: false,                                      // Tắt chế độ làm trắng thêm
+      aggressiveWatermarkRemoval: false                           // Tắt chế độ xử lý mạnh nhất
     };
     
     console.log(`🔧 Áp dụng xử lý nâng cao cho file PDF bị khóa với ${sortedImages.length} trang`);
@@ -868,30 +899,109 @@ async function processAllImages(images, outputDir, config) {
             
             // Tạo một pipeline xử lý nâng cao với sharp
             let processedBuffer = await sharp(imageBuffer)
-              // Tăng độ sáng và độ tương phản
+              // Tăng độ sáng và độ tương phản nhẹ nhàng hơn
               .modulate({
                 brightness: enhancedConfig.brightnessBoost,
-                saturation: enhancedConfig.saturationAdjust
+                saturation: enhancedConfig.saturationAdjust // Tăng độ bão hòa để giữ màu sắc
               })
-              // Tăng độ tương phản
+              // Tăng độ tương phản vừa phải
               .linear(
-                enhancedConfig.contrastBoost, // Độ dốc (a)
+                enhancedConfig.contrastBoost, // Độ dốc (a) vừa phải
                 -(128 * enhancedConfig.contrastBoost - 128) / 255 // Điểm cắt (b)
               )
-              // Tăng độ sắc nét
+              // Tăng độ sắc nét nhẹ nhàng
               .sharpen({
                 sigma: enhancedConfig.sharpenAmount,
                 m1: 0.2,
-                m2: 0.5,
+                m2: 0.4,
                 x1: 2,
                 y2: 5,
                 y3: 5
-              })
-              // Cân bằng màu
-              .normalise()
-              // Lưu ra buffer
-              .png({ quality: 95 })
-              .toBuffer();
+              });
+              
+            // Nếu cần giữ màu sắc, bỏ qua bước normalise
+            if (!enhancedConfig.preserveColors) {
+              // Cân bằng màu - có thể làm mất màu sắc
+              processedBuffer = await processedBuffer.normalise().toBuffer();
+            } else {
+              // Lưu ra buffer mà không cân bằng màu để giữ màu sắc
+              processedBuffer = await processedBuffer.toBuffer();
+            }
+              
+            // Nếu có tham số extraWhitening, áp dụng xử lý thêm để loại bỏ watermark
+            if (enhancedConfig.extraWhitening) {
+              console.log(`🔍 Áp dụng xử lý làm trắng thêm cho trang ${pageNum} (chế độ cân bằng)...`);
+              
+              // Sử dụng phương pháp cân bằng để giữ lại văn bản
+              processedBuffer = await sharp(processedBuffer)
+                // Sử dụng ngưỡng cao hơn để chỉ loại bỏ watermark mờ
+                .threshold(240)
+                // Giảm độ tương phản để giữ lại văn bản
+                .linear(
+                  1.2, // Độ dốc thấp hơn
+                  -0.1 // Điểm cắt âm nhỏ hơn
+                )
+                // Giảm nhiễu nhẹ
+                .median(2)
+                // Tăng độ sắc nét một chút
+                .sharpen({
+                  sigma: 0.8,
+                  m1: 0.2,
+                  m2: 0.5
+                })
+                .png({ quality: 100 })
+                .toBuffer();
+            }
+            
+            // Nếu chế độ xử lý mạnh được bật (đã tắt trong config)
+            if (enhancedConfig.aggressiveWatermarkRemoval) {
+              console.log(`🔥 Áp dụng xử lý mạnh để loại bỏ watermark cho trang ${pageNum}...`);
+              
+              // Xử lý thêm một lần nữa với các thông số mạnh hơn
+              processedBuffer = await sharp(processedBuffer)
+                // Áp dụng bộ lọc màu để giảm độ xám của watermark
+                .tint({ r: 255, g: 255, b: 255 }) // Tăng thành phần trắng
+                // Tăng độ tương phản cao hơn nữa
+                .linear(
+                  1.3, // Giảm độ dốc xuống
+                  -0.1 // Giảm điểm cắt âm
+                )
+                // Làm mịn ảnh để giảm nhiễu
+                .blur(0.2)
+                // Tăng độ sắc nét lần cuối
+                .sharpen({
+                  sigma: 1.0,
+                  m1: 0.3,
+                  m2: 0.5
+                })
+                .png({ quality: 100 })
+                .toBuffer();
+            }
+            
+            // Xử lý đặc biệt cho watermark khi giữ màu sắc
+            if (enhancedConfig.preserveColors) {
+              console.log(`🎨 Áp dụng xử lý giữ màu sắc cho trang ${pageNum}...`);
+              
+              // Sử dụng phương pháp giữ màu sắc và loại bỏ watermark
+              processedBuffer = await sharp(processedBuffer)
+                // Tăng độ sắc nét để làm rõ nội dung
+                .sharpen({
+                  sigma: 0.7,
+                  m1: 0.3,
+                  m2: 0.5
+                })
+                // Tăng độ tương phản nhẹ để làm rõ văn bản
+                .linear(
+                  1.15, // Độ dốc thấp
+                  -0.05 // Điểm cắt âm rất nhỏ
+                )
+                // Tăng độ bão hòa màu một chút nữa
+                .modulate({
+                  saturation: 1.1
+                })
+                .png({ quality: 100 })
+                .toBuffer();
+            }
             
             // Lưu ảnh đã xử lý
             fs.writeFileSync(processedPath, processedBuffer);
