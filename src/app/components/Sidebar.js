@@ -45,11 +45,11 @@ const Sidebar = ({ closeSidebar }) => {
         const response = await fetch('/api/users/me');
         const result = await response.json();
 
-        if (result.success && result.data) {
+        if (result.success && result.user) {
           setUserData({
-            name: result.data.displayName || 'Người dùng',
-            email: result.data.email || '',
-            role: result.data.role || 'user'
+            name: result.user?.displayName || '',
+            email: result.user?.email || '',
+            role: result.user?.role || 'user'
           });
         }
       } catch (error) {
@@ -154,9 +154,9 @@ const Sidebar = ({ closeSidebar }) => {
 
       {/* User profile */}
       <div className="p-4 border-t border-indigo-600/50">
-        <div className="flex items-center p-2">
-          <div className="w-9 h-9 rounded-full bg-indigo-500 flex items-center justify-center mr-3">
-            <UserCircleIcon className="w-5 h-5 text-white" />
+        <div className="flex items-center p-2 bg-indigo-800/40 rounded-lg mb-3">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-r from-indigo-400 to-purple-500 flex items-center justify-center mr-3 shadow-md">
+            <UserCircleIcon className="w-6 h-6 text-white" />
           </div>
           <div className="flex-1 overflow-hidden">
             {loading ? (
@@ -166,13 +166,22 @@ const Sidebar = ({ closeSidebar }) => {
               </div>
             ) : (
               <>
-                <p className="font-medium truncate">{userData?.name || 'Người dùng'}</p>
-                <p className="text-xs text-indigo-300 truncate">{userData?.email || 'Chưa đăng nhập'}</p>
+                {userData?.name && (
+                  <p className="font-medium truncate text-white">{userData.name}</p>
+                )}
+                <p className="text-xs text-indigo-200 truncate">{userData?.email || 'Chưa đăng nhập'}</p>
+                {userData?.role && (
+                  <div className="mt-1">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-600 text-indigo-100">
+                      {getRoleDisplay(userData.role)}
+                    </span>
+                  </div>
+                )}
               </>
             )}
           </div>
         </div>
-        <div className="mt-3 space-y-2">
+        <div className="space-y-2">
           <Link 
             href="/ca-nhan" 
             className={`w-full flex items-center p-2 rounded-lg transition-colors ${
@@ -180,6 +189,7 @@ const Sidebar = ({ closeSidebar }) => {
                 ? 'bg-indigo-700 text-white' 
                 : 'hover:bg-indigo-800 text-indigo-100'
             }`}
+            onClick={handleMenuItemClick}
           >
             <UserCircleIcon className={`w-5 h-5 mr-3 ${pathname === '/ca-nhan' ? 'text-white' : 'text-indigo-300'}`} />
             <span className="text-sm">Trang cá nhân</span>
