@@ -13,6 +13,7 @@ const YouTubePlaylistModal = ({ isOpen, playlistId, videoId, onClose, title }) =
   const [error, setError] = useState(null);
   const [showPlaylist, setShowPlaylist] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const autoCloseTimerRef = useRef(null);
 
   // Xử lý click ngoài modal
   useEffect(() => {
@@ -30,6 +31,38 @@ const YouTubePlaylistModal = ({ isOpen, playlistId, videoId, onClose, title }) =
       document.removeEventListener('mousedown', handleOutsideClick);
     };
   }, [isOpen, onClose]);
+
+  // Tự động mở và đóng danh sách phát khi mở modal
+  useEffect(() => {
+    if (isOpen && !isLoadingPlaylist && playlistItems.length > 0) {
+      // Tự động mở danh sách phát
+      setShowPlaylist(true);
+      
+      // Tự động đóng sau 3 giây
+      autoCloseTimerRef.current = setTimeout(() => {
+        setShowPlaylist(false);
+      }, 3000);
+    }
+    
+    return () => {
+      // Xóa timer khi component unmount hoặc re-render
+      if (autoCloseTimerRef.current) {
+        clearTimeout(autoCloseTimerRef.current);
+      }
+    };
+  }, [isOpen, isLoadingPlaylist, playlistItems.length]);
+
+  // Hủy timer khi người dùng tương tác với danh sách phát
+  const handlePlaylistToggle = () => {
+    // Xóa timer tự động đóng nếu đang có
+    if (autoCloseTimerRef.current) {
+      clearTimeout(autoCloseTimerRef.current);
+      autoCloseTimerRef.current = null;
+    }
+    
+    // Đảo trạng thái hiển thị danh sách phát
+    setShowPlaylist(!showPlaylist);
+  };
 
   // Lấy dữ liệu playlist từ API
   useEffect(() => {
@@ -103,6 +136,12 @@ const YouTubePlaylistModal = ({ isOpen, playlistId, videoId, onClose, title }) =
 
   // Xử lý khi chọn video từ danh sách
   const handleVideoSelect = (videoId, index) => {
+    // Xóa timer tự động đóng nếu đang có
+    if (autoCloseTimerRef.current) {
+      clearTimeout(autoCloseTimerRef.current);
+      autoCloseTimerRef.current = null;
+    }
+    
     setCurrentVideoId(videoId);
     setCurrentIndex(index);
     setLoading(true);
@@ -275,7 +314,7 @@ const YouTubePlaylistModal = ({ isOpen, playlistId, videoId, onClose, title }) =
       }}>
       <div 
         ref={modalRef} 
-        className="relative w-[90%] md:w-[80%] flex flex-col rounded-lg overflow-hidden shadow-2xl bg-black"
+        className="relative w-[98%] md:w-[95%] flex flex-col rounded-lg overflow-hidden shadow-2xl bg-black"
       >
         {/* Thanh tiêu đề */}
         <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-2 px-3 flex items-center justify-between">
@@ -289,11 +328,16 @@ const YouTubePlaylistModal = ({ isOpen, playlistId, videoId, onClose, title }) =
           </div>
           <div className="flex items-center space-x-2">
             <button
-              onClick={() => setShowPlaylist(!showPlaylist)}
-              className="p-1.5 rounded-full bg-white bg-opacity-20 hover:bg-opacity-30 transition-all"
-              title="Xem danh sách phát"
+              onClick={handlePlaylistToggle}
+              className={`p-1.5 rounded-full ${showPlaylist ? 'bg-white text-indigo-600' : 'bg-white bg-opacity-20 hover:bg-opacity-30'} transition-all relative`}
+              title={showPlaylist ? "Ẩn danh sách phát" : "Xem danh sách phát"}
             >
               <ListBulletIcon className="h-5 w-5" />
+              {!showPlaylist && playlistItems.length > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-4 h-4 flex items-center justify-center rounded-full">
+                  {playlistItems.length}
+                </span>
+              )}
             </button>
             <button
               onClick={onClose}
@@ -370,9 +414,15 @@ const YouTubePlaylistModal = ({ isOpen, playlistId, videoId, onClose, title }) =
           
           {/* Danh sách phát (hiển thị khi showPlaylist = true) */}
           {showPlaylist && (
-            <div className="absolute top-0 right-0 bottom-0 w-full md:w-1/3 lg:w-1/4 bg-black bg-opacity-95 z-50 overflow-y-auto border-l border-gray-800">
-              <div className="p-3 sticky top-0 bg-gradient-to-r from-gray-900 to-black border-b border-gray-800">
+            <div className="absolute top-0 right-0 bottom-0 w-full md:w-2/3 lg:w-1/2 bg-black bg-opacity-95 z-50 overflow-y-auto border-l border-gray-800 shadow-2xl animate-slideIn">
+              <div className="p-3 sticky top-0 bg-gradient-to-r from-gray-900 to-black border-b border-gray-800 flex justify-between items-center">
                 <h3 className="text-white font-medium">Danh sách phát</h3>
+                <button 
+                  onClick={handlePlaylistToggle} 
+                  className="p-1 rounded-full hover:bg-gray-800 text-gray-400 hover:text-white transition-colors"
+                >
+                  <XMarkIcon className="h-5 w-5" />
+                </button>
               </div>
               
               {isLoadingPlaylist ? (
@@ -393,7 +443,7 @@ const YouTubePlaylistModal = ({ isOpen, playlistId, videoId, onClose, title }) =
                       onClick={() => handleVideoSelect(item.snippet.resourceId.videoId, index)}
                     >
                       <div className="p-3 flex">
-                        <div className="flex-shrink-0 relative w-20 h-12 bg-gray-800 mr-3">
+                        <div className="flex-shrink-0 relative w-28 h-16 bg-gray-800 mr-3">
                           {item.snippet.thumbnails?.default?.url && (
                             <img 
                               src={item.snippet.thumbnails.default.url} 
@@ -407,7 +457,7 @@ const YouTubePlaylistModal = ({ isOpen, playlistId, videoId, onClose, title }) =
                           </div>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-white text-sm line-clamp-2">{item.snippet.title}</p>
+                          <p className="text-white text-sm line-clamp-3">{item.snippet.title}</p>
                         </div>
                       </div>
                     </li>
@@ -426,11 +476,20 @@ const YouTubePlaylistModal = ({ isOpen, playlistId, videoId, onClose, title }) =
       </div>
       
       <style jsx>{`
-        .line-clamp-2 {
+        .line-clamp-3 {
           display: -webkit-box;
-          -webkit-line-clamp: 2;
+          -webkit-line-clamp: 3;
           -webkit-box-orient: vertical;
           overflow: hidden;
+        }
+        
+        @keyframes slideIn {
+          from { transform: translateX(100%); }
+          to { transform: translateX(0); }
+        }
+        
+        .animate-slideIn {
+          animation: slideIn 0.3s ease-out forwards;
         }
       `}</style>
     </div>
