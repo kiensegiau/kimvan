@@ -9,7 +9,7 @@ import { connectDB } from '@/lib/mongodb';
 export async function POST(request, { params }) {
   try {
     // Kiểm tra cookie admin_access
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const adminAccess = cookieStore.get('admin_access');
     
     // Nếu có cookie admin_access, cho phép truy cập

@@ -39,7 +39,7 @@ async function verifyAuthTokenServer(token) {
  * @returns {Promise<Object|null>} - Thông tin người dùng hoặc null
  */
 export async function getCurrentUser() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const token = cookieStore.get('auth-token')?.value;
   
   if (!token) return null;

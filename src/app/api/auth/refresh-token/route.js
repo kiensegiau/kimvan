@@ -16,7 +16,7 @@ export async function POST(request) {
     
     // Lấy token hiện tại từ cookie hoặc request body
     const cookieStore = cookies();
-    const tokenFromCookie = cookieStore.get(cookieConfig.authCookieName)?.value;
+    const tokenFromCookie = await cookieStore.get(cookieConfig.authCookieName)?.value;
     
     // Ưu tiên sử dụng token từ body nếu có
     const currentToken = tokenFromBody || tokenFromCookie;
@@ -76,7 +76,7 @@ export async function POST(request) {
     const maxAge = rememberMe ? cookieConfig.extendedMaxAge : cookieConfig.defaultMaxAge;
     
     // Thiết lập cookie với token mới
-    cookieStore.set(cookieConfig.authCookieName, newIdToken, {
+    await cookieStore.set(cookieConfig.authCookieName, newIdToken, {
       path: '/',
       maxAge,
       httpOnly: true,

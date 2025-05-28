@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeftIcon, CloudArrowDownIcon, ExclamationCircleIcon, XMarkIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 import { use } from 'react';
 import YouTubeModal from '../components/YouTubeModal';
+import YouTubePlaylistModal from '../components/YouTubePlaylistModal';
 import PDFModal from '../components/PDFModal';
 import LoadingOverlay from '../components/LoadingOverlay';
 import CryptoJS from 'crypto-js';
@@ -24,6 +25,12 @@ export default function CourseDetailPage({ params }) {
   const [error, setError] = useState(null);
   const [activeSheet, setActiveSheet] = useState(0);
   const [youtubeModal, setYoutubeModal] = useState({ isOpen: false, videoId: null, title: '' });
+  const [youtubePlaylistModal, setYoutubePlaylistModal] = useState({ 
+    isOpen: false, 
+    playlistId: null, 
+    videoId: null, 
+    title: '' 
+  });
   const [pdfModal, setPdfModal] = useState({ isOpen: false, fileUrl: null, title: '' });
   const [isLoaded, setIsLoaded] = useState(false);
   const [processingLink, setProcessingLink] = useState(false);
@@ -391,10 +398,40 @@ export default function CourseDetailPage({ params }) {
     return (match && match[2].length === 11) ? match[2] : null;
   };
   
+  // Hàm trích xuất YouTube playlist ID từ URL
+  const extractYoutubePlaylistId = (url) => {
+    if (!url) return null;
+    
+    // Trích xuất playlist ID từ các định dạng khác nhau
+    const playlistRegExp = /^.*(youtube.com\/playlist\?list=|youtube.com\/watch\?.*list=|youtu.be\/.*\?list=)([^#&?]*).*/;
+    const match = url.match(playlistRegExp);
+    
+    return match && match[2] ? match[2] : null;
+  };
+  
+  // Hàm trích xuất video ID từ URL playlist (nếu có)
+  const extractVideoIdFromPlaylist = (url) => {
+    if (!url) return null;
+    
+    // Nếu là URL watch với tham số list và v
+    if (url.includes('youtube.com/watch') && url.includes('list=') && url.includes('v=')) {
+      const videoIdMatch = url.match(/v=([^&]*)/);
+      return videoIdMatch && videoIdMatch[1] ? videoIdMatch[1] : null;
+    }
+    
+    return null;
+  };
+  
   // Hàm kiểm tra xem URL có phải là YouTube link không
   const isYoutubeLink = (url) => {
     if (!url) return false;
     return url.includes('youtube.com') || url.includes('youtu.be');
+  };
+  
+  // Hàm kiểm tra xem URL có phải là YouTube playlist không
+  const isYoutubePlaylist = (url) => {
+    if (!url) return false;
+    return url.includes('youtube.com/playlist') || (url.includes('list=') && !url.includes('index='));
   };
   
   // Hàm kiểm tra xem URL có phải là PDF không
@@ -419,6 +456,23 @@ export default function CourseDetailPage({ params }) {
   
   // Hàm mở modal YouTube
   const openYoutubeModal = (url, title = '') => {
+    // Kiểm tra xem URL có phải là playlist không
+    if (isYoutubePlaylist(url)) {
+      const playlistId = extractYoutubePlaylistId(url);
+      const videoId = extractVideoIdFromPlaylist(url);
+      
+      if (playlistId) {
+        setYoutubePlaylistModal({ 
+          isOpen: true, 
+          playlistId, 
+          videoId, 
+          title 
+        });
+        return;
+      }
+    }
+    
+    // Xử lý như video đơn nếu không phải playlist
     const videoId = extractYoutubeId(url);
     if (videoId) {
       setYoutubeModal({ isOpen: true, videoId, title });
@@ -431,6 +485,16 @@ export default function CourseDetailPage({ params }) {
   // Hàm đóng modal YouTube
   const closeYoutubeModal = () => {
     setYoutubeModal({ isOpen: false, videoId: null, title: '' });
+  };
+  
+  // Hàm đóng modal YouTube Playlist
+  const closeYoutubePlaylistModal = () => {
+    setYoutubePlaylistModal({ 
+      isOpen: false, 
+      playlistId: null, 
+      videoId: null, 
+      title: '' 
+    });
   };
 
   // Hàm mở modal PDF
@@ -481,7 +545,8 @@ export default function CourseDetailPage({ params }) {
         },
         body: JSON.stringify({
           url: processedUrlInfo.url, // Sử dụng URL đã được xử lý nếu có
-          type: isYoutubeLink(processedUrlInfo.url) ? 'youtube' : 
+          type: isYoutubePlaylist(processedUrlInfo.url) ? 'youtube_playlist' :
+                isYoutubeLink(processedUrlInfo.url) ? 'youtube' : 
                 isPdfLink(processedUrlInfo.url) ? 'pdf' : 
                 isGoogleDriveLink(processedUrlInfo.url) ? 'drive' : 'external'
         }),
@@ -499,7 +564,21 @@ export default function CourseDetailPage({ params }) {
       setProcessingLink(false);
       
       // Mở link đã xử lý theo loại
-      if (isYoutubeLink(processedUrl)) {
+      if (isYoutubePlaylist(processedUrl)) {
+        const playlistId = extractYoutubePlaylistId(processedUrl);
+        const videoId = extractVideoIdFromPlaylist(processedUrl);
+        
+        if (playlistId) {
+          setYoutubePlaylistModal({ 
+            isOpen: true, 
+            playlistId, 
+            videoId, 
+            title 
+          });
+        } else {
+          openYoutubeModal(processedUrl, title);
+        }
+      } else if (isYoutubeLink(processedUrl)) {
         openYoutubeModal(processedUrl, title);
       } else if ((isPdfLink(processedUrl) || isGoogleDriveLink(processedUrl)) && !isGoogleDriveFolder(processedUrl)) {
         setPdfModal({ 
@@ -518,7 +597,21 @@ export default function CourseDetailPage({ params }) {
       setProcessingLink(false);
       
       // Mở URL với thông tin đã xử lý
-      if (isYoutubeLink(processedUrlInfo.url)) {
+      if (isYoutubePlaylist(processedUrlInfo.url)) {
+        const playlistId = extractYoutubePlaylistId(processedUrlInfo.url);
+        const videoId = extractVideoIdFromPlaylist(processedUrlInfo.url);
+        
+        if (playlistId) {
+          setYoutubePlaylistModal({ 
+            isOpen: true, 
+            playlistId, 
+            videoId, 
+            title 
+          });
+        } else {
+          openYoutubeModal(processedUrlInfo.url, title);
+        }
+      } else if (isYoutubeLink(processedUrlInfo.url)) {
         openYoutubeModal(processedUrlInfo.url, title);
       } else if (isGoogleDriveFolder(processedUrlInfo.url)) {
         window.open(processedUrlInfo.url, '_blank');
@@ -1158,6 +1251,17 @@ export default function CourseDetailPage({ params }) {
             onClose={closeYoutubeModal}
             videoId={youtubeModal.videoId}
             title={youtubeModal.title}
+          />
+        )}
+        
+        {/* YouTube Playlist Modal */}
+        {youtubePlaylistModal.isOpen && (
+          <YouTubePlaylistModal
+            isOpen={youtubePlaylistModal.isOpen}
+            onClose={closeYoutubePlaylistModal}
+            playlistId={youtubePlaylistModal.playlistId}
+            videoId={youtubePlaylistModal.videoId}
+            title={youtubePlaylistModal.title}
           />
         )}
         

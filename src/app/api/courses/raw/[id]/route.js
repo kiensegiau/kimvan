@@ -13,7 +13,7 @@ export async function GET(request, { params }) {
     console.log('🔒 Raw API - Bắt đầu xử lý yêu cầu tới API không mã hóa');
     
     // Kiểm tra cookie admin_access trước
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const adminAccess = cookieStore.get('admin_access');
     
     if (adminAccess && adminAccess.value === 'true') {

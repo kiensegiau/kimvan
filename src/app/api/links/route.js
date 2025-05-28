@@ -41,6 +41,23 @@ function extractYoutubeId(url) {
   return (match && match[2].length === 11) ? match[2] : null;
 }
 
+// Hàm trích xuất YouTube playlist ID từ URL
+function extractYoutubePlaylistId(url) {
+  if (!url) return null;
+  
+  // Trích xuất playlist ID từ các định dạng khác nhau
+  const playlistRegExp = /^.*(youtube.com\/playlist\?list=|youtube.com\/watch\?.*list=|youtu.be\/.*\?list=)([^#&?]*).*/;
+  const match = url.match(playlistRegExp);
+  
+  return match && match[2] ? match[2] : null;
+}
+
+// Hàm kiểm tra xem URL có phải là YouTube playlist không
+function isYoutubePlaylist(url) {
+  if (!url) return false;
+  return url.includes('youtube.com/playlist') || (url.includes('list=') && !url.includes('index='));
+}
+
 // Hàm kiểm tra xem URL có phải là thư mục Google Drive không
 function isGoogleDriveFolder(url) {
   if (!url) return false;
@@ -104,8 +121,19 @@ function processLink(url, type = 'unknown') {
     return url; // Không xử lý thư mục, trả về URL gốc
   }
 
+  // Xử lý link YouTube Playlist
+  if (type === 'youtube_playlist' || isYoutubePlaylist(url)) {
+    // Đối với playlist, trả về URL gốc vì cần xử lý đặc biệt ở client
+    return url;
+  }
+
   // Xử lý link YouTube
   if (type === 'youtube' || url.includes('youtube.com') || url.includes('youtu.be')) {
+    // Kiểm tra xem có phải là playlist không
+    if (isYoutubePlaylist(url)) {
+      return url; // Trả về URL gốc cho playlist
+    }
+    
     const videoId = extractYoutubeId(url);
     if (videoId) {
       // Trả về URL embed để sử dụng trong iframe
@@ -151,6 +179,14 @@ export async function POST(req) {
 
     // Xử lý URL dựa trên loại
     const processedUrl = processLink(url, type);
+    
+    // Kiểm tra xem URL có phải là playlist YouTube không
+    const isPlaylist = isYoutubePlaylist(url);
+    let playlistId = null;
+    
+    if (isPlaylist) {
+      playlistId = extractYoutubePlaylistId(url);
+    }
 
     // Mã hóa URL gốc để bảo vệ
     const encryptedOriginalUrl = encryptUrl(url);
@@ -159,7 +195,9 @@ export async function POST(req) {
     return NextResponse.json({ 
       originalUrl: encryptedOriginalUrl, // URL gốc đã được mã hóa
       processedUrl: processedUrl,
-      type: type || 'unknown'
+      type: isPlaylist ? 'youtube_playlist' : (type || 'unknown'),
+      playlistId: playlistId, // Thêm playlistId vào response nếu có
+      isPlaylist
     });
   } catch (error) {
     console.error('Lỗi xử lý link:', error);
