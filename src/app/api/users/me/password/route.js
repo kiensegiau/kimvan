@@ -20,12 +20,12 @@ export async function POST(request) {
     const firebaseId = decodedToken.uid;
 
     // Lấy dữ liệu từ request
-    const { currentPassword, newPassword } = await request.json();
+    const { newPassword } = await request.json();
 
-    if (!currentPassword || !newPassword) {
+    if (!newPassword) {
       return NextResponse.json({ 
         success: false, 
-        error: 'Vui lòng cung cấp mật khẩu hiện tại và mật khẩu mới' 
+        error: 'Vui lòng cung cấp mật khẩu mới' 
       }, { status: 400 });
     }
 
@@ -52,7 +52,7 @@ export async function POST(request) {
     if (error.code === 'auth/weak-password') {
       return NextResponse.json({ 
         success: false, 
-        error: 'Mật khẩu mới không đủ mạnh' 
+        error: 'Mật khẩu mới không đủ mạnh (ít nhất 6 ký tự)' 
       }, { status: 400 });
     }
 

@@ -49,4 +49,72 @@ export async function GET(request) {
       { status: 500 }
     );
   }
+}
+
+export async function PATCH(request) {
+  try {
+    // Xác thực người dùng
+    const user = await authMiddleware(request);
+    
+    if (!user) {
+      return NextResponse.json(
+        { success: false, message: 'Không tìm thấy thông tin người dùng' },
+        { status: 401 }
+      );
+    }
+    
+    // Lấy dữ liệu từ request
+    const requestData = await request.json();
+    const { displayName, phoneNumber, additionalInfo } = requestData;
+    
+    // Kết nối đến MongoDB
+    await connectDB();
+    const db = mongoose.connection.db;
+    const userCollection = db.collection('users');
+    
+    // Chuẩn bị dữ liệu cập nhật
+    const updateData = {
+      $set: {
+        updatedAt: new Date()
+      }
+    };
+    
+    // Thêm các trường cần cập nhật nếu có
+    if (displayName !== undefined) {
+      updateData.$set.displayName = displayName;
+    }
+    
+    if (phoneNumber !== undefined) {
+      updateData.$set.phoneNumber = phoneNumber;
+    }
+    
+    if (additionalInfo !== undefined) {
+      updateData.$set.additionalInfo = additionalInfo;
+    }
+    
+    // Cập nhật trong MongoDB
+    const result = await userCollection.updateOne(
+      { firebaseId: user.uid },
+      updateData,
+      { upsert: true }
+    );
+    
+    // Trả về kết quả
+    return NextResponse.json({
+      success: true,
+      message: 'Cập nhật thông tin thành công',
+      user: {
+        ...user,
+        displayName: displayName !== undefined ? displayName : user.displayName,
+        phoneNumber: phoneNumber !== undefined ? phoneNumber : user.phoneNumber,
+        additionalInfo: additionalInfo !== undefined ? additionalInfo : user.additionalInfo
+      }
+    });
+  } catch (error) {
+    console.error('Lỗi khi cập nhật thông tin người dùng:', error);
+    return NextResponse.json(
+      { success: false, message: 'Đã xảy ra lỗi khi cập nhật thông tin người dùng', error: error.message },
+      { status: 500 }
+    );
+  }
 } 
