@@ -45,17 +45,43 @@ function extractYoutubeId(url) {
 function extractYoutubePlaylistId(url) {
   if (!url) return null;
   
-  // Trích xuất playlist ID từ các định dạng khác nhau
-  const playlistRegExp = /^.*(youtube.com\/playlist\?list=|youtube.com\/watch\?.*list=|youtu.be\/.*\?list=)([^#&?]*).*/;
-  const match = url.match(playlistRegExp);
+  // Tìm list= trong URL và lấy ID sau nó
+  const listMatch = url.match(/[?&]list=([^&#]*)/);
+  if (listMatch && listMatch[1]) {
+    return listMatch[1];
+  }
   
-  return match && match[2] ? match[2] : null;
+  // Nếu URL có định dạng /playlist/{id}
+  const playlistPathMatch = url.match(/\/playlist\/([^/?&#]*)/);
+  if (playlistPathMatch && playlistPathMatch[1]) {
+    return playlistPathMatch[1];
+  }
+  
+  return null;
 }
 
 // Hàm kiểm tra xem URL có phải là YouTube playlist không
 function isYoutubePlaylist(url) {
   if (!url) return false;
-  return url.includes('youtube.com/playlist') || (url.includes('list=') && !url.includes('index='));
+  
+  // Kiểm tra các mẫu URL phổ biến của playlist
+  if (url.includes('youtube.com/playlist?list=')) {
+    return true;
+  }
+  
+  // Kiểm tra URL có chứa tham số list= và không phải là index=
+  if ((url.includes('youtube.com/watch') || url.includes('youtu.be/')) && 
+      url.includes('list=') && 
+      !url.includes('index=')) {
+    return true;
+  }
+  
+  // Kiểm tra URL có chứa playlist trong đường dẫn
+  if (url.match(/youtube\.com\/(.*?)playlist/)) {
+    return true;
+  }
+  
+  return false;
 }
 
 // Hàm kiểm tra xem URL có phải là thư mục Google Drive không

@@ -1,22 +1,5 @@
 import { NextResponse } from 'next/server';
 
-// Danh sách các API công khai có thể sử dụng
-const PUBLIC_APIS = [
-  'https://invidious.snopyta.org/api/v1/playlists/',
-  'https://vid.puffyan.us/api/v1/playlists/',
-  'https://invidious.namazso.eu/api/v1/playlists/',
-  'https://invidious.kavin.rocks/api/v1/playlists/',
-  'https://inv.riverside.rocks/api/v1/playlists/',
-  'https://y.com.sb/api/v1/playlists/',
-  'https://invidio.xamh.de/api/v1/playlists/'
-];
-
-// API không chính thức khác cũng có thể sử dụng
-const ALTERNATIVE_APIS = [
-  'https://pipedapi.kavin.rocks/playlists/',
-  'https://ytapi.grtn.org/playlists/'
-];
-
 /**
  * API endpoint để lấy thông tin playlist YouTube
  * @param {Request} request - Request object
@@ -36,106 +19,31 @@ export async function GET(request) {
     }
     
     try {
-      // Thử tất cả các API công khai
-      let data = null;
-      let error = null;
-      
-      // Thử với API Invidious
-      for (const apiUrl of PUBLIC_APIS) {
-        try {
-          const response = await fetch(`${apiUrl}${playlistId}`);
-          
-          if (response.ok) {
-            data = await response.json();
-            
-            // Chuyển đổi dữ liệu sang định dạng tương tự như YouTube API
-            const formattedData = {
-              items: data.videos.map((video, index) => ({
-                id: `${index}-${video.videoId}`,
-                snippet: {
-                  title: video.title,
-                  resourceId: {
-                    videoId: video.videoId
-                  },
-                  thumbnails: {
-                    default: {
-                      url: video.videoThumbnails?.[0]?.url || `https://i.ytimg.com/vi/${video.videoId}/default.jpg`
-                    },
-                    medium: {
-                      url: video.videoThumbnails?.[4]?.url || `https://i.ytimg.com/vi/${video.videoId}/mqdefault.jpg`
-                    },
-                    high: {
-                      url: video.videoThumbnails?.[2]?.url || `https://i.ytimg.com/vi/${video.videoId}/hqdefault.jpg`
-                    }
-                  }
-                }
-              }))
-            };
-            
-            return NextResponse.json(formattedData);
-          }
-        } catch (apiError) {
-          error = apiError;
-          console.error(`Lỗi khi gọi API ${apiUrl}:`, apiError);
-          // Tiếp tục thử API tiếp theo
-        }
-      }
-      
-      // Thử với API thay thế
-      for (const altApiUrl of ALTERNATIVE_APIS) {
-        try {
-          const response = await fetch(`${altApiUrl}${playlistId}`);
-          
-          if (response.ok) {
-            const altData = await response.json();
-            
-            // Chuyển đổi từ định dạng Piped
-            if (altData.relatedStreams || altData.videos) {
-              const videos = altData.relatedStreams || altData.videos;
-              
-              const formattedData = {
-                items: videos.map((video, index) => ({
-                  id: `${index}-${video.id || video.videoId}`,
-                  snippet: {
-                    title: video.title,
-                    resourceId: {
-                      videoId: video.id || video.videoId
-                    },
-                    thumbnails: {
-                      default: {
-                        url: video.thumbnail || `https://i.ytimg.com/vi/${video.id || video.videoId}/default.jpg`
-                      },
-                      medium: {
-                        url: video.thumbnail || `https://i.ytimg.com/vi/${video.id || video.videoId}/mqdefault.jpg`
-                      },
-                      high: {
-                        url: video.thumbnail || `https://i.ytimg.com/vi/${video.id || video.videoId}/hqdefault.jpg`
-                      }
-                    }
-                  }
-                }))
-              };
-              
-              return NextResponse.json(formattedData);
-            }
-          }
-        } catch (altApiError) {
-          console.error(`Lỗi khi gọi API thay thế ${altApiUrl}:`, altApiError);
-          // Tiếp tục thử API tiếp theo
-        }
-      }
-      
-      // Thử với phương pháp scraping nếu tất cả API đều thất bại
       // Tạo URL của playlist YouTube
       const playlistUrl = `https://www.youtube.com/playlist?list=${playlistId}`;
       
+      console.log('Đang tải playlist từ URL:', playlistUrl);
+      
       // Lấy HTML của trang playlist
-      const response = await fetch(playlistUrl);
+      const response = await fetch(playlistUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+          'Accept-Language': 'en-US,en;q=0.9',
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Không thể tải trang playlist (HTTP ${response.status})`);
+      }
+      
       const html = await response.text();
       
       // Trích xuất dữ liệu video từ HTML
       const videoIds = extractVideoIdsFromHtml(html);
       const videoTitles = extractVideoTitlesFromHtml(html);
+      const thumbnails = extractThumbnailsFromHtml(html);
+      
+      console.log(`Đã tìm thấy ${videoIds.length} video trong playlist`);
       
       // Tạo mảng items theo định dạng tương tự YouTube API
       const items = videoIds.map((videoId, index) => ({
@@ -147,23 +55,49 @@ export async function GET(request) {
           },
           thumbnails: {
             default: {
-              url: `https://i.ytimg.com/vi/${videoId}/default.jpg`
+              url: thumbnails[index] || `https://i.ytimg.com/vi/${videoId}/default.jpg`
             },
             medium: {
-              url: `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg`
+              url: thumbnails[index] || `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg`
             },
             high: {
-              url: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`
+              url: thumbnails[index] || `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`
             }
           }
         }
       }));
       
-      if (items.length > 0) {
-        return NextResponse.json({ items });
+      if (items.length === 0) {
+        // Phương pháp dự phòng nếu không tìm thấy video trong HTML
+        console.log('Không tìm thấy video trong HTML, sử dụng phương pháp dự phòng');
+        
+        // Tạo items giả bằng cách phân tích cú pháp videoId từ URL
+        const firstVideoId = extractFirstVideoIdFromHtml(html);
+        if (firstVideoId) {
+          items.push({
+            id: `0-${firstVideoId}`,
+            snippet: {
+              title: 'Video 1',
+              resourceId: {
+                videoId: firstVideoId
+              },
+              thumbnails: {
+                default: {
+                  url: `https://i.ytimg.com/vi/${firstVideoId}/default.jpg`
+                },
+                medium: {
+                  url: `https://i.ytimg.com/vi/${firstVideoId}/mqdefault.jpg`
+                },
+                high: {
+                  url: `https://i.ytimg.com/vi/${firstVideoId}/hqdefault.jpg`
+                }
+              }
+            }
+          });
+        }
       }
       
-      throw new Error('Không thể lấy thông tin playlist từ bất kỳ nguồn nào');
+      return NextResponse.json({ items });
     } catch (error) {
       console.error('Lỗi khi lấy dữ liệu playlist:', error);
       
@@ -189,6 +123,37 @@ export async function GET(request) {
  */
 function extractVideoIdsFromHtml(html) {
   const videoIds = [];
+  
+  // Phương pháp 1: Tìm trong JSON data
+  try {
+    const initialDataRegex = /var\s+ytInitialData\s*=\s*({.+?});\s*<\/script>/;
+    const match = html.match(initialDataRegex);
+    if (match && match[1]) {
+      const jsonData = JSON.parse(match[1]);
+      
+      // Tìm trong cấu trúc JSON
+      const contents = jsonData?.contents?.twoColumnBrowseResultsRenderer?.tabs?.[0]?.tabRenderer?.content
+                      ?.sectionListRenderer?.contents?.[0]?.itemSectionRenderer?.contents?.[0]
+                      ?.playlistVideoListRenderer?.contents;
+      
+      if (contents && Array.isArray(contents)) {
+        contents.forEach(item => {
+          const videoId = item?.playlistVideoRenderer?.videoId;
+          if (videoId) {
+            videoIds.push(videoId);
+          }
+        });
+        
+        if (videoIds.length > 0) {
+          return videoIds;
+        }
+      }
+    }
+  } catch (e) {
+    console.log('Lỗi khi trích xuất ID từ JSON:', e);
+  }
+  
+  // Phương pháp 2: Tìm URL pattern
   const regex = /\/watch\?v=([a-zA-Z0-9_-]{11})/g;
   let match;
   
@@ -199,18 +164,35 @@ function extractVideoIdsFromHtml(html) {
     }
   }
   
-  // Phương pháp dự phòng: tìm videoId trong chuỗi JSON
-  if (videoIds.length === 0) {
-    const jsonRegex = /"videoId":"([a-zA-Z0-9_-]{11})"/g;
-    while ((match = jsonRegex.exec(html)) !== null) {
-      const videoId = match[1];
-      if (!videoIds.includes(videoId)) {
-        videoIds.push(videoId);
-      }
+  // Phương pháp 3: Tìm trong chuỗi JSON
+  const jsonRegex = /"videoId":"([a-zA-Z0-9_-]{11})"/g;
+  while ((match = jsonRegex.exec(html)) !== null) {
+    const videoId = match[1];
+    if (!videoIds.includes(videoId)) {
+      videoIds.push(videoId);
     }
   }
   
   return videoIds;
+}
+
+/**
+ * Lấy videoId đầu tiên từ HTML khi các phương pháp khác thất bại
+ */
+function extractFirstVideoIdFromHtml(html) {
+  // Tìm videoId trong URL
+  const match = html.match(/\/watch\?v=([a-zA-Z0-9_-]{11})/);
+  if (match && match[1]) {
+    return match[1];
+  }
+  
+  // Tìm trong chuỗi JSON
+  const jsonMatch = html.match(/"videoId":"([a-zA-Z0-9_-]{11})"/);
+  if (jsonMatch && jsonMatch[1]) {
+    return jsonMatch[1];
+  }
+  
+  return null;
 }
 
 /**
@@ -221,7 +203,36 @@ function extractVideoIdsFromHtml(html) {
 function extractVideoTitlesFromHtml(html) {
   const titles = [];
   
-  // Cải thiện regex để tìm tiêu đề chính xác hơn
+  // Phương pháp 1: Tìm trong JSON data
+  try {
+    const initialDataRegex = /var\s+ytInitialData\s*=\s*({.+?});\s*<\/script>/;
+    const match = html.match(initialDataRegex);
+    if (match && match[1]) {
+      const jsonData = JSON.parse(match[1]);
+      
+      // Tìm trong cấu trúc JSON
+      const contents = jsonData?.contents?.twoColumnBrowseResultsRenderer?.tabs?.[0]?.tabRenderer?.content
+                      ?.sectionListRenderer?.contents?.[0]?.itemSectionRenderer?.contents?.[0]
+                      ?.playlistVideoListRenderer?.contents;
+      
+      if (contents && Array.isArray(contents)) {
+        contents.forEach(item => {
+          const title = item?.playlistVideoRenderer?.title?.runs?.[0]?.text;
+          if (title) {
+            titles.push(title);
+          }
+        });
+        
+        if (titles.length > 0) {
+          return titles;
+        }
+      }
+    }
+  } catch (e) {
+    console.log('Lỗi khi trích xuất tiêu đề từ JSON:', e);
+  }
+  
+  // Phương pháp 2: Regex tìm tiêu đề
   const regex = /"title":\s*{\s*"runs":\s*\[\s*{\s*"text":\s*"([^"]+)"/g;
   let match;
   
@@ -238,7 +249,7 @@ function extractVideoTitlesFromHtml(html) {
     titles.push(title);
   }
   
-  // Phương pháp dự phòng: tìm kiếm tiêu đề bằng cách khác nếu không tìm thấy
+  // Phương pháp 3: Tìm kiếm tiêu đề bằng cách khác
   if (titles.length === 0) {
     const altRegex = /videoTitle":"([^"]+)"/g;
     while ((match = altRegex.exec(html)) !== null) {
@@ -257,4 +268,52 @@ function extractVideoTitlesFromHtml(html) {
   }
   
   return titles;
+}
+
+/**
+ * Hàm trích xuất hình thu nhỏ từ HTML của trang playlist YouTube
+ * @param {string} html - HTML của trang playlist
+ * @returns {Array} Mảng các URL hình thu nhỏ
+ */
+function extractThumbnailsFromHtml(html) {
+  const thumbnails = [];
+  
+  // Phương pháp 1: Tìm trong JSON data
+  try {
+    const initialDataRegex = /var\s+ytInitialData\s*=\s*({.+?});\s*<\/script>/;
+    const match = html.match(initialDataRegex);
+    if (match && match[1]) {
+      const jsonData = JSON.parse(match[1]);
+      
+      // Tìm trong cấu trúc JSON
+      const contents = jsonData?.contents?.twoColumnBrowseResultsRenderer?.tabs?.[0]?.tabRenderer?.content
+                      ?.sectionListRenderer?.contents?.[0]?.itemSectionRenderer?.contents?.[0]
+                      ?.playlistVideoListRenderer?.contents;
+      
+      if (contents && Array.isArray(contents)) {
+        contents.forEach(item => {
+          const thumb = item?.playlistVideoRenderer?.thumbnail?.thumbnails?.[0]?.url;
+          if (thumb) {
+            thumbnails.push(thumb);
+          }
+        });
+        
+        if (thumbnails.length > 0) {
+          return thumbnails;
+        }
+      }
+    }
+  } catch (e) {
+    console.log('Lỗi khi trích xuất hình thu nhỏ từ JSON:', e);
+  }
+  
+  // Phương pháp 2: Regex tìm URL hình thu nhỏ
+  const regex = /"thumbnail":\s*{\s*"thumbnails":\s*\[\s*{\s*"url":\s*"([^"]+)"/g;
+  let match;
+  
+  while ((match = regex.exec(html)) !== null) {
+    thumbnails.push(match[1]);
+  }
+  
+  return thumbnails;
 } 
