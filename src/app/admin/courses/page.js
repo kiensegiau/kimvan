@@ -1034,28 +1034,73 @@ export default function CoursesPage() {
           setProcessingPDFCourses(prev => ({ ...prev, [course._id]: true }));
           
           // Gọi API để xử lý PDF cho khóa học cụ thể
-          const response = await fetch(`/api/courses/${course._id}/process-all-drive`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 15 * 60 * 1000); // 15 phút
+          
+          try {
+            // Thêm retry logic
+            let retryCount = 0;
+            const maxRetries = 2;
+            let response = null;
+            
+            while (retryCount <= maxRetries) {
+              try {
+                console.log(`Thử gọi API xử lý PDF lần ${retryCount + 1} cho khóa học ${course._id}`);
+                response = await fetch(`/api/courses/${course._id}/process-all-drive`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  signal: controller.signal,
+                  timeout: 15 * 60 * 1000 // 15 phút
+                });
+                
+                // Nếu fetch thành công, thoát khỏi vòng lặp
+                break;
+              } catch (fetchError) {
+                retryCount++;
+                
+                // Nếu đã hết số lần thử lại hoặc lỗi không phải timeout, throw lỗi
+                if (retryCount > maxRetries || 
+                   (fetchError.name !== 'AbortError' && 
+                    !fetchError.message.includes('timeout') && 
+                    !fetchError.message.includes('Headers Timeout Error'))) {
+                  throw fetchError;
+                }
+                
+                // Đợi trước khi thử lại
+                console.log(`Lỗi fetch: ${fetchError.message}. Thử lại sau 5 giây...`);
+                await new Promise(resolve => setTimeout(resolve, 5000));
+              }
             }
-          });
+            
+            clearTimeout(timeoutId); // Xóa timeout nếu fetch hoàn thành
+            
+            if (!response) {
+              throw new Error('Không thể kết nối đến API sau nhiều lần thử');
+            }
           
-          const data = await response.json();
+            const data = await response.json();
           
-          if (!response.ok) {
-            throw new Error(data.message || 'Không thể xử lý file PDF');
+            if (!response.ok) {
+              throw new Error(data.message || data.error || 'Không thể xử lý file PDF');
+            }
+          
+            // Đánh dấu đã xử lý xong cho khóa học này
+            setProcessingPDFCourses(prev => ({ ...prev, [course._id]: false }));
+          
+            return {
+              courseId: course._id,
+              courseName: course.name,
+              success: true,
+              summary: data.summary
+            };
+          } catch (fetchError) {
+            throw fetchError;
+          } finally {
+            clearTimeout(timeoutId);
           }
           
-          // Đánh dấu đã xử lý xong cho khóa học này
-          setProcessingPDFCourses(prev => ({ ...prev, [course._id]: false }));
-          
-          return {
-            courseId: course._id,
-            courseName: course.name,
-            success: true,
-            summary: data.summary
-          };
         } catch (err) {
           console.error(`Lỗi khi xử lý PDF cho khóa học ${course.name}:`, err);
           
@@ -1118,28 +1163,72 @@ export default function CoursesPage() {
       setError(null);
       
       // Gọi API để xử lý PDF cho khóa học cụ thể
-      const response = await fetch(`/api/courses/${courseId}/process-all-drive`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15 * 60 * 1000); // 15 phút
+      
+      try {
+        // Thêm retry logic
+        let retryCount = 0;
+        const maxRetries = 2;
+        let response = null;
+        
+        while (retryCount <= maxRetries) {
+          try {
+            console.log(`Thử gọi API xử lý PDF lần ${retryCount + 1} cho khóa học ${courseId}`);
+            response = await fetch(`/api/courses/${courseId}/process-all-drive`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              signal: controller.signal,
+              timeout: 15 * 60 * 1000 // 15 phút
+            });
+            
+            // Nếu fetch thành công, thoát khỏi vòng lặp
+            break;
+          } catch (fetchError) {
+            retryCount++;
+            
+            // Nếu đã hết số lần thử lại hoặc lỗi không phải timeout, throw lỗi
+            if (retryCount > maxRetries || 
+               (fetchError.name !== 'AbortError' && 
+                !fetchError.message.includes('timeout') && 
+                !fetchError.message.includes('Headers Timeout Error'))) {
+              throw fetchError;
+            }
+            
+            // Đợi trước khi thử lại
+            console.log(`Lỗi fetch: ${fetchError.message}. Thử lại sau 5 giây...`);
+            await new Promise(resolve => setTimeout(resolve, 5000));
+          }
         }
-      });
+        
+        clearTimeout(timeoutId); // Xóa timeout nếu fetch hoàn thành
+        
+        if (!response) {
+          throw new Error('Không thể kết nối đến API sau nhiều lần thử');
+        }
       
-      const data = await response.json();
+        const data = await response.json();
       
-      if (!response.ok) {
-        throw new Error(data.message || 'Không thể xử lý file PDF');
+        if (!response.ok) {
+          throw new Error(data.message || data.error || 'Không thể xử lý file PDF');
+        }
+      
+        // Hiển thị kết quả xử lý
+        setProcessResult({
+          success: true,
+          message: 'Xử lý file PDF thành công',
+          summary: data.summary
+        });
+      
+        // Tải lại danh sách khóa học
+        await fetchCourses();
+      } catch (fetchError) {
+        throw fetchError;
+      } finally {
+        clearTimeout(timeoutId);
       }
-      
-      // Hiển thị kết quả xử lý
-      setProcessResult({
-        success: true,
-        message: 'Xử lý file PDF thành công',
-        summary: data.summary
-      });
-      
-      // Tải lại danh sách khóa học
-      await fetchCourses();
       
     } catch (err) {
       console.error('Lỗi khi xử lý file PDF:', err);

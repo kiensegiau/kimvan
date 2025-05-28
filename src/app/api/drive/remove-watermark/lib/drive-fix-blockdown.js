@@ -116,7 +116,52 @@ export async function processPDF(inputPath, outputPath, config = DEFAULT_CONFIG,
       // Xử lý PDF bị chặn từ Google Drive
       console.log(`🔒 Phát hiện PDF bị chặn từ Google Drive, sử dụng phương pháp đặc biệt...`);
       const fileName = inputPath ? path.basename(inputPath) : `blocked_${fileId}.pdf`;
-      result = await downloadBlockedPDF(fileId, fileName, path.dirname(outputPath), config);
+      
+      // Thêm xử lý timeout và retry
+      let retryCount = 0;
+      const maxRetries = 2;
+      let lastError = null;
+      
+      while (retryCount <= maxRetries) {
+        try {
+          console.log(`Thử tải PDF bị chặn lần ${retryCount + 1}...`);
+          
+          // Thiết lập timeout cho toàn bộ quá trình
+          const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Quá thời gian xử lý (10 phút)')), 10 * 60 * 1000);
+          });
+          
+          // Chạy quá trình tải với timeout
+          result = await Promise.race([
+            downloadBlockedPDF(fileId, fileName, path.dirname(outputPath), config),
+            timeoutPromise
+          ]);
+          
+          // Nếu thành công, thoát khỏi vòng lặp
+          if (result && result.success) {
+            break;
+          } else {
+            throw new Error(result?.error || 'Không thể tải PDF bị chặn');
+          }
+        } catch (downloadError) {
+          lastError = downloadError;
+          retryCount++;
+          
+          // Nếu đã hết số lần thử lại, throw lỗi
+          if (retryCount > maxRetries) {
+            console.error(`❌ Đã thử ${maxRetries + 1} lần nhưng không thành công: ${downloadError.message}`);
+            throw downloadError;
+          }
+          
+          console.log(`⚠️ Lỗi khi tải PDF bị chặn: ${downloadError.message}. Thử lại sau 5 giây...`);
+          await new Promise(resolve => setTimeout(resolve, 5000));
+        }
+      }
+      
+      // Nếu không có kết quả thành công sau tất cả các lần thử
+      if (!result || !result.success) {
+        throw new Error(lastError?.message || 'Không thể tải PDF bị chặn sau nhiều lần thử');
+      }
     } else {
       // Xử lý PDF thông thường
       console.log(`📄 Xử lý PDF thông thường với phương pháp loại bỏ watermark...`);
@@ -165,12 +210,17 @@ export async function processPDF(inputPath, outputPath, config = DEFAULT_CONFIG,
       }
     }
     
+    // Tính toán thời gian xử lý tổng cộng
+    const totalProcessingTime = (Date.now() - startTime) / 1000;
+    result.processingTime = totalProcessingTime.toFixed(2);
+    
     return result;
   } catch (error) {
     console.error(`❌ Lỗi xử lý PDF: ${error.message}`);
     return {
       success: false,
-      error: error.message
+      error: error.message,
+      stack: error.stack
     };
   }
 }

@@ -346,31 +346,64 @@ export async function POST(request, { params }) {
           console.log(`Đang xử lý link: ${link.url}`);
           const apiUrl = new URL('/api/drive/remove-watermark', request.url).toString();
           
-          // Tạo AbortController với timeout dài hơn (10 phút)
+          // Tạo AbortController với timeout dài hơn (15 phút)
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 10 * 60 * 1000); // 10 phút
+          const timeoutId = setTimeout(() => controller.abort(), 15 * 60 * 1000); // 15 phút
           
           try {
-            const response = await fetch(apiUrl, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({ 
-                token: 'api@test-watermark',
-                driveLink: link.url,
-                courseName: course.name || 'Khóa học không tên',
-                skipWatermarkRemoval: skipWatermarkRemoval
-              }),
-              signal: controller.signal
-            });
+            // Thêm retry logic
+            let retryCount = 0;
+            const maxRetries = 2;
+            let response = null;
+            
+            while (retryCount <= maxRetries) {
+              try {
+                console.log(`Thử gọi API lần ${retryCount + 1} cho ${link.url}`);
+                response = await fetch(apiUrl, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({ 
+                    token: 'api@test-watermark',
+                    driveLink: link.url,
+                    courseName: course.name || 'Khóa học không tên',
+                    skipWatermarkRemoval: skipWatermarkRemoval
+                  }),
+                  signal: controller.signal,
+                  // Tăng thời gian timeout của fetch
+                  timeout: 15 * 60 * 1000 // 15 phút
+                });
+                
+                // Nếu fetch thành công, thoát khỏi vòng lặp
+                break;
+              } catch (fetchError) {
+                retryCount++;
+                
+                // Nếu đã hết số lần thử lại hoặc lỗi không phải timeout, throw lỗi
+                if (retryCount > maxRetries || 
+                   (fetchError.name !== 'AbortError' && 
+                    !fetchError.message.includes('timeout') && 
+                    !fetchError.message.includes('Headers Timeout Error'))) {
+                  throw fetchError;
+                }
+                
+                // Đợi trước khi thử lại
+                console.log(`Lỗi fetch: ${fetchError.message}. Thử lại sau 5 giây...`);
+                await new Promise(resolve => setTimeout(resolve, 5000));
+              }
+            }
             
             clearTimeout(timeoutId); // Xóa timeout nếu fetch hoàn thành
+            
+            if (!response) {
+              throw new Error('Không thể kết nối đến API sau nhiều lần thử');
+            }
             
             const data = await response.json();
 
             if (!response.ok) {
-              throw new Error(data.message || 'Không thể xử lý file');
+              throw new Error(data.message || data.error || 'Không thể xử lý file');
             }
 
             console.log(`Xử lý thành công, URL mới: ${data.webViewLink || data.viewLink || data.folderLink || data.url || data.driveUrl || 'không xác định'}`);
