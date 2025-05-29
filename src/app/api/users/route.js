@@ -144,7 +144,7 @@ export async function POST(request) {
     
     // Lấy dữ liệu từ request
     const body = await request.json();
-    const { email, password, accountType, trialEndsAt } = body;
+    const { email, password, accountType, trialEndsAt, canViewAllCourses } = body;
     
     // Kiểm tra các trường bắt buộc
     if (!email || !password) {
@@ -173,6 +173,11 @@ export async function POST(request) {
         password
       });
       
+      // Xác định loại tài khoản và quyền xem khóa học
+      const userAccountType = accountType || 'regular';
+      // Tài khoản dùng thử luôn có quyền xem tất cả khóa học
+      const userCanViewAllCourses = userAccountType === 'trial' ? true : (canViewAllCourses || false);
+      
       // Lưu thông tin bổ sung vào MongoDB
       await db.collection('users').insertOne({
         firebaseId: userRecord.uid,
@@ -183,8 +188,9 @@ export async function POST(request) {
         status: 'active',
         emailVerified: false,
         additionalInfo: {},
-        accountType: accountType || 'regular',
+        accountType: userAccountType,
         trialEndsAt: trialEndsAt ? new Date(trialEndsAt) : null,
+        canViewAllCourses: userCanViewAllCourses, // Đảm bảo tài khoản dùng thử luôn có quyền xem tất cả khóa học
         createdAt: new Date(),
         updatedAt: new Date()
       });
@@ -282,8 +288,37 @@ export async function PATCH(request) {
       if (role !== undefined) mongoUpdateData.role = role;
       if (status !== undefined) mongoUpdateData.status = status;
       if (additionalInfo !== undefined) mongoUpdateData.additionalInfo = additionalInfo;
-      if (canViewAllCourses !== undefined) mongoUpdateData.canViewAllCourses = canViewAllCourses;
-      if (accountType !== undefined) mongoUpdateData.accountType = accountType;
+      
+      // Xác định loại tài khoản và quyền xem khóa học
+      let userAccountType = accountType;
+      let userCanViewAllCourses = canViewAllCourses;
+      
+      // Nếu đang cập nhật loại tài khoản
+      if (userAccountType !== undefined) {
+        mongoUpdateData.accountType = userAccountType;
+        
+        // Nếu chuyển sang tài khoản dùng thử, luôn bật quyền xem tất cả khóa học
+        if (userAccountType === 'trial') {
+          mongoUpdateData.canViewAllCourses = true;
+        } 
+        // Nếu không phải chuyển sang tài khoản dùng thử và có cập nhật quyền xem khóa học
+        else if (userCanViewAllCourses !== undefined) {
+          mongoUpdateData.canViewAllCourses = userCanViewAllCourses;
+        }
+      } 
+      // Nếu không cập nhật loại tài khoản nhưng có cập nhật quyền xem khóa học
+      else if (userCanViewAllCourses !== undefined) {
+        // Lấy thông tin người dùng hiện tại để kiểm tra loại tài khoản
+        const existingUser = await db.collection('users').findOne({ firebaseId: id });
+        
+        // Nếu là tài khoản dùng thử, không cho phép tắt quyền xem khóa học
+        if (existingUser && existingUser.accountType === 'trial') {
+          mongoUpdateData.canViewAllCourses = true;
+        } else {
+          mongoUpdateData.canViewAllCourses = userCanViewAllCourses;
+        }
+      }
+      
       if (trialEndsAt !== undefined) mongoUpdateData.trialEndsAt = trialEndsAt ? new Date(trialEndsAt) : null;
       
       // Kiểm tra xem bản ghi đã tồn tại trong MongoDB chưa
@@ -299,6 +334,10 @@ export async function PATCH(request) {
         // Tạo bản ghi mới nếu chưa tồn tại
         const userRecord = await admin.auth().getUser(id);
         
+        // Xác định loại tài khoản và quyền xem khóa học cho bản ghi mới
+        const newUserAccountType = accountType || 'regular';
+        const newUserCanViewAllCourses = newUserAccountType === 'trial' ? true : (canViewAllCourses || false);
+        
         await db.collection('users').insertOne({
           firebaseId: id,
           email: userRecord.email,
@@ -308,8 +347,9 @@ export async function PATCH(request) {
           status: status || 'active',
           emailVerified: userRecord.emailVerified || false,
           additionalInfo: additionalInfo || {},
-          accountType: accountType || 'regular',
+          accountType: newUserAccountType,
           trialEndsAt: trialEndsAt ? new Date(trialEndsAt) : null,
+          canViewAllCourses: newUserCanViewAllCourses,
           createdAt: new Date(),
           updatedAt: new Date()
         });

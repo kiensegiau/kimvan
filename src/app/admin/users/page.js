@@ -156,6 +156,7 @@ export default function UsersPage() {
         status: currentUser.status,
         additionalInfo: currentUser.additionalInfo,
         accountType: currentUser.accountType,
+        canViewAllCourses: currentUser.accountType === 'trial' ? true : currentUser.canViewAllCourses, // Đảm bảo tài khoản dùng thử luôn có quyền xem tất cả khóa học
       };
       
       // Nếu là tài khoản dùng thử, thêm thời gian hết hạn
@@ -186,7 +187,8 @@ export default function UsersPage() {
         requestBody = {
           email: currentUser.email,
           password: currentUser.password,
-          accountType: currentUser.accountType
+          accountType: currentUser.accountType,
+          canViewAllCourses: currentUser.accountType === 'trial' ? true : false, // Tài khoản dùng thử luôn có quyền xem tất cả khóa học
         };
         
         // Nếu là tài khoản dùng thử, thêm thời gian hết hạn
@@ -472,6 +474,15 @@ export default function UsersPage() {
 
   const handleToggleViewAllCourses = async (userId, currentValue) => {
     try {
+      // Tìm người dùng trong danh sách
+      const user = users.find(u => u.id === userId);
+      
+      // Nếu là tài khoản dùng thử, không cho phép tắt quyền xem khóa học
+      if (user && user.accountType === 'trial' && currentValue === true) {
+        toast.info('Tài khoản dùng thử luôn có quyền xem tất cả khóa học');
+        return; // Không thực hiện thay đổi
+      }
+      
       // Gọi API để cập nhật quyền xem tất cả khóa học
       const response = await fetch(`/api/users?id=${userId}`, {
         method: 'PATCH',
@@ -546,6 +557,24 @@ export default function UsersPage() {
       checkExpiredTrialAccounts();
     }
   }, [users, loading]);
+
+  // Thiết lập kiểm tra tài khoản hết hạn mỗi phút
+  useEffect(() => {
+    // Kiểm tra ngay khi component được tạo
+    if (users.length > 0) {
+      checkExpiredTrialAccounts();
+    }
+    
+    // Thiết lập kiểm tra định kỳ mỗi phút
+    const intervalId = setInterval(() => {
+      if (users.length > 0) {
+        checkExpiredTrialAccounts();
+      }
+    }, 60 * 1000); // 60 giây = 1 phút
+    
+    // Xóa interval khi component bị hủy
+    return () => clearInterval(intervalId);
+  }, [users]); // Chỉ chạy lại khi danh sách users thay đổi
 
   // Định dạng thời gian còn lại của tài khoản dùng thử
   const formatRemainingTime = (trialEndsAt) => {
@@ -754,24 +783,46 @@ export default function UsersPage() {
 
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
-                              <button
-                                onClick={() => handleToggleViewAllCourses(user.id, user.canViewAllCourses)}
-                                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
-                                  user.canViewAllCourses ? 'bg-indigo-600' : 'bg-gray-200'
-                                }`}
-                                role="switch"
-                                aria-checked={user.canViewAllCourses}
-                              >
-                                <span
-                                  aria-hidden="true"
-                                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                                    user.canViewAllCourses ? 'translate-x-5' : 'translate-x-0'
-                                  }`}
-                                ></span>
-                              </button>
-                              <span className="ml-2 text-xs">
-                                {user.canViewAllCourses ? 'Có' : 'Không'}
-                              </span>
+                              {user.accountType === 'trial' ? (
+                                <>
+                                  <button
+                                    disabled={true}
+                                    className="relative inline-flex h-6 w-11 flex-shrink-0 cursor-not-allowed rounded-full border-2 border-transparent bg-indigo-600 transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                                    role="switch"
+                                    aria-checked={true}
+                                  >
+                                    <span
+                                      aria-hidden="true"
+                                      className="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out translate-x-5"
+                                    ></span>
+                                  </button>
+                                  <span className="ml-2 text-xs flex items-center">
+                                    <span className="text-green-600">Luôn bật</span>
+                                    <span className="ml-1 text-gray-400">(Tài khoản dùng thử)</span>
+                                  </span>
+                                </>
+                              ) : (
+                                <>
+                                  <button
+                                    onClick={() => handleToggleViewAllCourses(user.id, user.canViewAllCourses)}
+                                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+                                      user.canViewAllCourses ? 'bg-indigo-600' : 'bg-gray-200'
+                                    }`}
+                                    role="switch"
+                                    aria-checked={user.canViewAllCourses}
+                                  >
+                                    <span
+                                      aria-hidden="true"
+                                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                        user.canViewAllCourses ? 'translate-x-5' : 'translate-x-0'
+                                      }`}
+                                    ></span>
+                                  </button>
+                                  <span className="ml-2 text-xs">
+                                    {user.canViewAllCourses ? 'Có' : 'Không'}
+                                  </span>
+                                </>
+                              )}
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap hidden">
@@ -898,21 +949,46 @@ export default function UsersPage() {
                           <div className="flex items-center justify-between">
                             <div className="text-sm text-gray-700">Quyền xem tất cả khóa học:</div>
                             <div>
-                              <button
-                                onClick={() => handleToggleViewAllCourses(user.id, user.canViewAllCourses)}
-                                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
-                                  user.canViewAllCourses ? 'bg-indigo-600' : 'bg-gray-200'
-                                }`}
-                                role="switch"
-                                aria-checked={user.canViewAllCourses}
-                              >
-                                <span
-                                  aria-hidden="true"
-                                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                                    user.canViewAllCourses ? 'translate-x-5' : 'translate-x-0'
-                                  }`}
-                                ></span>
-                              </button>
+                              {user.accountType === 'trial' ? (
+                                <>
+                                  <button
+                                    disabled={true}
+                                    className="relative inline-flex h-6 w-11 flex-shrink-0 cursor-not-allowed rounded-full border-2 border-transparent bg-indigo-600 transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                                    role="switch"
+                                    aria-checked={true}
+                                  >
+                                    <span
+                                      aria-hidden="true"
+                                      className="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out translate-x-5"
+                                    ></span>
+                                  </button>
+                                  <span className="ml-2 text-xs flex items-center">
+                                    <span className="text-green-600">Luôn bật</span>
+                                    <span className="ml-1 text-gray-400">(Tài khoản dùng thử)</span>
+                                  </span>
+                                </>
+                              ) : (
+                                <>
+                                  <button
+                                    onClick={() => handleToggleViewAllCourses(user.id, user.canViewAllCourses)}
+                                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+                                      user.canViewAllCourses ? 'bg-indigo-600' : 'bg-gray-200'
+                                    }`}
+                                    role="switch"
+                                    aria-checked={user.canViewAllCourses}
+                                  >
+                                    <span
+                                      aria-hidden="true"
+                                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                        user.canViewAllCourses ? 'translate-x-5' : 'translate-x-0'
+                                      }`}
+                                    ></span>
+                                  </button>
+                                  <span className="ml-2 text-xs">
+                                    {user.canViewAllCourses ? 'Có' : 'Không'}
+                                  </span>
+                                </>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -1040,17 +1116,19 @@ export default function UsersPage() {
                     value={currentUser.accountType || 'regular'}
                     onChange={(e) => {
                       const newType = e.target.value;
-                      setCurrentUser({...currentUser, accountType: newType});
                       
-                      // Nếu chuyển sang tài khoản dùng thử, tự động thiết lập thời gian hết hạn
+                      // Nếu chuyển sang tài khoản dùng thử, tự động thiết lập thời gian hết hạn và quyền xem tất cả khóa học
                       if (newType === 'trial') {
                         const trialEndDate = new Date();
                         trialEndDate.setHours(trialEndDate.getHours() + 1); // Mặc định 1 giờ
                         setCurrentUser(prev => ({
                           ...prev, 
                           accountType: newType,
-                          trialEndsAt: trialEndDate
+                          trialEndsAt: trialEndDate,
+                          canViewAllCourses: true // Tự động bật quyền xem tất cả khóa học
                         }));
+                      } else {
+                        setCurrentUser({...currentUser, accountType: newType});
                       }
                     }}
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
@@ -1062,8 +1140,61 @@ export default function UsersPage() {
                 
                 {/* Hiển thị thời gian hết hạn nếu là tài khoản dùng thử */}
                 {currentUser.accountType === 'trial' && currentUser.trialEndsAt && (
-                  <div className="mt-2 text-xs text-orange-500">
-                    Tài khoản sẽ hết hạn vào: {new Date(currentUser.trialEndsAt).toLocaleDateString('vi-VN')} {new Date(currentUser.trialEndsAt).toLocaleTimeString('vi-VN')}
+                  <div className="mt-2">
+                    <p className="text-xs text-orange-500">
+                      Tài khoản sẽ hết hạn vào: {new Date(currentUser.trialEndsAt).toLocaleDateString('vi-VN')} {new Date(currentUser.trialEndsAt).toLocaleTimeString('vi-VN')}
+                    </p>
+                    <p className="text-xs text-green-600 mt-1">
+                      <span className="font-medium">Quyền xem tất cả khóa học:</span> Đã bật tự động
+                    </p>
+                  </div>
+                )}
+                
+                {/* Quyền xem tất cả khóa học - ẩn đi nếu là tài khoản dùng thử */}
+                {currentUser.id && currentUser.accountType !== 'trial' && (
+                  <div className="flex items-start">
+                    <div className="flex items-center h-5">
+                      <input
+                        id="canViewAllCourses"
+                        name="canViewAllCourses"
+                        type="checkbox"
+                        checked={currentUser.canViewAllCourses || false}
+                        onChange={(e) => setCurrentUser({...currentUser, canViewAllCourses: e.target.checked})}
+                        className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"
+                      />
+                    </div>
+                    <div className="ml-3 text-sm">
+                      <label htmlFor="canViewAllCourses" className="font-medium text-gray-700">
+                        Quyền xem tất cả khóa học
+                      </label>
+                      <p className="text-gray-500">
+                        Cho phép người dùng này xem nội dung của tất cả khóa học mà không cần đăng ký
+                      </p>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Hiển thị công tắc quyền xem đã được bật cho tài khoản dùng thử */}
+                {currentUser.id && currentUser.accountType === 'trial' && (
+                  <div className="flex items-start">
+                    <div className="flex items-center h-5">
+                      <input
+                        id="canViewAllCourses"
+                        name="canViewAllCourses"
+                        type="checkbox"
+                        checked={true}
+                        disabled={true}
+                        className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"
+                      />
+                    </div>
+                    <div className="ml-3 text-sm">
+                      <label htmlFor="canViewAllCourses" className="font-medium text-gray-700">
+                        Quyền xem tất cả khóa học
+                      </label>
+                      <p className="text-green-600 text-xs">
+                        Tài khoản dùng thử luôn được bật quyền xem tất cả khóa học
+                      </p>
+                    </div>
                   </div>
                 )}
                 
@@ -1132,28 +1263,6 @@ export default function UsersPage() {
                         <option value="active">Đang hoạt động</option>
                         <option value="inactive">Vô hiệu hóa</option>
                       </select>
-                    </div>
-                    
-                    {/* Quyền xem tất cả khóa học */}
-                    <div className="flex items-start">
-                      <div className="flex items-center h-5">
-                        <input
-                          id="canViewAllCourses"
-                          name="canViewAllCourses"
-                          type="checkbox"
-                          checked={currentUser.canViewAllCourses || false}
-                          onChange={(e) => setCurrentUser({...currentUser, canViewAllCourses: e.target.checked})}
-                          className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"
-                        />
-                      </div>
-                      <div className="ml-3 text-sm">
-                        <label htmlFor="canViewAllCourses" className="font-medium text-gray-700">
-                          Quyền xem tất cả khóa học
-                        </label>
-                        <p className="text-gray-500">
-                          Cho phép người dùng này xem nội dung của tất cả khóa học mà không cần đăng ký
-                        </p>
-                      </div>
                     </div>
                   </>
                 )}
