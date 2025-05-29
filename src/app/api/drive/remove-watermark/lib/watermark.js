@@ -22,6 +22,9 @@ export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
   let tempDir = null;
   let gsPath = null;
   
+  // Tăng thời gian chờ tối đa lên 1 giờ
+  const maxProcessingTime = 3600000; // 1 giờ tính bằng mili giây
+  
   console.log('🔄 Bắt đầu xử lý xóa watermark...');
   
   try {
@@ -164,17 +167,19 @@ export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
     // Chia trang thành các batch nhỏ hơn để xử lý
     const convertResults = [];
     
-    // Sử dụng chiến lược song song khác nhau cho chế độ Ultra
+    // Chế độ Ultra Performance cho hệ thống RAM cao
     if (optimizedConfig.ultra) {
-      console.log(`🚀 Chế độ ULTRA: Xử lý song song ${batchSize} trang cùng lúc`);
+      // Giảm kích thước batch xuống còn 4 trang thay vì 9 để tránh timeout
+      const actualBatchSize = Math.min(batchSize, 4);
+      console.log(`🚀 Chế độ ULTRA: Xử lý từng batch ${actualBatchSize} trang để tránh timeout (thời gian chờ tối đa: 1 giờ)`);
       
       // Xử lý nhiều batch cùng lúc
-      const numBatches = Math.ceil(conversionTasks.length / batchSize);
+      const numBatches = Math.ceil(conversionTasks.length / actualBatchSize);
       const batches = [];
       
       for (let i = 0; i < numBatches; i++) {
-        const startIdx = i * batchSize;
-        const endIdx = Math.min(startIdx + batchSize, conversionTasks.length);
+        const startIdx = i * actualBatchSize;
+        const endIdx = Math.min(startIdx + actualBatchSize, conversionTasks.length);
         batches.push(conversionTasks.slice(startIdx, endIdx));
       }
       
@@ -183,8 +188,9 @@ export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
       try {
         let processedCount = 0;
         
-        // Sử dụng Promise.all để xử lý nhiều batch cùng lúc
-        const batchPromises = batches.map(async (batch, batchIndex) => {
+        // Xử lý từng batch một thay vì song song
+        for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+          const batch = batches[batchIndex];
           // Thêm log để debug
           console.log(`🔄 Bắt đầu xử lý batch ${batchIndex + 1}/${batches.length} (${batch.length} trang)`);
           
@@ -193,7 +199,23 @@ export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
           );
           
           try {
-            const batchResults = await Promise.allSettled(batchTasks);
+            // Thiết lập timeout dài hơn cho xử lý batch
+            const batchPromise = Promise.allSettled(batchTasks);
+            
+            // Tạo timeout promise để đảm bảo không chờ quá lâu
+            const timeoutPromise = new Promise((resolve) => {
+              setTimeout(() => {
+                resolve('timeout');
+              }, maxProcessingTime);
+            });
+            
+            // Chạy với race để đảm bảo không bị treo vô thời hạn
+            const raceResult = await Promise.race([batchPromise, timeoutPromise]);
+            
+            // Kiểm tra nếu bị timeout
+            const batchResults = raceResult === 'timeout' 
+              ? batch.map(() => ({ status: 'rejected', reason: new Error('Xử lý batch vượt quá thời gian tối đa') }))
+              : raceResult;
             
             // Xóa các tệp PDF đã xử lý để giải phóng bộ nhớ
             for (const task of batch) {
@@ -209,25 +231,29 @@ export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
             processedCount += batch.length;
             console.log(`🔄 Chuyển đổi PDF sang hình ảnh: ${Math.round((processedCount / conversionTasks.length) * 100)}% (${processedCount}/${conversionTasks.length} trang)`);
             
-            return batchResults;
+            // Thêm kết quả vào mảng kết quả chung
+            convertResults.push(...batchResults);
+            
+            // Thúc đẩy GC sau mỗi batch
+            forceGarbageCollection();
+            
+            // Tăng thời gian chờ giữa các batch để hệ thống có thể phục hồi và tránh timeout
+            await new Promise(resolve => setTimeout(resolve, optimizedConfig.waitTime || 800));
           } catch (batchError) {
             console.error(`Lỗi xử lý batch chuyển đổi ${batchIndex + 1}: ${batchError.message}`);
-            return batch.map(() => ({
+            // Thêm kết quả lỗi vào mảng kết quả
+            const errorResults = batch.map(() => ({
               status: 'rejected',
               reason: batchError
             }));
+            convertResults.push(...errorResults);
           }
-        });
-        
-        const results = await Promise.all(batchPromises);
-        results.forEach(batchResult => {
-          convertResults.push(...batchResult);
-        });
+        }
         
         // Thúc đẩy GC sau khi hoàn thành tất cả
         forceGarbageCollection();
       } catch (parallelError) {
-        console.error(`Lỗi khi xử lý song song: ${parallelError.message}`);
+        console.error(`Lỗi khi xử lý batch: ${parallelError.message}`);
         throw parallelError;
       }
     } else {
@@ -247,7 +273,7 @@ export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
           try {
             batchResults = await Promise.allSettled(batchPromises);
           } catch (batchError) {
-            console.error(`Lỗi xử lý batch chuyển đổi: ${batchError.message}`);
+            console.error(`Lỗi xử lý batch xóa watermark: ${batchError.message}`);
             continue;
           }
           
@@ -267,8 +293,8 @@ export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
           // Thúc đẩy GC sau mỗi batch
           forceGarbageCollection();
           
-          // Thời gian chờ giữa các batch từ cấu hình đã tối ưu
-          await new Promise(resolve => setTimeout(resolve, optimizedConfig.waitTime || 300));
+          // Tăng thời gian chờ giữa các batch để tránh timeout
+          await new Promise(resolve => setTimeout(resolve, optimizedConfig.waitTime || 800));
         } catch (batchProcessError) {
           console.error(`Lỗi xử lý batch chuyển đổi tại vị trí ${i}: ${batchProcessError.message}`);
           // Vẫn tiếp tục xử lý các batch tiếp theo
@@ -293,15 +319,17 @@ export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
     
     // Kiểm tra xem có phải chế độ Ultra không
     if (optimizedConfig.ultra) {
-      console.log(`🚀 Chế độ ULTRA: Xử lý song song xóa watermark cho ${batchSize} trang cùng lúc`);
+      // Giảm kích thước batch xuống còn 4 trang thay vì 9 để tránh timeout
+      const actualBatchSize = Math.min(batchSize, 4);
+      console.log(`🚀 Chế độ ULTRA: Xử lý từng batch xóa watermark cho ${actualBatchSize} trang để tránh timeout (thời gian chờ tối đa: 1 giờ)`);
       
       // Xử lý nhiều batch song song tương tự như phần chuyển đổi PDF
-      const numBatches = Math.ceil(successfulConversions.length / batchSize);
+      const numBatches = Math.ceil(successfulConversions.length / actualBatchSize);
       const batches = [];
       
       for (let i = 0; i < numBatches; i++) {
-        const startIdx = i * batchSize;
-        const endIdx = Math.min(startIdx + batchSize, successfulConversions.length);
+        const startIdx = i * actualBatchSize;
+        const endIdx = Math.min(startIdx + actualBatchSize, successfulConversions.length);
         batches.push(successfulConversions.slice(startIdx, endIdx));
       }
       
@@ -310,8 +338,9 @@ export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
       try {
         let processedCount = 0;
         
-        // Sử dụng Promise.all để xử lý nhiều batch song song
-        const batchPromises = batches.map(async (batch, batchIndex) => {
+        // Xử lý từng batch một thay vì song song
+        for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+          const batch = batches[batchIndex];
           // Thêm log để debug
           console.log(`🔄 Bắt đầu xử lý watermark batch ${batchIndex + 1}/${batches.length} (${batch.length} trang)`);
           
@@ -320,7 +349,23 @@ export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
           );
           
           try {
-            const batchResults = await Promise.allSettled(batchTasks);
+            // Thiết lập timeout dài hơn cho xử lý batch
+            const batchPromise = Promise.allSettled(batchTasks);
+            
+            // Tạo timeout promise để đảm bảo không chờ quá lâu
+            const timeoutPromise = new Promise((resolve) => {
+              setTimeout(() => {
+                resolve('timeout');
+              }, maxProcessingTime);
+            });
+            
+            // Chạy với race để đảm bảo không bị treo vô thời hạn
+            const raceResult = await Promise.race([batchPromise, timeoutPromise]);
+            
+            // Kiểm tra nếu bị timeout
+            const batchResults = raceResult === 'timeout' 
+              ? batch.map(() => ({ status: 'rejected', reason: new Error('Xử lý batch vượt quá thời gian tối đa') }))
+              : raceResult;
             
             // Xóa các tệp PNG đã xử lý để giải phóng bộ nhớ
             for (const result of batch) {
@@ -336,25 +381,29 @@ export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
             processedCount += batch.length;
             console.log(`🔄 Xử lý xóa watermark: ${Math.round((processedCount / successfulConversions.length) * 100)}% (${processedCount}/${successfulConversions.length} trang)`);
             
-            return batchResults;
+            // Thêm kết quả vào mảng kết quả chung
+            processResults.push(...batchResults);
+            
+            // Thúc đẩy GC sau mỗi batch
+            forceGarbageCollection();
+            
+            // Tăng thời gian chờ giữa các batch để hệ thống có thể phục hồi và tránh timeout
+            await new Promise(resolve => setTimeout(resolve, optimizedConfig.waitTime || 800));
           } catch (batchError) {
             console.error(`Lỗi xử lý batch watermark ${batchIndex + 1}: ${batchError.message}`);
-            return batch.map(() => ({
+            // Thêm kết quả lỗi vào mảng kết quả
+            const errorResults = batch.map(() => ({
               status: 'rejected',
               reason: batchError
             }));
+            processResults.push(...errorResults);
           }
-        });
-        
-        const results = await Promise.all(batchPromises);
-        results.forEach(batchResult => {
-          processResults.push(...batchResult);
-        });
+        }
         
         // Thúc đẩy GC sau khi hoàn thành tất cả
         forceGarbageCollection();
       } catch (parallelError) {
-        console.error(`Lỗi khi xử lý song song watermark: ${parallelError.message}`);
+        console.error(`Lỗi khi xử lý watermark: ${parallelError.message}`);
         throw parallelError;
       }
     } else {
@@ -394,8 +443,8 @@ export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {
           // Thúc đẩy GC sau mỗi batch
           forceGarbageCollection();
           
-          // Sử dụng thời gian chờ tối ưu
-          await new Promise(resolve => setTimeout(resolve, optimizedConfig.waitTime || 300));
+          // Tăng thời gian chờ giữa các batch để tránh timeout
+          await new Promise(resolve => setTimeout(resolve, optimizedConfig.waitTime || 800));
         } catch (batchProcessError) {
           console.error(`Lỗi xử lý batch xóa watermark tại vị trí ${i}: ${batchProcessError.message}`);
           // Vẫn tiếp tục xử lý các batch tiếp theo
