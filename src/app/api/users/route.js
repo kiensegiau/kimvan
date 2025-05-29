@@ -142,15 +142,11 @@ export async function POST(request) {
     //   }, { status: 403 });
     // }
     
-    // Kết nối đến MongoDB
-    const client = await clientPromise;
-    const db = client.db(process.env.MONGODB_DB || 'kimvan');
-    
     // Lấy dữ liệu từ request
     const body = await request.json();
-    const { email, password, displayName, phoneNumber, role, status, additionalInfo } = body;
-
-    // Kiểm tra dữ liệu bắt buộc
+    const { email, password, accountType, trialEndsAt } = body;
+    
+    // Kiểm tra các trường bắt buộc
     if (!email || !password) {
       return NextResponse.json({ 
         success: false, 
@@ -166,56 +162,37 @@ export async function POST(request) {
       }, { status: 400 });
     }
     
-    // Xử lý phoneNumber
-    const userDataForFirebase = {
-      email,
-      password,
-      displayName: displayName || null,
-      disabled: status === 'inactive'
-    };
+    // Kết nối đến MongoDB
+    const client = await clientPromise;
+    const db = client.db(process.env.MONGODB_DB || 'kimvan');
     
-    // Chỉ thêm phoneNumber nếu có giá trị hợp lệ
-    if (phoneNumber && phoneNumber.trim() !== '') {
-      // Kiểm tra định dạng E.164
-      if (phoneNumber.startsWith('+') && phoneNumber.length >= 8) {
-        userDataForFirebase.phoneNumber = phoneNumber;
-      } else {
-        // Nếu số điện thoại không đúng định dạng, trả về lỗi
-        return NextResponse.json({
-          success: false,
-          error: 'Số điện thoại phải theo định dạng E.164 (ví dụ: +84xxxxxxxxx)'
-        }, { status: 400 });
-      }
-    }
-
-    // Tạo người dùng trong Firebase Auth
     try {
-      const userRecord = await admin.auth().createUser(userDataForFirebase);
+      // Tạo người dùng mới trong Firebase Auth
+      const userRecord = await admin.auth().createUser({
+        email,
+        password
+      });
       
       // Lưu thông tin bổ sung vào MongoDB
       await db.collection('users').insertOne({
         firebaseId: userRecord.uid,
         email,
-        displayName: displayName || null,
-        phoneNumber: phoneNumber || null,
-        role: role || 'user',
-        status: status || 'active',
+        displayName: null,
+        phoneNumber: null,
+        role: 'user',
+        status: 'active',
         emailVerified: false,
-        additionalInfo: additionalInfo || {},
+        additionalInfo: {},
+        accountType: accountType || 'regular',
+        trialEndsAt: trialEndsAt ? new Date(trialEndsAt) : null,
         createdAt: new Date(),
         updatedAt: new Date()
       });
-
+      
       return NextResponse.json({ 
         success: true,
-        data: {
-          id: userRecord.uid,
-          email,
-          displayName,
-          role,
-          status
-        }
-      }, { status: 201 });
+        data: { id: userRecord.uid }
+      });
     } catch (error) {
       console.error('Firebase error:', error);
       // Xử lý lỗi Firebase Auth
@@ -258,7 +235,7 @@ export async function PATCH(request) {
     
     // Lấy dữ liệu từ request
     const body = await request.json();
-    const { displayName, phoneNumber, role, status, additionalInfo, canViewAllCourses } = body;
+    const { displayName, phoneNumber, role, status, additionalInfo, canViewAllCourses, accountType, trialEndsAt } = body;
     
     // Kết nối đến MongoDB
     const client = await clientPromise;
@@ -306,6 +283,8 @@ export async function PATCH(request) {
       if (status !== undefined) mongoUpdateData.status = status;
       if (additionalInfo !== undefined) mongoUpdateData.additionalInfo = additionalInfo;
       if (canViewAllCourses !== undefined) mongoUpdateData.canViewAllCourses = canViewAllCourses;
+      if (accountType !== undefined) mongoUpdateData.accountType = accountType;
+      if (trialEndsAt !== undefined) mongoUpdateData.trialEndsAt = trialEndsAt ? new Date(trialEndsAt) : null;
       
       // Kiểm tra xem bản ghi đã tồn tại trong MongoDB chưa
       const existingUser = await db.collection('users').findOne({ firebaseId: id });
@@ -329,6 +308,8 @@ export async function PATCH(request) {
           status: status || 'active',
           emailVerified: userRecord.emailVerified || false,
           additionalInfo: additionalInfo || {},
+          accountType: accountType || 'regular',
+          trialEndsAt: trialEndsAt ? new Date(trialEndsAt) : null,
           createdAt: new Date(),
           updatedAt: new Date()
         });

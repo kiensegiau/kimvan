@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { PlusIcon, PencilIcon, TrashIcon, ExclamationCircleIcon, ArrowPathIcon, ShieldCheckIcon, UserIcon, KeyIcon, EnvelopeIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, PencilIcon, TrashIcon, ExclamationCircleIcon, ArrowPathIcon, ShieldCheckIcon, UserIcon, KeyIcon, EnvelopeIcon, XMarkIcon, ClockIcon } from '@heroicons/react/24/outline';
 import { auth } from '@/lib/firebase';
 import { toast } from 'react-hot-toast';
 import { Toaster } from 'react-hot-toast';
@@ -28,6 +28,7 @@ export default function UsersPage() {
   const [selectedCourseId, setSelectedCourseId] = useState('');
   const [addingCourse, setAddingCourse] = useState(false);
   const [courseError, setCourseError] = useState(null);
+  const [trialHours, setTrialHours] = useState(1); // Số giờ dùng thử mặc định (1 giờ)
 
   // Hàm lấy danh sách người dùng
   const fetchUsers = async () => {
@@ -108,6 +109,8 @@ export default function UsersPage() {
       role: 'user',
       status: 'active',
       additionalInfo: {},
+      accountType: 'regular', // Loại tài khoản mặc định
+      trialEndsAt: null, // Ngày hết hạn dùng thử
     });
     setShowModal(true);
     setApiError(null);
@@ -146,6 +149,28 @@ export default function UsersPage() {
     
     try {
       let response;
+      let requestBody = {
+        displayName: currentUser.displayName,
+        phoneNumber: currentUser.phoneNumber,
+        role: currentUser.role,
+        status: currentUser.status,
+        additionalInfo: currentUser.additionalInfo,
+        accountType: currentUser.accountType,
+      };
+      
+      // Nếu là tài khoản dùng thử, thêm thời gian hết hạn
+      if (currentUser.accountType === 'trial') {
+        // Sử dụng thời gian hết hạn đã được thiết lập hoặc tạo mới nếu chưa có
+        if (!currentUser.trialEndsAt) {
+          const trialEndDate = new Date();
+          trialEndDate.setHours(trialEndDate.getHours() + 1); // Mặc định 1 giờ
+          requestBody.trialEndsAt = trialEndDate;
+        } else {
+          requestBody.trialEndsAt = currentUser.trialEndsAt;
+        }
+      } else {
+        requestBody.trialEndsAt = null;
+      }
       
       if (currentUser.id) {
         // Cập nhật người dùng hiện có
@@ -154,30 +179,34 @@ export default function UsersPage() {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            displayName: currentUser.displayName,
-            phoneNumber: currentUser.phoneNumber,
-            role: currentUser.role,
-            status: currentUser.status,
-            additionalInfo: currentUser.additionalInfo,
-          }),
+          body: JSON.stringify(requestBody),
         });
       } else {
-        // Tạo người dùng mới
+        // Tạo người dùng mới - chỉ cần email và mật khẩu
+        requestBody = {
+          email: currentUser.email,
+          password: currentUser.password,
+          accountType: currentUser.accountType
+        };
+        
+        // Nếu là tài khoản dùng thử, thêm thời gian hết hạn
+        if (currentUser.accountType === 'trial') {
+          // Sử dụng thời gian hết hạn đã được thiết lập hoặc tạo mới nếu chưa có
+          if (!currentUser.trialEndsAt) {
+            const trialEndDate = new Date();
+            trialEndDate.setHours(trialEndDate.getHours() + 1); // Mặc định 1 giờ
+            requestBody.trialEndsAt = trialEndDate;
+          } else {
+            requestBody.trialEndsAt = currentUser.trialEndsAt;
+          }
+        }
+        
         response = await fetch('/api/users', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            email: currentUser.email,
-            password: currentUser.password,
-            displayName: currentUser.displayName,
-            phoneNumber: currentUser.phoneNumber,
-            role: currentUser.role,
-            status: currentUser.status,
-            additionalInfo: currentUser.additionalInfo,
-          }),
+          body: JSON.stringify(requestBody),
         });
       }
       
@@ -475,6 +504,76 @@ export default function UsersPage() {
     }
   };
 
+  // Kiểm tra và xóa tài khoản dùng thử đã hết hạn
+  const checkExpiredTrialAccounts = async () => {
+    try {
+      const expiredUsers = users.filter(user => 
+        user.accountType === 'trial' && 
+        user.trialEndsAt && 
+        new Date(user.trialEndsAt) < new Date()
+      );
+      
+      if (expiredUsers.length > 0) {
+        // Hiển thị thông báo về số tài khoản hết hạn
+        toast.info(`Đã phát hiện ${expiredUsers.length} tài khoản dùng thử đã hết hạn`);
+        
+        // Xóa từng tài khoản hết hạn
+        for (const user of expiredUsers) {
+          try {
+            const response = await fetch(`/api/users?id=${user.id}`, {
+              method: 'DELETE',
+            });
+            
+            if (response.ok) {
+              console.log(`Đã xóa tài khoản dùng thử hết hạn: ${user.email}`);
+            }
+          } catch (err) {
+            console.error(`Lỗi khi xóa tài khoản dùng thử hết hạn ${user.email}:`, err);
+          }
+        }
+        
+        // Làm mới danh sách sau khi xóa
+        fetchUsers();
+      }
+    } catch (err) {
+      console.error('Lỗi khi kiểm tra tài khoản dùng thử hết hạn:', err);
+    }
+  };
+
+  // Kiểm tra tài khoản hết hạn khi component được tạo và sau mỗi lần fetch users
+  useEffect(() => {
+    if (users.length > 0 && !loading) {
+      checkExpiredTrialAccounts();
+    }
+  }, [users, loading]);
+
+  // Định dạng thời gian còn lại của tài khoản dùng thử
+  const formatRemainingTime = (trialEndsAt) => {
+    if (!trialEndsAt) return null;
+    
+    const endDate = new Date(trialEndsAt);
+    const now = new Date();
+    
+    if (endDate <= now) {
+      return 'Đã hết hạn';
+    }
+    
+    const diffTime = Math.abs(endDate - now);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays > 1) {
+      return `Còn ${diffDays} ngày`;
+    } else {
+      const diffHours = Math.ceil(diffTime / (1000 * 60 * 60));
+      if (diffHours > 0) {
+        return `Còn ${diffHours} giờ`;
+      } else {
+        const diffMinutes = Math.ceil(diffTime / (1000 * 60));
+        return `Còn ${diffMinutes} phút`;
+      }
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Toaster cho thông báo */}
@@ -554,7 +653,7 @@ export default function UsersPage() {
               />
             </div>
             <div>
-                                  <select
+              <select
                 value={roleFilter}
                 onChange={(e) => setRoleFilter(e.target.value)}
                 className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
@@ -563,6 +662,7 @@ export default function UsersPage() {
                 <option value="admin">Quản trị viên</option>
                 <option value="user">Người dùng</option>
                 <option value="editor">Biên tập viên</option>
+                <option value="trial">Dùng thử</option>
               </select>
             </div>
           </div>
@@ -634,6 +734,18 @@ export default function UsersPage() {
                                     <EnvelopeIcon className="h-4 w-4" />
                                   </button>
                                 </span>}
+                              {user.accountType === 'trial' && user.trialEndsAt && (
+                                <div className="mt-1 flex items-center text-xs">
+                                  <ClockIcon className="h-3 w-3 mr-1 text-orange-500" />
+                                  <span className={`${
+                                    new Date(user.trialEndsAt) < new Date() 
+                                      ? 'text-red-500' 
+                                      : 'text-orange-500'
+                                  }`}>
+                                    {formatRemainingTime(user.trialEndsAt)}
+                                  </span>
+                                </div>
+                              )}
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap hidden">
@@ -686,28 +798,6 @@ export default function UsersPage() {
                                   : 'bg-green-100 text-green-800'
                               }`}>
                                 {user.disabled || user.status === 'inactive' ? 'Vô hiệu hóa' : 'Đang hoạt động'}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap hidden">
-                            <div className="flex items-center">
-                              <button
-                                onClick={() => handleToggleViewAllCourses(user.id, user.canViewAllCourses)}
-                                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
-                                  user.canViewAllCourses ? 'bg-indigo-600' : 'bg-gray-200'
-                                }`}
-                                role="switch"
-                                aria-checked={user.canViewAllCourses}
-                              >
-                                <span
-                                  aria-hidden="true"
-                                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                                    user.canViewAllCourses ? 'translate-x-5' : 'translate-x-0'
-                                  }`}
-                                ></span>
-                              </button>
-                              <span className="ml-2 text-xs">
-                                {user.canViewAllCourses ? 'Có' : 'Không'}
                               </span>
                             </div>
                           </td>
@@ -788,6 +878,18 @@ export default function UsersPage() {
                                   <EnvelopeIcon className="h-4 w-4" />
                                 </button>
                               </span>}
+                            {user.accountType === 'trial' && user.trialEndsAt && (
+                              <div className="mt-1 flex items-center text-xs">
+                                <ClockIcon className="h-3 w-3 mr-1 text-orange-500" />
+                                <span className={`${
+                                  new Date(user.trialEndsAt) < new Date() 
+                                    ? 'text-red-500' 
+                                    : 'text-orange-500'
+                                }`}>
+                                  {formatRemainingTime(user.trialEndsAt)}
+                                </span>
+                              </div>
+                            )}
                           </div>
                         </div>
                         
@@ -928,90 +1030,133 @@ export default function UsersPage() {
                   </div>
                 )}
                 
-                {/* Tên hiển thị */}
+                {/* Loại tài khoản */}
                 <div>
-                  <label htmlFor="displayName" className="block text-sm font-medium text-gray-700">
-                    Tên hiển thị
-                  </label>
-                  <input
-                    type="text"
-                    id="displayName"
-                    value={currentUser.displayName || ''}
-                    onChange={(e) => setCurrentUser({...currentUser, displayName: e.target.value})}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                  />
-                </div>
-                
-                {/* Số điện thoại */}
-                <div>
-                  <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700">
-                    Số điện thoại
-                  </label>
-                  <input
-                    type="tel"
-                    id="phoneNumber"
-                    value={currentUser.phoneNumber || ''}
-                    onChange={(e) => setCurrentUser({...currentUser, phoneNumber: e.target.value})}
-                    placeholder="+84..."
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                  />
-                  <p className="mt-1 text-xs text-gray-500">Định dạng quốc tế: +84xxxxxxxxx</p>
-                </div>
-                
-                {/* Vai trò */}
-                <div>
-                  <label htmlFor="role" className="block text-sm font-medium text-gray-700">
-                    Vai trò
+                  <label htmlFor="accountType" className="block text-sm font-medium text-gray-700">
+                    Loại tài khoản
                   </label>
                   <select
-                    id="role"
-                    value={currentUser.role || 'user'}
-                    onChange={(e) => setCurrentUser({...currentUser, role: e.target.value})}
+                    id="accountType"
+                    value={currentUser.accountType || 'regular'}
+                    onChange={(e) => {
+                      const newType = e.target.value;
+                      setCurrentUser({...currentUser, accountType: newType});
+                      
+                      // Nếu chuyển sang tài khoản dùng thử, tự động thiết lập thời gian hết hạn
+                      if (newType === 'trial') {
+                        const trialEndDate = new Date();
+                        trialEndDate.setHours(trialEndDate.getHours() + 1); // Mặc định 1 giờ
+                        setCurrentUser(prev => ({
+                          ...prev, 
+                          accountType: newType,
+                          trialEndsAt: trialEndDate
+                        }));
+                      }
+                    }}
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                   >
-                    <option value="user">Người dùng</option>
-                    <option value="editor">Biên tập viên</option>
-                    <option value="admin">Quản trị viên</option>
+                    <option value="regular">Thường</option>
+                    <option value="trial">Dùng thử (1 giờ)</option>
                   </select>
                 </div>
                 
-                {/* Trạng thái */}
-                <div>
-                  <label htmlFor="status" className="block text-sm font-medium text-gray-700">
-                    Trạng thái
-                  </label>
-                  <select
-                    id="status"
-                    value={currentUser.status || 'active'}
-                    onChange={(e) => setCurrentUser({...currentUser, status: e.target.value})}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                  >
-                    <option value="active">Đang hoạt động</option>
-                    <option value="inactive">Vô hiệu hóa</option>
-                  </select>
-                </div>
+                {/* Hiển thị thời gian hết hạn nếu là tài khoản dùng thử */}
+                {currentUser.accountType === 'trial' && currentUser.trialEndsAt && (
+                  <div className="mt-2 text-xs text-orange-500">
+                    Tài khoản sẽ hết hạn vào: {new Date(currentUser.trialEndsAt).toLocaleDateString('vi-VN')} {new Date(currentUser.trialEndsAt).toLocaleTimeString('vi-VN')}
+                  </div>
+                )}
                 
-                {/* Quyền xem tất cả khóa học */}
-                <div className="flex items-start">
-                  <div className="flex items-center h-5">
-                    <input
-                      id="canViewAllCourses"
-                      name="canViewAllCourses"
-                      type="checkbox"
-                      checked={currentUser.canViewAllCourses || false}
-                      onChange={(e) => setCurrentUser({...currentUser, canViewAllCourses: e.target.checked})}
-                      className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"
-                    />
-                  </div>
-                  <div className="ml-3 text-sm">
-                    <label htmlFor="canViewAllCourses" className="font-medium text-gray-700">
-                      Quyền xem tất cả khóa học
-                    </label>
-                    <p className="text-gray-500">
-                      Cho phép người dùng này xem nội dung của tất cả khóa học mà không cần đăng ký
-                    </p>
-                  </div>
-                </div>
+                {/* Chỉ hiển thị các trường khác khi đang chỉnh sửa người dùng */}
+                {currentUser.id && (
+                  <>
+                    {/* Tên hiển thị */}
+                    <div>
+                      <label htmlFor="displayName" className="block text-sm font-medium text-gray-700">
+                        Tên hiển thị
+                      </label>
+                      <input
+                        type="text"
+                        id="displayName"
+                        value={currentUser.displayName || ''}
+                        onChange={(e) => setCurrentUser({...currentUser, displayName: e.target.value})}
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                      />
+                    </div>
+                    
+                    {/* Số điện thoại */}
+                    <div>
+                      <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700">
+                        Số điện thoại
+                      </label>
+                      <input
+                        type="tel"
+                        id="phoneNumber"
+                        value={currentUser.phoneNumber || ''}
+                        onChange={(e) => setCurrentUser({...currentUser, phoneNumber: e.target.value})}
+                        placeholder="+84..."
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                      />
+                      <p className="mt-1 text-xs text-gray-500">Định dạng quốc tế: +84xxxxxxxxx</p>
+                    </div>
+                    
+                    {/* Vai trò */}
+                    <div>
+                      <label htmlFor="role" className="block text-sm font-medium text-gray-700">
+                        Vai trò
+                      </label>
+                      <select
+                        id="role"
+                        value={currentUser.role || 'user'}
+                        onChange={(e) => setCurrentUser({...currentUser, role: e.target.value})}
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                      >
+                        <option value="user">Người dùng</option>
+                        <option value="editor">Biên tập viên</option>
+                        <option value="admin">Quản trị viên</option>
+                        <option value="trial">Dùng thử</option>
+                      </select>
+                    </div>
+                    
+                    {/* Trạng thái */}
+                    <div>
+                      <label htmlFor="status" className="block text-sm font-medium text-gray-700">
+                        Trạng thái
+                      </label>
+                      <select
+                        id="status"
+                        value={currentUser.status || 'active'}
+                        onChange={(e) => setCurrentUser({...currentUser, status: e.target.value})}
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                      >
+                        <option value="active">Đang hoạt động</option>
+                        <option value="inactive">Vô hiệu hóa</option>
+                      </select>
+                    </div>
+                    
+                    {/* Quyền xem tất cả khóa học */}
+                    <div className="flex items-start">
+                      <div className="flex items-center h-5">
+                        <input
+                          id="canViewAllCourses"
+                          name="canViewAllCourses"
+                          type="checkbox"
+                          checked={currentUser.canViewAllCourses || false}
+                          onChange={(e) => setCurrentUser({...currentUser, canViewAllCourses: e.target.checked})}
+                          className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"
+                        />
+                      </div>
+                      <div className="ml-3 text-sm">
+                        <label htmlFor="canViewAllCourses" className="font-medium text-gray-700">
+                          Quyền xem tất cả khóa học
+                        </label>
+                        <p className="text-gray-500">
+                          Cho phép người dùng này xem nội dung của tất cả khóa học mà không cần đăng ký
+                        </p>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
               
               <div className="px-6 py-4 bg-gray-50 flex justify-end space-x-3 rounded-b-lg">
