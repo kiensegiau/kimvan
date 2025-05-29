@@ -112,6 +112,7 @@ export default function UsersPage() {
       accountType: 'regular', // Loại tài khoản mặc định
       trialEndsAt: null, // Ngày hết hạn dùng thử
     });
+    setTrialHours(1); // Đặt lại thời gian dùng thử mặc định
     setShowModal(true);
     setApiError(null);
   };
@@ -161,14 +162,10 @@ export default function UsersPage() {
       
       // Nếu là tài khoản dùng thử, thêm thời gian hết hạn
       if (currentUser.accountType === 'trial') {
-        // Sử dụng thời gian hết hạn đã được thiết lập hoặc tạo mới nếu chưa có
-        if (!currentUser.trialEndsAt) {
-          const trialEndDate = new Date();
-          trialEndDate.setHours(trialEndDate.getHours() + 1); // Mặc định 1 giờ
-          requestBody.trialEndsAt = trialEndDate;
-        } else {
-          requestBody.trialEndsAt = currentUser.trialEndsAt;
-        }
+        // Tạo thời gian hết hạn dựa trên số giờ đã chọn
+        const trialEndDate = new Date();
+        trialEndDate.setHours(trialEndDate.getHours() + trialHours);
+        requestBody.trialEndsAt = trialEndDate;
       } else {
         requestBody.trialEndsAt = null;
       }
@@ -193,14 +190,10 @@ export default function UsersPage() {
         
         // Nếu là tài khoản dùng thử, thêm thời gian hết hạn
         if (currentUser.accountType === 'trial') {
-          // Sử dụng thời gian hết hạn đã được thiết lập hoặc tạo mới nếu chưa có
-          if (!currentUser.trialEndsAt) {
-            const trialEndDate = new Date();
-            trialEndDate.setHours(trialEndDate.getHours() + 1); // Mặc định 1 giờ
-            requestBody.trialEndsAt = trialEndDate;
-          } else {
-            requestBody.trialEndsAt = currentUser.trialEndsAt;
-          }
+          // Tạo thời gian hết hạn dựa trên số giờ đã chọn
+          const trialEndDate = new Date();
+          trialEndDate.setHours(trialEndDate.getHours() + trialHours);
+          requestBody.trialEndsAt = trialEndDate;
         }
         
         response = await fetch('/api/users', {
@@ -1120,7 +1113,7 @@ export default function UsersPage() {
                       // Nếu chuyển sang tài khoản dùng thử, tự động thiết lập thời gian hết hạn và quyền xem tất cả khóa học
                       if (newType === 'trial') {
                         const trialEndDate = new Date();
-                        trialEndDate.setHours(trialEndDate.getHours() + 1); // Mặc định 1 giờ
+                        trialEndDate.setHours(trialEndDate.getHours() + trialHours); // Sử dụng trialHours
                         setCurrentUser(prev => ({
                           ...prev, 
                           accountType: newType,
@@ -1134,9 +1127,37 @@ export default function UsersPage() {
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                   >
                     <option value="regular">Thường</option>
-                    <option value="trial">Dùng thử (1 giờ)</option>
+                    <option value="trial">Dùng thử</option>
                   </select>
                 </div>
+                
+                {/* Thời gian dùng thử - chỉ hiển thị khi chọn loại tài khoản dùng thử */}
+                {currentUser.accountType === 'trial' && (
+                  <div>
+                    <label htmlFor="trialHours" className="block text-sm font-medium text-gray-700">
+                      Thời gian dùng thử
+                    </label>
+                    <select
+                      id="trialHours"
+                      value={trialHours}
+                      onChange={(e) => {
+                        const hours = parseInt(e.target.value);
+                        setTrialHours(hours);
+                        
+                        // Cập nhật thời gian hết hạn
+                        const trialEndDate = new Date();
+                        trialEndDate.setHours(trialEndDate.getHours() + hours);
+                        setCurrentUser({...currentUser, trialEndsAt: trialEndDate});
+                      }}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    >
+                      <option value="1">1 giờ</option>
+                      <option value="2">2 giờ</option>
+                      <option value="6">6 giờ</option>
+                      <option value="24">1 ngày</option>
+                    </select>
+                  </div>
+                )}
                 
                 {/* Hiển thị thời gian hết hạn nếu là tài khoản dùng thử */}
                 {currentUser.accountType === 'trial' && currentUser.trialEndsAt && (
