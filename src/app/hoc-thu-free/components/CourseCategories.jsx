@@ -595,15 +595,15 @@ const CourseCategories = () => {
                 <div className={`md:w-2/5 h-60 md:h-auto bg-gradient-to-br ${colors.gradientDarkFrom} ${colors.gradientDarkTo} relative overflow-hidden`}>
                   <div className="absolute inset-0 bg-black opacity-20"></div>
                   <div className="absolute top-4 left-4">
-                    <span className="bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wider">Nổi bật</span>
+                    <span className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm text-gray-900 dark:text-white text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wider shadow-sm">Nổi bật</span>
                   </div>
-                  <div className="absolute bottom-0 left-0 w-full p-6 text-white">
-                    <h4 className="text-xl font-bold mb-1">{course.teacher}</h4>
+                  <div className="absolute bottom-0 left-0 w-full p-6 bg-gradient-to-t from-black/70 to-transparent">
+                    <h4 className="text-xl font-bold mb-2 text-white">{course.teacher}</h4>
                     <p className="text-white text-opacity-90 text-sm">{course.description}</p>
                   </div>
                 </div>
                 
-                <div className="p-6 md:p-8 md:w-3/5 flex flex-col justify-between">
+                <div className="p-6 md:p-8 md:w-3/5 flex flex-col justify-between bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900">
                   <div>
                     <div className="flex items-center mb-4">
                       <div className="flex items-center">
@@ -619,18 +619,32 @@ const CourseCategories = () => {
                     </div>
                     
                     <div className="grid grid-cols-2 gap-4 mb-6">
-                      <div className="bg-gray-50 dark:bg-gray-800/80 p-3 rounded-lg">
-                        <div className="text-gray-500 dark:text-gray-400 text-xs mb-1">Số bài học</div>
-                        <div className="text-gray-900 dark:text-white font-bold">{course.lessons} bài</div>
+                      <div className="bg-white dark:bg-gray-800/80 p-3 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
+                        <div className="flex items-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                          </svg>
+                          <div>
+                            <div className="text-gray-500 dark:text-gray-400 text-xs mb-1">Số bài học</div>
+                            <div className="text-gray-900 dark:text-white font-bold">{course.lessons} bài</div>
+                          </div>
+                        </div>
                       </div>
-                      <div className="bg-gray-50 dark:bg-gray-800/80 p-3 rounded-lg">
-                        <div className="text-gray-500 dark:text-gray-400 text-xs mb-1">Thời lượng</div>
-                        <div className="text-gray-900 dark:text-white font-bold">{course.hours} giờ</div>
+                      <div className="bg-white dark:bg-gray-800/80 p-3 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
+                        <div className="flex items-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <div>
+                            <div className="text-gray-500 dark:text-gray-400 text-xs mb-1">Thời lượng</div>
+                            <div className="text-gray-900 dark:text-white font-bold">{course.hours} giờ</div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
                   
-                  <button className={`w-full py-3.5 ${colors.bg} ${colors.bgHover} text-white font-medium rounded-xl transition-colors duration-300 flex items-center justify-center group`}>
+                  <button className={`w-full py-3.5 ${colors.bg} ${colors.bgHover} text-white font-medium rounded-xl transition-all duration-300 flex items-center justify-center group shadow-lg shadow-blue-500/20 hover:shadow-blue-600/30 transform hover:-translate-y-0.5`}>
                     Xem chi tiết khóa học
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
@@ -661,15 +675,15 @@ const CourseCategories = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.6 + index * 0.05 }}
-                className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 group flex flex-col h-full"
+                className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 group flex flex-col h-full border border-gray-100 dark:border-gray-700"
               >
-                <div className={`h-48 bg-gradient-to-r ${colors.gradientLightFrom} ${colors.gradientLightTo} relative overflow-hidden`}>
+                <div className={`h-52 bg-gradient-to-r ${colors.gradientLightFrom} ${colors.gradientLightTo} relative overflow-hidden`}>
                   {course.featured && (
                     <div className="absolute top-4 left-4">
-                      <span className="bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wider">Nổi bật</span>
+                      <span className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm text-gray-900 dark:text-white text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wider shadow-sm">Nổi bật</span>
                     </div>
                   )}
-                  <div className="absolute inset-0 bg-black opacity-10"></div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
                   <div className="absolute bottom-0 left-0 w-full p-5 text-white">
                     <h4 className="text-lg font-bold mb-1 group-hover:translate-x-1 transition-transform duration-300">{course.teacher}</h4>
                     <p className="text-white text-opacity-90 text-sm line-clamp-1">{course.description}</p>
@@ -677,25 +691,25 @@ const CourseCategories = () => {
                 </div>
                 
                 <div className="p-5 flex flex-col flex-grow">
-                  <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100 dark:border-gray-700">
                     <div className="flex items-center">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                       </svg>
                       <span className="text-gray-700 dark:text-gray-300 font-bold ml-1.5 text-sm">{course.rating}</span>
                     </div>
-                    <span className="text-gray-600 dark:text-gray-400 text-xs">{course.students} học sinh</span>
+                    <span className="text-gray-600 dark:text-gray-400 text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">{course.students} học sinh</span>
                   </div>
                   
                   <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-4">
                     <div className="flex items-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                       </svg>
                       {course.lessons} bài học
                     </div>
                     <div className="flex items-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                       {course.hours} giờ
@@ -704,7 +718,7 @@ const CourseCategories = () => {
                 </div>
                 
                 <div className="px-5 pb-5 mt-auto">
-                  <button className={`w-full py-2.5 ${colors.text} hover:bg-blue-600 hover:text-white border ${colors.border} font-medium rounded-lg transition-colors duration-300 flex items-center justify-center text-sm`}>
+                  <button className={`w-full py-2.5 ${colors.text} hover:bg-blue-600 hover:text-white border ${colors.border} font-medium rounded-lg transition-all duration-300 flex items-center justify-center text-sm transform hover:-translate-y-0.5`}>
                     Xem chi tiết
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1.5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
