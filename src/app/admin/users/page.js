@@ -668,6 +668,24 @@ export default function UsersPage() {
         />
       </div>
       
+      {/* Style toàn cục cho thiết bị di động */}
+      <style jsx global>{`
+        @media (max-width: 768px) {
+          input, select, textarea {
+            font-size: 16px !important; /* Ngăn iOS tự động zoom khi focus input */
+            color: #000 !important; /* Đảm bảo màu chữ đen */
+          }
+          
+          input::placeholder {
+            color: #9CA3AF !important; /* Màu placeholder rõ ràng hơn */
+          }
+          
+          .text-gray-500 {
+            color: #6B7280 !important; /* Tăng độ tương phản cho text màu xám */
+          }
+        }
+      `}</style>
+      
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-2xl font-semibold text-gray-900">Quản lý người dùng</h1>
         <div className="flex flex-wrap gap-2">
@@ -735,7 +753,8 @@ export default function UsersPage() {
                 placeholder="Tìm kiếm người dùng..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                autoComplete="off"
+                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm text-gray-900"
               />
             </div>
             <div>
@@ -1139,7 +1158,8 @@ export default function UsersPage() {
                       value={currentUser.email || ''}
                       onChange={(e) => setCurrentUser({...currentUser, email: e.target.value})}
                       required
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                      autoComplete="off"
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm text-gray-900"
                     />
                   </div>
                 )}
@@ -1156,8 +1176,9 @@ export default function UsersPage() {
                       value={currentUser.password || ''}
                       onChange={(e) => setCurrentUser({...currentUser, password: e.target.value})}
                       required
+                      autoComplete="off"
                       minLength={6}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm text-gray-900"
                     />
                     <p className="mt-1 text-xs text-gray-500">Mật khẩu phải có ít nhất 6 ký tự</p>
                   </div>
@@ -1296,7 +1317,8 @@ export default function UsersPage() {
                         id="displayName"
                         value={currentUser.displayName || ''}
                         onChange={(e) => setCurrentUser({...currentUser, displayName: e.target.value})}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                        autoComplete="off"
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm text-gray-900"
                       />
                     </div>
                     
@@ -1311,7 +1333,8 @@ export default function UsersPage() {
                         value={currentUser.phoneNumber || ''}
                         onChange={(e) => setCurrentUser({...currentUser, phoneNumber: e.target.value})}
                         placeholder="+84..."
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                        autoComplete="off"
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm text-gray-900"
                       />
                       <p className="mt-1 text-xs text-gray-500">Định dạng quốc tế: +84xxxxxxxxx</p>
                     </div>
@@ -1425,8 +1448,9 @@ export default function UsersPage() {
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     required
+                    autoComplete="off"
                     minLength={6}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm text-gray-900"
                   />
                   <p className="mt-1 text-xs text-gray-500">Mật khẩu phải có ít nhất 6 ký tự</p>
                 </div>

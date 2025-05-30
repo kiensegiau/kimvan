@@ -107,6 +107,24 @@ function LoginForm() {
       <div className="absolute inset-0 bg-grid-slate-100 [mask-image:linear-gradient(0deg,#fff,rgba(255,255,255,0.5))] z-0"></div>
       <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 via-blue-500 to-teal-400"></div>
       
+      {/* Style toàn cục cho thiết bị di động */}
+      <style jsx global>{`
+        @media (max-width: 768px) {
+          input, select, textarea {
+            font-size: 16px !important; /* Ngăn iOS tự động zoom khi focus input */
+            color: #000 !important; /* Đảm bảo màu chữ đen */
+          }
+          
+          input::placeholder {
+            color: #9CA3AF !important; /* Màu placeholder rõ ràng hơn */
+          }
+          
+          .text-gray-500 {
+            color: #6B7280 !important; /* Tăng độ tương phản cho text màu xám */
+          }
+        }
+      `}</style>
+      
       {/* Modal đăng ký */}
       {showRegisterModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
@@ -240,7 +258,7 @@ function LoginForm() {
                       type="email"
                       autoComplete="email"
                       required
-                      className="appearance-none block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out sm:text-sm"
+                      className="appearance-none block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out sm:text-sm text-gray-900"
                       placeholder="Nhập email của bạn"
                       value={formData.email}
                       onChange={handleChange}
@@ -262,7 +280,7 @@ function LoginForm() {
                       type="password"
                       autoComplete="current-password"
                       required
-                      className="appearance-none block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out sm:text-sm"
+                      className="appearance-none block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out sm:text-sm text-gray-900"
                       placeholder="Nhập mật khẩu của bạn"
                       value={formData.password}
                       onChange={handleChange}
