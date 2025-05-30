@@ -8,12 +8,14 @@ import Roadmap from './components/Roadmap';
 import Reviews from './components/Reviews';
 import Registration from './components/Registration';
 import Footer from './components/Footer';
+import CourseCategories from './components/CourseCategories';
 
 export default function KhoaHocLive() {
   return (
     <main>
       <Header />
       <HeroSection />
+      <CourseCategories />
       <Fields />
       <Roadmap />
       <Reviews />

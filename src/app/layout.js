@@ -20,7 +20,8 @@ const authPaths = [
   '/register',
   '/forgot-password',
   '/reset-password',
-  '/logout'
+  '/logout',
+  '/hoc-thu-free'
 ];
 
 export default function RootLayout({ children }) {
