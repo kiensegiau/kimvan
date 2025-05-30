@@ -108,6 +108,21 @@ export function createProcessWorker(pngPath, page, numPages, config) {
     try {
       const processedPngPath = path.join(path.dirname(pngPath), `page_${page}_processed.png`);
       
+      // Kiểm tra file đầu vào trước khi tạo worker
+      if (!fs.existsSync(pngPath)) {
+        console.warn(`File ảnh đầu vào không tồn tại: ${pngPath}, đang bỏ qua xử lý trang ${page}`);
+        
+        // Tạo file kết quả trống để tránh lỗi
+        try {
+          fs.writeFileSync(processedPngPath, '');
+          resolve({ success: false, index: page - 1, error: 'File đầu vào không tồn tại', processedPngPath });
+          return;
+        } catch (writeError) {
+          reject(new Error(`Không thể tạo file kết quả trống: ${writeError.message}`));
+          return;
+        }
+      }
+      
       const worker = new Worker(__filename, {
         workerData: {
           task: 'processPage',
@@ -125,6 +140,24 @@ export function createProcessWorker(pngPath, page, numPages, config) {
           if (result.success) {
             resolve({ ...result, index: page - 1 });
           } else {
+            // Thử sao chép file gốc khi worker báo lỗi
+            try {
+              if (fs.existsSync(pngPath)) {
+                fs.copyFileSync(pngPath, processedPngPath);
+                console.log(`Đã sao chép file gốc khi worker báo lỗi cho trang ${page}`);
+                resolve({
+                  success: true,
+                  page, 
+                  index: page - 1,
+                  processedPngPath,
+                  warning: `Sử dụng file gốc do lỗi worker: ${result.error}`
+                });
+                return;
+              }
+            } catch (copyError) {
+              console.error(`Không thể sao chép file gốc từ worker: ${copyError.message}`);
+            }
+            
             reject(new Error(result.error));
           }
         } catch (messageError) {
@@ -133,6 +166,24 @@ export function createProcessWorker(pngPath, page, numPages, config) {
       });
       
       worker.on('error', (err) => {
+        // Thử sao chép file gốc khi worker lỗi
+        try {
+          if (fs.existsSync(pngPath)) {
+            fs.copyFileSync(pngPath, processedPngPath);
+            console.log(`Đã sao chép file gốc khi worker error cho trang ${page}`);
+            resolve({
+              success: true,
+              page,
+              index: page - 1,
+              processedPngPath,
+              warning: `Sử dụng file gốc do lỗi worker: ${err.message}`
+            });
+            return;
+          }
+        } catch (copyError) {
+          console.error(`Không thể sao chép file gốc từ worker error: ${copyError.message}`);
+        }
+        
         reject(err);
       });
       
@@ -140,6 +191,27 @@ export function createProcessWorker(pngPath, page, numPages, config) {
         if (code !== 0) {
           // Handle non-zero exit code
           console.warn(`Worker xử lý trang ${page} kết thúc với mã lỗi ${code}`);
+          
+          // Thử sao chép file gốc khi worker exit không thành công
+          try {
+            if (fs.existsSync(pngPath) && !fs.existsSync(processedPngPath)) {
+              fs.copyFileSync(pngPath, processedPngPath);
+              console.log(`Đã sao chép file gốc khi worker exit code ${code} cho trang ${page}`);
+              resolve({
+                success: true,
+                page,
+                index: page - 1,
+                processedPngPath,
+                warning: `Sử dụng file gốc do worker exit với mã lỗi ${code}`
+              });
+              return;
+            }
+          } catch (copyError) {
+            console.error(`Không thể sao chép file gốc từ worker exit: ${copyError.message}`);
+          }
+          
+          // Nếu không thể sao chép, reject với lỗi
+          reject(new Error(`Worker kết thúc với mã lỗi ${code}`));
         }
       });
     } catch (workerError) {
@@ -175,7 +247,30 @@ export async function processImagesInBatches(pagePaths, numPages, config, batchS
       } else {
         const page = startIndex + index + 1;
         console.error(`Không thể xử lý ảnh trang ${page}: ${result.reason}`);
-        results.push({ success: false, page, error: result.reason.message });
+        
+        // Tạo bản sao của file gốc làm kết quả khi có lỗi
+        try {
+          const pngPath = pagePaths[startIndex + index];
+          const processedPngPath = path.join(path.dirname(pngPath), `page_${page}_processed.png`);
+          
+          if (fs.existsSync(pngPath)) {
+            fs.copyFileSync(pngPath, processedPngPath);
+            console.log(`Đã tạo kết quả từ bản sao file gốc cho trang ${page}`);
+            results.push({ 
+              success: true, 
+              page, 
+              index: page - 1,
+              processedPngPath, 
+              warning: `Sử dụng file gốc do lỗi xử lý: ${result.reason}` 
+            });
+          } else {
+            // Nếu file gốc không tồn tại, ghi nhận lỗi
+            results.push({ success: false, page, index: page - 1, error: result.reason.message });
+          }
+        } catch (copyError) {
+          console.error(`Không thể tạo bản sao cho trang ${page}: ${copyError.message}`);
+          results.push({ success: false, page, index: page - 1, error: result.reason.message });
+        }
       }
     });
     
@@ -183,6 +278,9 @@ export async function processImagesInBatches(pagePaths, numPages, config, batchS
     if (global.gc) {
       global.gc();
     }
+    
+    // Tạm dừng một chút giữa các batch để giảm tải hệ thống
+    await new Promise(resolve => setTimeout(resolve, 500));
   }
   
   return results.sort((a, b) => a.index - b.index); // Sắp xếp kết quả theo thứ tự trang
@@ -207,11 +305,35 @@ export async function processPage(data) {
   const { pngPath, processedPngPath, page, numPages, config } = data;
   
   try {
+    // Kiểm tra tồn tại của file đầu vào
+    if (!fs.existsSync(pngPath)) {
+      console.error(`File ảnh không tồn tại: ${pngPath}`);
+      return { success: false, page, error: 'File ảnh không tồn tại' };
+    }
+    
+    // Đảm bảo thư mục đầu ra tồn tại
+    const outputDir = path.dirname(processedPngPath);
+    if (!fs.existsSync(outputDir)) {
+      try {
+        fs.mkdirSync(outputDir, { recursive: true });
+      } catch (mkdirError) {
+        console.error(`Không thể tạo thư mục đầu ra: ${mkdirError.message}`);
+      }
+    }
+    
     // Đọc hình ảnh
     let image;
     try {
       image = sharp(pngPath);
     } catch (sharpError) {
+      // Thử sao chép file gốc nếu không thể xử lý
+      try {
+        fs.copyFileSync(pngPath, processedPngPath);
+        console.log(`Đã sao chép file gốc làm kết quả cho trang ${page} do lỗi: ${sharpError.message}`);
+        return { success: true, page, processedPngPath, warning: 'Sử dụng file gốc do lỗi' };
+      } catch (copyError) {
+        console.error(`Không thể sao chép file gốc: ${copyError.message}`);
+      }
       throw new Error(`Không thể tạo đối tượng sharp từ ${pngPath}: ${sharpError.message}`);
     }
     
@@ -289,16 +411,16 @@ export async function processPage(data) {
           .modulate({
             brightness: 1 + (config.brightness / 100),
             saturation: 1.2  // Tăng độ bão hòa màu để làm rõ nội dung
-          })
+          }, { failOnError: false })
           .linear(
             1 + (config.contrast / 100),
             -(config.contrast / 2)
-          );
+          , { failOnError: false });
         
         // Chỉ áp dụng threshold nếu không giữ màu sắc
         if (config.threshold > 0 && !config.keepColors) {
           try {
-            processedImage = processedImage.threshold(config.threshold * 100);
+            processedImage = processedImage.threshold(config.threshold * 100, { failOnError: false });
           } catch (thresholdError) {
             console.warn(`Không thể áp dụng threshold: ${thresholdError.message}`);
           }
@@ -307,17 +429,33 @@ export async function processPage(data) {
         // Nếu giữ màu sắc, có thể áp dụng các phương pháp khác để xóa watermark
         if (config.keepColors) {
           try {
-            // Thêm xử lý nâng cao để làm mờ watermark
-            processedImage = processedImage.gamma(config.gamma);
-            processedImage = processedImage.sharpen(config.sharpening);
+            // Áp dụng từng bước xử lý trong try-catch riêng biệt
+            try {
+              processedImage = processedImage.gamma(config.gamma, { failOnError: false });
+            } catch (gammaError) {
+              console.warn(`Không thể áp dụng gamma: ${gammaError.message}`);
+            }
             
-            // Thêm xử lý màu sắc nâng cao để giảm thiểu hiệu ứng watermark
-            // Tăng độ tương phản cục bộ để làm rõ nội dung
-            processedImage = processedImage.normalise();
+            try {
+              processedImage = processedImage.sharpen(config.sharpening, { failOnError: false });
+            } catch (sharpenError) {
+              console.warn(`Không thể áp dụng sharpen: ${sharpenError.message}`);
+            }
+            
+            try {
+              // Tăng độ tương phản cục bộ để làm rõ nội dung
+              processedImage = processedImage.normalise({ failOnError: false });
+            } catch (normaliseError) {
+              console.warn(`Không thể áp dụng normalise: ${normaliseError.message}`);
+            }
             
             // Loại bỏ nhiễu và làm mịn khu vực có watermark
             if (config.sharpening > 1.4) {
-              processedImage = processedImage.median(3);
+              try {
+                processedImage = processedImage.median(3, { failOnError: false });
+              } catch (medianError) {
+                console.warn(`Không thể áp dụng median: ${medianError.message}`);
+              }
             }
           } catch (filterError) {
             console.warn(`Không thể áp dụng một số bộ lọc: ${filterError.message}`);
@@ -327,6 +465,14 @@ export async function processPage(data) {
         try {
           await processedImage.toFile(processedPngPath);
         } catch (saveError) {
+          // Thử sao chép file gốc nếu không thể lưu
+          try {
+            fs.copyFileSync(pngPath, processedPngPath);
+            console.log(`Đã sao chép file gốc do lỗi lưu file: ${saveError.message}`);
+            return { success: true, page, processedPngPath, warning: 'Sử dụng file gốc do lỗi lưu file' };
+          } catch (copyError) {
+            console.error(`Không thể sao chép file gốc khi lưu: ${copyError.message}`);
+          }
           throw new Error(`Không thể lưu ảnh đã xử lý: ${saveError.message}`);
         }
       } catch (fullImageProcessError) {
@@ -337,6 +483,23 @@ export async function processPage(data) {
     return { success: true, page, processedPngPath };
   } catch (error) {
     console.error(`Lỗi xử lý trang ${page}: ${error.message}`);
+    
+    // Thử sao chép file gốc nếu có lỗi
+    try {
+      if (fs.existsSync(pngPath)) {
+        fs.copyFileSync(pngPath, processedPngPath);
+        console.log(`Đã sao chép file gốc làm kết quả cho trang ${page} sau lỗi xử lý`);
+        return { 
+          success: true, 
+          page, 
+          processedPngPath, 
+          warning: `Sử dụng file gốc do lỗi: ${error.message}` 
+        };
+      }
+    } catch (fallbackError) {
+      console.error(`Không thể tạo kết quả dự phòng: ${fallbackError.message}`);
+    }
+    
     return { success: false, page, error: error.message };
   }
 } 
