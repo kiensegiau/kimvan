@@ -31,6 +31,8 @@ export async function verifyServerAuthToken(token) {
   if (!token) return null;
   
   try {
+    console.log('🔍 verifyServerAuthToken: Bắt đầu xác thực token');
+    
     // Kiểm tra cache trước
     if (tokenCache.has(token)) {
       const cachedData = tokenCache.get(token);
@@ -38,18 +40,24 @@ export async function verifyServerAuthToken(token) {
       
       // Nếu token trong cache vẫn còn hạn, sử dụng lại
       if (now - cachedData.timestamp < TOKEN_CACHE_MAX_AGE) {
+        console.log('✅ verifyServerAuthToken: Sử dụng token từ cache');
         return cachedData.user;
       } else {
         // Xóa token hết hạn
+        console.log('⏱️ verifyServerAuthToken: Token trong cache đã hết hạn, xóa khỏi cache');
         tokenCache.delete(token);
       }
     }
     
+    console.log('🔄 verifyServerAuthToken: Đang xác thực token với Firebase Admin...');
     // Xác thực token với Firebase Admin
     const decodedToken = await firebaseAdmin.auth().verifyIdToken(token);
     const uid = decodedToken.uid;
     
+    console.log(`✅ verifyServerAuthToken: Token hợp lệ cho người dùng ${uid}`);
+    
     // Lấy thông tin người dùng từ uid
+    console.log('👤 verifyServerAuthToken: Đang lấy thông tin người dùng...');
     const userRecord = await firebaseAdmin.auth().getUser(uid);
     
     const user = {
@@ -63,15 +71,18 @@ export async function verifyServerAuthToken(token) {
       tokenExpiration: decodedToken.exp * 1000, // Chuyển từ giây sang mili giây
     };
     
+    console.log(`✅ verifyServerAuthToken: Xác thực thành công, token hết hạn vào: ${new Date(user.tokenExpiration).toLocaleString()}`);
+    
     // Lưu kết quả xác thực vào cache
     tokenCache.set(token, {
       user,
       timestamp: Date.now()
     });
+    console.log('💾 verifyServerAuthToken: Đã lưu kết quả xác thực vào cache');
     
     return user;
   } catch (error) {
-    console.error('Lỗi xác thực token:', error.message);
+    console.error('❌ verifyServerAuthToken: Lỗi xác thực token:', error.message);
     return null;
   }
 }

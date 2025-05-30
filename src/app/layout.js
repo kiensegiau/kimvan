@@ -66,12 +66,18 @@ export default function RootLayout({ children }) {
 
   // Thêm cơ chế tự động làm mới token
   useEffect(() => {
+    console.log('🔄 layout.js: Đang thiết lập cơ chế tự động làm mới token');
+    
     // Thiết lập interval kiểm tra token mỗi 15 phút
     const intervalId = setupTokenRefreshInterval(15);
+    console.log(`⏱️ layout.js: Đã thiết lập interval làm mới token với ID: ${intervalId}`);
     
     // Dọn dẹp khi component unmount
     return () => {
-      if (intervalId) clearInterval(intervalId);
+      if (intervalId) {
+        console.log(`🛑 layout.js: Dọn dẹp interval làm mới token với ID: ${intervalId}`);
+        clearInterval(intervalId);
+      }
     };
   }, []);
 

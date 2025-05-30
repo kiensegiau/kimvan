@@ -263,6 +263,7 @@ export const onAuthStateChanged = (callback) => {
  */
 export const refreshToken = async (rememberMe = true) => {
   try {
+    console.log('🔄 Bắt đầu quá trình làm mới token');
     // Gọi API làm mới token
     const response = await fetch('/api/auth/refresh-token', {
       method: 'POST',
@@ -273,15 +274,18 @@ export const refreshToken = async (rememberMe = true) => {
       credentials: 'same-origin'
     });
     
+    console.log('🔄 Đã nhận phản hồi từ API làm mới token:', response.status, response.statusText);
     const data = await response.json();
+    console.log('🔄 Dữ liệu phản hồi:', data);
     
     if (!response.ok) {
       throw new Error(data.error || 'Không thể làm mới token');
     }
     
+    console.log('✅ Làm mới token thành công');
     return true;
   } catch (error) {
-    console.error('Lỗi làm mới token:', error);
+    console.error('❌ Lỗi làm mới token:', error);
     return false;
   }
 };
@@ -293,6 +297,7 @@ export const refreshToken = async (rememberMe = true) => {
  */
 export const checkAndRefreshTokenIfNeeded = async (thresholdMinutes = 30) => {
   try {
+    console.log('🔍 Bắt đầu kiểm tra token...');
     // Gọi API kiểm tra token
     const response = await fetch('/api/auth/verify', {
       method: 'POST',
@@ -302,17 +307,19 @@ export const checkAndRefreshTokenIfNeeded = async (thresholdMinutes = 30) => {
       credentials: 'same-origin'
     });
     
+    console.log('🔍 Đã nhận phản hồi từ API verify:', response.status, response.statusText);
     const data = await response.json();
+    console.log('🔍 Dữ liệu phản hồi verify:', data);
     
     if (!response.ok || !data.valid) {
-      console.log('Token không hợp lệ hoặc đã hết hạn');
+      console.log('❌ Token không hợp lệ hoặc đã hết hạn');
       return false;
     }
     
     // Kiểm tra thời gian còn lại của token
     const user = data.user;
     if (!user || !user.tokenExpiration) {
-      console.log('Không có thông tin về thời hạn token');
+      console.log('❓ Không có thông tin về thời hạn token');
       return false;
     }
     
@@ -320,17 +327,19 @@ export const checkAndRefreshTokenIfNeeded = async (thresholdMinutes = 30) => {
     const thresholdMs = thresholdMinutes * 60 * 1000;
     const timeLeft = user.tokenExpiration - now;
     
+    console.log(`🕒 Thời gian còn lại của token: ${Math.floor(timeLeft / 60000)} phút (ngưỡng: ${thresholdMinutes} phút)`);
+    
     // Nếu token sắp hết hạn, làm mới token
     if (timeLeft < thresholdMs) {
-      console.log(`Token sắp hết hạn (còn ${Math.floor(timeLeft / 60000)} phút), tiến hành làm mới`);
+      console.log(`⚠️ Token sắp hết hạn (còn ${Math.floor(timeLeft / 60000)} phút), tiến hành làm mới`);
       return await refreshToken(true); // Sử dụng thời gian sống dài
     }
     
     // Token vẫn còn hiệu lực và chưa cần làm mới
-    console.log(`Token còn hiệu lực (còn ${Math.floor(timeLeft / 60000)} phút)`);
+    console.log(`✅ Token còn hiệu lực (còn ${Math.floor(timeLeft / 60000)} phút)`);
     return true;
   } catch (error) {
-    console.error('Lỗi kiểm tra thời hạn token:', error);
+    console.error('❌ Lỗi kiểm tra thời hạn token:', error);
     return false;
   }
 };
@@ -343,19 +352,25 @@ export const checkAndRefreshTokenIfNeeded = async (thresholdMinutes = 30) => {
 export const setupTokenRefreshInterval = (intervalMinutes = 15) => {
   if (typeof window === 'undefined') return null;
   
+  console.log(`⏱️ Thiết lập kiểm tra token định kỳ mỗi ${intervalMinutes} phút`);
+  
   // Chuyển đổi phút thành mili giây
   const intervalMs = intervalMinutes * 60 * 1000;
   
   // Thiết lập interval để kiểm tra và làm mới token định kỳ
   const intervalId = setInterval(async () => {
+    console.log(`⏰ Đang thực hiện kiểm tra token định kỳ (${new Date().toLocaleTimeString()})`);
     const user = getCurrentUser();
     if (user) {
+      console.log('👤 Tìm thấy người dùng, tiến hành kiểm tra token');
       await checkAndRefreshTokenIfNeeded();
     } else {
       // Nếu không có người dùng, hủy interval
+      console.log('⛔ Không tìm thấy người dùng, hủy interval kiểm tra token');
       clearInterval(intervalId);
     }
   }, intervalMs);
   
+  console.log(`✅ Đã thiết lập interval kiểm tra token với ID: ${intervalId}`);
   return intervalId;
 }; 
