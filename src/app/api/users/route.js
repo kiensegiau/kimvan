@@ -392,7 +392,10 @@ export async function DELETE(request) {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
+    console.log(`[DELETE] Đang xóa người dùng với ID: ${id}`);
+
     if (!id) {
+      console.log('[DELETE] Lỗi: Thiếu ID người dùng');
       return NextResponse.json({ 
         success: false, 
         error: 'Thiếu ID người dùng' 
@@ -404,21 +407,30 @@ export async function DELETE(request) {
     const db = client.db(process.env.MONGODB_DB || 'kimvan');
     
     try {
+      console.log(`[DELETE] Đang xóa người dùng trong Firebase Auth: ${id}`);
       // Xóa người dùng trong Firebase Auth
       await admin.auth().deleteUser(id);
+      console.log(`[DELETE] Đã xóa người dùng trong Firebase Auth thành công: ${id}`);
       
+      console.log(`[DELETE] Đang xóa thông tin người dùng trong MongoDB: ${id}`);
       // Xóa thông tin trong MongoDB
-      await db.collection('users').deleteOne({ firebaseId: id });
+      const deleteResult = await db.collection('users').deleteOne({ firebaseId: id });
+      console.log(`[DELETE] Kết quả xóa trong MongoDB:`, deleteResult);
 
       return NextResponse.json({ 
         success: true,
         message: 'Xóa người dùng thành công'
       });
     } catch (error) {
+      console.error(`[DELETE] Lỗi khi xóa người dùng: ${error.code || 'unknown'}`, error);
+      
       // Xử lý lỗi Firebase Auth
       if (error.code === 'auth/user-not-found') {
+        console.log(`[DELETE] Người dùng không tồn tại trong Firebase, tiếp tục xóa trong MongoDB: ${id}`);
         // Nếu không tìm thấy trong Firebase, vẫn xóa trong MongoDB
-        await db.collection('users').deleteOne({ firebaseId: id });
+        const deleteResult = await db.collection('users').deleteOne({ firebaseId: id });
+        console.log(`[DELETE] Kết quả xóa trong MongoDB (sau lỗi Firebase):`, deleteResult);
+        
         return NextResponse.json({ 
           success: true,
           message: 'Xóa thông tin người dùng thành công'

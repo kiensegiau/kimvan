@@ -29,6 +29,7 @@ export default function UsersPage() {
   const [addingCourse, setAddingCourse] = useState(false);
   const [courseError, setCourseError] = useState(null);
   const [trialHours, setTrialHours] = useState(1); // Số giờ dùng thử mặc định (1 giờ)
+  const [checkingExpired, setCheckingExpired] = useState(false);
 
   // Hàm lấy danh sách người dùng
   const fetchUsers = async () => {
@@ -509,27 +510,52 @@ export default function UsersPage() {
   };
 
   // Kiểm tra và xóa tài khoản dùng thử đã hết hạn
-  const checkExpiredTrialAccounts = async () => {
+  const checkExpiredTrialAccounts = async (showToast = true) => {
     try {
-      const expiredUsers = users.filter(user => 
-        user.accountType === 'trial' && 
-        user.trialEndsAt && 
-        new Date(user.trialEndsAt) < new Date()
-      );
+      console.log('Đang kiểm tra tài khoản dùng thử hết hạn...');
+      setCheckingExpired(true);
+      
+      const expiredUsers = users.filter(user => {
+        // Kiểm tra chi tiết điều kiện để debug
+        const isTrial = user.accountType === 'trial';
+        const hasTrialEndsAt = !!user.trialEndsAt;
+        const isExpired = user.trialEndsAt && new Date(user.trialEndsAt) < new Date();
+        
+        console.log(`User ${user.email}: isTrial=${isTrial}, hasTrialEndsAt=${hasTrialEndsAt}, isExpired=${isExpired}, trialEndsAt=${user.trialEndsAt}`);
+        
+        return isTrial && hasTrialEndsAt && isExpired;
+      });
+      
+      console.log(`Phát hiện ${expiredUsers.length} tài khoản hết hạn`);
       
       if (expiredUsers.length > 0) {
         // Hiển thị thông báo về số tài khoản hết hạn
-        toast.info(`Đã phát hiện ${expiredUsers.length} tài khoản dùng thử đã hết hạn`);
+        if (showToast) {
+          toast(`Đã phát hiện ${expiredUsers.length} tài khoản dùng thử đã hết hạn`, {
+            icon: 'ℹ️',
+            style: {
+              borderRadius: '10px',
+              background: '#3b82f6',
+              color: '#fff',
+            },
+          });
+        }
         
         // Xóa từng tài khoản hết hạn
         for (const user of expiredUsers) {
           try {
+            console.log(`Đang xóa tài khoản hết hạn: ${user.email} (ID: ${user.id})`);
+            
             const response = await fetch(`/api/users?id=${user.id}`, {
               method: 'DELETE',
             });
             
+            const responseData = await response.json();
+            
             if (response.ok) {
-              console.log(`Đã xóa tài khoản dùng thử hết hạn: ${user.email}`);
+              console.log(`Đã xóa tài khoản dùng thử hết hạn: ${user.email}`, responseData);
+            } else {
+              console.error(`Lỗi khi xóa tài khoản dùng thử hết hạn ${user.email}:`, responseData);
             }
           } catch (err) {
             console.error(`Lỗi khi xóa tài khoản dùng thử hết hạn ${user.email}:`, err);
@@ -538,10 +564,22 @@ export default function UsersPage() {
         
         // Làm mới danh sách sau khi xóa
         fetchUsers();
+      } else if (showToast) {
+        toast.success('Không có tài khoản dùng thử nào hết hạn');
       }
     } catch (err) {
       console.error('Lỗi khi kiểm tra tài khoản dùng thử hết hạn:', err);
+      if (showToast) {
+        toast.error(`Lỗi khi kiểm tra: ${err.message}`);
+      }
+    } finally {
+      setCheckingExpired(false);
     }
+  };
+
+  // Hàm kiểm tra tài khoản hết hạn thủ công
+  const handleCheckExpiredAccounts = () => {
+    checkExpiredTrialAccounts(true);
   };
 
   // Kiểm tra tài khoản hết hạn khi component được tạo và sau mỗi lần fetch users
@@ -558,15 +596,21 @@ export default function UsersPage() {
       checkExpiredTrialAccounts();
     }
     
+    console.log('Thiết lập kiểm tra tài khoản hết hạn mỗi phút');
+    
     // Thiết lập kiểm tra định kỳ mỗi phút
     const intervalId = setInterval(() => {
+      console.log('Đang chạy kiểm tra định kỳ tài khoản hết hạn...');
       if (users.length > 0) {
         checkExpiredTrialAccounts();
       }
     }, 60 * 1000); // 60 giây = 1 phút
     
     // Xóa interval khi component bị hủy
-    return () => clearInterval(intervalId);
+    return () => {
+      console.log('Hủy interval kiểm tra tài khoản hết hạn');
+      clearInterval(intervalId);
+    };
   }, [users]); // Chỉ chạy lại khi danh sách users thay đổi
 
   // Định dạng thời gian còn lại của tài khoản dùng thử
@@ -633,6 +677,26 @@ export default function UsersPage() {
           >
             <ArrowPathIcon className="-ml-1 mr-1 h-5 w-5 text-gray-500" />
             Làm mới
+          </button>
+          <button
+            onClick={handleCheckExpiredAccounts}
+            disabled={checkingExpired}
+            className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            {checkingExpired ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Đang kiểm tra...
+              </>
+            ) : (
+              <>
+                <ClockIcon className="-ml-1 mr-1 h-5 w-5 text-gray-500" />
+                Kiểm tra tài khoản hết hạn
+              </>
+            )}
           </button>
           <button
             onClick={handleAdd}
