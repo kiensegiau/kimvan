@@ -346,19 +346,30 @@ export async function POST(request, { params }) {
           console.log(`Đang xử lý link: ${link.url}`);
           const apiUrl = new URL('/api/drive/remove-watermark', request.url).toString();
           
-          // Tạo AbortController với timeout dài hơn (15 phút)
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 15 * 60 * 1000); // 15 phút
-          
           try {
             // Thêm retry logic
             let retryCount = 0;
-            const maxRetries = 2;
+            const maxRetries = 5; // Tăng số lần retry tối đa
             let response = null;
             
             while (retryCount <= maxRetries) {
               try {
                 console.log(`Thử gọi API lần ${retryCount + 1} cho ${link.url}`);
+                
+                // Tạo AbortController mới cho mỗi lần thử
+                const requestController = new AbortController();
+                
+                // Điều chỉnh thời gian timeout tùy theo số lần thử
+                const timeoutDuration = Math.min(5 * 60 * 1000, 2 * 60 * 1000 * (retryCount + 1));
+                console.log(`⏱️ Thiết lập timeout ${timeoutDuration/1000}s cho lần thử ${retryCount + 1}`);
+                
+                const requestTimeoutId = setTimeout(() => {
+                  console.log(`⏱️ Timeout cho request lần ${retryCount + 1} sau ${timeoutDuration/1000}s`);
+                  requestController.abort();
+                }, timeoutDuration);
+                
+                console.log(`🚀 Bắt đầu request lần ${retryCount + 1} tới ${apiUrl} cho ${link.displayName}`);
+                
                 response = await fetch(apiUrl, {
                   method: 'POST',
                   headers: {
@@ -370,37 +381,58 @@ export async function POST(request, { params }) {
                     courseName: course.name || 'Khóa học không tên',
                     skipWatermarkRemoval: skipWatermarkRemoval
                   }),
-                  signal: controller.signal,
-                  // Tăng thời gian timeout của fetch
-                  timeout: 15 * 60 * 1000 // 15 phút
+                  signal: requestController.signal
                 });
+                
+                // Xóa timeout khi request thành công
+                clearTimeout(requestTimeoutId);
+                console.log(`✅ Request lần ${retryCount + 1} thành công, nhận được phản hồi cho ${link.displayName}`);
                 
                 // Nếu fetch thành công, thoát khỏi vòng lặp
                 break;
               } catch (fetchError) {
                 retryCount++;
+                console.log(`❌ Chi tiết lỗi lần ${retryCount}:`, fetchError.message);
+                
+                // Phân loại lỗi để xử lý thích hợp
+                const isNetworkError = 
+                  fetchError.name === 'AbortError' || 
+                  fetchError.message.includes('timeout') || 
+                  fetchError.message.includes('Headers Timeout Error') ||
+                  fetchError.code?.includes('UND_ERR_HEADERS_TIMEOUT') ||
+                  fetchError.code === 'UND_ERR_HEADERS_TIMEOUT' ||
+                  fetchError.message.includes('network') ||
+                  fetchError.message.includes('connection') ||
+                  fetchError.message.includes('ECONNREFUSED') ||
+                  fetchError.message.includes('ENOTFOUND') ||
+                  fetchError.message.includes('fetch failed');
+                
+                // Ghi log chi tiết hơn cho lỗi Headers Timeout
+                if (fetchError.message.includes('Headers Timeout Error') || 
+                    fetchError.code === 'UND_ERR_HEADERS_TIMEOUT' ||
+                    fetchError.code?.includes('UND_ERR_HEADERS_TIMEOUT')) {
+                  console.log('⚠️ Phát hiện lỗi Headers Timeout Error, sẽ thử lại sau thời gian chờ');
+                }
                 
                 // Nếu đã hết số lần thử lại hoặc lỗi không phải timeout, throw lỗi
-                if (retryCount > maxRetries || 
-                   (fetchError.name !== 'AbortError' && 
-                    !fetchError.message.includes('timeout') && 
-                    !fetchError.message.includes('Headers Timeout Error'))) {
+                if (retryCount > maxRetries || !isNetworkError) {
+                  console.log(`❌ Đã hết số lần thử lại (${retryCount}/${maxRetries}) hoặc lỗi không phải do mạng, dừng thử lại`);
                   throw fetchError;
                 }
                 
-                // Đợi trước khi thử lại
-                console.log(`Lỗi fetch: ${fetchError.message}. Thử lại sau 5 giây...`);
-                await new Promise(resolve => setTimeout(resolve, 5000));
+                const waitTime = 20000 * Math.pow(2, retryCount-1); // 20s, 40s, 80s, 160s, 320s - backoff tăng theo cấp số nhân
+                console.log(`⏱️ Thử lại sau ${waitTime/1000} giây... (lần thử ${retryCount+1}/${maxRetries+1})`);
+                await new Promise(resolve => setTimeout(resolve, waitTime));
               }
             }
-            
-            clearTimeout(timeoutId); // Xóa timeout nếu fetch hoàn thành
             
             if (!response) {
               throw new Error('Không thể kết nối đến API sau nhiều lần thử');
             }
             
+            console.log(`🔄 Đang đọc dữ liệu JSON từ phản hồi cho ${link.displayName}...`);
             const data = await response.json();
+            console.log(`✅ Đã đọc xong dữ liệu JSON cho ${link.displayName}`);
 
             if (!response.ok) {
               throw new Error(data.message || data.error || 'Không thể xử lý file');
@@ -446,9 +478,9 @@ export async function POST(request, { params }) {
             
             errorCount++;
           }
-        } catch (checkError) {
-          console.log(`Không thể kiểm tra loại nội dung: ${checkError.message}`);
-          // Vẫn tiếp tục xử lý - API remove-watermark sẽ xử lý lỗi nếu không phải PDF
+        } catch (error) {
+          // Đã có phần catch trước đó, nên không cần phần này nữa
+          // Xóa toàn bộ phần catch này
         }
       } catch (error) {
         // Đã có phần catch trước đó, nên không cần phần này nữa

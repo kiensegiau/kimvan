@@ -17,7 +17,8 @@ export async function POST(request) {
     
     // Lấy token hiện tại từ cookie hoặc request body
     const cookieStore = cookies();
-    const tokenFromCookie = await cookieStore.get(cookieConfig.authCookieName)?.value;
+    const authCookie = cookieStore.get(cookieConfig.authCookieName);
+    const tokenFromCookie = authCookie?.value;
     
     // Ưu tiên sử dụng token từ body nếu có
     const currentToken = tokenFromBody || tokenFromCookie;
@@ -85,7 +86,7 @@ export async function POST(request) {
     console.log(`🍪 API refresh-token: Thiết lập cookie với thời gian sống ${maxAge} giây`);
     
     // Thiết lập cookie với token mới
-    await cookieStore.set(cookieConfig.authCookieName, newIdToken, {
+    cookieStore.set(cookieConfig.authCookieName, newIdToken, {
       path: '/',
       maxAge,
       httpOnly: true,
