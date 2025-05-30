@@ -140,7 +140,292 @@ const CourseCategories = () => {
     }
   ];
 
-  const activeCourses = activeTab === 'math' ? mathCourses : physicsCourses;
+  const chemistryCourses = [
+    { 
+      id: 'c1',
+      teacher: 'Thầy Nguyễn Anh Phong (Mapstudy)', 
+      description: 'Trọn Bộ Lộ Trình IOME', 
+      students: '1,180+', 
+      rating: '4.8',
+      lessons: 40,
+      hours: 65,
+      featured: true
+    },
+    { 
+      id: 'c2',
+      teacher: 'Cô Thân Thị Liên', 
+      description: 'Trọn Bộ Lộ Trình Chuyên Đề, VDC, Tổng Ôn, Luyện Đề', 
+      students: '1,250+', 
+      rating: '4.9',
+      lessons: 45,
+      hours: 70,
+      featured: true
+    },
+    { 
+      id: 'c3',
+      teacher: 'Thầy Phạm Văn Trọng', 
+      description: 'Trọn Bộ Lộ Trình Chuyên Đề, Lý Thuyết, Tổng Ôn, Luyện Đề', 
+      students: '1,350+', 
+      rating: '4.8',
+      lessons: 48,
+      hours: 75,
+      featured: false
+    },
+    { 
+      id: 'c4',
+      teacher: 'Khóa Hóa Team Phế', 
+      description: 'Trọn Bộ Lộ Trình VIP', 
+      students: '2,100+', 
+      rating: '4.9',
+      lessons: 52,
+      hours: 85,
+      featured: true
+    },
+    { 
+      id: 'c5',
+      teacher: 'Thầy Phạm Văn Thuận', 
+      description: 'Trọn Bộ Lộ Trình CTG, Thực Chiến', 
+      students: '1,150+', 
+      rating: '4.7',
+      lessons: 38,
+      hours: 62,
+      featured: false
+    },
+    { 
+      id: 'c6',
+      teacher: 'Thầy Phạm Thắng', 
+      description: 'Trọn Bộ Lộ Trình Chuyên Đề, VDC, Tổng Ôn, Luyện Đề', 
+      students: '1,280+', 
+      rating: '4.8',
+      lessons: 44,
+      hours: 68,
+      featured: false
+    }
+  ];
+
+  const englishCourses = [
+    { 
+      id: 'e1',
+      teacher: 'CÔ VŨ THỊ MAI PHƯƠNG', 
+      description: 'Trọn Bộ Lộ Trình Pro3m, Pro3mplus, Vip90', 
+      students: '2,500+', 
+      rating: '4.9',
+      lessons: 60,
+      hours: 90,
+      featured: true
+    },
+    { 
+      id: 'e2',
+      teacher: 'CÔ TRANG ANH', 
+      description: 'Đọc Hiểu Cơ bản, Nâng cao, Ngữ Pháp, giải Đề, ĐGNL', 
+      students: '2,200+', 
+      rating: '4.9',
+      lessons: 55,
+      hours: 85,
+      featured: true
+    },
+    { 
+      id: 'e3',
+      teacher: 'CÔ PHẠM LIỄU (Mapstudy)', 
+      description: 'Trọn Bộ Lộ Trình IOME', 
+      students: '1,950+', 
+      rating: '4.8',
+      lessons: 48,
+      hours: 75,
+      featured: false
+    }
+  ];
+
+  const literatureCourses = [
+    { 
+      id: 'l1',
+      teacher: 'Chị Võ Phạm Trúc Linh -TTS', 
+      description: 'Trọn Bộ Lộ Trình 5 Tháng, Luyện Đề', 
+      students: '1,850+', 
+      rating: '4.9',
+      lessons: 45,
+      hours: 70,
+      featured: true
+    },
+    { 
+      id: 'l2',
+      teacher: 'Cô Sương Mai', 
+      description: 'Trọn Bộ Lộ Trình VIP', 
+      students: '1,650+', 
+      rating: '4.8',
+      lessons: 42,
+      hours: 68,
+      featured: false
+    }
+  ];
+
+  const historyCourses = [
+    { 
+      id: 'h1',
+      teacher: 'LỊCH SỬ CÔ SEN', 
+      description: 'Trọn Bộ Lộ Trình CTG, Thực Chiến', 
+      students: '1,050+', 
+      rating: '4.8',
+      lessons: 36,
+      hours: 58,
+      featured: true
+    },
+    { 
+      id: 'h2',
+      teacher: 'Cô Ngô Thị Lan Hương', 
+      description: 'Trọn Bộ Lộ Trình A1,A2,A3', 
+      students: '980+', 
+      rating: '4.7',
+      lessons: 34,
+      hours: 56,
+      featured: false
+    }
+  ];
+
+  const geographyCourses = [
+    { 
+      id: 'g1',
+      teacher: 'Thầy Đàm Thanh Tùng', 
+      description: 'Trọn Bộ Lộ Trình A1,A2,A3', 
+      students: '1,150+', 
+      rating: '4.8',
+      lessons: 38,
+      hours: 62,
+      featured: true
+    }
+  ];
+
+  const biologyCourses = [
+    { 
+      id: 'b1',
+      teacher: 'THẦY PHAN KHẮC NGHỆ', 
+      description: 'Trọn Bộ Lộ Trình Premium Web, Vé Dịch', 
+      students: '1,850+', 
+      rating: '4.9',
+      lessons: 45,
+      hours: 75,
+      featured: true
+    }
+  ];
+
+  const dgnlCourses = [
+    { 
+      id: 'd1',
+      teacher: 'ĐGNL HSA THẦY VĂN HOA -HSA EDUCATION', 
+      description: 'Trọn Bộ Lộ Trình XPS Lớp PT01', 
+      students: '1,750+', 
+      rating: '4.9',
+      lessons: 48,
+      hours: 80,
+      featured: true
+    },
+    { 
+      id: 'd2',
+      teacher: 'ĐGNL HSA HÀ NỘI MAPSTUDY', 
+      description: 'NỀN TẢNG, THỰC CHIẾN', 
+      students: '1,550+', 
+      rating: '4.8',
+      lessons: 42,
+      hours: 70,
+      featured: false
+    },
+    { 
+      id: 'd3',
+      teacher: 'ĐGNL HSA BEST EDU', 
+      description: 'LUYỆN THI ĐÁNH GIÁ NĂNG LỰC ĐHQGHN', 
+      students: '1,650+', 
+      rating: '4.8',
+      lessons: 45,
+      hours: 72,
+      featured: true
+    },
+    { 
+      id: 'd4',
+      teacher: 'ĐGNL EMPIRE HCM & HSA', 
+      description: 'NỀN TẢNG, THỰC CHIẾN', 
+      students: '1,450+', 
+      rating: '4.7',
+      lessons: 40,
+      hours: 65,
+      featured: false
+    },
+    { 
+      id: 'd5',
+      teacher: 'ĐGNL V-ATC HCM MAPSTUDY', 
+      description: 'NỀN TẢNG, THỰC CHIẾN', 
+      students: '1,350+', 
+      rating: '4.7',
+      lessons: 38,
+      hours: 62,
+      featured: false
+    }
+  ];
+
+  const tsaCourses = [
+    { 
+      id: 't1',
+      teacher: 'TSA-ĐGTD BMC BÁCH KHOA HÀ NỘI', 
+      description: 'Trọn Bộ Lộ Trình VIP A-Z', 
+      students: '1,450+', 
+      rating: '4.8',
+      lessons: 40,
+      hours: 65,
+      featured: true
+    },
+    { 
+      id: 't2',
+      teacher: 'TSA MAPSTUDY- LUYỆN THI TƯ DUY BÁCH KHOA', 
+      description: 'BỔ TRỢ TOÁN', 
+      students: '1,250+', 
+      rating: '4.7',
+      lessons: 36,
+      hours: 58,
+      featured: false
+    },
+    { 
+      id: 't3',
+      teacher: 'TSA - TƯ DUY BÁCH KHOA HÀ NỘI', 
+      description: '', 
+      students: '1,350+', 
+      rating: '4.8',
+      lessons: 38,
+      hours: 60,
+      featured: false
+    }
+  ];
+
+  const activeCourses = activeTab === 'math' ? mathCourses : 
+                        activeTab === 'physics' ? physicsCourses : 
+                        activeTab === 'chemistry' ? chemistryCourses :
+                        activeTab === 'english' ? englishCourses :
+                        activeTab === 'literature' ? literatureCourses :
+                        activeTab === 'history' ? historyCourses :
+                        activeTab === 'geography' ? geographyCourses :
+                        activeTab === 'biology' ? biologyCourses :
+                        activeTab === 'dgnl' ? dgnlCourses :
+                        tsaCourses;
+
+  const getMainColor = () => {
+    return {
+      bg: 'bg-blue-600',
+      bgHover: 'hover:bg-blue-700',
+      bgLight: 'bg-blue-50',
+      bgDarkLight: 'bg-blue-900/80',
+      text: 'text-blue-600',
+      textHover: 'hover:text-blue-700',
+      border: 'border-blue-600',
+      gradientFrom: 'from-blue-500',
+      gradientTo: 'to-blue-600',
+      gradientDarkFrom: 'from-blue-600',
+      gradientDarkTo: 'to-blue-700',
+      gradientLightFrom: 'from-blue-400',
+      gradientLightTo: 'to-blue-500',
+      shadow: 'shadow-blue-200',
+      darkShadow: 'dark:shadow-blue-900/30',
+    };
+  };
+
+  const colors = getMainColor();
 
   return (
     <section className="py-20 bg-[#f8fafc] dark:bg-gray-900">
@@ -151,9 +436,9 @@ const CourseCategories = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5 }}
-            className="inline-block py-1.5 px-4 bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900 dark:to-red-800 text-red-600 dark:text-red-300 font-medium rounded-full text-xs uppercase tracking-wider mb-4"
+            className={`inline-block py-1.5 px-4 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900 dark:to-blue-800 ${colors.text} dark:text-blue-300 font-medium rounded-full text-xs uppercase tracking-wider mb-4`}
           >
-            Khóa học 2007
+            Khóa học
           </motion.span>
           
           <motion.h2 
@@ -162,7 +447,7 @@ const CourseCategories = () => {
             transition={{ duration: 0.7, delay: 0.1 }}
             className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-white dark:via-gray-200 dark:to-white bg-clip-text text-transparent"
           >
-            Danh Mục Khóa Học Chất Lượng Cao
+            Danh Mục <span className={colors.text}>Khóa Học</span> Chất Lượng Cao
           </motion.h2>
           
           <motion.p 
@@ -182,26 +467,106 @@ const CourseCategories = () => {
           transition={{ duration: 0.5, delay: 0.3 }}
           className="flex flex-col sm:flex-row justify-center items-center mb-12 space-y-4 sm:space-y-0"
         >
-          <div className="bg-white dark:bg-gray-800 p-1.5 rounded-xl shadow-md flex items-center">
+          <div className="bg-white dark:bg-gray-800 p-1.5 rounded-xl shadow-md flex flex-wrap justify-center">
             <button
               onClick={() => setActiveTab('math')}
-              className={`px-6 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
+              className={`px-4 py-2.5 m-1 rounded-lg text-sm font-medium transition-all duration-200 ${
                 activeTab === 'math'
-                  ? 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg shadow-red-200 dark:shadow-red-900/30'
+                  ? `bg-gradient-to-r ${colors.gradientFrom} ${colors.gradientTo} text-white shadow-lg ${colors.shadow} ${colors.darkShadow}`
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
               }`}
             >
-              Môn Toán 2007
+              Môn Toán
             </button>
             <button
               onClick={() => setActiveTab('physics')}
-              className={`px-6 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
+              className={`px-4 py-2.5 m-1 rounded-lg text-sm font-medium transition-all duration-200 ${
                 activeTab === 'physics'
-                  ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-200 dark:shadow-blue-900/30'
+                  ? `bg-gradient-to-r ${colors.gradientFrom} ${colors.gradientTo} text-white shadow-lg ${colors.shadow} ${colors.darkShadow}`
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
               }`}
             >
-              Môn Lý 2007
+              Môn Lý
+            </button>
+            <button
+              onClick={() => setActiveTab('chemistry')}
+              className={`px-4 py-2.5 m-1 rounded-lg text-sm font-medium transition-all duration-200 ${
+                activeTab === 'chemistry'
+                  ? `bg-gradient-to-r ${colors.gradientFrom} ${colors.gradientTo} text-white shadow-lg ${colors.shadow} ${colors.darkShadow}`
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+              }`}
+            >
+              Môn Hóa
+            </button>
+            <button
+              onClick={() => setActiveTab('biology')}
+              className={`px-4 py-2.5 m-1 rounded-lg text-sm font-medium transition-all duration-200 ${
+                activeTab === 'biology'
+                  ? `bg-gradient-to-r ${colors.gradientFrom} ${colors.gradientTo} text-white shadow-lg ${colors.shadow} ${colors.darkShadow}`
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+              }`}
+            >
+              Môn Sinh
+            </button>
+            <button
+              onClick={() => setActiveTab('english')}
+              className={`px-4 py-2.5 m-1 rounded-lg text-sm font-medium transition-all duration-200 ${
+                activeTab === 'english'
+                  ? `bg-gradient-to-r ${colors.gradientFrom} ${colors.gradientTo} text-white shadow-lg ${colors.shadow} ${colors.darkShadow}`
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+              }`}
+            >
+              Môn Anh
+            </button>
+            <button
+              onClick={() => setActiveTab('literature')}
+              className={`px-4 py-2.5 m-1 rounded-lg text-sm font-medium transition-all duration-200 ${
+                activeTab === 'literature'
+                  ? `bg-gradient-to-r ${colors.gradientFrom} ${colors.gradientTo} text-white shadow-lg ${colors.shadow} ${colors.darkShadow}`
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+              }`}
+            >
+              Môn Văn
+            </button>
+            <button
+              onClick={() => setActiveTab('history')}
+              className={`px-4 py-2.5 m-1 rounded-lg text-sm font-medium transition-all duration-200 ${
+                activeTab === 'history'
+                  ? `bg-gradient-to-r ${colors.gradientFrom} ${colors.gradientTo} text-white shadow-lg ${colors.shadow} ${colors.darkShadow}`
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+              }`}
+            >
+              Môn Lịch Sử
+            </button>
+            <button
+              onClick={() => setActiveTab('geography')}
+              className={`px-4 py-2.5 m-1 rounded-lg text-sm font-medium transition-all duration-200 ${
+                activeTab === 'geography'
+                  ? `bg-gradient-to-r ${colors.gradientFrom} ${colors.gradientTo} text-white shadow-lg ${colors.shadow} ${colors.darkShadow}`
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+              }`}
+            >
+              Môn Địa Lý
+            </button>
+            <button
+              onClick={() => setActiveTab('dgnl')}
+              className={`px-4 py-2.5 m-1 rounded-lg text-sm font-medium transition-all duration-200 ${
+                activeTab === 'dgnl'
+                  ? `bg-gradient-to-r ${colors.gradientFrom} ${colors.gradientTo} text-white shadow-lg ${colors.shadow} ${colors.darkShadow}`
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+              }`}
+            >
+              ĐGNL HSA-VATC
+            </button>
+            <button
+              onClick={() => setActiveTab('tsa')}
+              className={`px-4 py-2.5 m-1 rounded-lg text-sm font-medium transition-all duration-200 ${
+                activeTab === 'tsa'
+                  ? `bg-gradient-to-r ${colors.gradientFrom} ${colors.gradientTo} text-white shadow-lg ${colors.shadow} ${colors.darkShadow}`
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+              }`}
+            >
+              Tư Duy-TSA
             </button>
           </div>
         </motion.div>
@@ -214,7 +579,7 @@ const CourseCategories = () => {
             transition={{ duration: 0.5, delay: 0.4 }}
             className="text-2xl font-bold text-gray-900 dark:text-white mb-8 flex items-center"
           >
-            <span className={`inline-block w-2 h-8 rounded-full mr-3 ${activeTab === 'math' ? 'bg-red-500' : 'bg-blue-500'}`}></span>
+            <span className={`inline-block w-2 h-8 rounded-full mr-3 ${colors.bg}`}></span>
             Khóa Học Nổi Bật
           </motion.h3>
 
@@ -227,7 +592,7 @@ const CourseCategories = () => {
                 transition={{ duration: 0.5, delay: 0.5 + index * 0.1 }}
                 className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 group flex flex-col md:flex-row"
               >
-                <div className={`md:w-2/5 h-60 md:h-auto ${activeTab === 'math' ? 'bg-gradient-to-br from-red-500 to-red-700' : 'bg-gradient-to-br from-blue-500 to-blue-700'} relative overflow-hidden`}>
+                <div className={`md:w-2/5 h-60 md:h-auto bg-gradient-to-br ${colors.gradientDarkFrom} ${colors.gradientDarkTo} relative overflow-hidden`}>
                   <div className="absolute inset-0 bg-black opacity-20"></div>
                   <div className="absolute top-4 left-4">
                     <span className="bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wider">Nổi bật</span>
@@ -265,7 +630,7 @@ const CourseCategories = () => {
                     </div>
                   </div>
                   
-                  <button className={`w-full py-3.5 ${activeTab === 'math' ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'} text-white font-medium rounded-xl transition-colors duration-300 flex items-center justify-center group`}>
+                  <button className={`w-full py-3.5 ${colors.bg} ${colors.bgHover} text-white font-medium rounded-xl transition-colors duration-300 flex items-center justify-center group`}>
                     Xem chi tiết khóa học
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
@@ -285,7 +650,7 @@ const CourseCategories = () => {
             transition={{ duration: 0.5, delay: 0.4 }}
             className="text-2xl font-bold text-gray-900 dark:text-white mb-8 flex items-center"
           >
-            <span className={`inline-block w-2 h-8 rounded-full mr-3 ${activeTab === 'math' ? 'bg-red-500' : 'bg-blue-500'}`}></span>
+            <span className={`inline-block w-2 h-8 rounded-full mr-3 ${colors.bg}`}></span>
             Tất Cả Khóa Học
           </motion.h3>
 
@@ -298,7 +663,7 @@ const CourseCategories = () => {
                 transition={{ duration: 0.5, delay: 0.6 + index * 0.05 }}
                 className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 group flex flex-col h-full"
               >
-                <div className={`h-48 ${activeTab === 'math' ? 'bg-gradient-to-r from-red-400 to-red-600' : 'bg-gradient-to-r from-blue-400 to-blue-600'} relative overflow-hidden`}>
+                <div className={`h-48 bg-gradient-to-r ${colors.gradientLightFrom} ${colors.gradientLightTo} relative overflow-hidden`}>
                   {course.featured && (
                     <div className="absolute top-4 left-4">
                       <span className="bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wider">Nổi bật</span>
@@ -339,7 +704,7 @@ const CourseCategories = () => {
                 </div>
                 
                 <div className="px-5 pb-5 mt-auto">
-                  <button className={`w-full py-2.5 ${activeTab === 'math' ? 'text-red-600 hover:bg-red-600' : 'text-blue-600 hover:bg-blue-600'} hover:text-white border ${activeTab === 'math' ? 'border-red-600' : 'border-blue-600'} font-medium rounded-lg transition-colors duration-300 flex items-center justify-center text-sm`}>
+                  <button className={`w-full py-2.5 ${colors.text} hover:bg-blue-600 hover:text-white border ${colors.border} font-medium rounded-lg transition-colors duration-300 flex items-center justify-center text-sm`}>
                     Xem chi tiết
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1.5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
