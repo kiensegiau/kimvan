@@ -8,6 +8,7 @@ import { use } from 'react';
 import YouTubeModal from '../../components/YouTubeModal';
 import PDFModal from '../../components/PDFModal';
 import MediaProcessingModal from '../../components/MediaProcessingModal';
+import XLSX from 'xlsx';
 
 export default function CourseDetailPage({ params }) {
   const router = useRouter();
@@ -461,6 +462,181 @@ export default function CourseDetailPage({ params }) {
     if (!url) return false;
     return (url.includes('drive.google.com') || url.includes('docs.google.com')) && 
            (url.toLowerCase().endsWith('.pdf') || url.includes('pdf'));
+  };
+
+  // Hàm xuất bảng dữ liệu thành file Excel
+  const exportTableToExcel = (tableId, filename = '') => {
+    if (!course || !course.originalData || !course.originalData.sheets || !course.originalData.sheets[activeSheet]) {
+      alert('Không có dữ liệu để xuất');
+      return;
+    }
+
+    try {
+      // Tạo tên file mặc định nếu không có
+      filename = filename ? filename + '.xlsx' : `khoa-hoc-${course.kimvanId || course._id}.xlsx`;
+      
+      // Lấy dữ liệu từ bảng hiện tại
+      const sheet = course.originalData.sheets[activeSheet];
+      const sheetData = sheet?.data?.[0]?.rowData;
+      
+      if (!sheetData || sheetData.length === 0) {
+        alert('Không có dữ liệu để xuất');
+        return;
+      }
+      
+      // Tạo mảng dữ liệu cho Excel
+      const excelData = [];
+      
+      // Thêm tiêu đề
+      const headers = [];
+      const headerRow = sheetData[0];
+      if (headerRow && headerRow.values) {
+        headerRow.values.forEach(cell => {
+          headers.push(cell.formattedValue || '');
+        });
+        excelData.push(headers);
+      }
+      
+      // Thêm dữ liệu
+      for (let i = 1; i < sheetData.length; i++) {
+        const row = sheetData[i];
+        if (row && row.values) {
+          const rowData = [];
+          row.values.forEach(cell => {
+            // Lấy giá trị từ cell
+            let value = cell.formattedValue || '';
+            
+            // Nếu có link, thêm link vào giá trị
+            const url = cell.userEnteredFormat?.textFormat?.link?.uri || cell.hyperlink;
+            if (url) {
+              value = value || (isYoutubeLink(url) ? 'Xem video' : isPdfLink(url) ? 'Xem PDF' : 'Xem tài liệu');
+              // Thêm URL vào giá trị để dễ tham khảo
+              value += ` (${url})`;
+            }
+            
+            rowData.push(value);
+          });
+          excelData.push(rowData);
+        }
+      }
+      
+      // Tạo workbook và worksheet
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.aoa_to_sheet(excelData);
+      
+      // Đặt tên cho worksheet
+      XLSX.utils.book_append_sheet(wb, ws, getSheetTitle(activeSheet, course.originalData.sheets) || 'Sheet1');
+      
+      // Xuất file Excel
+      XLSX.writeFile(wb, filename);
+      
+    } catch (error) {
+      console.error('Lỗi khi xuất file Excel:', error);
+      
+      // Nếu không có thư viện XLSX, sử dụng phương pháp xuất Excel đơn giản hơn
+      try {
+        const tableSelect = document.getElementById(tableId);
+        
+        if (!tableSelect) {
+          alert('Không tìm thấy bảng dữ liệu');
+          return;
+        }
+        
+        // Tạo một bản sao của bảng để xử lý
+        const tableClone = tableSelect.cloneNode(true);
+        
+        // Xử lý các thẻ a và các thẻ HTML không cần thiết
+        const links = tableClone.querySelectorAll('a');
+        links.forEach(link => {
+          // Thêm URL vào nội dung
+          const url = link.getAttribute('href');
+          const text = link.textContent || '';
+          const newText = url ? `${text} (${url})` : text;
+          const textNode = document.createTextNode(newText);
+          link.parentNode.replaceChild(textNode, link);
+        });
+        
+        // Xóa các biểu tượng SVG và các thẻ không cần thiết khác
+        const svgs = tableClone.querySelectorAll('svg');
+        svgs.forEach(svg => {
+          svg.parentNode.removeChild(svg);
+        });
+        
+        // Hiển thị các cột ẩn
+        const hiddenCells = tableClone.querySelectorAll('.hidden');
+        hiddenCells.forEach(cell => {
+          cell.classList.remove('hidden');
+          cell.style.display = 'table-cell';
+        });
+        
+        // Tạo tên file mặc định nếu không có
+        filename = filename ? filename.replace('.xlsx', '.xls') : `khoa-hoc-${course.kimvanId || course._id}.xls`;
+        
+        // Tạo template HTML cho Excel
+        const excelTemplate = `
+          <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+          <head>
+            <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+            <meta name="ProgId" content="Excel.Sheet">
+            <meta name="Generator" content="Microsoft Excel 11">
+            <style>
+              table, td, th {
+                border: 1px solid black;
+                border-collapse: collapse;
+              }
+              th {
+                background-color: #f2f2f2;
+                font-weight: bold;
+              }
+              .hidden {
+                display: table-cell !important;
+              }
+            </style>
+            <!--[if gte mso 9]>
+            <xml>
+              <x:ExcelWorkbook>
+                <x:ExcelWorksheets>
+                  <x:ExcelWorksheet>
+                    <x:Name>${getSheetTitle(activeSheet, course.originalData.sheets) || 'Sheet1'}</x:Name>
+                    <x:WorksheetOptions>
+                      <x:DisplayGridlines/>
+                    </x:WorksheetOptions>
+                  </x:ExcelWorksheet>
+                </x:ExcelWorksheets>
+              </x:ExcelWorkbook>
+            </xml>
+            <![endif]-->
+          </head>
+          <body>
+            ${tableClone.outerHTML}
+          </body>
+          </html>
+        `;
+        
+        // Tạo link download
+        const dataType = 'application/vnd.ms-excel';
+        const downloadLink = document.createElement('a');
+        document.body.appendChild(downloadLink);
+        
+        if (navigator.msSaveOrOpenBlob) {
+          // Cho IE và Edge
+          const blob = new Blob(['\ufeff', excelTemplate], {
+            type: dataType
+          });
+          navigator.msSaveOrOpenBlob(blob, filename);
+        } else {
+          // Cho các trình duyệt khác
+          downloadLink.href = 'data:' + dataType + ';charset=utf-8,' + encodeURIComponent(excelTemplate);
+          downloadLink.download = filename;
+          downloadLink.click();
+        }
+        
+        document.body.removeChild(downloadLink);
+      } catch (fallbackError) {
+        console.error('Lỗi khi xuất file Excel bằng phương pháp dự phòng:', fallbackError);
+        alert('Có lỗi xảy ra khi xuất file Excel: ' + error.message);
+      }
+    }
   };
 
   // Tải thông tin khóa học khi component được tạo
@@ -950,17 +1126,144 @@ export default function CourseDetailPage({ params }) {
                       </svg>
                       {getSheetTitle(activeSheet, course.originalData.sheets)}
                     </div>
-                    {course.originalData.sheets[activeSheet]?.data?.[0]?.rowData && course.originalData.sheets[activeSheet].data[0].rowData.length > 0 ? (
-                      <div className="text-sm text-gray-600 ml-7 sm:ml-0">
-                        Tổng số: <span className="font-medium text-blue-600">
-                          {(course.originalData.sheets[activeSheet].data[0].rowData.length - 1) || 0} buổi
-                        </span>
-                      </div>
-                    ) : (
-                      <div className="text-sm text-gray-600 ml-7 sm:ml-0">
-                        Không có dữ liệu buổi học
-                      </div>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {course.originalData.sheets[activeSheet]?.data?.[0]?.rowData && course.originalData.sheets[activeSheet].data[0].rowData.length > 0 ? (
+                        <>
+                          <div className="text-sm text-gray-600 ml-7 sm:ml-0">
+                            Tổng số: <span className="font-medium text-blue-600">
+                              {(course.originalData.sheets[activeSheet].data[0].rowData.length - 1) || 0} buổi
+                            </span>
+                          </div>
+                          <button
+                            onClick={() => exportTableToExcel('course-data-table', `khoa-hoc-${course.name ? course.name.replace(/\s+/g, '-') : 'data'}`)}
+                            className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
+                            title="Xuất Excel bằng thư viện SheetJS (chất lượng cao)"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            Xuất Excel
+                          </button>
+                          <button
+                            onClick={() => {
+                              try {
+                                // Phương pháp dự phòng
+                                const tableSelect = document.getElementById('course-data-table');
+                                if (!tableSelect) {
+                                  alert('Không tìm thấy bảng dữ liệu');
+                                  return;
+                                }
+                                
+                                // Tạo một bản sao của bảng để xử lý
+                                const tableClone = tableSelect.cloneNode(true);
+                                
+                                // Xử lý các thẻ a và các thẻ HTML không cần thiết
+                                const links = tableClone.querySelectorAll('a');
+                                links.forEach(link => {
+                                  // Thêm URL vào nội dung
+                                  const url = link.getAttribute('href');
+                                  const text = link.textContent || '';
+                                  const newText = url ? `${text} (${url})` : text;
+                                  const textNode = document.createTextNode(newText);
+                                  link.parentNode.replaceChild(textNode, link);
+                                });
+                                
+                                // Xóa các biểu tượng SVG và các thẻ không cần thiết khác
+                                const svgs = tableClone.querySelectorAll('svg');
+                                svgs.forEach(svg => {
+                                  svg.parentNode.removeChild(svg);
+                                });
+                                
+                                // Hiển thị các cột ẩn
+                                const hiddenCells = tableClone.querySelectorAll('.hidden');
+                                hiddenCells.forEach(cell => {
+                                  cell.classList.remove('hidden');
+                                  cell.style.display = 'table-cell';
+                                });
+                                
+                                // Tạo tên file mặc định
+                                const filename = `khoa-hoc-${course.name ? course.name.replace(/\s+/g, '-') : 'data'}.xls`;
+                                
+                                // Tạo template HTML cho Excel
+                                const excelTemplate = `
+                                  <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+                                  <head>
+                                    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+                                    <meta name="ProgId" content="Excel.Sheet">
+                                    <meta name="Generator" content="Microsoft Excel 11">
+                                    <style>
+                                      table, td, th {
+                                        border: 1px solid black;
+                                        border-collapse: collapse;
+                                      }
+                                      th {
+                                        background-color: #f2f2f2;
+                                        font-weight: bold;
+                                      }
+                                      .hidden {
+                                        display: table-cell !important;
+                                      }
+                                    </style>
+                                    <!--[if gte mso 9]>
+                                    <xml>
+                                      <x:ExcelWorkbook>
+                                        <x:ExcelWorksheets>
+                                          <x:ExcelWorksheet>
+                                            <x:Name>${getSheetTitle(activeSheet, course.originalData.sheets) || 'Sheet1'}</x:Name>
+                                            <x:WorksheetOptions>
+                                              <x:DisplayGridlines/>
+                                            </x:WorksheetOptions>
+                                          </x:ExcelWorksheet>
+                                        </x:ExcelWorksheets>
+                                      </x:ExcelWorkbook>
+                                    </xml>
+                                    <![endif]-->
+                                  </head>
+                                  <body>
+                                    ${tableClone.outerHTML}
+                                  </body>
+                                  </html>
+                                `;
+                                
+                                // Tạo link download
+                                const dataType = 'application/vnd.ms-excel';
+                                const downloadLink = document.createElement('a');
+                                document.body.appendChild(downloadLink);
+                                
+                                if (navigator.msSaveOrOpenBlob) {
+                                  // Cho IE và Edge
+                                  const blob = new Blob(['\ufeff', excelTemplate], {
+                                    type: dataType
+                                  });
+                                  navigator.msSaveOrOpenBlob(blob, filename);
+                                } else {
+                                  // Cho các trình duyệt khác
+                                  downloadLink.href = 'data:' + dataType + ';charset=utf-8,' + encodeURIComponent(excelTemplate);
+                                  downloadLink.download = filename;
+                                  downloadLink.click();
+                                }
+                                
+                                document.body.removeChild(downloadLink);
+                              } catch (error) {
+                                console.error('Lỗi khi xuất file Excel:', error);
+                                alert('Có lỗi xảy ra khi xuất file Excel: ' + error.message);
+                              }
+                            }}
+                            className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                            title="Xuất Excel bằng phương pháp HTML (dự phòng)"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                            </svg>
+                            Xuất HTML
+                          </button>
+                        </>
+                      ) : (
+                        <div className="text-sm text-gray-600 ml-7 sm:ml-0">
+                          Không có dữ liệu buổi học
+                        </div>
+                      )}
+                    </div>
                   </div>
                   
                   {course.originalData.sheets[activeSheet]?.data?.[0]?.rowData && course.originalData.sheets[activeSheet].data[0].rowData.length > 0 ? (
@@ -975,7 +1278,7 @@ export default function CourseDetailPage({ params }) {
                       </div>
                       
                       <div className="overflow-x-auto pb-4">
-                        <table className="min-w-full divide-y divide-gray-200">
+                        <table className="min-w-full divide-y divide-gray-200" id="course-data-table">
                           <thead>
                             <tr className="bg-gradient-to-r from-blue-600 to-indigo-600">
                               {course.originalData.sheets[activeSheet].data[0].rowData[0]?.values?.map((cell, index) => (

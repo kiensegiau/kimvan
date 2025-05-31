@@ -73,6 +73,71 @@ async function isLoggedIn(page) {
 }
 
 /**
+ * Chuyển đổi hyperlink thành URL gốc
+ * @param {Object} data - Dữ liệu từ API
+ * @returns {Object} Dữ liệu đã được xử lý với URL gốc
+ */
+function processHyperlinks(data) {
+  console.log('===== XỬ LÝ HYPERLINK =====');
+  
+  // Kiểm tra xem dữ liệu có tồn tại không
+  if (!data) return data;
+  
+  // Hàm đệ quy để xử lý tất cả các đối tượng lồng nhau
+  function processObject(obj) {
+    // Nếu là mảng, xử lý từng phần tử
+    if (Array.isArray(obj)) {
+      return obj.map(item => processObject(item));
+    }
+    
+    // Nếu không phải đối tượng, trả về nguyên giá trị
+    if (typeof obj !== 'object' || obj === null) {
+      return obj;
+    }
+    
+    // Xử lý đối tượng
+    const result = {};
+    
+    for (const key in obj) {
+      // Kiểm tra xem có phải là hyperlink không
+      if (key === 'hyperlink' && typeof obj[key] === 'string' && obj.href) {
+        // Trích xuất ID từ hyperlink
+        const hyperlinkId = obj[key];
+        const href = obj.href;
+        
+        console.log(`Phát hiện hyperlink: ${hyperlinkId}`);
+        console.log(`URL gốc: ${href}`);
+        
+        // Thêm trường mới chứa URL gốc
+        result[key] = hyperlinkId;
+        result.href = href;
+        result.originalUrl = href;
+        
+        // Nếu URL có dạng /api/spreadsheets/ID/..., trích xuất ID
+        if (href && href.includes('/api/spreadsheets/')) {
+          const matches = href.match(/\/api\/spreadsheets\/([^\/]+)/);
+          if (matches && matches[1]) {
+            result.extractedId = matches[1];
+            console.log(`Đã trích xuất ID: ${matches[1]}`);
+          }
+        }
+      } else {
+        // Xử lý đệ quy các đối tượng con
+        result[key] = processObject(obj[key]);
+      }
+    }
+    
+    return result;
+  }
+  
+  // Xử lý dữ liệu
+  const processedData = processObject(data);
+  console.log('===== HOÀN THÀNH XỬ LÝ HYPERLINK =====');
+  
+  return processedData;
+}
+
+/**
  * Tự động lấy chi tiết sheet từ API KimVan
  * @param {string} sheetId - ID của sheet cần lấy
  * @returns {Promise<Object>} Dữ liệu sheet hoặc null nếu có lỗi
@@ -240,6 +305,11 @@ export async function GET(request, { params }) {
       return NextResponse.json({ error: 'ID không được cung cấp' }, { status: 400 });
     }
     
+    // Kiểm tra nếu là yêu cầu redirect
+    const url = new URL(request.url);
+    const pathParts = url.pathname.split('/');
+    const isRedirectRequest = pathParts[pathParts.length - 1] === 'redirect';
+    
     // Timestamp cho header
     const timestamp = Date.now();
     const responseHeaders = {
@@ -263,7 +333,16 @@ export async function GET(request, { params }) {
       const filesDeleted = cleanupFolders(detailFilePath);
       console.log(`Đã dọn dẹp ${filesDeleted} file tạm thời sau khi lấy chi tiết thành công`);
       
-      return NextResponse.json(result.data, {
+      // Xử lý hyperlink nếu có
+      const processedData = processHyperlinks(result.data);
+      
+      // Nếu là yêu cầu redirect và có URL gốc, thực hiện redirect
+      if (isRedirectRequest && processedData && processedData.originalUrl) {
+        console.log(`Chuyển hướng đến URL gốc: ${processedData.originalUrl}`);
+        return NextResponse.redirect(processedData.originalUrl);
+      }
+      
+      return NextResponse.json(processedData, {
         headers: responseHeaders
       });
     } else {
