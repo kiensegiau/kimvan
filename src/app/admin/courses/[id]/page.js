@@ -1620,6 +1620,19 @@ export default function CourseDetailPage({ params }) {
                                 );
                               })}
                             </div>
+                            
+                            {/* Thêm nút Thêm hàng ở dưới cùng của bảng */}
+                            <div className="flex items-center justify-center py-4 bg-gray-50 border-t border-gray-200">
+                              <button
+                                onClick={handleOpenAddRowModal}
+                                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                </svg>
+                                Thêm hàng mới
+                              </button>
+                            </div>
                           </div>
                         );
                       })()}
@@ -1635,6 +1648,18 @@ export default function CourseDetailPage({ params }) {
                       <p className="text-gray-500 max-w-md mx-auto">
                         Hiện không có thông tin buổi học nào được tìm thấy trong hệ thống.
                       </p>
+                      {/* Thêm nút Thêm hàng trong trường hợp không có dữ liệu */}
+                      <div className="mt-6">
+                        <button
+                          onClick={handleOpenAddRowModal}
+                          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                          </svg>
+                          Thêm hàng đầu tiên
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
