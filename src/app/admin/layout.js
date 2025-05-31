@@ -9,7 +9,8 @@ import {
   Cog6ToothIcon,
   ArrowLeftOnRectangleIcon,
   ExclamationCircleIcon,
-  VideoCameraIcon
+  VideoCameraIcon,
+  TableCellsIcon
 } from '@heroicons/react/24/outline';
 
 export default function AdminLayout({ children }) {
@@ -81,6 +82,7 @@ export default function AdminLayout({ children }) {
     { name: 'Người dùng', href: '/admin/users', icon: UserGroupIcon },
     { name: 'Khóa học', href: '/admin/courses', icon: BookOpenIcon },
     { name: 'YouTube', href: '/admin/youtube-setup', icon: VideoCameraIcon },
+    { name: 'Test Spreadsheet', href: '/test-spreadsheet', icon: TableCellsIcon },
     { name: 'Cài đặt', href: '/admin/settings', icon: Cog6ToothIcon },
   ];
   
