@@ -761,10 +761,19 @@ export default function CourseDetailPage({ params }) {
     const rowData = {};
     headerRow.values.forEach((headerCell, idx) => {
       const headerName = headerCell.formattedValue || `Cột ${idx + 1}`;
-      // Ưu tiên lấy giá trị từ hyperlink hoặc userEnteredFormat.textFormat.link.uri nếu có
+      // Ưu tiên lấy giá trị từ link.uri vì hyperlink có thể bị mã hóa
       const cell = dataRow.values[idx] || {};
-      const hyperlink = cell.hyperlink || (cell.userEnteredFormat?.textFormat?.link?.uri);
-      const value = hyperlink || cell.formattedValue || '';
+      let value = cell.formattedValue || '';
+      
+      // Lấy URL từ link.uri nếu có (ưu tiên cao nhất)
+      if (cell.userEnteredFormat?.textFormat?.link?.uri) {
+        value = cell.userEnteredFormat.textFormat.link.uri;
+      } 
+      // Nếu không có link.uri, thử lấy từ hyperlink (nếu là URL thật, không phải mã hóa)
+      else if (cell.hyperlink && cell.hyperlink.startsWith('http')) {
+        value = cell.hyperlink;
+      }
+      
       rowData[headerName] = value;
     });
     
@@ -790,27 +799,34 @@ export default function CourseDetailPage({ params }) {
       
       // Chuyển đổi dữ liệu từ form sang định dạng phù hợp
       const headerRow = course.originalData.sheets[activeSheet].data[0].rowData[0];
+      // Lấy dữ liệu hàng hiện tại để giữ lại cấu trúc
+      const currentRow = course.originalData.sheets[activeSheet].data[0].rowData[editingRowIndex + 1];
       const rowValues = [];
       
       if (headerRow && headerRow.values) {
-        headerRow.values.forEach(cell => {
+        headerRow.values.forEach((cell, idx) => {
           const headerName = cell.formattedValue || '';
           const value = editRowData[headerName] || '';
+          const currentCell = currentRow?.values?.[idx] || {};
           
           // Kiểm tra nếu giá trị là URL
           if (value && (value.startsWith('http://') || value.startsWith('https://'))) {
             rowValues.push({
-              formattedValue: value,
+              formattedValue: value.split('/').pop() || value, // Giữ lại phần hiển thị ngắn hơn
               hyperlink: value,
               userEnteredFormat: {
+                ...(currentCell.userEnteredFormat || {}),
                 textFormat: {
+                  ...(currentCell.userEnteredFormat?.textFormat || {}),
                   link: { uri: value }
                 }
               }
             });
           } else {
+            // Giữ lại định dạng cũ nhưng cập nhật giá trị
             rowValues.push({
-              formattedValue: value
+              formattedValue: value,
+              ...(currentCell.userEnteredFormat ? { userEnteredFormat: currentCell.userEnteredFormat } : {})
             });
           }
         });
@@ -885,6 +901,43 @@ export default function CourseDetailPage({ params }) {
       }
     } catch (error) {
       console.error('Lỗi khi thêm liên kết:', error);
+    }
+  };
+
+  // Thêm hàm kiểm tra hiển thị link trong form
+  const getLinkPreview = (url) => {
+    if (!url) return null;
+    
+    // Kiểm tra xem URL có hợp lệ không
+    try {
+      let displayUrl = url;
+      let fullUrl = url;
+      
+      // Nếu không có protocol, thêm https://
+      if (url && !url.match(/^https?:\/\//)) {
+        fullUrl = 'https://' + url;
+      }
+      
+      // Rút gọn URL dài để hiển thị
+      if (displayUrl.length > 60) {
+        displayUrl = displayUrl.substring(0, 57) + '...';
+      }
+      
+      return (
+        <div className="flex items-center p-2 bg-gray-50 rounded">
+          <a 
+            href={fullUrl} 
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-blue-600 hover:text-blue-800 break-all"
+          >
+            {displayUrl}
+          </a>
+        </div>
+      );
+    } catch (error) {
+      console.error('Lỗi khi hiển thị link:', error);
+      return null;
     }
   };
 
@@ -1798,14 +1851,9 @@ export default function CourseDetailPage({ params }) {
                             </div>
                             {newRowData[header] && (
                               <div className="flex items-center p-2 bg-gray-50 rounded">
-                                <a 
-                                  href={newRowData[header].startsWith('http') ? newRowData[header] : `https://${newRowData[header]}`} 
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-sm text-blue-600 hover:text-blue-800 break-all"
-                                >
-                                  {newRowData[header]}
-                                </a>
+                                {newRowData[header] && header.toLowerCase().includes('link') && (
+                                  getLinkPreview(newRowData[header])
+                                )}
                                 <button
                                   type="button"
                                   onClick={() => {
@@ -1920,14 +1968,9 @@ export default function CourseDetailPage({ params }) {
                             </div>
                             {editRowData[header] && (
                               <div className="flex items-center p-2 bg-gray-50 rounded">
-                                <a 
-                                  href={editRowData[header].startsWith('http') ? editRowData[header] : `https://${editRowData[header]}`} 
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-sm text-blue-600 hover:text-blue-800 break-all"
-                                >
-                                  {editRowData[header]}
-                                </a>
+                                {editRowData[header] && header.toLowerCase().includes('link') && (
+                                  getLinkPreview(editRowData[header])
+                                )}
                                 <button
                                   type="button"
                                   onClick={() => {
