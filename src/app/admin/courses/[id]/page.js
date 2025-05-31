@@ -48,6 +48,9 @@ export default function CourseDetailPage({ params }) {
   const [editRowData, setEditRowData] = useState({});
   const [editingRowIndex, setEditingRowIndex] = useState(null);
   const [updatingRow, setUpdatingRow] = useState(false);
+  const [linkDetails, setLinkDetails] = useState({});
+  // Thêm state để debug
+  const [debugInfo, setDebugInfo] = useState(null);
   
   // Hàm lấy tiêu đề của sheet
   const getSheetTitle = (index, sheets) => {
@@ -741,7 +744,7 @@ export default function CourseDetailPage({ params }) {
     }
   };
 
-  // Hàm mở modal sửa hàng
+  // Sửa lại phần xử lý mở form chỉnh sửa để lấy và hiển thị đầy đủ thông tin hyperlink
   const handleOpenEditRowModal = (rowIndex) => {
     if (!course?.originalData?.sheets || !course.originalData.sheets[activeSheet]) {
       alert('Không thể sửa hàng vì không có dữ liệu sheet');
@@ -757,13 +760,37 @@ export default function CourseDetailPage({ params }) {
       return;
     }
     
+    // In ra toàn bộ dữ liệu hàng để debug
+    console.log('Full row data:', JSON.stringify(dataRow, null, 2));
+    
     // Tạo object dữ liệu từ header và data
     const rowData = {};
+    const linkDetails = {}; // Object để lưu chi tiết về link
+    
     headerRow.values.forEach((headerCell, idx) => {
       const headerName = headerCell.formattedValue || `Cột ${idx + 1}`;
-      // Ưu tiên lấy giá trị từ link.uri vì hyperlink có thể bị mã hóa
       const cell = dataRow.values[idx] || {};
       let value = cell.formattedValue || '';
+      
+      // Debug thông tin cell
+      console.log(`Cell [${headerName}]:`, JSON.stringify(cell, null, 2));
+      
+      // Lưu TẤT CẢ thông tin về link nếu có
+      linkDetails[headerName] = {
+        uri: cell.userEnteredFormat?.textFormat?.link?.uri || '',
+        hyperlink: cell.hyperlink || '',
+        formattedValue: cell.formattedValue || ''
+      };
+      
+      console.log(`Link details for ${headerName}:`, JSON.stringify(linkDetails[headerName], null, 2));
+      
+      // Log độ dài của hyperlink và uri để debug
+      if (cell.hyperlink) {
+        console.log(`Hyperlink length for ${headerName}:`, cell.hyperlink.length);
+      }
+      if (cell.userEnteredFormat?.textFormat?.link?.uri) {
+        console.log(`URI length for ${headerName}:`, cell.userEnteredFormat.textFormat.link.uri.length);
+      }
       
       // Lấy URL từ link.uri nếu có (ưu tiên cao nhất)
       if (cell.userEnteredFormat?.textFormat?.link?.uri) {
@@ -777,9 +804,21 @@ export default function CourseDetailPage({ params }) {
       rowData[headerName] = value;
     });
     
+    // Lưu debug info
+    const debugInfo = {
+      rowData,
+      linkDetails,
+      rowIndex
+    };
+    
+    console.log('Row data:', JSON.stringify(rowData, null, 2));
+    console.log('Link details:', JSON.stringify(linkDetails, null, 2));
+    
     setEditRowData(rowData);
     setEditingRowIndex(rowIndex);
     setShowEditRowModal(true);
+    setLinkDetails(linkDetails); // Lưu chi tiết về link
+    setDebugInfo(debugInfo); // Lưu thông tin debug
   };
   
   // Hàm thay đổi giá trị khi sửa hàng
@@ -808,12 +847,16 @@ export default function CourseDetailPage({ params }) {
           const headerName = cell.formattedValue || '';
           const value = editRowData[headerName] || '';
           const currentCell = currentRow?.values?.[idx] || {};
+          const detail = linkDetails[headerName] || {};
           
           // Kiểm tra nếu giá trị là URL
           if (value && (value.startsWith('http://') || value.startsWith('https://'))) {
+            // Ưu tiên sử dụng formattedValue từ dữ liệu gốc nếu có
+            const displayValue = detail.formattedValue || value.split('/').pop() || value;
+            
             rowValues.push({
-              formattedValue: value.split('/').pop() || value, // Giữ lại phần hiển thị ngắn hơn
-              hyperlink: value,
+              formattedValue: displayValue,
+              hyperlink: detail.hyperlink || value, // Giữ nguyên hyperlink gốc nếu có
               userEnteredFormat: {
                 ...(currentCell.userEnteredFormat || {}),
                 textFormat: {
@@ -904,42 +947,237 @@ export default function CourseDetailPage({ params }) {
     }
   };
 
-  // Thêm hàm kiểm tra hiển thị link trong form
-  const getLinkPreview = (url) => {
-    if (!url) return null;
+  // Sửa lại hàm getLinkPreview để luôn hiển thị thông tin link dựa trên header
+  const getLinkPreview = (header, url) => {
+    // Lấy thông tin chi tiết về link từ linkDetails theo header
+    const detail = linkDetails[header] || {};
+    console.log(`Link preview for ${header}:`, { url, detail });
     
-    // Kiểm tra xem URL có hợp lệ không
     try {
-      let displayUrl = url;
-      let fullUrl = url;
-      
-      // Nếu không có protocol, thêm https://
-      if (url && !url.match(/^https?:\/\//)) {
-        fullUrl = 'https://' + url;
+      // Luôn hiển thị thông tin preview nếu có bất kỳ dữ liệu nào (uri, hyperlink hoặc formattedValue)
+      if (detail.uri || detail.hyperlink || (detail.formattedValue && detail.formattedValue !== '')) {
+        let displayUrl = url || detail.uri || detail.hyperlink || '';
+        let fullUrl = displayUrl;
+        
+        // Nếu không có protocol, thêm https://
+        if (displayUrl && !displayUrl.match(/^https?:\/\//)) {
+          fullUrl = 'https://' + displayUrl;
+        }
+        
+        // Rút gọn URL dài để hiển thị
+        if (displayUrl.length > 60) {
+          displayUrl = displayUrl.substring(0, 57) + '...';
+        }
+        
+        return (
+          <div className="space-y-2">
+            {/* Hiển thị URL hiện tại */}
+            <div className="flex items-center p-2 bg-gray-50 rounded">
+              <a 
+                href={fullUrl} 
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-blue-600 hover:text-blue-800 break-all"
+              >
+                {displayUrl || '[Không có URL]'}
+              </a>
+              <button
+                type="button"
+                onClick={() => {
+                  if (window.confirm('Bạn có chắc chắn muốn xóa liên kết này?')) {
+                    if (showEditRowModal) {
+                      handleEditRowChange(header, '');
+                    } else {
+                      handleNewRowChange(header, '');
+                    }
+                  }
+                }}
+                className="ml-2 text-red-500 hover:text-red-700"
+              >
+                <XMarkIcon className="h-4 w-4" />
+              </button>
+            </div>
+            
+            {/* Luôn hiển thị URI nếu có */}
+            {detail.uri && (
+              <div className="text-xs bg-blue-50 p-2 rounded">
+                <div className="font-medium text-blue-700 mb-1">URI:</div>
+                <div className="text-gray-600 break-all">{detail.uri}</div>
+              </div>
+            )}
+            
+            {/* Luôn hiển thị hyperlink nếu có */}
+            {detail.hyperlink && (
+              <div className="text-xs bg-amber-50 p-2 rounded mt-1">
+                <div className="font-medium text-amber-700 mb-1">Hyperlink:</div>
+                <div className="text-gray-600 break-all">{detail.hyperlink}</div>
+              </div>
+            )}
+            
+            {/* Hiển thị formattedValue nếu khác với URL hiện tại và không trống */}
+            {detail.formattedValue && detail.formattedValue !== url && detail.formattedValue !== '' && (
+              <div className="text-xs bg-green-50 p-2 rounded mt-1">
+                <div className="font-medium text-green-700 mb-1">Hiển thị:</div>
+                <div className="text-gray-600">{detail.formattedValue}</div>
+              </div>
+            )}
+            
+            {/* Thêm nút để xem thông tin debug chi tiết */}
+            <button 
+              onClick={() => alert(JSON.stringify(detail, null, 2))}
+              className="text-xs text-blue-600 underline"
+            >
+              Debug Link Info
+            </button>
+          </div>
+        );
+      } else if (url) {
+        // Nếu không có thông tin trong linkDetails nhưng có URL
+        let displayUrl = url;
+        let fullUrl = url;
+        
+        // Nếu không có protocol, thêm https://
+        if (url && !url.match(/^https?:\/\//)) {
+          fullUrl = 'https://' + url;
+        }
+        
+        // Rút gọn URL dài để hiển thị
+        if (displayUrl.length > 60) {
+          displayUrl = displayUrl.substring(0, 57) + '...';
+        }
+        
+        return (
+          <div className="space-y-2">
+            <div className="flex items-center p-2 bg-gray-50 rounded">
+              <a 
+                href={fullUrl} 
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-blue-600 hover:text-blue-800 break-all"
+              >
+                {displayUrl}
+              </a>
+              <button
+                type="button"
+                onClick={() => {
+                  if (window.confirm('Bạn có chắc chắn muốn xóa liên kết này?')) {
+                    if (showEditRowModal) {
+                      handleEditRowChange(header, '');
+                    } else {
+                      handleNewRowChange(header, '');
+                    }
+                  }
+                }}
+                className="ml-2 text-red-500 hover:text-red-700"
+              >
+                <XMarkIcon className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        );
       }
       
-      // Rút gọn URL dài để hiển thị
-      if (displayUrl.length > 60) {
-        displayUrl = displayUrl.substring(0, 57) + '...';
-      }
-      
-      return (
-        <div className="flex items-center p-2 bg-gray-50 rounded">
-          <a 
-            href={fullUrl} 
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm text-blue-600 hover:text-blue-800 break-all"
-          >
-            {displayUrl}
-          </a>
-        </div>
-      );
+      // Nếu không có gì để hiển thị
+      return null;
     } catch (error) {
       console.error('Lỗi khi hiển thị link:', error);
       return null;
     }
   };
+
+  // Cập nhật phần hiển thị trường liên kết trong modal chỉnh sửa
+  const renderEditLinkField = (header, value) => {
+    // Lấy thông tin chi tiết về link theo header
+    const detail = linkDetails[header] || {};
+    const hasLinkInfo = detail.uri || detail.hyperlink || (detail.formattedValue && detail.formattedValue !== '');
+    
+    return (
+      <div className="space-y-2">
+        <div className="flex items-center space-x-2">
+          <input
+            type="text"
+            value={value}
+            onChange={(e) => handleEditRowChange(header, e.target.value)}
+            className="max-w-lg block w-full shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border-gray-300 rounded-md bg-blue-50"
+            placeholder="Nhập URL (https://...)"
+          />
+          <button
+            type="button"
+            onClick={() => addLinkToField(header, value)}
+            className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+          </svg>
+          Thêm URL
+        </button>
+      </div>
+      
+      {/* Luôn gọi getLinkPreview để hiển thị chi tiết */}
+      {getLinkPreview(header, value)}
+      
+      <p className="text-xs text-gray-500">
+        Nhập URL của tài liệu, video hoặc bất kỳ liên kết nào khác
+      </p>
+    </div>
+  );
+};
+
+// Cập nhật phần hiển thị trường liên kết trong modal thêm hàng mới
+const renderAddLinkField = (header, value) => {
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center space-x-2">
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => handleNewRowChange(header, e.target.value)}
+          className="max-w-lg block w-full shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border-gray-300 rounded-md bg-blue-50"
+          placeholder="Nhập URL (https://...)"
+        />
+        <button
+          type="button"
+          onClick={() => addLinkToField(header, value)}
+          className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+          </svg>
+          Thêm URL
+        </button>
+      </div>
+      
+      {/* Hiển thị link preview */}
+      {value && (
+        <div className="flex items-center p-2 bg-gray-50 rounded">
+          <a 
+            href={value.startsWith('http') ? value : `https://${value}`} 
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-blue-600 hover:text-blue-800 break-all"
+          >
+            {value.length > 60 ? value.substring(0, 57) + '...' : value}
+          </a>
+          <button
+            type="button"
+            onClick={() => {
+              if (window.confirm('Bạn có chắc chắn muốn xóa liên kết này?')) {
+                handleNewRowChange(header, '');
+              }
+            }}
+            className="ml-2 text-red-500 hover:text-red-700"
+          >
+            <XMarkIcon className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+      
+      <p className="text-xs text-gray-500">
+        Nhập URL của tài liệu, video hoặc bất kỳ liên kết nào khác
+      </p>
+    </div>
+  );
+};
 
   if (loading) {
     return (
@@ -1537,7 +1775,7 @@ export default function CourseDetailPage({ params }) {
                                                               </svg>
                                                             ) : linkType === 'pdf' ? (
                                                               <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
                                                               </svg>
                                                             ) : linkType === 'drive' ? (
                                                               <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1852,50 +2090,14 @@ export default function CourseDetailPage({ params }) {
                             onChange={(e) => handleNewRowChange(header, e.target.value)}
                             className="max-w-lg block w-full shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border-gray-300 rounded-md"
                           />
-                        ) : header.toLowerCase().includes('link') || header.toLowerCase().includes('video') || header.toLowerCase().includes('sách') || header.toLowerCase().includes('tài liệu') ? (
-                          // Các trường chứa link
-                          <div className="space-y-2">
-                            <div className="flex items-center space-x-2">
-                              <input
-                                type="text"
-                                value={newRowData[header]}
-                                onChange={(e) => handleNewRowChange(header, e.target.value)}
-                                className="max-w-lg block w-full shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border-gray-300 rounded-md bg-blue-50"
-                                placeholder="Nhập URL (https://...)"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => addLinkToField(header, newRowData[header])}
-                                className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                                </svg>
-                                Thêm URL
-                              </button>
-                            </div>
-                            {newRowData[header] && (
-                              <div className="flex items-center p-2 bg-gray-50 rounded">
-                                {newRowData[header] && header.toLowerCase().includes('link') && (
-                                  getLinkPreview(newRowData[header])
-                                )}
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    if (window.confirm('Bạn có chắc chắn muốn xóa liên kết này?')) {
-                                      handleNewRowChange(header, '');
-                                    }
-                                  }}
-                                  className="ml-2 text-red-500 hover:text-red-700"
-                                >
-                                  <XMarkIcon className="h-4 w-4" />
-                                </button>
-                              </div>
-                            )}
-                            <p className="text-xs text-gray-500">
-                              Nhập URL của tài liệu, video hoặc bất kỳ liên kết nào khác
-                            </p>
-                          </div>
+                        ) : header.toLowerCase().includes('link') || 
+                            header.toLowerCase().includes('video') || 
+                            header.toLowerCase().includes('sách') || 
+                            header.toLowerCase().includes('tài liệu') || 
+                            header.toLowerCase().includes('bài giảng') || 
+                            header.toLowerCase().includes('đáp án') ? (
+                          // Các trường chứa link hoặc tài liệu
+                          renderAddLinkField(header, newRowData[header])
                         ) : (
                           // Các trường khác
                           <div className="space-y-2">
@@ -1969,50 +2171,14 @@ export default function CourseDetailPage({ params }) {
                             onChange={(e) => handleEditRowChange(header, e.target.value)}
                             className="max-w-lg block w-full shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border-gray-300 rounded-md"
                           />
-                        ) : header.toLowerCase().includes('link') || header.toLowerCase().includes('video') || header.toLowerCase().includes('sách') || header.toLowerCase().includes('tài liệu') ? (
-                          // Các trường chứa link
-                          <div className="space-y-2">
-                            <div className="flex items-center space-x-2">
-                              <input
-                                type="text"
-                                value={editRowData[header]}
-                                onChange={(e) => handleEditRowChange(header, e.target.value)}
-                                className="max-w-lg block w-full shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border-gray-300 rounded-md bg-blue-50"
-                                placeholder="Nhập URL (https://...)"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => addLinkToField(header, editRowData[header])}
-                                className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                                </svg>
-                                Thêm URL
-                              </button>
-                            </div>
-                            {editRowData[header] && (
-                              <div className="flex items-center p-2 bg-gray-50 rounded">
-                                {editRowData[header] && header.toLowerCase().includes('link') && (
-                                  getLinkPreview(editRowData[header])
-                                )}
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    if (window.confirm('Bạn có chắc chắn muốn xóa liên kết này?')) {
-                                      handleEditRowChange(header, '');
-                                    }
-                                  }}
-                                  className="ml-2 text-red-500 hover:text-red-700"
-                                >
-                                  <XMarkIcon className="h-4 w-4" />
-                                </button>
-                              </div>
-                            )}
-                            <p className="text-xs text-gray-500">
-                              Nhập URL của tài liệu, video hoặc bất kỳ liên kết nào khác
-                            </p>
-                          </div>
+                        ) : header.toLowerCase().includes('link') || 
+                             header.toLowerCase().includes('video') || 
+                             header.toLowerCase().includes('sách') || 
+                             header.toLowerCase().includes('tài liệu') || 
+                             header.toLowerCase().includes('bài giảng') || 
+                             header.toLowerCase().includes('đáp án') ? (
+                          // Các trường chứa link hoặc tài liệu - sử dụng hàm renderEditLinkField mới
+                          renderEditLinkField(header, editRowData[header])
                         ) : (
                           // Các trường khác
                           <div className="space-y-2">
@@ -2027,6 +2193,28 @@ export default function CourseDetailPage({ params }) {
                       </div>
                     </div>
                   ))}
+                  
+                  {/* Debug Info */}
+                  <div className="mt-8 border-t border-gray-200 pt-4">
+                    <button
+                      type="button"
+                      onClick={() => console.log('Current linkDetails:', linkDetails)}
+                      className="text-sm text-indigo-600 hover:text-indigo-800"
+                    >
+                      Log Link Details
+                    </button>
+                    
+                    {debugInfo && (
+                      <div className="mt-2 p-2 bg-gray-100 rounded text-xs">
+                        <details>
+                          <summary className="cursor-pointer font-medium">Debug Info</summary>
+                          <pre className="mt-2 overflow-auto max-h-40 p-2 bg-gray-800 text-gray-200 rounded">
+                            {JSON.stringify(debugInfo, null, 2)}
+                          </pre>
+                        </details>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
               
