@@ -1,0 +1,4920 @@
+{
+  "sheets": [
+    {
+      "properties": {
+        "title": "Tổng Ôn Sinh Học"
+      },
+      "data": [
+        {
+          "rowData": [
+            {
+              "values": [
+                {
+                  "formattedValue": "🥇STT",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "📋NGÀY HỌC",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "🗒NỘI DUNG BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "🎬BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "🎥VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "✅ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "values": [
+                {},
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.09019608,
+                        "green": 0.5254902,
+                        "blue": 0.74509805
+                      },
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "CHỦ ĐỀ 1: DI TRUYỀN PHÂN TỬ",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.09019608,
+                        "green": 0.5254902,
+                        "blue": 0.74509805
+                      },
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.09019608,
+                        "green": 0.5254902,
+                        "blue": 0.74509805
+                      },
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.09019608,
+                        "green": 0.5254902,
+                        "blue": 0.74509805
+                      },
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.09019608,
+                        "green": 0.5254902,
+                        "blue": 0.74509805
+                      },
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "1",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 1: ADN và tái bản ADN",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "Ehq7JMfHaLTP8DPnBZ0RC_4w5y6bCA2mnoD8FpdF0gQr_hA7twQnfYgzZzyT9iw4RHiGBOckJxm3VRYUKtUAxk_RMHK8lxiqm2mEjczBkdi1_tcz4f322mCKQuVmTM-LDqLMhA"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "b3RzOvvzgLr1V0A9nJH8PU5W8ZrF1EBY_EQfnbIdEXGr2oPB6bXF1rTmly6ChSyKYNvOqzFoV0M"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "Yx6UMD4wP9Bbpa5H7yVGc8NcGZOWSrN_tbz1dd76_MhdrCtAJxAjxBvdaOzFS_bTxInQPJK0BdAAOG8AUqYFO82bmBIl7koGdPbfo3MP93-Z8gsgEo7P4NuSntSwRDIx4t7ozNTZ5e6Pe9uLlVOWNtU"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "2",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 2: BT về ADN và tái bản ADN",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "d_VqiC3mrTBP4O0qr9Rmn_NR5TEKBktJqVKgKHB-AnDf1K5UTqeGAPnFy3F7ZuLZUCF9g_eWFhgF_ibWrL_KMhr1AsAb9yyAfP5ao_Ec8krKr4oqh1G-qhm1iZ_1gq8ooStYyA"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "w-AKv_EFCV2GV1qmQ_ad26kJoSNQrA1_jN_Db4De-phbh9ZhJy0HM_94jfOoKR5MxOO6ZKiMqrg"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "oLXgNCXn2dVHnra9Rx1YPaT7l0kF0DGQa5yu9qKInF5DEfRHfH2csgajp6tmtoJx_z-_de3K0Rzjo1BqSkOyWTsVB9YGw3udUrlvJm-ltCo-pl0d33Z2nWLqzH92BhalRm54csbZmtr8C8LIkNkYoe8"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "3",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 3: Mối quan hệ giữa gene, mRNA, protein",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "laOk7N2SPSvf70NFvAKL-n-T5TrwUzzPp1NYuJZUDiSUt0AHb9RP8pWo4QXwOqt5yuNXpFk6s8lNY4d6-AqC_EMu__yx0x8dfxDDPAc6rZ_OW80CIRd7QmrCMVEW4oBhOZCvRg"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "T26sn_YmTMU-BGMh1V5zkLo1eHmyGM-u2ddc-5--d6MFO5xEbFtNaeHt1u_Zmvb_eRSN2urqVQGVcbPeLBkap_NhMqiAfDVfHhuqm8qEKK4qPEkivl4PVOeJjas8k4sou1vLhg"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "KfPPR7rzcBhbTYnJ84lzsc2YzL3FKKdEyZ-9VuISRj3lUpeoAAh1M3SXA_-7uSFbx6Wb7Hliwm3N2UNXeaISNE7wtynVnbKxUpzbh-DS6vM32YSX3Om16ptB8l__SzSgp3_p7bxhenw8IivrKowsjtk"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "4",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 4: Bài tập về mối quan hệ: Gene, mRNA, protein",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "hCULOfq7sg4rGG7r-kT7_LCwlnPY0Pkd60GHsuTvHdpPOCnG5BVWrWcF2JeJZgscvsmMUGslVyjW-md-SUSA7bq7UI26gvfvAFUe6BbFvdgnLum2qAYpcU87JIIpgy8twITLJQ"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "kUeAjUKCJShBA9jjd1_ieuzEHxlWSx95JIft_NCEHnxl1S4J3n_oeFJIVVavRMpekJGsX6e2tw0"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "N55jE2T8ArwgW65ypNhqQEXLzcCP5pdnb9ipSHU8VxypPsMjtHn8DhnX0Sdj1ElHbTiD1TJXxSSA4un6lcrvaK0EEM6BkeEOsxzkxTshiezH7zDlKvMieWqsxTGQs60ok1xf5lURnKLMnnQ--5svu8A"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "5",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 5: Điều hòa biểu hiện gene",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "U2PpU3mDMvnGCdfTJACxzRumlLpsDZrBquo-cYxBEpewqC6QS37FzrQMYhHnRJnd7PVp0RbILsqicKUeB0MAnLqeZjMwjbpBnvuQ276jQ9HjRMCfOxl8VDHSo6Z1ZGHBvcKufQ"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "Jw3oR2-SX2icOZYxpZxOazsuPGea-4KGiQ0abypaAzmIQN5tIV7L8GKoJuqR2_jbTHTOYT6_amQ"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "putm0yqRM2FCIkWD9h3_FtU107dOhv9RJTSH7lkdgrZzyBI2my-qdzARQJohhtry2FfLXlgq6sQ8sGVEl2-ZAcqYF9fdJZYTARHMJcjwrAvbx06tM_kl5ZR4xlU5HlPOn9laZPEQ_uGb4eTCykLXAPo"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "6",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 6: Đột biến gene",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "TatktzGAShvakVCgSDoCHQIyUAjly8L8hROLo03_UOxf2DWCDWZOXSN-ogxd94pU3pIRSgVVYBR83V6wfSw1kHiGMswQmafuID-5bZves21b0Z9nlOs0TjBwwSrPxDICVhYfxQ"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "vs4_Ku9RB1Ng2R0YuuFvoQ_u1fhZ0ME8Q9ZvkoRw1oG_G6e0WxJmdXvHiCisvnQrvcijGPIi42k"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "sMbYsm64Z8SVU2DoxXb3poTr071oeLEJP4CTfvcjl4gMc2NqGq3ymG-rM9lZiOY0vQ_VHiP3mj1r86jOR7DKFbYh6IT6Cia0D1NNaIlZjVYnb-ys499WTuGdYBgCSdm6oaGvYYJ66lVN-1r3azN4_s8"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "7",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 7: BT về Đột biến gene",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "bM-QbLp3hz4PMXLijQpWDMHkgliVPjNUhQmk1AeQ6SdPbz08YcOmeHPeXZrHQufnPcyLR0DthLBHEymenjcZVKAngZ6BhODwAYTOvypsUgimAXhy-UYwvmMiHUFRXUaVNmiRhw"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "VawLBtp0XCRb0xI3zqg57r4nuszPP76qb-5EYPKtbwLjxfnV_jok5KAAmFaKlDMEsGtxSb99qvE"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "o5FhrQW-D8-VByGkJV_dEZuksTk8vZ-bWHqAZ_v54IiYvHwm0NZY8BePh7a5FQNhjmFRKGTrU1ljiO1KnHTon_s8KXjV2_VIbjNVCZjGp47ZU6hjGitmZoL_PCeQZ1UXsecz3oMU9jqyvSPJOBI"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "8",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 8: Công nghệ gene",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "4xi5L__wrql9mvhMhxBY10flkTLS6knsUCNPTBX7ZJZMdc0n2N5Xl19TYhH9ljWTiR1kWHB74q4IncicpfjYbF3MsxvXr00Pknbn7ph4PEC17sW2A1Si2X6Pq9blnEUYRb0w1Q"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "TdZpvH-vnMLEP2Nk0L5kf8wxT_AeKPH_592-zYbY1XwNDgqhQUDf4IH1wrX_OEJSgaI-QQAbJm0"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "VoaaQQl6gSDvcOpjvYhEuRTez4fdGGE2qBpTZl0LxvXuuR0TvQqOdlXj8EzU6ivATXZOG2we1bWM5xaqgZZIBIqzWll_ZTE-Jj9mW74DjPICw480Gnsk0KBzq5ryTcsloc8Qm_qP1fLOjtc47J8"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "9",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 9 [Nâng cao] BT tổng hợp về di truyền phân tử",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "t_FqgrmaYRL5mgiPuZAK6efuNlC0WsnoWg4pQiHlUu2qtzLBYzQSntiMTGqmkDG0jnROst0kHYghpQGmFqvdstaBkdZP-ej-jq2YJ_j5I7WUIwpfMNuoKUPH2eZaGPtoTQgx8g"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "3aqEp9gJxcH9LAusVbJlAe1O4an-kaE8Y_LqI1jpAqRdBBrXnH5SpCuNkng2ktn8cXFATg5khpM"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "bRMWMN5zbUpl449grevYD6pDhIzkivF2FrCXU-xXoW-PVX7ohoKUXLHIwvvhuCsYQOJemcmcu-1IOKoicYN6sRYM88qKajv2y4feJ2njV4WVGleshi1pGJxz-JRCo2t84PjLwmKNoDhB4M73IfI"
+                }
+              ]
+            },
+            {
+              "values": [
+                {},
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.09019608,
+                        "green": 0.5254902,
+                        "blue": 0.74509805
+                      },
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "CHỦ ĐỀ 2: DI TRUYỀN NST",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.09019608,
+                        "green": 0.5254902,
+                        "blue": 0.74509805
+                      },
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.09019608,
+                        "green": 0.5254902,
+                        "blue": 0.74509805
+                      },
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.09019608,
+                        "green": 0.5254902,
+                        "blue": 0.74509805
+                      },
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.09019608,
+                        "green": 0.5254902,
+                        "blue": 0.74509805
+                      },
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "1",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 10 NST và cơ chế di truyền tế bào",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "L6oWoRomFoDbmEKR7OmAMv7KTPJEsasur3NdsNIb9-wdlQHsDGkS_NrY18e5HrK5ssznrUJQTWpWdbmcPOIqwAYyNUdjpcihRku_rYlBdjxujqaKzWbS2EObkH4NlDf7M3ANIg"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "VljFPx3-7_xQr0hIaVPGXz2z0WWyTTGM42xUJ0Pq1epug0ur0qUus9xIKX3Zis-E9YEXdTu2Y_E"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "0vQM-b_JZdQQzFjyO1LPsPc9y0WmzCgzIbuxrXUff1QjyVgzTFw5gmRkyES7ijTiJ7jRGJ--qEEKJPbgzBfDcnEk20ztDCsyx4Uu0LoYTn18k4FgIVISHJnQeMp0RU-SZzEwWZq8-p0DVnPhvuc"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "2",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 11 Nguyên phân giảm phân",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "IcUYYbFNSlI8ATTlQr1g3r_xu_D8qmP-ia3GBA01QN0kdW6U0B1mw2mbLF70PY0e5gHPxs40V5Uu_raxEKPEm_IbmGrVCHqOGcbURKSKuCcI9YqhSKxgWgP_pSDHAId5KRP8uA"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "QIxcdVzMC7a4oabb9gLxg-gx50FJs11WkTbR4v8_cVkCoMC6cGDLmQUnxwZ2VpGEwUMEhIefN1g"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "g6PdEiB6EFexX_ZmgoXiGEl4JNO_3YtISh992iE742rpnj1_cg1BnJEu84GOcd0-3Oq0Ws51V0gdFzy-JdUrUpwFCZYvt88c4ObZLy_Yip9Y0h1bH4T0Zo-AxUXCrSsF96g4KbxdAzQ6_AQ9Cy4"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "3",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 12 BT về phân bào và NST",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "CqpC_JDrShl1GhrleLg08I9xKbCbfnE3hTLYTAICXRDTMKglh01yAdSJDnZOqpNMdeyS2vhSkvKRBAkgSw0TLcbIEw-7wFFi3ghnVjIl1VA3W-V-qIIgfbugSFbqC0IsByipkg"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "vM223ne4jiqKuovYWn7rXRYGzMiGm7whL-OF3MNR2LZraUKfEL6IW-KaG7Q1dwun1ZvhyKzQs8w"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "STkKjxDpvD-sFGCut8EV72IheSHVC9OuBFBQDvn_hh9u8kknIbeNfpAq7WbSIYllmNCiL-d388WYu4pOWvVifCzZiYZT13NRf6KHmATIk7G-A4guH7pK6G_xkmI65N5arz8Dad2-XP85xmuSkkc"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "4",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 13 Đột biến cấu trúc NST",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "jLcOMSZAZsfCdsbeGtT0hzCZLABeBxKDWoUq4Dg5T_hgZmo5pluAbvQErI_zQIIaIntrLhysf_TU_loUZuuGnYfKqbpScnyXqqVYFaW2VlAZOgkYoxz7GccydmzkDpW677pIsw"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "HRoDmY10OYJcB7XYYksdN9AVUIYC50W7d3LzoGqbtzilcJyiKi4SIdoyBv2-11LJma-KuEfmlNk"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "a-8He2QGXIPPIJNsFcUg2Z2e9nNSPNBV0yMV0FyaDdD0UWzNp4kgSteUDG_2lPwrsuWhZNQHmkB9dYOU-rGdGLC6fiKEEmt6nGqVy4rBCRiUHjC-py2rA2q8FrjhbpGKUC73xWEBI-i_COuONyc"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "5",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 14 Đột biến số lượng NST",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "wLgwp7iHVISpjJ80-n9sDNYlodr_ZIa3Uk8AVCI8wF3QYXeUXZtAyV130cGqnfA4jbyN6gPfZLUHrTer7KZ6kHxmjxgV4vDYS-sHeLiyy0DXqRC8624R_XQbnlVW27qnpFUiTw"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "U8CjgeGxVDk88a-vDCveBq92_QTWclJXp9vY96b1j568iEjTvubG_prPBngmjYCNKdIxarA9H_s"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "P1KMEU7D4Hf6EQEZH_D_jVC2ih_QPqRhWbSxlzrQfkSWdNndH8VS9wCywXU6-zpxoXBIkxRVeDZv2rOg2OjKjXktuN4-I2YefhJvPBu3bXqWM7--R9PxNtuc-e5pB7-qRDpD6hN_TmtJ7kuqfCc"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "6",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 15 Bài tập về Đột biến NST",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "7YAeBSse6Vc-ugwVloUAuaijgGVvdNfXTjyuEVA0AJX2u94ZjASNdsHxjlQvu519FP-8Z8VhQbjZb23i7fzMDoN6fYFs0bgufZOz3MEsFsqvrkIIsaZwIoMUEI-Ir4lML3bUKg"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "UOyQNvPxvhndzQ7GNd1nhyEQ47Itm_NqG3um_XhgFgQYM5ertjCUVw9n3-W92bmcDy4OsA-B-tg"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "NmQx5B7kmpNCaFgDpVi7CnNYnX5xIoeDoRCYVurGKaR5ltWuu87Kh2SZdZlVdssKS7aNfr2ANw6pMmFRqaIRO0ien52N5eSls1vCvchoeGJc62MjhOC1rFkBVvBSQNWQYcpmUOvdkF8I2i20PPc"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "7",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 16 Học thuyết di truyền Menden",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "Hn5_3bhXtXR1oymRn98SWek6uJXpfapy5E1kHYU1cktDGi_hxhQq1vYL2fdKdvtEWNYi38hbMLZLHkQKP3OOor4wlJjDLAu_aWupDz2zGDorvTgNXic3lkvnWG1eyJKpb1tBwQ"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "01Dkg5w8QMQCTNgxQk-XUCBWCZ8yvXeYllvmU6kXd3f732FITyTShsklL7jMpxIt1LU3O7k-wns"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "WjLeFEHNzbL2IvX5xkIc3kTdzXwOqDCiBpTx4Ah568cP0FY7RU2BBcE-CWlXvr7ZN6Q5onib3LBZrH5j5CgggBYTIoD8MJE6jQXxOADCdGhGhEwmPhQQQe-nin_1XGECRSbESB-1w8h4Qf7-w1sXF-w"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "8",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 17 Bài tập di truyền Menden",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "djr2Tmjs86CbM0Bqj2vVG1ILPxKWTyfAW4CtSuyCuMV5aZqEDGdIp0gpaDbQAnVSgrM9t71b_fJo8qipzl76bu3KBpswbihvhCr-QZo0Y62QyK6zmHJRXp_eDzL0cqNe4IZwiQ"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "-L_1WFky7HKlRnx9uV6GAcB3mRKtaSAmoy3y6Vf4CdeEfMhBIw2ooDcbx86T6oxJWC0HkPu-2Ho"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "uKZmdH-EeVKnoZ-h2cN3iMoPNBXPARbEsy-1LRAesGQxugP8c46lVjrz3b6QXiWakzFFtqlnrpgoP9YqUv-yDvIrk0r9MDBpkvLjNo8fT7UgAJ2Vg_RymyK6GfkxyCP4ZOaLTC4QmbW7uKpkwJs"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "9",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 18 Tương tác gen (Mở rộng Menden)",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "f7LjrfwrEPC6IcmwRDhRVVQqIA3YZeYC-ruloIHrlXNtglOnR4ud3KwnO1oL1qW2eucX8pamKYrfyDwsQX51LzRLJKzYC4sY1-OpXjjfd6l7nyBzQhn9BbXm-AAmdmiHG6pipA"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "ZHFpdz8npqPnWpDTYodO98fELfisxgQNozytfPDi9h4pTLKLCgJ_YYtnmhTtqBU0KxK4UcqfBhg"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "9TufsawOMiMWFA-vRw3b_LpIS7WfFj_FD2Db4Zr3YgAHKC05BpSpWcwWuds_XzlDR-TXI9IgAyCUtPkfJAaAt044BnnjA2RPxugs7MpPHkPwyPkfRNVMMKpEja4el7XWXyHEK9Ve9gctK6NRzVQ"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "10",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 19: Bài tập di truyền tương tác gene",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "iiqT2zWHvShuo9xClAwyyPpkbOJCzfqvTvjKC7LoAORh7KkGg1g1_QtiKwjDviCXbyTillf0Bz9payW9DoQnxuDJ2NYlJX4ssuldDhKcgIrJTuUDUEUJKbzEkNS5ulijf3hlNw"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "YB7yMtTtcUwIYLE06aY5ys1jyELE62dg99Xi7gFLurjVU3FVHBUq-wdtrHdOOw97n1mmi5_ychg"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "gmne9f5ERv-ZbMuKbLWdd_UAzxCbkfjsmAzpTUrLs5oBuMQqHPFKe0O2ih0Qe1iV3SOIt4heD7BC9Ps6Ni4_6A1Qr6hOYczz-k_IxkmFgMu3URruJWM0qKv8d2_tKUglYxmMHXltZViG6BPGnig"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "11",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 20: Giới tính và di truyền liên kết giới tính",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "WzPI7nWpeu7p68_Ak412ssGEaYBNB72oduE9QXre5tFaKO_8Ofp9rJyoBvm47L6pxHdn6rahNOerw9Z0rFygH0cBDcaiuLdJxbkpWT0ihkBrLwV3RYJNuW7Y3hDcxpANGcelNA"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "On6061NaEGjs9m2pdoD8Y0WWfRdAbDULA5R8xTI11y5LnmTpuWXtIKksTaG1tpAMuPU_8QZKA-I"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "7OtmkifoSTSSx05G5H7fgLxm3qPO8dHjZFxGoGGeuUCJuIrI6gxDmAfVRcjWlq6_w3ja-3-nsqv3QntwJ1mHkZ5W8I7VzzVdZzwrk_DTs0ptOqgv-M_LxiIielDlwzNnTKEW9cyaBdz4fbY_JFQ"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "12",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 21: Bài tập về di truyền liên kết giới tính",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "slQt_lTRVrDsj4eIOp8gywSlSpv_ZgW7-fKLv-iHax-GiGGdFO_tJD4I7CnLHEYTQi2eKkF_clh314IhH5pLJvOKV3BF-DWpYt_xqdKRyL9QPnd3GmqnEIkDQNQRPtAX8tmDHg"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "p1wrx63izJIQWs8uYCvecYf3JEz1PZ-ZizTYjH7nPcQj6wx7U5YxYNCi_n_KsL5lmZZOiLlwe1g"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "d9B11m_B-3CTi-NHYEzlf4rT45aAfiZyIVWizINk-E40Luiok6ccJ8KHcrw1r6HNsAYhni_Zy9maKyxplqy56NU2ZteTaFgr4t3aNtGDKpkr0f58GtyRuAL-uuUv5b18QHYsNBVp9cufjDPJ2Nc"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "13",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 22: Liên kết gene và hoán vị gene",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "LCUiKm--GIoqi0DI5GsPsyTzNV2MxXncYIS6veMeDg5msN0Pq41l9_GwR7g-TYJdZSyOHRE5jEUknRqZyUbVMqwYBFxcKBcUgjfC2_3r2W4CSgRu4Ftn0JiLgVHma2bB5tElcg"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "qDyjeAZlaDnrr1ZZMVJb3zlqK0IVNQJLcyur8fFSREKbYnqh3ZpFrRxeWcMbfBtst-KItPkdwgMvRAYkM9od_y2m1Ytd1_TZgJvbFAOcTc4P-8WxAkfh3JuLD5Kj8E4URUoUZA"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "UE2rPLyzb-hezD-kxzqscCXfO2NL9umkjXmv3ngYwqEXDAq8eGTUsm6E3n2r44P0DOXv5SxjS-pU6lSSt6BQWPa38vhNOSj7BGuskCJ_xa53-7Vj9utZqAeBxdnSSHRIiCRSHCmvWvTdvDSMZ8Y"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "14",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 23: Bài tập về hoán vị gene",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "Tq3XBdesFsM37-75EBZdcNbHW47bKUjfq1RYrewSkO0L6umWjBBzhDsK1eEViesUWp1oMSLewkY0HPHWVE5zPOe1y0TVPJpcYp4LCM6Sp7U486G679mi2jB7vntwBV8evliQ9Q"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "HTE2eytA1Hif4x3wm6yKjST-A99sl4-2__TlD5u4cD_1eMVOONyRCNuNSycI-DSrtl8k5IdlZYhndB3A0xX9G0CXwyR3I1K9hzkR4mcMAuRWSulz_4i6vGFiilGGRuxsFjTHiw"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "xbkA59V6WC-EMk2RTuDJIx0sGjufp0QREpUUFe9JtS08MpLXXEn76qtBt1ZCukwLDaCaVzXe32yUptjgoV7yIyaNkumjoAwOw8gt8EyKE16kveD2oOYq0L2nr8D6weWQoMQqgEUDtysCFPh6nzQ"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "15",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 24: Di truyền ngoài NST",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "RXRlvgmUy8eiEjDbmHiM8fmnOcvV8DNJ0k71Cjq8eDbr0H4fHfA9Gylc8CRiuxnjQaMWji0DLe_sqxXK7ExiOQFPA7b8kZh9wzTeDKCIig6LyqhVkrbH0jGQMWZd0_wSBcFufg"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "jsq0O2fos3HZIX3JA0FEli2dxL9dDhS2pcvNqgvMcZgWO_2QV__pEdzkYSG_AOvGqHeHAAOysU6pRu_eyAScaQpuz428v1LrxaOBJlHANb57-7NDDeLHp0BSr5dGfE2h2TKHnQ"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "I9pmJUyxXkF5-du9Nuck4SeWBiymYgDEHaAFd6Yzcf4oFbUhfuFIplgO70NvlVmbcIhFUdGd0KpvaXhbwvjwXctKqQ9QpxrSpwcQFtgRyCu3lAPyIgiko8pU8-38YQviPuLxpCz2RcQsMGAa-Tg"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "16",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 25: Mối quan hệ giữa kiểu gene, môi trường, kiểu hình",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "izYsAWuko2teOc6PJQtUnYM2ReMahRcDtyamIze6JoLlrZydpG2CrrHWINJ5QPz1L52kIOzKSv2gwGrqtePqkVUrl3bDbSAwPMcJfdtv7S6I39Phbq3qpPWmpRZlx4FnDqLqjg"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "IBOhko0rp_4iCsbiwi2c2Bk_hwYiRkPidkZYm1-M_l4TyAOzGbjI5e84Eh_oxtGKyywIX5M0alWsk_Dl8RmnB-y1i4mdYoElWJACjZfpl-4VO9O4yhSLCBo8sp7youLbi2QGUQ"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "5F5qiVneKwTneajRTbh1_MZ4C1N_L2Nmw27_bQyUEkGha0cPy_MZXwD2y5mEYae2JfHyyTIdbmK9nlNQ2D1AADn_CrA8GVYtw5gYcw_19Cpm6O-hrR4-4rAEnJwwPyIdbZ9v3PUdaF8u3-2MPKQ"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "17",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 26: Thành tựu chọn giống bằng lai hữu tính",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "_aaf_kLc_Uq7N2JNFhDuF9bqPM1Oda2LYzA8750q69uKaTtmvQoH7Em2Jr3Ax-8WDQOYBlGDgESuBxDIiPQDIXyf7W9FPNx1EwCGgfU5eCrqTQnzC2z0YkCxx-I11BXBdFR9uw"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "CrbfvKLmInM-0y4bPDOToouS-05dmDRQFK30xNc8saTKPhNoYRT2ylaQKaqrMUlhlGqk8K0Vi4EaBTxiLvdYzL-AsXGqbTI9Az4j5m4z8zZbwganY4kfiond36pkCyaTBIARoQ"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "XK-4nJh5znNE-LtX8usSmbEC7UtwB1p9KUKSrJKVIpfa1ftlJ3uBRavtnsGyjkP7RZljUc000LAeLRqM6m7to-W-UuCFughMSksONSae5xoKPvN5KroIKS5XR1Qan9dljr2KocA8cPufm-sC5Q"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "18",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 27: Ôn tập về Quy luật di truyền - P1",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "TjjVPNM1tKJtNbaOfqzB9VK3gKh7sMKJUOe8yDojZqTYZS-4kT0j_kW6iX8w3kivyOgzgueCFHwpJWjRn5iQlGKRj6sKxNH8ryYk750qMFSU2qeTMivgnHuHj4jc2KyOfHWKjg"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "-29EZ_K4hSaQbQ7CGScPEKlGO21TfBt3jxdwd0uiyHjM_mC9SksJzFCeBew0vESA9Es-l8bMGI0zZi7MBKgsJbSl-bnHBYXL-ErWa8XttE0eS8o3PgmVtHbd65MkYJJ5ZqcvqA"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "2Dj2F8OmOyvGpwCPqFPv9967RPtwJd-8xd4vfZ7IOE9pKv3otKFw7EcREy8ifL5-Zqa0EpPMp4JDWjN18JmRQkf3pWqTd0oBdwG7gEvnCo9kLT-lCSPpFFVOvdsQI0FrBj9HXn8xZuy-spcEYnw"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "19",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 28: Ôn tập về Quy luật di truyền - P2",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "OxM7-M8lVapBIjeONQQbZgknksiOheiEgUxvshweUCrdM9eHaC_02qph-MS4RvakwR14O8xjEF7umw9Uxjli2GliFhaLtEagrVbb3K9h8BbGffjiLAvYIHHvLvC0IwFcNEXYXQ"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "9nIYjoz8RtdQAvP1fGruh8UET4rSUZZQ0Y956WGJfnHsHum3g-28-7f2Xtl1llpMSULK0YabvkVXWx8BRNbxYT6GzFRv31KrzY-ZEafx25M3_SMnsqayAJjp0ps7C47Fs1CWXA"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "dTLO0OisfT6h9jO3U-tV3Tz0wKTfaR_GmQ0hxDLPvM1bCMaPpmCU8NCxFba1iMr41i1a0pJa5CthEpiws-TPLqj-Z31lrhjMZOM7XZ3KlJKFnunIozfFGB_yIpBNoi7Si6GLFLDSvF1mzb5MbVY"
+                }
+              ]
+            },
+            {
+              "values": [
+                {},
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.09019608,
+                        "green": 0.5254902,
+                        "blue": 0.74509805
+                      },
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "CHƯƠNG 3: DI TRUYỀN QUẦN THỂ VÀ DI TRUYỀN NGƯỜI",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.09019608,
+                        "green": 0.5254902,
+                        "blue": 0.74509805
+                      },
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.09019608,
+                        "green": 0.5254902,
+                        "blue": 0.74509805
+                      },
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.09019608,
+                        "green": 0.5254902,
+                        "blue": 0.74509805
+                      },
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.09019608,
+                        "green": 0.5254902,
+                        "blue": 0.74509805
+                      },
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "1",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 29: Di truyền quần thể",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "3tywd2sGkAbAG5SjTRN3P-HR5QfVst-s1BI2vAcZlPvx2cwehAgIrLuzBq56LzI9BGJsVZ3fg9HTF-Q41hvM9AXkpelZGJbVle-ke2dldfuZe7UxMjNPruEU1VAuZRmWCcr2IA"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "16o_FiYxxW0Sgroz5pQpba6SqTR4RxLbTUcqsIIdQYPde-jtvqbARTGEA7ocQ9xmrTenJwF1OnToCde97_xh9sCLl2KJcJLv3_9uchgAeJ_1sfUtuQ5E4sp1i1vZjuUy-i-LIw"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "G7f7RqrQEWTaUMBCBT1lAiuzdJ71QWLm0nJq9Gy-rfUf2PC5mvsbt4bhI6DfG5hDGvl6AGEssjIaQKcGU7TgX62dv8B4gwj-Oqr21tFVo_UF86h2eaT9EADuyC0IMCr_Pjb96AArf3UToTmT_3g"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "2",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 30: Bài tập di truyền quần thể",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "SuSIfvet0DmHU_e6n7NgUcffAf90neOMphfz4lO1vP0CGiCxcXI8FWrBb1YfbDPo8jDbExxl0T-K95B8Rhyw9Xp_65qYBu1WVqVrMrVLr1zDYwB8m-NC-tyMEPIJEYRFPwpJNQ"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "LmqQ-G_D_xbyI5WsqyYnaTN2zvY-0fYmM3pKFX9gEwEtZeXn54TisslMJLFeZRBWxOtnT8yl062hKQg7JF3VBEqFlm5nuxpterwFIiC2YLsmbi-2WjHw-JtTsX7BNBmVd-z-4Q"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "VVjKviuvxUhrN6DWRmq_eHRlXBPqHnyw5BJjb9ZG4nLypDSLLXxUPs6goibj-cc51uKfA6d5xkD2Nn_pPUxKaO8yGyln_3iqEOTh3WhSUmSWu64eSLXUchr9Crc0aE6CePdDmXuZ_hNCgx44ow"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "3",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 31: Di truyền người ",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "GXNBZ1jJJgzBkdscw-s2JhU9EMCxov00zs3099kZCYNtBx-weiUnf8Uvi6IiDxDsaGo-RRCLToDQ5cIvftJQYBs-aF59qkyyCLpvO1XE3optpWahPEgLpQJkthS5RaTKoa5KQA"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "f5lqmImoCwSd10JlUs82pMJFLfZOJMKyMunrOVM6wXXUChUOQAHi1yuXObE0XRzGjemoTWtNgAhQyjON7l39FYQE5cADbeDxQ8ns9jBEBmDAR55l7yWTwWjcRlv7fmyiBZOuXA"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "rNGqqSkqNklOuZrXTVvij7YyC0SVaj7A4wbfHOcnorzksaQnr4JH8ItmXV8DYCb6Op3NQAq1rrx6A0Ybfk7USbTGFxLqPcRFzoOv_nYY95ZKLCMQwiqrWPb3Im12r4qzZ13PRMf1sV3Wqh4MYqw"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "4",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 32 : Bài tập di truyền người",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "CYM5xQgrOegH37ClUlRWRpFJYmfBJ441i1QmbRwrB6QcPYDvdsaUVePKQtR22zWfJlTTocJN29bjIom5E5KnxY9fqToUgdjiKa6ZJGznmNtZWzL91ironSn1ZdI4WEH8vc7ZTA"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "DNtJYakCmqqc5jzmmQOuzimS_WTYofufrmrFDXt3-YdUqNuwDMaVcrG_4fSp-TfIDgkffnH8SC0bt84dE1ulABpy08djMVoTP3F4gFeAWzm4hWG-z1XSIBW1puqeTK1CNCEzhg"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "UMIDXZOF4rMtEcyOmAO3npgcEBCRfDy07nMwNiuuAuOslkyE67K4_xJk0tB0x83Hdw_hAv3GI6u7iQymOdZSKF7uidNuLcMEc9LVpqnpl4iF5bdUaNaT9DwkPXv54DDdss3kok9NjiC16hrw_x0"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "5",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 33: Ôn tập về di truyền quần thể và người",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "rRNoQvqt7udx9JTFqVBFhIZsIzBarIwqdj7LvYTtZlyYcWCYH9Pl8Wb6Wou_UW-VPdxHceRSmq4z5VpWEhT9k2I5LPfSvuPw6ir5Iy-a6uUuZqPGzBCCBau2bs69oZVD8Uv42g"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "jciqspGm12mMKabW1smmxEZO9r9dw7dAHqk5oFG_kBitJWt2vQH7_GHs-0pz4RkaRutzaJqbGsk52B3K5JmZNkUzl-aMmayMxgadatLW4eG2SIqiwt6MgFbzXTuTTtm5MbhWng"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "CWJoMUwUaAhhE8g41wQ1GUdEIHhUugXOYNpH-z9OIxyzzq-iAdcvAGBUjSCFG9WVmFhU_bvRDvOCehWaRcfDTH1-2dIqCZ0z3WD6jLDmCZwTvmSj00TCmAwBc-kr7aAcGaImv-UuW9H1TzZ1oik"
+                }
+              ]
+            },
+            {
+              "values": [
+                {},
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.09019608,
+                        "green": 0.5254902,
+                        "blue": 0.74509805
+                      },
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "CHƯƠNG 4: TIẾN HÓA",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.09019608,
+                        "green": 0.5254902,
+                        "blue": 0.74509805
+                      },
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.09019608,
+                        "green": 0.5254902,
+                        "blue": 0.74509805
+                      },
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.09019608,
+                        "green": 0.5254902,
+                        "blue": 0.74509805
+                      },
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.09019608,
+                        "green": 0.5254902,
+                        "blue": 0.74509805
+                      },
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "1",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 34: Bằng chứng tiến hóa ",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "icdfhb-kX5FrDuURwIaZ1Xh-siduyG0qNSKfHLMc8u0PUGGWHnU3-D8-C0PDiljFo7-g51j4e7pka54TXttil7AWLsIJ5aJtq1eyA0pqhEKFyer9YT4R2M1lQx3gC16CJWlxcQ"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "J-1iqHZKsRnwAXNJcO7u7hx5YtceKjBzOPGfs3koJA0ph5yS3Djdcky7qhMDHN27T4-lbiE-JcrHQBJXBwaui9ztD1_XgxMJPyVVRg0gSNKHxoDFg_PbNLlEBelxsE4W-Enc5g"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "KTWQR2mkvy0o9flI28z4VnOBEVjV2iWps2bNRafAJTCd4vb3dgyZKQTCjtqdDKmW1Tz-0-0CXztBeCPULpdFO3J_CuVnPShJu66-FCzHJhjNHOfkmMNJtNvTFm0Kj260tQHh4Vv4lm9WhNivH64"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "2",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 35: Quan niệm của Darwin về chọn lọc tự nhiên và hình thành loài mới",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "FmL2PHUs2T_SghvZO-MNL00i-X63PDALVGRGtFbbBgCv0DVsXUpPVxEIor7DOAFAUedapl08lig63ffu8RX95MgtwcjpyYp3LPs6nn4bvmgPvsJm_AWG7Dghd5N55p4mAM0ApA"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "qsUPeNdGMi7AKmIzTxFE4dOlT_5d2qyAWUXewryrL78TqXUUdoBRriJk_IbnJlqxu8xSF1wKC-5rqAZA9YrsWBjGZRIB0ECGi_PbyqvEZdjpEbt-nQX_bq7S-0JK09IKLDIqIg"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "dogSXonRbmGPt-HlRGeHK75jKzbCvv1rvDOrMJYw2n5rPoNdBQ6nP-aQMZjyxRHGx4FITzHlVnKdCS6PBAfH7pRySzrPanjB14IKHqkpzDTfqd9hUTqHK5QshqVsVDhtmVZODT_iRfDA0oGldb8"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "3",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 36: Thuyết tiến hóa tổng hợp hiện đại",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "w4iBrevPRA-U8oh4VjXlR8QcbboK3Jkba1IQdIHXPZ6kAhsjWcdh0t9vHGS0Hf1zwcXwBdPG7vEvwhHj5jO8ruxeC1WkV2dqnIhM4PRxBnqn11RtP5SWJeyT6TvA7__nnjh6Xw"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "jmJz-ozdNIm8x52gVXqwpcSODdzwlhisN20uSQ2hk49KIdq6vviih_8hMU0gd8OmWGKDgXYKmWb1ctFzwikoyqHbFpmSZzNCr2zMekpJjjS8z1gH8GiLpntckC4O5HpVEK82IQ"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "NEatwIrgwrnPz6Ooz1bVPgs4mBw5y16pJe6BsTpEBf89eqqtNs92NxUpU8Gd0mHPGz5bq39HP2e7bXwpY22YBtf9ZlVo5uy7Q0YhTsz7gTO3vhj8JOg8jpkkrGLKqunXBJ8Xu-6zONklkwv24g"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "4",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 37: Nâng cao: Bài tập về nhân tố tiến hóa",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "3rwp9KSETWFc_xAR9VfsD6REHRy8_YtWsgtX-ClqtO1UdrqfR85ik9TkPAz_Fcw021vssJxXKGV6MVeC_5f-CMFF9kMmktlT3cd9A7voJzgbGsgVuc8FRDVmnO7PRL3H8JFAMw"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "NGSx_OYfH0QmbP2TtiqcQ1dEOI81Eh0fpp2wBYmsslTYiTu3mH2VpkyScz2gywSBiycAHUEDb-gY8qmxsJcfqeJjRszsxpB9yzvVvmQGLK-UEDcDgStoJoeWqBAGrYHROjogqA"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "Q-p7JpbmNSNDWTEdu-GfU6IoLYIDj6E3FbOKXmZcqAVF2e9kHHUG1wbvmoQM-jtv9L2n-Lrrzzg-T7gcUDHYXUvEJTxhf5p9XI8QM4uZIvQaj45MyHy-IGDo0t6fg3rb6GV0gXarF9BdJgnYsCU"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "5",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 38: Quá trình hình thành loài mới",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "hallDuyaP3laZ7syijxUjRTaVUo4Kb3r7G9vgav_coSqa375YT1nFMEh5gPkaRsVAtXOf7PgXS4I4Fh76qQq3PBXAUyv7haBpeTTV28eLa_juDojVjV3yfeh2DJ5ywwzZzlwbg"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "5hYjuNzvGDC_7dcrURpVIL_wSpWyDzV3SRps_6kz02GrGujl_AyuroBx8Vwu2AyOS_1CvL9lPzjNtmBHByrzORtOD-PTSQvQeFSS43k8GkgcjE0g856dav6Pbs5SmngxlpHROw"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "jBR4EqMfXtePV5kguk9d2CWHe_u68Di4KoIWAtogYk62L_B-0thT9Q9_qs4I6fPGy8ibS4OMgfqnQbf0MGYVHVVGMgcPpMKxjWwZMzFXnZpqSYgiYr_dtuAvbxqJXRkt9S8vog_ziDgDO_wfnvI"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "6",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 39: Tiến hóa lớn và Phát triển của sinh vật",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "CAsTkU2Rbbb-1he4Q0_8UebxoYtbfx3cVf3oP7qpINV6q-OSgV-g-PCNvPI1DZ5NkZ-VSD05FeafTH05vmpUX_Jb4vHI_dHN3DfAr4EfXHUVuAPDvErrts2c25S8gw4FBBNAbw"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "r8pslQYiyK9MU3MkeqZlVg1Vck-uDHQVD1AQsrQLb58_tEDv_MMTIWfMvDjRxN8vF4UdTZJf1X9S_QswdJInQQe5ykltFSCQh-hLmlAC92pm1GUEF2gtkpXRULCvrdgaaC3WPA"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "I9k5TKTjgB3bprCAINRtGMjCQf6UosENqokuOR3DmjVm5eSk2S53pCFKUGAPOVKUljVJe5Rf8s4hv7GtO2goPnuJNx5UqKMw6K_PEOYn_GADSMUpH4WL9qFBB0U2aZ_sYxTOHSn1LpprfxJcsM8"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "7",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 40 [Nâng cao]: Bài tập về hình thành loài",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "vMVWPvV4sGvqVzgQ_4bvkWyGSb2siFaFamqbidKASkKMQ0REcjicfZjyjsPTp6yrvnGyhszv5XuqjLshV_o3cGFZWcTeL0MfaMIr5N0-HAGx2_JBOpmykbTw61XJxSm9ZO0rww"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "wuuJe4lfFqnJdoC0ObRdurD2ww3XIk-dBKMqViERoyj3GSuzM4rlDD0-lCyCXOBZ_fFBU7ktAbY4N-LHoSIZR9wY0HM8sANP7AjwQAk2i9ZhNQoTNVVstapyrwi2sSg80lSI4A"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "KKmvJIof4RDFujvsZDLDFzQAoaE2vsZZwpqaZvEJsoKXZVlPJidjqYsTjnBLxuSIPraCjy-BDUujhKVPVJMpEFaPUWgc6kk5eWpk02Z7WgFZma5jteLyxLT4Tls5cknIOn26Z6KKmzKTIPMBpg"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "8",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 41: Phát sinh loài người và sự tiến hóa của loài người",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "AVvlLQ3Mu73_e_n9VBTL4bOBawrKuS6PWBDGr0UqhMmOzn6JDUOFzZnerzSz3Cp_tajP2smF5FNtnU8vm-m7vhbPv9F_iXzfi_FA2utUaptpZovdswmQMT_tiLxzywSf2z3PgQ"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "XNBa7uxNvKdvXC7RHrDx4ohjcO9ncyULqP3-qLTAN__liS7guNBfgvDcSflG_04ob_a0WyhYXOa0KD7_gsEyXzQd2TnCmYEGNvGtl_fCeJALMuBCT4VCQyQb7anJ4fKJdRleuA"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "49IcPoGRztW37JfKHpfjT_kjF2MTeKiGegVAUMgHYnjJ73ksC8RIviBBuxI_4SEbnXtt2DKI9enFQFNb1u3njCldLAp0w4If8T3dybNQvlzBACpIRhU9j-rYuN9M64b7K_w2i9GXd4Ql1DQOXw"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "9",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 42 [Nâng cao]: Ôn tập về tiến hóa",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "ojk2rMipKZCdRsBngtxQFAe0cAXmXJo144bQycvUKaxhCmo2mSZ9Mg-S1d7IWXgl2qfjNShgm2nj2g1TXqNgj2hliBuNdOiUOeWf2ebGqLj9eLsgRkFpWvtwb4i4GMvr5ef9wQ"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "Uv5q-Gr0BWemLy6bwaTC1u0YIutslO247edxt6OexpdI9CpA8kh8fcvzGWPLokeae1Ja8FwpbB1DgszGUTqzL0YAX2O_WCrFcXt_Yv_gHixc3PXWuIkdYx5H6OLIFzPHyojARg"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "L9An_4oF191Oe0mEmVTzNg6eXrrDetWQAwmOQIaVtdGYlHndw_lHdy_8bf8ttZEcIw-SbgIEutz561Veg1PkIaks0CDTQkLW7D_OY-Z-Dt3wn2GQeFdEvG-TI9CDazTv4s2anaNYw1voCEEwIQ"
+                }
+              ]
+            },
+            {
+              "values": [
+                {},
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.09019608,
+                        "green": 0.5254902,
+                        "blue": 0.74509805
+                      },
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "CHƯƠNG 5: SINH THÁI",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.09019608,
+                        "green": 0.5254902,
+                        "blue": 0.74509805
+                      },
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.09019608,
+                        "green": 0.5254902,
+                        "blue": 0.74509805
+                      },
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.09019608,
+                        "green": 0.5254902,
+                        "blue": 0.74509805
+                      },
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.09019608,
+                        "green": 0.5254902,
+                        "blue": 0.74509805
+                      },
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "1",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 43: Môi trường và các nhân tố sinh thái",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "iAcsQPufX4pZfnlqCdOsHWRb8mfDNXpG2F6kJpe8mb4544wZaQrbOfsAXsUkOVqN1Y7dOOMYzmXlO3fL8YAyyGUs0MbnaEofzoCWffR0C5Mg8C8fqJISF41rChhKqtZnD-wvMg"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "5eJBsn28mX2bJfCtlbYQF_gdU4qULtRiz0Igx2h7NGpM2cD48p59GN1znDDJMRwmWWqezO710CmvSl7Gb4_q2qJYa2u62csPltScnchbqMAuuEgL8Ub_74MwOFfSkhuyTDSfGg"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "oja_nVlB5lRsQhvsFhiG1hhKcT1H313MK_YrWQAQLOid2RpCOSNvRVA7kQzwCoy1YgyYBJLFOexJFBg4qLPTL0FzaF3eoe_IO8wFqbIO5KKs6vV_3auR4FFdJ7q9QM1oilCjmsrs15qRtFp-AA"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "2",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 44: Sinh thái quần thể (P1)",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "Z5ZO-jx9Xr3irfN98viQiOXJttn_1PfpSjj4Ptv3xyM6Mw_aLksH_QjzAIlIC-B2iBjoZ4Rrd54b5nBithCb69HyYKvkTubtjgv_ZckdibOyh7jLrEFHu2cFCwIAyspjqcglig"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "9dreraEk76-uEN7jZEv7h9PuCjl2c1cz5Gp5UJuU4fO55xGlz-mxugufEDvD8eAEkSfEMNWN0uJlkfW9e5U2y84RP9apDQm1a19U-r_CpSwjqWrj04WT3jfKwsftH5q8TiEs9g"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "8RSbhiiGgRQ5oCnqtKz3Tk0jBaePwZtv2rJE526I0IFE7gsifmN5EaP-Pwb_pAi2KRwgM09qdHF8FE5-jE6LrT1qL6DQ2H-74XL2POoKai9HjR7I00gd4rDEWg0QtTxl1JpNUwoVLHTAiFoNFg"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "3",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 45: Sinh thái quần thể (P2)",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "LE3jLSifGGPsNT3vxmme86aMb4vdPaTa5njAVaeZ5vNV8qezoprylEPgzKJJnTZ8u97HgGh7wmOOBwNDeE0lawVY6FpF3dUvZTxSjeovgEN_mytFUn88VoSxdo20N2c7os-uYg"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "FigRuNRqwPwYrBLibL1p3CnvTaRJLHfgCFjvEuFFQzHwpXi4G3Ui6-I-OZMUsCpYuFG--UB7uuRW9StlXTOZ1mOhazZ6UlIVjjRdFybzSRpxWfFWvWqp3N1ABVmFxoNQpXtgcg"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "o02pZ6Y_QKlsjfrohgF1aJAhQEPpOj4I_In5PJx_QrSEpVhZ7mALHdIMVB7L0cpUs35B1lfD7gDUl47QvdyVQgUYokCxORGTarOGsl0sNNe7VXbnsWGphZl1YjWRtwSFs-n_ydQkfNqjLWaiyA"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "4",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 46 [Nâng cao]: Bài tập về quần thể sinh vật",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "18kFyvtQ10Cjj9RZgSu1g4J6hHJducz9En6jwgtn_c1s4QC-I6ikxk_LoZSNYF7jW972vkRnU3pGY6UP8NHvRlPmJe2DnxN59D_VgyjF4-yecPhDDTsGEbA4ix4R9kLz-RELQA"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "EUiKBfD-VNlivFoyDpbFKXAkEv2dBt_1wSMlNajwj9S3f6glJnBZH0oPH9ndv_r371-bvMXPyGZRs086U8kzE-hcAv_RCLXUYOxWAfadC3QSIDhqeOXHR_cFMLrfHqnsTLXtvQ"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "NIaf6OCvDbp6keJAyoFADh9t38JKluZ_rGQG9Fmv-5PIRAWhbVnyL6TfDSCryhycmYguU_8ch0PcGh6xSdr2K2T3zP3WRPhF1SXXwkLAxRnu9ilGdfhEXr3g6nIbrK68yfro74-DYPTUgZzjLg"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "5",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 47: Quần xã sinh vật",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "zkrUjdMLfKgmJVmku6rqGnYhregp7ZQZYEAl4hP9W1vYiybfRop8eRZpW_DJa3YiL5hFrXPTegYsynxYJa08qQFoYLEZ6SK3f4bmCA9YZSVm2rFybK7Agq4ulISwKxNVLpvmUQ"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "6ijMSsJcTnErCgV9OjTqAgr-b6eI-ZRu7raS3tRKDxW92nj1a7J7WMO6fwMpLzij-3L_D81inMYS50nwuRdXJknzF9-enc0q7qBOotVkSNoNq76uso5QHjcC7NZm5zZtWVHm_A"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "pT8quNW19B28OKW7gKATKosUkcXOaYkw3mmsl670MsUT7kvIMvpO1iKXrwhcapNa9fx7VKW66bP7mCFtIf4X5ObZBWpRO4GUDF4HJlhH_mIVEJN18zg2HOsbV2FCbzgOSPmRG0uLx6l1h_Pudw"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "6",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 48: Ôn tập về quần xã",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "WqWcdJ1xVBYdXOPQY-T0DzfvlTJPwvuutQ_msGOysDYVnIAHxspNlzr9X4_lRZHqxGepZC_BIpkthqUN9wO83nANf9lzUCZ19Ch5wKh71IpsZmC9lG8T239SINpWL020UoE9Ww"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "dYAA0I5vMf-PiQuslA78Tq4_iNP90mCg3_FzOdhMNuDSozH7BCm-dTkeIByELDfMZombqmbS3vIIdvlcDgBHUsiiALq5DIvwWocAB56xjqPLk5rChqJe3Z-1DB43g9eAkDZtjQ"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "HH2NgkL5vgZHUlvv4qcifBIBpR76-847b0zVU3mUi9lHYZrJDE0jviGo2hKOstcIOmTiIYq3DGFQka_xsjjz6GUnN-dj-JrIeGZswpjeJSquImSUX6TmKYDrRoJInGFyiurQAPHzvAB-dPjJ4w"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "7",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 49: Khái quát HST",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "ya0ET6MRkTc5p9i7lWkf_Ukx6Zltat_Xx8O5puKUP-z1-KussHO0D5Vu8v1VI3Lpk066u2L6pdlGB5CfLstPN_dM13dFbGHZTQ0Yz3QoB25sTbbYp37F0O-IwWJPHqDy2oDHJg"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "CtLxuoiP5Zkj0dvKe1rZT7K8KJQ7wgjyyY9s8R4FCmdjhKGTOermn-Oovefm87y1cnSrUiwkFdpBLx-zYBQwxJk4WzUCcNtnbxfCA5OiLJZMZBRWryM-C6FQzutbJNIVx3othg"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "DvIWf9QrC0muJd8tMUQWgd4b69crBd53YqqjExDw2gBn6X2igK7qL8CTq7_Uu4eXsBll1QvG-yef-cnosromNqBwlFMxEF9xZ0ZpH34Jhoz46NBgBKvcVKxZ4Ooe2-UT8_qlwp_QVH5qvUKO3w"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "8",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 50: Trao đổi chất và chuyển hóa năng lượng trong HST",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "8qMfkrM-ahTj24rpkhBS2XrlEmULmGOr2O_wjDaIub2I0CEEqDbtoNCv8HCQeyGtJiOL39vftBmXceorlX7loRtrx2gCjtiYG7MA-2iG7el-h_kDEBWIKiK97mtZoWZc9ZhprQ"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "5by8i9Z2PNrE0eStKqcqyp0eTVntjLjg5v-AmJXteeecHUi9k7wZ_JbqHFgMBNrDCPLkgDLRBACXrXQsFqIT48ZFqc5muMpV_RbDqIUdUMW7OaEgJD9KCEZsnpD-7_8zoTZlCA"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "vVTSVgoNS8afmBc-FkVXWYuh7mQhWup9Jc68sUDF17l-ZlMWrkZe33hiMf5dBXPAsKshYxCmDzNvCOkj2V96zkYzs3Ozw9NbvaUvZbc3WcvMsH79lk8BXBSSVU70cYOGdFkWv4E5DQiXBak2DQ"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "9",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 51 [Nâng cao]: Bài tập về thành phần của hệ sinh thái",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "jDTET6zDP8-OWpRb_8vxsbo4ejuJMv_krN5UPKTrMaV2cUJPjA6VHDeWYSPBOIUQ1envvQYYHhk1uWpW7FddpVe236bER3Ni95dlQHDxpaxuD0IWS4z2w7xaRsiAM5HbQYIXkw"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "bTqdRGDtYsDVGUxIjeJX-39D6OjDd8A8Mbt1GimQBK7DTPZ2HbDZFIEx-EQu0aRc9z95S52dkdZUYgaQ892EB8nmpoeA6yJhE1so1RQ6ZWXpYKvffdKLAyzSPFXg6rzAk9mLsg"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "R81zwNe4Mchy91D9a01AJ1DaW278k_W-j_I-ThrGdlEJGhuJjSLIAiWQDQCWO_s15ra4kW5JtGHWk8gGdwN9EqUxg2f7S1dXlyDFdkT0V9Wk-E7OhMP6ZqpddKH51-aUSz3U3iwmGOIc5dEDxQ"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "10",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 52: Sinh quyển và chu trình Sinh địa hóa",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "7Kb3Pauupgy2BcXDfd6lN2eI0m9-hBRldtOREGCziMZ-Yr3snNKJmP77w7nNSdDtJ1Gzkj62Ny62cRqBkm6bjxtYoqcpPjUiV1Dy_3EKYD388iPAn2KcDEEOGAzIkoOj6Y_ehA"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "4UoRU4OjH4YvMHVh9IT_Op4J_78NR7eRD05UR2VP_8Fl3zZrYln56B8mbXyTvgWSFIWhIn3t1rQ"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "BxfZF3Sd5J8_oadFGbmnUYShPcgsyy02FZzOyBgJ8vp7XmLtDwKYR5RMirNAB0E7uWuNVS-Egn0nvwyrSKIqRooZjp6X2I9VOngHTkEo6gTRBxwKlIqpNYWTbzBN0PG4E-GgPvkZsE_dXi4HJg"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "11",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 53: Sự biến động của hệ sinh thái (diễn thế sinh thái)",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "CfhFVNADYVJt3yQHntA90Xrd9Lh3nPnnzfJiv2BdgoeUSfHOq7VWrrLbvZGoKhPQNZjISjWe3SyiQfRgFMYVTgSfQfKd5NAtzco5mPnD-ZvgGtC0_zCzUwvzIc-RnPHd7jtUng"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "FEpQH2GWNA-wPQnE7zvXJQfioeIzgYqz6vJ7aRdQnrPewqmIZWBIgG-eTS83cZ8jAQHhImAGWK-Q1XWE-HF5aP6NPQN82TVclGq1gCrF3R-4u9K0ctt7KEd9x5aXHecXrRNQCA"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "pZLOQ6MEZmvrXh1f_vdqs7AJ6GUJhHty1Qlo_l2bq-FzwI0Ww1YWCHJh_YHYLxDxdGogmp2eJCiLtz9ChTDaD9X7u4tiAJIYaEiINwj3kPQrY7x1-ZnrQVTGAsnTY9vL3PM3Q1aPWpR8jloCxg"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "12",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 54: Phục hồi hệ sinh thái và bảo tồn đa dạng sinh học",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "j4212JShtg5eGsJoEYLtbUMGCmFpGFvXyldmFKFDuhuMfXV2lmI8Y12mqZuDv4utBk2moU8ys46mcmO2xu0p7ut4mGv7Z7_O6N9rFvEJ_KzJ2hOg5-Jj8ROzWzNd_5wNNLmDaQ"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "feP_PBRyJQh-3NWBrmYAKDp_XdmR8HESwj9JcWEM47R-hnhFrjQnamJZR8jZqaWTHrPxW2y4NnzPkjr5zLFTxIUbmf99qwpSSQ5_KsyCADxhbC3fs889012YUaGQqn1eaIPS3A"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "FN7Y-ORhxs0Eblu4p0eKS1lMmlX7isYTh4Ofkqa-1fE0LNYrdmhuiWNA4v4-pNhgYWeVQ12BTHUXYkI2xiJmnDM9YoLqgMVBGs7ynBv82oLrGgh8SicWkJW7HCNz2QFUlHp9kvXT0MaR38Nq1A"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "13",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 55: Phát triển bền vững",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "cB-FOLID-cuBHQa3_20VoMpquQkCq_S5MN9mdvW6qhEwS1f4Rh90_rBGVGZbmfFvU89wb0lmsnjcaUKKtKfMdRpa7Are6yzQ-zN2NEADfkt4RvIDh34ryaWNk4gXsZCLNnxZ1g"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "agMUpraaMwTMcbkmgptEj7pFJGOc9zfFb1cZfkGAMFNFKilEtEMyAp1T9Jb7LSu4zJcx8S25q2qFZr8qhehPqv3-3gHU0SibTuN8oT4SPywsF5oMQt_C1gyuibZFbE26guQ2HQ"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "nnURozhQZSSHSAhfitipVHzTIuJ0aSIiotoLow2gVLZld-uINaSdT1TXJtHcp6GgrhCn8bbpq33QXjvtfXS0cCzSlRVKckXwK_CGykxifpBupnMRU7nDp6YA52tnKzAUEf_4IVGNvEpzQTzo1Q"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "14",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "-",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài 56: Ôn tập về Hệ sinh thái",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "fontSize": 14
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "-2nrCw0kotf_QwlE2GSq8UZMuxnrMJm3hkE24z8BIQY5odacSk3aFm7vfBspI2YKawGYoWx5Tbq4oxkmlIhEkCT3UBJ8DjYcbLH8vIuU560XTakA4OFqlM4jemJUrccww6h7vQ"
+                },
+                {
+                  "formattedValue": "VIDEO CHỮA",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "l5RjKcg3AUXGwPaLqT02PqxK5q5N3ctYRkWfv5w9BjR2niKEswsc1lySLa1r9-cAcOGB-0KQxFw"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 14,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "61VDcC-QODjKCxEceR5zYB9hXJXJqwyB3nidwcEzaJbypQMs6wHZDlCaN3iqhhTnkQ5itowDLvJ67ZcthPh-aMl0TCVM8vCyZnEQXnG_tij9X8-pJVrc8asXpt4cNa3gBQmO14hQThcowxVn7A"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

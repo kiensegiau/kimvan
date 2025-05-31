@@ -138,6 +138,54 @@ function processHyperlinks(data) {
 }
 
 /**
+ * Xóa URI từ các trường link trong dữ liệu
+ * @param {Object} data - Dữ liệu cần xử lý
+ * @returns {Object} Dữ liệu đã được xử lý
+ */
+function removeUriFromLinks(data) {
+  console.log('===== XÓA URI TỪ LINKS =====');
+  
+  // Kiểm tra xem dữ liệu có tồn tại không
+  if (!data) return data;
+  
+  // Hàm đệ quy để xử lý tất cả các đối tượng lồng nhau
+  function processObject(obj) {
+    // Nếu là mảng, xử lý từng phần tử
+    if (Array.isArray(obj)) {
+      return obj.map(item => processObject(item));
+    }
+    
+    // Nếu không phải đối tượng, trả về nguyên giá trị
+    if (typeof obj !== 'object' || obj === null) {
+      return obj;
+    }
+    
+    // Xử lý đối tượng
+    const result = {};
+    
+    for (const key in obj) {
+      if (key === 'link' && obj[key] && obj[key].uri) {
+        console.log(`Đã xóa URI: ${obj[key].uri}`);
+        // Tạo bản sao của đối tượng link nhưng không có uri
+        result[key] = { ...obj[key] };
+        delete result[key].uri;
+      } else {
+        // Xử lý đệ quy các đối tượng con
+        result[key] = processObject(obj[key]);
+      }
+    }
+    
+    return result;
+  }
+  
+  // Xử lý dữ liệu
+  const processedData = processObject(data);
+  console.log('===== HOÀN THÀNH XÓA URI =====');
+  
+  return processedData;
+}
+
+/**
  * Tự động lấy chi tiết sheet từ API KimVan
  * @param {string} sheetId - ID của sheet cần lấy
  * @returns {Promise<Object>} Dữ liệu sheet hoặc null nếu có lỗi
@@ -334,7 +382,10 @@ export async function GET(request, { params }) {
       console.log(`Đã dọn dẹp ${filesDeleted} file tạm thời sau khi lấy chi tiết thành công`);
       
       // Xử lý hyperlink nếu có
-      const processedData = processHyperlinks(result.data);
+      let processedData = processHyperlinks(result.data);
+      
+      // Xóa URI từ các trường link
+      processedData = removeUriFromLinks(processedData);
       
       // Nếu là yêu cầu redirect và có URL gốc, thực hiện redirect
       if (isRedirectRequest && processedData && processedData.originalUrl) {
