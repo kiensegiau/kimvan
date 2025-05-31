@@ -2,7 +2,17 @@
 
 import { useState, useEffect } from 'react';
 import { ArrowPathIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
-import XLSX from 'xlsx';
+import dynamic from 'next/dynamic';
+
+// Import XLSX một cách an toàn
+let XLSX;
+if (typeof window !== 'undefined') {
+  try {
+    XLSX = require('xlsx');
+  } catch (e) {
+    console.error('Không thể tải thư viện XLSX:', e);
+  }
+}
 
 export default function TestSpreadsheet() {
   const [spreadsheetId, setSpreadsheetId] = useState('');
@@ -10,6 +20,26 @@ export default function TestSpreadsheet() {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [activeSheet, setActiveSheet] = useState(0);
+  const [xlsxLoaded, setXlsxLoaded] = useState(false);
+
+  // Kiểm tra và tải thư viện XLSX khi component được mount
+  useEffect(() => {
+    const loadXLSX = async () => {
+      if (typeof window !== 'undefined') {
+        try {
+          const xlsx = await import('xlsx');
+          XLSX = xlsx;
+          setXlsxLoaded(true);
+          console.log('Đã tải thư viện XLSX thành công');
+        } catch (err) {
+          console.error('Lỗi khi tải thư viện XLSX:', err);
+          setError('Không thể tải thư viện xuất Excel. Vui lòng sử dụng phương pháp xuất HTML.');
+        }
+      }
+    };
+    
+    loadXLSX();
+  }, []);
 
   // Hàm lấy tiêu đề của sheet
   const getSheetTitle = (index, sheets) => {
@@ -62,6 +92,12 @@ export default function TestSpreadsheet() {
     }
 
     try {
+      // Kiểm tra xem XLSX đã được tải chưa
+      if (!XLSX || !XLSX.utils) {
+        alert('Thư viện XLSX chưa được tải. Vui lòng sử dụng phương pháp xuất HTML.');
+        return;
+      }
+
       // Lấy dữ liệu từ sheet hiện tại
       const sheet = data.sheets[activeSheet];
       const sheetData = sheet?.data?.[0]?.rowData;
@@ -122,7 +158,7 @@ export default function TestSpreadsheet() {
       
     } catch (error) {
       console.error('Lỗi khi xuất file Excel:', error);
-      alert('Có lỗi xảy ra khi xuất file Excel: ' + error.message);
+      alert('Có lỗi xảy ra khi xuất file Excel: ' + error.message + '\nVui lòng thử phương pháp xuất HTML.');
     }
   };
 
@@ -258,6 +294,22 @@ export default function TestSpreadsheet() {
       <div className="max-w-6xl mx-auto">
         <h1 className="text-3xl font-bold text-gray-800 mb-6">Test API Spreadsheet</h1>
         
+        {/* Thông báo về trạng thái thư viện XLSX */}
+        {error && error.includes('thư viện xuất Excel') && (
+          <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 mb-4 rounded-md">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-yellow-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-yellow-700">{error}</p>
+              </div>
+            </div>
+          </div>
+        )}
+        
         <div className="bg-white rounded-lg shadow-md p-6 mb-8">
           <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-4">
             <div className="flex-grow">
@@ -360,8 +412,9 @@ export default function TestSpreadsheet() {
                     </div>
                     <button
                       onClick={exportToExcel}
-                      className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
-                      title="Xuất Excel bằng thư viện SheetJS (chất lượng cao)"
+                      className={`inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-white ${xlsxLoaded ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-400 cursor-not-allowed'}`}
+                      title={xlsxLoaded ? "Xuất Excel bằng thư viện SheetJS (chất lượng cao)" : "Thư viện XLSX chưa được tải"}
+                      disabled={!xlsxLoaded}
                     >
                       <ArrowDownTrayIcon className="h-4 w-4 mr-1" />
                       Xuất Excel
