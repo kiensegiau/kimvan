@@ -9,6 +9,7 @@ import YouTubeModal from '../../components/YouTubeModal';
 import PDFModal from '../../components/PDFModal';
 import MediaProcessingModal from '../../components/MediaProcessingModal';
 import * as XLSX from 'xlsx';
+import { toast } from 'react-toastify';
 
 export default function CourseDetailPage({ params }) {
   const router = useRouter();
@@ -49,6 +50,10 @@ export default function CourseDetailPage({ params }) {
   const [editingRowIndex, setEditingRowIndex] = useState(null);
   const [updatingRow, setUpdatingRow] = useState(false);
   const [linkDetails, setLinkDetails] = useState({});
+  // Add new state variables for sync confirmation
+  const [showSyncConfirmModal, setShowSyncConfirmModal] = useState(false);
+  const [syncPreviewData, setSyncPreviewData] = useState(null);
+  const [loadingSyncPreview, setLoadingSyncPreview] = useState(false);
   // Thêm state để debug
   const [debugInfo, setDebugInfo] = useState(null);
   
@@ -192,48 +197,69 @@ export default function CourseDetailPage({ params }) {
   const handleSync = async () => {
     if (!course || !course.kimvanId) return;
     
-    if (window.confirm(`Bạn có muốn đồng bộ khóa học "${course.name}" không?`)) {
-      try {
-        setSyncing(true);
-        setSyncResult({
-          success: true,
-          message: `Đang đồng bộ khóa học "${course.name}"...`,
-          inProgress: true
-        });
-        
-        // Sử dụng phương thức PATCH để đồng bộ khóa học
-        const response = await fetch(`/api/courses/${course.kimvanId}`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        });
-        
-        const syncData = await response.json();
-        
-        if (!response.ok) {
-          throw new Error(syncData.message || 'Không thể đồng bộ khóa học');
+    try {
+      setLoadingSyncPreview(true);
+      setSyncPreviewData(null);
+      
+      // Gọi API để lấy preview dữ liệu mới
+      const previewResponse = await fetch(`/api/courses/${course.kimvanId}/preview`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
         }
-        
-        // Hiển thị kết quả đồng bộ
-        setSyncResult({
-          success: true,
-          message: syncData.message || 'Đồng bộ khóa học thành công',
-          inProgress: false
-        });
-        
-        // Tải lại thông tin khóa học
-        await fetchCourseDetail();
-      } catch (err) {
-        console.error('Lỗi khi đồng bộ khóa học:', err);
-        setSyncResult({
-          success: false,
-          message: `Lỗi đồng bộ: ${err.message}`,
-          inProgress: false
-        });
-      } finally {
-        setSyncing(false);
+      });
+      
+      const previewData = await previewResponse.json();
+      
+      if (!previewResponse.ok) {
+        throw new Error(previewData.message || 'Không thể lấy dữ liệu preview');
       }
+      
+      // Lưu dữ liệu preview và hiển thị modal xác nhận
+      setSyncPreviewData(previewData);
+      setShowSyncConfirmModal(true);
+      
+    } catch (error) {
+      console.error('Lỗi khi lấy preview:', error);
+      toast.error(error.message || 'Không thể lấy dữ liệu preview');
+    } finally {
+      setLoadingSyncPreview(false);
+    }
+  };
+
+  // Hàm xác nhận đồng bộ sau khi xem preview
+  const handleConfirmSync = async () => {
+    if (!course || !course.kimvanId) return;
+    
+    try {
+      setSyncing(true);
+      
+      // Gọi API để thực hiện đồng bộ
+      const response = await fetch(`/api/courses/${course.kimvanId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Không thể đồng bộ dữ liệu');
+      }
+      
+      toast.success('Đồng bộ dữ liệu thành công');
+      setShowSyncConfirmModal(false);
+      setSyncPreviewData(null);
+      
+      // Tải lại trang để cập nhật dữ liệu mới
+      router.refresh();
+      
+    } catch (error) {
+      console.error('Lỗi khi đồng bộ:', error);
+      toast.error(error.message || 'Không thể đồng bộ dữ liệu');
+    } finally {
+      setSyncing(false);
     }
   };
 
@@ -2237,6 +2263,154 @@ const renderAddLinkField = (header, value) => {
                     </span>
                   ) : (
                     'Cập nhật'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal xác nhận đồng bộ */}
+        {showSyncConfirmModal && (
+          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+              <div className="px-4 sm:px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                <h3 className="text-lg font-medium text-gray-900">Xác nhận đồng bộ khóa học</h3>
+                <button
+                  onClick={() => {
+                    setShowSyncConfirmModal(false);
+                    setSyncPreviewData(null);
+                  }}
+                  className="text-gray-400 hover:text-gray-500"
+                >
+                  <XMarkIcon className="h-6 w-6" />
+                </button>
+              </div>
+              
+              <div className="p-4 sm:p-6 overflow-auto max-h-[calc(90vh-8rem)]">
+                {loadingSyncPreview ? (
+                  <div className="text-center py-4">
+                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600 mb-2"></div>
+                    <p className="text-gray-500">Đang tải preview dữ liệu...</p>
+                  </div>
+                ) : syncPreviewData ? (
+                  <div className="space-y-6">
+                    {/* Thống kê thay đổi */}
+                    <div className="bg-yellow-50 p-4 rounded-md">
+                      <div className="flex">
+                        <div className="flex-shrink-0">
+                          <ExclamationCircleIcon className="h-5 w-5 text-yellow-400" />
+                        </div>
+                        <div className="ml-3">
+                          <h3 className="text-sm font-medium text-yellow-800">
+                            Thống kê thay đổi
+                          </h3>
+                          <div className="mt-2 text-sm text-yellow-700">
+                            <ul className="list-disc pl-5 space-y-1">
+                              <li>Số hàng hiện tại: {syncPreviewData.preview.currentData.rowCount}</li>
+                              <li>Số hàng trong dữ liệu mới: {syncPreviewData.preview.newData.rowCount}</li>
+                              <li>Số hàng sẽ được thêm mới: {syncPreviewData.preview.changes.added.length}</li>
+                              <li>Số hàng sẽ được cập nhật: {syncPreviewData.preview.changes.updated.length}</li>
+                              <li>Số hàng không thay đổi: {syncPreviewData.preview.changes.unchanged.length}</li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* So sánh dữ liệu */}
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-900 mb-4">So sánh dữ liệu mẫu:</h4>
+                      
+                      {/* Headers */}
+                      <div className="mb-4">
+                        <h5 className="text-xs font-medium text-gray-500 mb-2">Cấu trúc cột:</h5>
+                        <div className="bg-gray-50 p-3 rounded-md">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <div className="text-xs font-medium text-gray-700 mb-1">Hiện tại:</div>
+                              <div className="text-xs text-gray-600">
+                                {syncPreviewData.preview.currentData.headers.join(', ')}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="text-xs font-medium text-gray-700 mb-1">Mới:</div>
+                              <div className="text-xs text-gray-600">
+                                {syncPreviewData.preview.newData.headers.join(', ')}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Sample Rows */}
+                      <div>
+                        <h5 className="text-xs font-medium text-gray-500 mb-2">Dữ liệu mẫu (3 hàng đầu):</h5>
+                        <div className="bg-gray-50 rounded-md overflow-hidden">
+                          <div className="grid grid-cols-2 divide-x divide-gray-200">
+                            <div className="p-3">
+                              <div className="text-xs font-medium text-gray-700 mb-2">Dữ liệu hiện tại:</div>
+                              <pre className="text-xs text-gray-600 whitespace-pre-wrap">
+                                {JSON.stringify(syncPreviewData.preview.currentData.sampleRows, null, 2)}
+                              </pre>
+                            </div>
+                            <div className="p-3">
+                              <div className="text-xs font-medium text-gray-700 mb-2">Dữ liệu mới:</div>
+                              <pre className="text-xs text-gray-600 whitespace-pre-wrap">
+                                {JSON.stringify(syncPreviewData.preview.newData.sampleRows, null, 2)}
+                              </pre>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Cảnh báo */}
+                    <div className="bg-red-50 p-4 rounded-md">
+                      <div className="flex">
+                        <div className="flex-shrink-0">
+                          <ExclamationCircleIcon className="h-5 w-5 text-red-400" />
+                        </div>
+                        <div className="ml-3">
+                          <h3 className="text-sm font-medium text-red-800">
+                            Lưu ý quan trọng
+                          </h3>
+                          <div className="mt-2 text-sm text-red-700">
+                            <p>Việc đồng bộ sẽ cập nhật toàn bộ dữ liệu khóa học. Hãy chắc chắn rằng bạn muốn thực hiện thao tác này.</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-4">
+                    <p className="text-gray-500">Không có dữ liệu preview</p>
+                  </div>
+                )}
+              </div>
+              
+              <div className="px-4 sm:px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end">
+                <button
+                  onClick={() => {
+                    setShowSyncConfirmModal(false);
+                    setSyncPreviewData(null);
+                  }}
+                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 mr-3"
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={handleConfirmSync}
+                  disabled={syncing || !syncPreviewData}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {syncing ? (
+                    <span className="flex items-center">
+                      <ArrowPathIcon className="animate-spin h-4 w-4 mr-2" />
+                      Đang đồng bộ...
+                    </span>
+                  ) : (
+                    'Xác nhận đồng bộ'
                   )}
                 </button>
               </div>

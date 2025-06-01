@@ -1,0 +1,3712 @@
+{
+  "sheets": [
+    {
+      "properties": {
+        "title": "5V ĐGNL Hà Nội - 2026"
+      },
+      "data": [
+        {
+          "rowData": [
+            {
+              "values": [
+                {
+                  "formattedValue": "STT",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.019607844,
+                        "green": 0.019607844,
+                        "blue": 0.019607844
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "NGÀY HỌC",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.019607844,
+                        "green": 0.019607844,
+                        "blue": 0.019607844
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "TÊN NỘI DUNG",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.019607844,
+                        "green": 0.019607844,
+                        "blue": 0.019607844
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "TÀI LIỆU",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.019607844,
+                        "green": 0.019607844,
+                        "blue": 0.019607844
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.019607844,
+                        "green": 0.019607844,
+                        "blue": 0.019607844
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BTVN",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.019607844,
+                        "green": 0.019607844,
+                        "blue": 0.019607844
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "ĐA BTVN",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.019607844,
+                        "green": 0.019607844,
+                        "blue": 0.019607844
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.7607843,
+                      "green": 0.48235294,
+                      "blue": 0.627451
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.7607843,
+                      "green": 0.48235294,
+                      "blue": 0.627451
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "[Văn học - Ngôn ngữ]",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.7607843,
+                      "green": 0.48235294,
+                      "blue": 0.627451
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.7607843,
+                      "green": 0.48235294,
+                      "blue": 0.627451
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.7607843,
+                      "green": 0.48235294,
+                      "blue": 0.627451
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.7607843,
+                      "green": 0.48235294,
+                      "blue": 0.627451
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.7607843,
+                      "green": 0.48235294,
+                      "blue": 0.627451
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "1",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "27/3/2025",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "[Văn học - Ngôn ngữ] - Khái quát chương trình học - Phân tích cấu trúc đề HSA",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "TÀI LIỆU",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "z7ckJ_JPUM0y0-ewRkqJ6_OUz1UXHlKcnl_PYcraZq05Za6b6j3MG6wNcETiUX4wnexxXKMetJD8Ny9CKKoslYDogc0T_OUdQmfDO9-_4eWVbrZFFndtOZmFnp0VZtoPk2zxNOiaZJWYmtkS0g"
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "BXWqukpvbE2WesnwS_FA1mxg5YuW2i-j9m3cPM6JM7ZtyTS6pJkhwVlJdyMR9EG9ZYqVBvpnGPo"
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "2",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "10/4/2025",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "[Văn học - Ngôn ngữ] - Chính tả",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "TÀI LIỆU",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "uQlo4W0zfE6wZUFq_3i1bYNtQJNt3CV-Zq42AfQzMLvZEEgXpAehyO-a6mlDQBFd2DrUkFu-2MqJ8PHiz_pgbgMSDXbcWugxzvIcQSNxOHq0ak7IAcrXEkQBB-d9R-gMSQmcFTmMPvgYiJPtrg"
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "MXoNlGibO6_m2dUtk8jmFOmOYhj99LQJRQwIenYeHTq7vA_unW4zs46Z01THzOnlMTnqTioqfZ0"
+                },
+                {
+                  "formattedValue": "BTVN",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "j9caHoPXVWSroL9YBlgjL5y8TyksQDDepL05LsH-JwT0A0V4bXx9DDiH8efIeX1hveGTyV0w2TQW8LzzFg7bSIiTo4jHOu0bEULpj7myV7Appuyg_FyufAN2IakCVCe9dDurL8RjfWaYsuydsg"
+                },
+                {
+                  "formattedValue": "ĐA BTVN",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "hMCWVuEOADv6_GcBaWofdJD-sNT00wO2nlJYpb35r0mH-So0vkit7vteHOlMhIWn5xOargz1rmyEZhpLzmSYlVM4_iuLOFnyt5dWU_nurcG1cq_ARs4rWXbymAfslVwXVeuwY271EIYIfvK_fA"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "3",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "24/4/2025",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "[Văn học - Ngôn ngữ] - Từ loại",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "TÀI LIỆU",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "1cZp4ssjN1x8Y3PwXsgQL0P_zg8J_g7drplQkYaYmWKsLz872yH9gpJZlDbycGZZerWFSAT9bKF0f8YOI2gqHZfhxZNHDQHK99rkF7UBOA5v4s9Zc9ocO7qWZ5Qw81PeYjPXVhmyhYP3PHAI5Q"
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "TiRPAOXH4ofB5TbBPW--IAsJRXM_kird5j6bg4x8_McHCTtAfRpbofR8K-h_nZMEqmbUriGu1eI"
+                },
+                {
+                  "formattedValue": "BTVN",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "GXtNPjIbZp0qAwvEOze8T6nlTfeOfjvXJ2m4cb2IqaWUrXQjJfJadgiIZwbUrLEeJsNb2LCnh6lZ3ZdaM4Y8y1wfsdGCK0EvREXhnHXhNKTn5FTgcqGlfKxpMsoawk9KJZEBm71oJEx1ngFXWA"
+                },
+                {
+                  "formattedValue": "ĐA BTVN",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "t89KDDVokvoI0SvFYHkVqKzRHDsmEDJT2etm5U_2qL3YmaKwDrGiXuLCyNAFc6fE-ExFVbVMmfrZV5vPhyC5s0HTQVcUvoB5iv4pmiRIkCYX1ZdjKhA3E35ABWIZOIJPi9ZAY-DjLN-tSmhmRw"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "4",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "08/5/2025",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "[Văn học - Ngôn ngữ] - Cụm từ",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "TÀI LIỆU",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "kuUE5NWrUyHgemTXO40wqOdxpmHOw25_vGPFr7CbuBv5aUKwb93utrx10K7KesrDyE_lQDYcQx9DKAb9ewhAgqZSNXHcgGZins_YWYyb-X17iYhTYDe1VjpeunAqzGt5fFkAqz9Q8cBIOoB9fw"
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "YO1iVosWclK0FI0wXZHY24GNPgfrWWzq-luIXJEEUTYiyfOnttu2z5bFJUlCISpjarF-CjICrz8"
+                },
+                {
+                  "formattedValue": "BTVN",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "FAKIOQT6AGJlLI712XGKmnmMS6LBD97MhkHnTOLxhfkc1Hwi0x9BfmvFXQpeqEF-dUtFmxEP_ntbXYwqsbOiCVj0VeeiHEmlK1kxUOmzkWZIjij7dxmTGxlJqZ5UKsKmv2aE63ivrlSZ35zORw"
+                },
+                {
+                  "formattedValue": "ĐA BTVN",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "zEkBxRPDTMgrsjMNkphTA3BWayfHlBG0uiC5Z-EoRlmnpYUDI9odqUvx_k7iN0jBRgMf0mjnY7QcNKqEtDJ09RHTsxr0hvrqFvM--xQXNgYC8a2AoAIzsWW4o0KbvF7Lo5QIN_eXMHAy41VCcQ"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "5",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "29/5/2025",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "[Văn học - Ngôn ngữ] - Cấu tạo từ",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "TÀI LIỆU",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "jZERKew1TsPTO0iX-tbZJKpNuzAFYKPczsUXdXU1Ov_DBgmuNmCotmbkjjuy6ANld0rNUGdW5_1SlVwdG-RHChRzFGcbt_-Ojn38ICGCscGJUQ-ZWPmkSLibmzNLADhvzWAA-YOERIMV3t4U9Q"
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "cGBMRLnwrGRIi1XNok3QyQxVe7xYbzQLFJtxKnzJlewxc3TQbzn_V6HZHOzOH89JEaWsiJtXoo8"
+                },
+                {
+                  "formattedValue": "BTVN",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "OhE7TUXbwMkw0l3CbaHadDxGWvOyOqbo2lYR0JhQ1SbPXKYV6ttSFnq4KHWtokJjCB2VkyHxjgKXEdWcFVcbwhlC8c7UbVuQqgW_q7R-7rQpVj0CwFyZ-GT9x-NMRPn1VcLAR9SbxFbj0t8HcA"
+                },
+                {
+                  "formattedValue": "ĐA BTVN",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "y0lPUwtfF0itKBl_O-EXWA91gQrDVTsDH57d1w5lL8dYqzcbIZEh5cUDSHVoHEzn0OMxosDOJqetIP_mpkdrvjqDQYoOem-kE6zxO9xzw2FBvJ2l-fReo67_BsnVz6TIyYLUb8qFczPJMFuF5g"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.7607843,
+                      "green": 0.48235294,
+                      "blue": 0.627451
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.7607843,
+                      "green": 0.48235294,
+                      "blue": 0.627451
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "[Toán]",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.7607843,
+                      "green": 0.48235294,
+                      "blue": 0.627451
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.7607843,
+                      "green": 0.48235294,
+                      "blue": 0.627451
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.7607843,
+                      "green": 0.48235294,
+                      "blue": 0.627451
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.7607843,
+                      "green": 0.48235294,
+                      "blue": 0.627451
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.7607843,
+                      "green": 0.48235294,
+                      "blue": 0.627451
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "1",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "25/3/2025",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Khai giảng - hướng dẫn ôn thi ĐGNL HN 2K8",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "6IROESunIyuJFBnCCgf7GoIuay55oIAzJnvuGpIIEIVGBa-O1hkzyuY3J6gF7IUfq6x_YFCmnWg"
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "2",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "28/3/2025",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "[Toán] Phân tích cấu trúc đề và hướng dẫn học phần thi Toán học và xử lý số liệu",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "TÀI LIỆU",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "ukly7qWQKthDpaWZ3NFEv1FMSIqYC0wmt5o2J9kLiZHgE1mgAMFJDl_xwdrk5SzZO_KB54JEFbZhCCjv5YiC5buAkNUhgLtNKdQp_vUCCKll6SYOMbHBppgQLR-Tv37azOjTtMOibmrPAqRVOg"
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "K2ZfLxgCJfaYKFEyZbBcBoZeMqpu6-VLWgS-rldVE17T250Nhe_63N4HIN5sJGfPjO4m3gN5VfI"
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "3",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "04/4/2025",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "[Toán] Lượng giác - Phương trình lượng giác",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "TÀI LIỆU",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "5C6IiXaYUGhCd2_lT6EEOJ4etu1P9jCVZ8R6aoYpltWui4A5KYfvKpav-qA5KZb5Jb8loEcHF_oF-ml-QvAEmd6gks3l87E9X4iFweZN1yoyW4nakLoUq6Wd09EPJBvjXCGKUH9PDW0ijzNbDg"
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "E_3Y_krcU_1fDQ2MSWcTpP8GMxk8_0CaqOkuMe7AovPfoRamDFpisfD5ISxbm20qvorajsKHyFg"
+                },
+                {
+                  "formattedValue": "BTVN",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "UwGW-Sbwz5Ze9b-ZY_YIHN3IOwqg8PZWyPHVM4ipQSzmcUT3cNuZZ-SvyMqtbMhKkeiExZiohUvaHureycVsN6SORJZm3tyfBbcYsVa2tp6KzRrRHrOYGJ1jZ9YhqdWIWarL07Qw9PAVDmr3nQ"
+                },
+                {
+                  "formattedValue": "ĐA BTVN",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "b0xb00UWs4zRowZr7lTflQHNPZbGLsIja45SQ87BZhIF4dkd8_Mf7NOnjd_hjnp-KBjxjV2ColNLl_3WOUmTzLdmr_MrHNxHhLvb6wxX6S5tdefwa3kPuOLoDtpY086Vu33fdTdjuXizUeCwRQ"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "4",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "11/4/2025",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "[Toán] Bài toán về góc",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "TÀI LIỆU",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "at30zIYgtSDJFct6hfiLuWowhZvcmOmeHlieCa7_3ZczhXqyvePzLFoXcEIjFAHjxiFYcJ17R_uV8n9ebWax6AzEjwR2elJOlcT9NvXRrTmUfhjCAx_8ii3e4BOYUUNHsqqBc7yai4PlAy5O1w"
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "VDxV0hxlonMNbfkJWhV4NrJMaElV0E7hX5_AUAfBYd-CLz2KFTYGViX04AM_9CFq2MkiP5KY0Bw"
+                },
+                {
+                  "formattedValue": "BTVN",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.8352941,
+                      "green": 0.6509804,
+                      "blue": 0.7411765
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "4AfBtXXzP1BswNXEjFMLr4pYVbZDKzujqR8lUyvqqVBXYfHhncYG8FRZXkfVjPjP0iAAdrawkUxblrXABGDRwI7u849JvwfEUus-5Gwe4UIoAWCT16ylJo36G-oubiIvWB1VNcK_YEAgFSY4Kw"
+                },
+                {
+                  "formattedValue": "ĐA BTVN",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.8352941,
+                      "green": 0.6509804,
+                      "blue": 0.7411765
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "XSJfD5XFEYZn7jktn0yBS-zS8vIh9C6QyASKhOKNr46kUQKvbLWA_qS4ZEG936315ZbiK7gLd3pSksF2OGMm9TP2dOv-ehC-aOP_zCRl2azpBaFqs-WKcObECDPShv4eZW0hr3BonLI4pAr20g"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "5",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "18/4/2025",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "[Toán] Dãy số",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "TÀI LIỆU",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "53LxDC_SUQFuuVcBBQ0M2rcJAVqpMVbtqVb2A9_TdxuBEyDemqcv7ar2v8xMPwKsWtNu3X9E4k9aMFSW6glrP3q_bz8Bnzil4TW4MABLmyXzm3yd4088WcD-1qg-3687YE5r5nFiNHeKWH3L1g"
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "XvycPhVQif0oY59D6S1NqQW_jhcPSzfijvrE-Z23bNTnEziyPHfQntOdpkxDn2bv2_iGGlSZt7hVK-HULeAiAEJs0QjsJWGdB1AwrA-tZxyw1esmmeWFMPxNR9eDV9IUSIDXhA"
+                },
+                {
+                  "formattedValue": "BTVN",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "fbumxCi2MotPshhQC1Hu55mYJ9dt-_Orp4WXMo2o5e9bTtCvAuewtJ353k0d1jQES7mL_11tKmzWU-B--TtQ9u0pIQCjhZJLNc03CgfGn3ZXgD0bIRA8PX-jCad9WsKNJOGYowCKwAIuzh7tEQ"
+                },
+                {
+                  "formattedValue": "ĐA BTVN",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "qsGAdGRBCgc5q8WRUezgCR_mQ1zXUT_J6rvNwtTYqca8OgYZOR1jhL2eg6U2XUw4DjAga40RNrsoxa5__NrsGyN64Zzk3DoMXN3CF_Xun2RS90Ev524OquOjeRrl3iLZL_kx15GnCns5cxwgCQ"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "6",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "25/4/2025",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "[Toán] Bài toán về khoảng cách",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "TÀI LIỆU",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "ONbufRHX26-1Wf1Ki6bupja3-MGsVgQddoZk5eCYONnlr-fqwBSj_V6mwbRVirigQE7f1hpWDle2N2ut4KX3UfSDvfS0QJGsbWKIPsqzsWDJmnlZ6mPpN1KZLK3jwVyxEkeq0_3sZVen57rYnQ"
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "KiWQOYLgBojm_qFf3km2cw1xTEJKXozPIJuumvPCGYiDLDIEqI8O-saAgMyzkYiewKpmuKjpriXKJNw8yBgZ8a1IdqSx7WmD2PQU6f78_3Dp62N6ZVItfiyOxcnPMtauD979Vw"
+                },
+                {
+                  "formattedValue": "BTVN",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "1XcLnJgjVZJL-qIHoxGvWwZwVc64tJkstItgPFS0JtUYaQgmkKfnUZbiSzCL855OTnzOfDnxDT8F-87vJMXW1dv1a71FtaVa2Cn62MXiqCBTtOi9u8vDhHHbbaUYexhx-pOmkBrq9_ymf4oRzQ"
+                },
+                {
+                  "formattedValue": "ĐA BTVN",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "gY9d9HqbNdQVTa_-iCt8BVwfS5DEmTAxOQ_-vSIZeDNN416gn3tkdAMoyHJRduZ0ayI2n2R242PiNJXrO_nkXiOVNvXC5W1ltr9DqMa0E8qSuVfKFhvtpXWgPzGnuAXfOQpjte4LTpL53j33gQ"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "7",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "02/5/2025",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "[Toán] Giới hạn - Hàm số liên tục",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "TÀI LIỆU",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "K5xVQOgEBgh96W5CMc6b2sJwLVFqknAK6i9jGHlWhbtditN-EPQwUFT0k_GHvsKXt05UNoaFOqonRqVW35YLn1Q6ElcsGj7ls8hw5km3bxx_yFDX1KEbGsY7-8crBoJo8OnMo5H7RJEdnipcTQ"
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "fzQ6FbWteWM6r8gndHqSuGqEN8xwG6XPyj9sxeg0HeyKSOghbCDm2GWwdL9Ht8nhqxJU7nKB5jC-XmL8_HcbKNLBlJyMbJPRfPq2u8wflwkv3KlXwh500Chc0oI1BOTBIuOZhA"
+                },
+                {
+                  "formattedValue": "BTVN",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "nVMmTF0TYXuXk96X-iW9sHyeU-qMe3gL2WgvLK3qoPJlHSynuKpMDecg2fm6yEwI8pZwcWO6Rdl2OIpUULlgeYuyFWEJhiTiToyMlAfJlKIqBXQqNrsMTw0ditqSq4HvgfEew6w5vG1zRd9CzQ"
+                },
+                {
+                  "formattedValue": "ĐA BTVN",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "8sH4JRVMBsx9ul--Y5bUWMSYD1Agr6f2T6ppk08IGNPNI6wOVM08Wh52zJoPogS12bjyhDy4bcRNYa8t-XnYRFbRRbEycTbUIWsj1REofFBREHa3wVGiLpbiBS6YS0rT95Khp0svcLUbhjA3VA"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "8",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "09/5/2025",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "[Toán] Thể tích phần 1",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "TÀI LIỆU",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "K_68npyhpfu5LDa5muC_OXZrXy-ZGzXz1Rutt4-S2RlBy4DkZyCqWRFnGDAgthL2kFFJPoZLnVxnhg-OAnt2gGXuChGBCSS16X3w3ZmEOPnwZPuuVtU8IdjHTu-CwHO8aERoWVOtkeZj9D7qjQ"
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "MhKso4pDIgqrv5BLvFeC5LAK1Z5_jlanxleevLGK8ppdeQHffb6ro3IW_uQFhgiQl35SEckMNrA"
+                },
+                {
+                  "formattedValue": "BTVN",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "lOIHiKZz96KoY20bF6uoWo6JSZSflIhPtK96ek4Q03QCfyxh2Bc5W2jI2JWjcYvnTxHkVUEGoNEFAC_8G5OeXKASK1sp7rrBMPUlsRD8A8tNZybXBRPUcLUK41ughAAn298CFTGJn2CvNMLzUw"
+                },
+                {
+                  "formattedValue": "ĐA BTVN",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "F-9dXDWgbcJpQh2Vq0vwKJ3I9z43kXRt6rHA51q4-wQRTwKUqoLL4ulzUXhtNGXG2yk6IrktVMYh52SSx_qIFlHydtCSnMhXjLz3Hv-38WHxJ4lSpwLxRO2jjVn0WO5TaqE7Cf3S0Qccri7C9w"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "9",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "16/5/2025",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "[Toán] Đạo hàm - Tiếp tuyến",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "TÀI LIỆU",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "zcbO3BxlfJfSQdZpxnrRBxVtDww645LPTQ4q3V_7BXDNQyB3miOYq55o0mFbs5Ypz2d822ZKfkuh5bw6xTJ7cHBkLiJnEITmhsLGNGLkxrrPDuKrq9ySnmRewiO1mGystej_SP7Kjzf8uGa0VA"
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "OQHnoZVOZhmS8fCVKVTUIJur63md7NFMIHr__bTR-A0NftXUngFT1He23OG021FVBKteD9hr9WJzV9H_j1JXSvfHFsuymBdUDgmlw96Y9VzC0WbLBSoarqFq3AJWNKKOYqSYQg"
+                },
+                {
+                  "formattedValue": "BTVN",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.8352941,
+                      "green": 0.6509804,
+                      "blue": 0.7411765
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "AkJwAx6zX5PV3q4IPetxwjiipllIWv-5BZnjvGTgzgP2XY5bwX3f0PjdJlG9Awiad89Ute-qDcIqzjBcmDdxFwzvM3VuJ_0p-cs0v5Dsy1xJPdW1zEfrNyJ3qF4uy3m8FIUpKHIrwEX5k5PbTA"
+                },
+                {
+                  "formattedValue": "ĐA BTVN",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.8352941,
+                      "green": 0.6509804,
+                      "blue": 0.7411765
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "NNvXOCwgGUPGjSLVBRmZCXGWJ_Nkk_U7q_o23apLI7aYAsMyzUvArtkERjQ26BrERsd4Wcdb5wmmwXhrJk0oFxTZNV6Xyz20hyGW2Ve_aigPy0HsKgwZc1Ui1SECL3HRPx3z1SHrzeunCy1-fw"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "10",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "23/5/2025",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "[Toán] Thể tích phần 2",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "TÀI LIỆU",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "jl8QZCVPoMMhQf8JLYR60RQrNrBMnLM7KYedw3_k0mXntc5UlMRHmOjg7k0_T4Hy5OTNVUFhlWSYHBDuxRbRAbe6f-SlM5oCqtHGT5eC3Vk27TUi4lum7Cu2mPrUGTu-TN2fyRofWStZY-aZBw"
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "Cyu3rY0tqWNr_5qTMHwEbvt6W-lvykTKKNDtkcCWeegfrurFSNv1kkhDv3bJjlFT5hFsWCUSW1s3zTadnWp3vy8yRSB8oRZ3tkmX3ldZ6YKsENtghitQl9sr71fHNZVWYt5ntg"
+                },
+                {
+                  "formattedValue": "BTVN",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "v3FdRvTf53uq_L25I2e-tJL83eTupenvEVIyhrXuzTbjzN5PJMfCt0BQK4DgJ_wGVTwaEHGQu-V2i5NuiamFitEjuQFnlheRJs_fgGYmds57Oc4f2w7LXstJJb8D9goEUrswDykRUalcZMw5O2o"
+                },
+                {
+                  "formattedValue": "ĐA BTVN",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "NdKMHF6_N3cu8tkZydbnvhUii43zm86XyvjSsH-BKHxHHLoi-DlzaBHDfGuVMn92I2A_ePe-CH9b4_CphgauI0FJSU1pEPlGyJgPKYxMVIcP5UEREOJhUp9AWbvzHBXl6PRS36NY9wz3V7O3Ng"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "11",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "30/5/2025",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "[Toán] Tính đơn điệu của hàm số cơ bản",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "TÀI LIỆU",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "c-IFGsA2l8MyT2zfwBZFtHtA0WwAjoqIorlJO8EMfFpyl0tCpTpMbiDdthH1m_tmCBJ723a2vxP6WoQyv6FL1k2yub96DrEhE8Oqp4OP51KCUYiUUcaTROYe47HlobvQXo6cv-7QoW1vJhzMQg"
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "6ndsUur_bcHsB4HGDpRFJrE3eynF-0_AYEXGyHFulLBNFE90zEsFsf8I6u8iiWRgqhk5RknwwjQhX6p1NshzPi9NDMp5Scj9IG7jRwRDK8PlmPp9ohEtY_o5AEo2h_8AEwHUsg"
+                },
+                {
+                  "formattedValue": "BTVN",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "qxdOAErPFIkboiFqG5zkmNUjdLw8z6F15NCL2vFBKz28qSKFDiBNUUHd5jJNs7iAH85WhZfIy-ksc56EWAMKW-06sXE1OmvLD5qu_E2R0ssE-xaSjgAeqQIHjyn7LLgb1BXrvz5d_y0OlhMknA"
+                },
+                {
+                  "formattedValue": "ĐA BTVN",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "peNSePWdxDJRfUrEgpGz5e9rdjsvj_IeMqz2HRHaF8qXIOH7SCD4jpZjaCKdonhOLY7yM2HO8jDwFMkcgA5qtvdwqToQ_GBvrmAMM_W7jID99lFbMYZROfypZlo3ieigp4AsNa1sK32sKpaUuQ"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.7607843,
+                      "green": 0.48235294,
+                      "blue": 0.627451
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.7607843,
+                      "green": 0.48235294,
+                      "blue": 0.627451
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "[HCTK]",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.7607843,
+                      "green": 0.48235294,
+                      "blue": 0.627451
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.7607843,
+                      "green": 0.48235294,
+                      "blue": 0.627451
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.7607843,
+                      "green": 0.48235294,
+                      "blue": 0.627451
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.7607843,
+                      "green": 0.48235294,
+                      "blue": 0.627451
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.7607843,
+                      "green": 0.48235294,
+                      "blue": 0.627451
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 14,
+                      "bold": true
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "1",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "29/3/2025",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "[HCTK - Duy Hưng] Chia sẻ kinh nghiệm học thi",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "CMlX1eZ9qo0nnpe5M7ipi-qQ0vgkGSThRFojHtv4Spl_BQ184TNhNy38708gKZdL9578azU003o"
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "2",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "05/4/2025",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "[HCTK - Duy Hưng] Luyện tập Lượng giác",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "TÀI LIỆU",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "y-ae_hDJVJpOHQHBYJ4QUnn2gtbUUU3iZ4vUvlJ-WtJmM-zwasToagJ1wi6INAge8iqp26byhwxZ79MLFtakn_UnzjKv3z0K5qTbZAmX2Sr2gr5agwCKMEoZ4d9Zn2_xQfty841cjjCln6ZqCA"
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "7lDwb1XW03EIgXz0K_QeDoXbdsy2n4wu3iBPZPfH0byE5OotT7nKp-hHP2-f4qCYdVEVaq8hVnO8gOR4b1jPzFN7pysm6WW2-UPxgPwPGxv2vSSdj2hsBymOrT2xkW0W0dWbeg"
+                },
+                {
+                  "formattedValue": "BTVN",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "hf5Svl3yRjihjbzJQ-q7GCR-9LOjytVN5OkuK7jW6OnRcgQtjXE8j7i4aevCuxMjfi3E8RLq0dXGBl1Az8T2lugkjsavG9pzA8zL1iVo1DDSWKGBU4Y3Ny0wlerjmoala0h1P2f5GpuwX6Qczw"
+                },
+                {
+                  "formattedValue": "ĐA BTVN",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "kkMjrlIjGrS9Np9wkcs37Wh_kdpANUtKvM7fssIuveFwNRO3knvwYfx5QTp5PHx5o8fDJQdhKnHD2vQ7z0pFzUJO8qQud3PO3iEY7DzkJQJrlEU4bzjXfZw-lfLYQhVGs6hJXqamV-wMp8pb6A"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "3",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "12/4/2025",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "[HCTK - Duy Hưng] Luyện tập bài toán về góc",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "TÀI LIỆU",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "GxarcmW_McO7pggYY8kUQtQnQxUWY5fN87VLm3Nir_2DWOZni0oxHG4rQ7IYA8JYBQdiFQ0-2dXbpeJxLj2wcbKFKQ6uMzwaTlRE1lHw0wrS1r3cTU4AbyWEuHax6VyPOlvQQAP6FHHWxkKhFQ"
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "i2M7gYR4aji2Jgvu1-08r0iiOKMnc-xJLPyzjUbJDLr_wP79Hqz1MN_lq8GGVozI0fHTUoo9GMdZ3U8ynxOqchdaOCiC8tVSEG7cIJZ_--G3jLEzGEVgV_P5kLwOUPtBAsYEuw"
+                },
+                {
+                  "formattedValue": "BTVN",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "m2Vp08ahKIw9joACW9sfI321mJQZomkFysLfG8-rq5RALTPJbcy83dSjJmdOJD7TzuPrffOOSo_0xMAjlhFr9AEywRQPetIBjgQJdpylnSpIOaaRYP84mLJo3akDs8w6wk8vngqqCPOfF89QLA"
+                },
+                {
+                  "formattedValue": "ĐA BTVN",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "Sa9oSDcxmTFPlqiHHCQky8AdT1tiU10vKgYqBLAL2_tN1FNZfswnrgGAxoL_vraQDSLYwZNMErqQ7vJZTPJB-kLFUmFPrz9JnBdvDCAJ_FeNW92xSJI6P-ydbGOvAR1RWe2QyUGHK5SSQUP5gQ"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "4",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "19/4/2025",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "[HCTK - Duy Hưng] Luyện tập Dãy số",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "TÀI LIỆU",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "q7i5gc_eEgNNWdYgdxqqA1oyUmgSlJjxXXaw7lG_rWeNBWBjKfqUof9XnHzmHdh9myHZJPTDb-4X0El8M5rvl_SpLhf3g6Tuzvyph1HmVw0MPCLsopVXRAeU7f7hAk5d43s-gyGpjy5D2BW4mQ"
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "WhUtvOrtNtrD7mDrBuIk9C_NI1umoZjC8zDvRPVWew-mcByjpfTAuPcOG5hPPKXw9hdDu4SWuOyCz-fEUbjxVBcBewGFdU-IIAHG_V2w09h2RWvHZzmx65_AXnj6wFa52YJh-w"
+                },
+                {
+                  "formattedValue": "BTVN",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "lwWAma86Ae8hvCCiE7K_eICKIZUkanqJL_yu6-NXHMkuqMTeQGm552Soh7TUPSoXjko9-AgtI8Q5P319iytQPaN-UzjszbGVd9wJ8aVwyWVqSi_gQOAeqCLgmUsdzR4_V0MaEPDBJUjJEfww2w"
+                },
+                {
+                  "formattedValue": "ĐA BTVN",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "U1xalFsFHGxHPoIEvU2KSG9zxw0GJEohnHWQKhqyUtihdfM0AUPArGaTX6qRhonJxrteVl1lIw-R6d8eWzCcfQaHqkkuoP-Y-8LR6iN_1QKve8K-xe8ELvZ2I_YdBrk01UV6KkCHtk5bQ0eFlw"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "5",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "26/4/2025",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "[HCTK - Duy Hưng] Luyện tập bài toán về khoảng cách",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "TÀI LIỆU",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "7tVTZ7oONe5EBvFKD3lT24X1gfaXUe_J0IA8YfOc5ihRE9rdI7be62XSdmDYCmyX2tU9xJdLM5dFr2iSbQe8eojbxadueNEO4ah8zguGJdOh6Sy9lcko6gKDURFIzuCYcauD7sdpXh_3x9RTQg"
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "y-wsEBifCf5EivxDnMdcSsz6uShRdOgEZQgcui-px3g3z-DA4adauPrIsK0ahYRmFQ-WDo3WwquAgSoyvkzXp7m5Sbk4w-yo695S6BMsi1M2qFiCHKRk5pwT6JrOXvGkO54B_g"
+                },
+                {
+                  "formattedValue": "BTVN",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "UBJWqQkcQG4G-ccalystPnD6ZF4Dpl2z7eJPIXuQ_94xPrrQCayGa_iqiGhaxaD325S-7sBZKhm9JGJgYKdOgY0nhauesVU8lyscQ804kic3NuWS_y4Dv-VLDSyAb37zNOP8l4hBFfeHKxuSUA"
+                },
+                {
+                  "formattedValue": "ĐA BTVN",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "RkxBUfHXHUKtx7lWI4DyDhDbs45JufWSlGJNvbPZomxkxKtRqmJ4Kl6Zc2hUht0RVS5y3K1-MNKVz6gHiANj5CtJmN36YUc-9KQwWH8jVHO1sSyrIkpV2LDdX2Ul0IV1GnGSbwciNBAPFYH_6vE"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "6",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "03/5/2025",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "[HCTK - Duy Hưng] Luyện tập Giới hạn - Hàm số liên tục",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "TÀI LIỆU",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "S8EXFddtU9844pA5FLJXs8fS2CbLOFo0qBqVI4vwajnyitKJSHgZgsJht-kuIrHjGNYMyLo4jfIF9XtBMswEWyNgtHOaT8LNsb49cuU42ALFw2lRqA6f15hnu2gO6AeWi1tJQonkpopJCw7Zrw"
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "q8iy1IExeu30XITvY7K1k7d44oamdt61cK5JOkBTVdmCKyDEC5Fz5Ag5AfSQRwBHndR4a4MJdSryrRtMZLVc8p883ZDYR-1u--YF8Vu4qp9aBw9uKSkjumA0TOsJgk2KvTagpQ"
+                },
+                {
+                  "formattedValue": "BTVN",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "bqwjkv6mo3-M7O6hgey1O4Di5yGTPJyUNnShjMCt9XorTODaEtrFNvE83KNpiCrKQeBvBQYTskYshqpTfGFwO57eJ3pmG3BQJsKGU3FloXtVQVrji03e0TclVA7aQbxSetgE7nkBQWmCnCpV9A"
+                },
+                {
+                  "formattedValue": "ĐA BTVN",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "A6K4ReCu2l0MobiG-sU6dgdDtAo0RkWNbqaTKY8GT5oVvcE4psNtRNN8r1EjQW7pb-4cASJ4gNvxbcd_DlIKlCCFdRXk3kJ1WwrZtp874KWZmkk8jEi6bM-1J1jCcsOmOnkAOpP1oeJ0jsV9DQ"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "7",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "10/5/2025",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "[HCTK - Duy Hưng]Luyện tập Thể tích phần 1",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "TÀI LIỆU",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "MHBQP3zQjPR_zbieVxQp2_smCNOkuCl8N_9ZcN9Vadb3ghGEJBbdHGlm39pnzl_qYc6H833Q0EIwQCbcyw4QJnegKXOuJJrotCXagHzAEjBcN1cu4EDcQb5uxJvmcDsQl21IVo-40LcV2xjS8g"
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "Hy7LnWpga165-8eCFReKRgve9yfgejJhB_OnqzUEDKcQTy0G2hLQofrn14j_M0pIhOZs7XVgbbS3_-PmOwJpV_BWNyy2HrHOs0xXHhLIENaMOTQgbBOXXtMUG-AWeVj1NbsaTQ"
+                },
+                {
+                  "formattedValue": "BTVN",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "Tx6SbrKJZIlig0jKP-3UQ16MMtWPZgR_1A38Ujv1acHpHgENxs2dIT8fc7WoWkcmpmxqbU0UP5vW9aWDuotchc1BF4i6BZLfE-Ox4VVshbPNPC9rRuFQTuDFwctEVXVWWpcKW24meLpD_xE9sw"
+                },
+                {
+                  "formattedValue": "ĐA BTVN",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "J8t5aUIjD0H5MG-Nog_M6jFdrAa0m05SnEUpTrJs5r6UeCypeNh3_ILTlGks8WEB0QMLqekgO-vsD6Ndi5zt6gI2e-8Fqi7MmDyvXPj1HYRzBP2DlNAf7QUXTmxtbNdVX5bFxUiSmwsL2WOA6w"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "8",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "17/5/2025",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "[HCTK - Duy Hưng]Luyện tập Đạo hàm - Tiếp tuyến",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "TÀI LIỆU",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "SEE8Gncg1P0DyHyZT1zhcrBI83SLug6HnDef7be9f2s3U8jOFWv3RA6uR7qL3vYr5MW6kTnFg6pj5NXlX_MPB6yqv_fisLq7N4RLqjOIMwX6sVW0rT3LwqUnATAYmlw3p1K4YeXhxsaqj-BBaA"
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "5ko2Of1cVvVwdOSMuKshuKeRK3xmpTH5NWeVxSHWDTnuzwLY4hpFr6_XeVtddAXElVkn87JyNemh_P4kQi-sLHtCDE4LDV4h08VTJPoffVOgMYT7lbh6hR6HfosfcG_6WJLsxg"
+                },
+                {
+                  "formattedValue": "BTVN",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "PFjS8TFi7yAeBT4Y7KmKHJczFAYpO3336gorXe0zQu6DWkpDCsIdmIo7yTjw7TkNUfZIimCBiASJ3RUMsVu09vKkKd6vTW6uwChrh7pRFe0dVwxcAyjdmZbTcB4_7brXlT_E3GrZUngg5y_kxw"
+                },
+                {
+                  "formattedValue": "ĐA BTVN",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "TddtwTPOVGS4TXUoJaFgrPZ3b5yfvBHf84npwsvJoxdQxHcNDfzRgRC0D9AVRJagfSNzH4DW21dj61EH7R-dKSjcOq5y8H1Av_N_Rx3crcbUqKkkl2y1bSF-Q2qPcav-29hMm3b1uNluRLIgjw"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "9",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "27/5/2025",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "[HCTK - Duy Hưng] Luyện tập Thể tích phần 2",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "TÀI LIỆU",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "IYyLhzNWv3oRc0KiZzObCVMoqJPVZOj-FPR2Zl3YI_e9KDf5qHTnxUlGQLr6ChXlNs7dIgTDfmF9rAcx_SrN5oMPNvPR4hq7GtXruq7Jcqx2N0rf0ZC0y9v9NUohQWv6DnvIfFqHXsCkFsEcpA"
+                },
+                {
+                  "formattedValue": "BÀI GIẢNG",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "8QBl0gqjCG8JMmQLIF6QZUJjABXyR65WVR-qbF5dgHkq82uQCFOf7Ree6WXCVeTybn878Tzu_apePT5EPW1cl79VCBW5TU3cTJTRz6wgBFX0ntlXteNKq3eEWbqvi7990ROgqw"
+                },
+                {
+                  "formattedValue": "BTVN",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "8Vra_diz6FPgAFnIjpIkXg99dUgeicdSjLldUPzRPBKLGO9i9RRLfhy_N69hLGVseLRug6HUsJiAcULxDRRZyaAM9YM4iMfRbfWNQ1Klx0roGh6heGu1EsO7o1PpzoSXuSo6oQAJeYiu-p3-3w"
+                },
+                {
+                  "formattedValue": "ĐA BTVN",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "rnvyhswkRWBZKLkzDvYSYKzEkayaYo0QzxOIz25RjSVVd8gY766b9QTrcdiz8RPrTPS9EQSIPlqDBNYBBf64II4bVyyUXMeLdm2Iy4wPhfVcvxNGCDMezXU2AVId9G4pEi65HaVLD3lrn53NGA"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "10",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "31/5/2025",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "[HCTK - Duy Hưng] Tổng ôn+ chữa BTVN",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1
+                    },
+                    "horizontalAlignment": "LEFT",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 13
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "TÀI LIỆU",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {
+                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
+                      }
+                    }
+                  },
+                  "hyperlink": "Zjfdi-X_hMadk4yYak-vKZNo1FDOJrtajw3Q4S3UEKhNxz0GI1lO1tuCwNNpsvVzvCM_yG2LPd6la43gZ-wCfQroGtIU13lWjWnWczF3XEcy75jvDTZfoeKQTdy7Qq7i4pl-kG0faFBv8or49ds"
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

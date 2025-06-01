@@ -440,36 +440,134 @@ export async function PATCH(request, { params }) {
       const firstSheet = kimvanData.sheets[0];
       courseName = firstSheet.properties?.title || '';
       
-      if (firstSheet.data && firstSheet.data[0] && firstSheet.data[0].rowData) {
-        // Chuyển đổi rowData thành mảng các object
-        sheetData = firstSheet.data[0].rowData.map((row, rowIndex) => {
-          if (!row.values) return null;
+      if (firstSheet.data?.[0]?.rowData) {
+        // Bỏ qua hàng đầu tiên trống ({}) và lấy header từ hàng thứ hai
+        const rowData = firstSheet.data[0].rowData;
+        if (rowData.length >= 2) {
+          // Lấy header từ hàng thứ hai (index 1)
+          const headerRow = rowData[1];
           
-          // Bỏ qua hàng header (hàng đầu tiên)
-          if (rowIndex === 0) return null;
-          
-          const rowObj = {};
-          row.values.forEach((cell, colIndex) => {
-            // Lấy tên cột từ hàng header
-            const headerCell = firstSheet.data[0].rowData[0].values[colIndex];
-            const columnName = headerCell?.formattedValue || `column${colIndex}`;
+          // Chuyển đổi các hàng dữ liệu từ hàng thứ 3 trở đi (index 2+)
+          sheetData = rowData.slice(2).map(row => {
+            if (!row.values) return null;
             
-            rowObj[columnName] = {
-              value: cell.formattedValue || '',
-              hyperlink: cell.hyperlink || cell.userEnteredFormat?.textFormat?.link?.uri || '',
-              format: cell.userEnteredFormat || {}
-            };
+            const rowObj = {};
+            row.values.forEach((cell, colIndex) => {
+              // Lấy tên cột từ header
+              if (headerRow.values?.[colIndex]) {
+                const columnName = headerRow.values[colIndex].formattedValue || `column${colIndex}`;
+                
+                rowObj[columnName] = {
+                  value: cell.formattedValue || '',
+                  hyperlink: cell.hyperlink || '',
+                  format: cell.userEnteredFormat || {}
+                };
+
+                // Nếu có link trong textFormat, thêm vào
+                if (cell.userEnteredFormat?.textFormat?.link?.uri) {
+                  rowObj[columnName].hyperlink = cell.userEnteredFormat.textFormat.link.uri;
+                }
+              }
+            });
+            return rowObj;
+          }).filter(row => row !== null);
+          
+          console.log('Đã chuyển đổi dữ liệu sheet thành công');
+          console.log('Số hàng sau khi chuyển đổi:', sheetData.length);
+
+          // Tạo cấu trúc dữ liệu mới giống với cấu trúc gốc
+          const newSheetData = {
+            sheets: [
+              {
+                properties: {
+                  title: courseName || (existingCourse.sheets?.[0]?.properties?.title || '')
+                },
+                data: [
+                  {
+                    rowData: [
+                      {}, // Giữ lại hàng trống đầu tiên
+                      headerRow, // Giữ nguyên header row với format
+                      ...sheetData.map(row => ({
+                        values: Object.entries(row).map(([key, data]) => ({
+                          formattedValue: data.value || '',
+                          hyperlink: data.hyperlink || '',
+                          userEnteredFormat: data.format || {}
+                        }))
+                      }))
+                    ]
+                  }
+                ]
+              }
+            ]
+          };
+
+          // Tạo document mới với dữ liệu đã được hợp nhất
+          const newCourseData = {
+            _id: existingCourse._id,
+            kimvanId: existingCourse.kimvanId,
+            name: courseName || existingCourse.name,
+            description: courseName 
+              ? `Khóa học ${courseName}` 
+              : existingCourse.description,
+            price: existingCourse.price || 500000, 
+            status: existingCourse.status || 'active',
+            createdAt: existingCourse.createdAt || new Date(),
+            updatedAt: new Date(),
+            originalData: newSheetData
+          };
+
+          // Cập nhật document với dữ liệu đã được hợp nhất
+          const result = await Course.findOneAndUpdate(
+            { kimvanId: id },
+            { $set: newCourseData },
+            { new: true }
+          );
+
+          return NextResponse.json({
+            success: true,
+            message: 'Đồng bộ khóa học thành công - Dữ liệu đã được làm mới hoàn toàn',
+            updatedFields: Object.keys(newCourseData)
           });
-          return rowObj;
-        }).filter(row => row !== null); // Loại bỏ các hàng null
-        
-        console.log('Đã chuyển đổi dữ liệu sheet thành công');
-        console.log('Số hàng sau khi chuyển đổi:', sheetData.length);
+        } else {
+          return NextResponse.json({
+            success: false,
+            message: 'Dữ liệu sheet không hợp lệ: Không có đủ hàng header'
+          }, { status: 400 });
+        }
+      } else {
+        return NextResponse.json({
+          success: false,
+          message: 'Không thể đọc dữ liệu từ sheet. Cấu trúc dữ liệu không hợp lệ.'
+        }, { status: 400 });
       }
     }
     
     console.log('Tên khóa học được xác định:', courseName);
     
+    // Hàm xóa URL giả từ Google Drive chỉ cho dữ liệu mới
+    const cleanGoogleDriveUrls = (cell) => {
+      const newCell = {...cell};
+      if (newCell.userEnteredFormat?.textFormat?.link?.uri?.includes('drive.google.com')) {
+        delete newCell.userEnteredFormat.textFormat.link;
+      }
+      return newCell;
+    };
+
+    // Hàm tìm cell tương ứng từ dữ liệu cũ dựa trên formattedValue
+    const findMatchingCell = (formattedValue, oldData) => {
+      if (!oldData || !Array.isArray(oldData)) return null;
+      
+      for (const row of oldData) {
+        if (!row.values) continue;
+        for (const cell of row.values) {
+          if (cell.formattedValue === formattedValue) {
+            return cell;
+          }
+        }
+      }
+      return null;
+    };
+
     // Lấy dữ liệu cũ
     const existingData = existingCourse.originalData || {};
     
@@ -480,7 +578,7 @@ export async function PATCH(request, { params }) {
       hasSheets: existingData.sheets ? 'yes' : 'no'
     });
 
-    // Lấy dữ liệu sheet cũ (nếu có)
+    // Lấy dữ liệu sheet cũ (nếu có) - giữ nguyên không xóa URL
     let existingRowData = [];
     if (existingData.sheets?.[0]?.data?.[0]?.rowData) {
       existingRowData = existingData.sheets[0].data[0].rowData;
@@ -489,8 +587,9 @@ export async function PATCH(request, { params }) {
     
     console.log('Số hàng trong dữ liệu mới:', sheetData.length);
 
-    // Tạo Map để lưu trữ các hàng duy nhất
+    // Tạo Map để lưu trữ các hàng duy nhất và Map để lưu trữ dữ liệu cũ
     const uniqueRows = new Map();
+    const oldDataMap = new Map(); // Map để lưu trữ dữ liệu cũ theo formattedValue
     let updatedCount = 0;
     let newCount = 0;
 
@@ -499,33 +598,73 @@ export async function PATCH(request, { params }) {
       if (!row.values || index === 0) return; // Bỏ qua hàng header
       const rowKey = JSON.stringify(row.values.map(cell => cell.formattedValue));
       uniqueRows.set(rowKey, row);
+      
+      // Lưu từng cell vào oldDataMap để dễ tìm kiếm
+      row.values.forEach(cell => {
+        if (cell.formattedValue) {
+          oldDataMap.set(cell.formattedValue, cell);
+        }
+      });
     });
 
     console.log('Số hàng unique từ dữ liệu cũ:', uniqueRows.size);
 
     // Chuyển đổi và thêm dữ liệu mới
     const newRowData = sheetData.map(row => {
-      const values = Object.entries(row).map(([key, data]) => ({
-        formattedValue: data.value,
-        hyperlink: data.hyperlink,
-        userEnteredFormat: data.format
-      }));
+      const values = Object.entries(row).map(([key, data]) => {
+        // Tìm cell tương ứng từ dữ liệu cũ
+        const oldCell = findMatchingCell(data.value, existingRowData);
+        
+        // Tạo cell mới
+        const newCell = {
+          formattedValue: data.value || '',
+          userEnteredFormat: {...data.format}
+        };
+
+        // Nếu có cell cũ và có hyperlink hoặc link trong textFormat, sử dụng từ dữ liệu cũ
+        if (oldCell) {
+          if (oldCell.hyperlink) {
+            newCell.hyperlink = oldCell.hyperlink;
+          }
+          
+          if (oldCell.userEnteredFormat?.textFormat?.link) {
+            newCell.userEnteredFormat = {
+              ...newCell.userEnteredFormat,
+              textFormat: {
+                ...newCell.userEnteredFormat?.textFormat,
+                link: oldCell.userEnteredFormat.textFormat.link
+              }
+            };
+          }
+        }
+
+        return newCell;
+      });
       
       const rowKey = JSON.stringify(values.map(cell => cell.formattedValue));
       
       if (uniqueRows.has(rowKey)) {
         updatedCount++;
+        // Sử dụng dữ liệu cũ nếu có
+        return uniqueRows.get(rowKey);
       } else {
         newCount++;
+        const newRow = { values };
+        uniqueRows.set(rowKey, newRow);
+        return newRow;
       }
-      
-      const newRow = { values };
-      uniqueRows.set(rowKey, newRow);
-      return newRow;
     });
 
-    // Tạo dữ liệu sheet mới với header từ dữ liệu cũ hoặc mới
-    const headerRow = existingRowData[0] || newRowData[0];
+    // Tạo dữ liệu sheet mới với header từ dữ liệu cũ nếu có
+    const headerRow = existingRowData[0] || (() => {
+      // Nếu không có header cũ, tạo header mới và xóa URL giả
+      const newHeader = newRowData[0];
+      if (newHeader?.values) {
+        newHeader.values = newHeader.values.map(cleanGoogleDriveUrls);
+      }
+      return newHeader;
+    })();
+    
     const mergedRowData = [headerRow, ...Array.from(uniqueRows.values())];
 
     console.log('Thống kê sau khi hợp nhất:');
@@ -542,7 +681,7 @@ export async function PATCH(request, { params }) {
           },
           data: [
             {
-              rowData: mergedRowData
+              rowData: newRowData
             }
           ]
         }
