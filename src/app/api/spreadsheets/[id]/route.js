@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import path from 'path';
 import fs from 'fs';
 import puppeteer from 'puppeteer';
+import { getKimVanAuthHeaders } from '../../helpers/kimvan-token';
 
 // Thư mục kết quả
 const resultsDir = path.join(process.cwd(), 'results');
@@ -353,17 +354,12 @@ export async function GET(request, { params }) {
       return NextResponse.json({ error: 'ID không được cung cấp' }, { status: 400 });
     }
     
-    // Kiểm tra nếu là yêu cầu redirect
-    const url = new URL(request.url);
-    const pathParts = url.pathname.split('/');
-    const isRedirectRequest = pathParts[pathParts.length - 1] === 'redirect';
-    
     // Timestamp cho header
     const timestamp = Date.now();
     const responseHeaders = {
       'X-Timestamp': `${timestamp}`,
       'X-Cache-Control': 'no-cache',
-      'X-Data-Source': 'fetch-detail-only'
+      'X-Data-Source': 'chrome-puppeteer'
     };
     
     console.log('==============================================');
@@ -371,44 +367,142 @@ export async function GET(request, { params }) {
     console.log(`Timestamp: ${timestamp}`);
     console.log('==============================================');
     
-    // Gọi hàm lấy chi tiết
-    const result = await fetchSheetDetail(id);
+    // Đường dẫn đến thư mục dữ liệu người dùng Chrome
+    const userDataDir = path.join(process.cwd(), 'chrome-user-data');
     
-    if (result.success) {
-      // Dọn dẹp thư mục kết quả, giữ lại file vừa lấy được
-      const detailFileName = `sheet-${id.substring(0, 10)}-detail.json`;
-      const detailFilePath = path.join(resultsDir, detailFileName);
-      const filesDeleted = cleanupFolders(detailFilePath);
-      console.log(`Đã dọn dẹp ${filesDeleted} file tạm thời sau khi lấy chi tiết thành công`);
+    // Đảm bảo thư mục tồn tại
+    if (!fs.existsSync(userDataDir)) {
+      fs.mkdirSync(userDataDir, { recursive: true });
+    }
+    
+    // Khởi động trình duyệt với cấu hình an toàn
+    console.log('Khởi động trình duyệt Chrome để lấy chi tiết sheet...');
+    
+    const browser = await puppeteer.launch({
+      headless: false,
+      defaultViewport: null,
+      userDataDir: userDataDir,
+      args: [
+        '--start-maximized',
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-blink-features=AutomationControlled',
+        '--window-size=1920,1080'
+      ]
+    });
+    
+    try {
+      const shortId = id.substring(0, 10);
+      console.log(`\nLấy chi tiết sheet: ${shortId}...`);
+      const detailUrl = createDetailUrl(id);
+      console.log(`URL: ${detailUrl}`);
       
-      // Xử lý hyperlink nếu có
-      let processedData = processHyperlinks(result.data);
+      const detailPage = await browser.newPage();
       
-      // Xóa URI từ các trường link
-      processedData = removeUriFromLinks(processedData);
+      // Cài đặt để tránh phát hiện là trình duyệt tự động
+      await detailPage.evaluateOnNewDocument(() => {
+        Object.defineProperty(navigator, 'webdriver', { get: () => false });
+        delete navigator.__proto__.webdriver;
+        
+        const originalQuery = window.navigator.permissions.query;
+        window.navigator.permissions.query = (parameters) => (
+          parameters.name === 'notifications' ?
+            Promise.resolve({ state: Notification.permission }) :
+            originalQuery(parameters)
+        );
+        
+        Object.defineProperty(navigator, 'userAgent', {
+          get: () => "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+        });
+      });
       
-      // Nếu là yêu cầu redirect và có URL gốc, thực hiện redirect
-      if (isRedirectRequest && processedData && processedData.originalUrl) {
-        console.log(`Chuyển hướng đến URL gốc: ${processedData.originalUrl}`);
-        return NextResponse.redirect(processedData.originalUrl);
+      await detailPage.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36');
+      await detailPage.setViewport({ width: 1280, height: 800 });
+      
+      await detailPage.evaluateOnNewDocument(() => {
+        console.log('%cAPI KimVan - Chi tiết Sheet', 'font-size: 20px; color: blue; font-weight: bold');
+        console.log('Đang lấy chi tiết sheet, vui lòng đợi...');
+        console.log('Nếu cần đăng nhập, vui lòng đăng nhập Gmail trong cửa sổ này');
+      });
+      
+      await detailPage.goto(detailUrl, { waitUntil: 'networkidle0', timeout: 60000 });
+      
+      // Kiểm tra đăng nhập
+      let isUserLoggedIn = await isLoggedIn(detailPage);
+      
+      if (!isUserLoggedIn) {
+        console.log('\n===== CẦN ĐĂNG NHẬP GMAIL =====');
+        console.log('Vui lòng đăng nhập Gmail trong trình duyệt vừa hiện ra');
+        console.log('Hệ thống sẽ đợi tối đa 2 phút để bạn đăng nhập');
+        
+        // Đợi người dùng đăng nhập (tối đa 2 phút)
+        const loginTimeout = 120000;
+        const loginStartTime = Date.now();
+        
+        while (!isUserLoggedIn && (Date.now() - loginStartTime) < loginTimeout) {
+          await new Promise(resolve => setTimeout(resolve, 5000));
+          console.log('Đang đợi đăng nhập...');
+          isUserLoggedIn = await isLoggedIn(detailPage);
+          
+          if (isUserLoggedIn) {
+            console.log('Đã phát hiện đăng nhập thành công!');
+            await detailPage.reload({ waitUntil: 'networkidle0', timeout: 30000 });
+            break;
+          }
+        }
+        
+        if (!isUserLoggedIn) {
+          console.log('Hết thời gian đợi đăng nhập. Tiếp tục quá trình (có thể bị giới hạn quyền truy cập)');
+        }
       }
       
-      return NextResponse.json(processedData, {
-        headers: responseHeaders
-      });
-    } else {
-      return NextResponse.json(
-        {
-          error: 'Không thể lấy chi tiết sheet',
-          detail: result.error,
-          errorCode: result.errorCode,
-          timestamp: timestamp
-        },
-        {
-          status: result.errorCode || 500,
+      // Lấy nội dung JSON
+      const detailContent = await detailPage.evaluate(() => document.body.innerText);
+      let detailData;
+      
+      try {
+        detailData = JSON.parse(detailContent);
+        
+        // Lưu file JSON
+        const detailFileName = `sheet-${shortId}-detail.json`;
+        const detailFilePath = path.join(resultsDir, detailFileName);
+        fs.writeFileSync(detailFilePath, JSON.stringify(detailData, null, 2));
+        console.log(`Đã lưu chi tiết sheet vào: ${detailFilePath}`);
+        
+        // Hiển thị thông báo trong console
+        console.log('\n===== LẤY JSON THÀNH CÔNG =====');
+        console.log(`Đã lấy xong chi tiết sheet với ID: ${shortId}`);
+        console.log(`Kết quả được lưu tại: ${detailFilePath}`);
+        
+        // Đóng trang chi tiết
+        await detailPage.close();
+        
+        return NextResponse.json(detailData, {
           headers: responseHeaders
-        }
-      );
+        });
+      } catch (error) {
+        console.error('Lỗi khi xử lý dữ liệu chi tiết:', error);
+        
+        // Lưu nội dung thô để kiểm tra
+        const rawFileName = `sheet-${shortId}-detail-raw.txt`;
+        const rawFilePath = path.join(resultsDir, rawFileName);
+        fs.writeFileSync(rawFilePath, detailContent);
+        
+        return NextResponse.json(
+          {
+            success: false,
+            error: error.message,
+            errorCode: detailContent.includes('429') ? 429 : 400,
+            sheetId: id,
+            timestamp: Date.now()
+          },
+          { status: 400 }
+        );
+      }
+    } finally {
+      // Đóng trình duyệt ngay lập tức
+      await browser.close();
+      console.log('Đã đóng trình duyệt Chrome');
     }
   } catch (error) {
     console.error('Lỗi không xác định:', error);

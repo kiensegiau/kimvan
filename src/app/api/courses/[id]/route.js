@@ -7,6 +7,8 @@ import Course from '@/models/Course';
 import { connectDB } from '@/lib/mongodb';
 import Enrollment from '@/models/Enrollment';
 import { authMiddleware } from '@/lib/auth';
+import path from 'path';
+import fs from 'fs';
 
 // Khóa mã hóa - phải giống với khóa ở phía client
 const ENCRYPTION_KEY = 'kimvan-secure-key-2024';
@@ -373,9 +375,49 @@ export async function PATCH(request, { params }) {
     const kimvanApiUrl = `${origin}/api/spreadsheets/${id}`;
     console.log(`URL đích: ${kimvanApiUrl}`);
     
-    const kimvanResponse = await fetch(kimvanApiUrl);
+    // Lấy token KimVan từ file
+    const tokenPath = path.join(process.cwd(), 'kimvan_token.json');
+    let kimvanToken = null;
+    try {
+      if (fs.existsSync(tokenPath)) {
+        const tokenContent = fs.readFileSync(tokenPath, 'utf8');
+        kimvanToken = JSON.parse(tokenContent);
+      }
+    } catch (error) {
+      console.error('Lỗi khi đọc token KimVan:', error);
+    }
+    
+    // Chuẩn bị headers cho request
+    const headers = {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36'
+    };
+    
+    // Thêm header xác thực nếu có token
+    if (kimvanToken) {
+      if (kimvanToken.token_type === 'jwt') {
+        headers['Authorization'] = `Bearer ${kimvanToken.value}`;
+      } else if (kimvanToken.cookie_string) {
+        headers['Cookie'] = kimvanToken.cookie_string;
+      }
+    }
+    
+    const kimvanResponse = await fetch(kimvanApiUrl, {
+      headers: headers
+    });
     
     if (!kimvanResponse.ok) {
+      // Kiểm tra nếu là lỗi xác thực
+      if (kimvanResponse.status === 401 || kimvanResponse.status === 403) {
+        return NextResponse.json(
+          { 
+            success: false,
+            message: 'Lỗi xác thực với Kimvan API. Vui lòng đăng nhập lại.',
+            error: `Unauthorized: ${kimvanResponse.status}` 
+          },
+          { status: 401 }
+        );
+      }
+      
       return NextResponse.json(
         { 
           success: false,

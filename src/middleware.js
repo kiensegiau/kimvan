@@ -35,7 +35,8 @@ const securityHeaders = [
 
 // Kiểm tra xem đường dẫn có thuộc danh sách công khai không
 const isPublicPath = (path) => {
-  return publicPaths.some(publicPath => path.startsWith(publicPath));
+  return publicPaths.some(publicPath => path.startsWith(publicPath)) || 
+         path.startsWith('/api/spreadsheets/'); // Thêm /api/spreadsheets vào danh sách bỏ qua
 };
 
 // Cache kết quả kiểm tra đường dẫn public để tăng hiệu suất
