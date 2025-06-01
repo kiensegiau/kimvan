@@ -478,8 +478,63 @@ export async function PATCH(request, { params }) {
             rowCount: kimvanData.sheets[0]?.data?.[0]?.rowData?.length || 0,
             firstFewRows: kimvanData.sheets[0]?.data?.[0]?.rowData?.slice(0, 5) || []
           }
-        : null
+        : null,
+      // Thêm danh sách đầy đủ các link
+      allLinks: {
+        processed: [],
+        unprocessed: []
+      }
     };
+    
+    // Thu thập tất cả các link
+    if (kimvanData.sheets && Array.isArray(kimvanData.sheets)) {
+      kimvanData.sheets.forEach((sheet, sheetIndex) => {
+        const sheetTitle = sheet?.properties?.title || `Sheet ${sheetIndex + 1}`;
+        
+        if (sheet.data && Array.isArray(sheet.data)) {
+          sheet.data.forEach((sheetData) => {
+            if (sheetData.rowData && Array.isArray(sheetData.rowData)) {
+              sheetData.rowData.forEach((row, rowIndex) => {
+                if (row.values && Array.isArray(row.values)) {
+                  row.values.forEach((cell, cellIndex) => {
+                    const originalUrl = cell.userEnteredFormat?.textFormat?.link?.uri || cell.hyperlink;
+                    if (originalUrl) {
+                      const displayText = cell.formattedValue || originalUrl;
+                      const position = {
+                        sheet: sheetTitle,
+                        row: rowIndex,
+                        col: cellIndex
+                      };
+                      
+                      if (cell.processedUrl) {
+                        // Link đã xử lý
+                        previewData.allLinks.processed.push({
+                          originalUrl,
+                          processedUrl: cell.processedUrl,
+                          processedAt: cell.processedAt,
+                          displayText,
+                          position
+                        });
+                      } else {
+                        // Link chưa xử lý
+                        previewData.allLinks.unprocessed.push({
+                          originalUrl,
+                          displayText,
+                          position
+                        });
+                      }
+                    }
+                  });
+                }
+              });
+            }
+          });
+        }
+      });
+    }
+    
+    console.log(`📊 [PATCH] Số link đã xử lý trong danh sách: ${previewData.allLinks.processed.length}`);
+    console.log(`📊 [PATCH] Số link chưa xử lý trong danh sách: ${previewData.allLinks.unprocessed.length}`);
     
     // Nếu ở chế độ xem trước, chỉ trả về dữ liệu xem trước
     if (previewMode || requestBody.preview === true) {

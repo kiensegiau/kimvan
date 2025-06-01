@@ -43,6 +43,7 @@ export default function CourseDetailPage({ params }) {
   const [previewData, setPreviewData] = useState(null);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [applyingSync, setApplyingSync] = useState(false);
+  const [previewActiveTab, setPreviewActiveTab] = useState('sheet');
   
   // Hàm lấy tiêu đề của sheet
   const getSheetTitle = (index, sheets) => {
@@ -1387,7 +1388,7 @@ export default function CourseDetailPage({ params }) {
         {/* Modal xem trước dữ liệu đồng bộ */}
         {showPreviewModal && previewData && (
           <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-5xl max-h-[90vh] overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-600 to-indigo-600 flex justify-between items-center">
                 <h3 className="text-lg font-medium text-white">Xem trước dữ liệu đồng bộ</h3>
                 <button
@@ -1399,66 +1400,115 @@ export default function CourseDetailPage({ params }) {
                 </button>
               </div>
               
-              <div className="p-6 overflow-auto max-h-[calc(90vh-11rem)]">
-                {/* Thông tin khóa học */}
-                <div className="mb-6">
-                  <h4 className="text-lg font-medium text-gray-900 mb-3">Thông tin khóa học</h4>
-                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                    <dl className="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2">
-                      <div className="sm:col-span-2">
-                        <dt className="text-sm font-medium text-gray-500">Tên khóa học</dt>
-                        <dd className="mt-1 text-base font-medium text-gray-900">{previewData.courseInfo.name}</dd>
-                      </div>
-                      <div className="sm:col-span-2">
-                        <dt className="text-sm font-medium text-gray-500">Mô tả</dt>
-                        <dd className="mt-1 text-sm text-gray-900">{previewData.courseInfo.description}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm font-medium text-gray-500">Giá</dt>
-                        <dd className="mt-1 text-sm text-gray-900">{previewData.courseInfo.price.toLocaleString('vi-VN')} VND</dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm font-medium text-gray-500">Trạng thái</dt>
-                        <dd className="mt-1">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            previewData.courseInfo.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {previewData.courseInfo.status === 'active' ? 'Đang hoạt động' : 'Ngừng hoạt động'}
-                          </span>
-                        </dd>
-                      </div>
-                    </dl>
+              {/* Tab Navigation */}
+              <div className="px-6 pt-4 border-b border-gray-200">
+                <div className="flex space-x-4">
+                  <button
+                    onClick={() => setPreviewActiveTab('sheet')}
+                    className={`pb-3 px-1 text-sm font-medium ${
+                      previewActiveTab === 'sheet'
+                        ? 'text-blue-600 border-b-2 border-blue-600'
+                        : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    Dữ liệu Sheet
+                  </button>
+                  <button
+                    onClick={() => setPreviewActiveTab('processed')}
+                    className={`pb-3 px-1 text-sm font-medium flex items-center ${
+                      previewActiveTab === 'processed'
+                        ? 'text-green-600 border-b-2 border-green-600'
+                        : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    <span>Link đã xử lý</span>
+                    {previewData.allLinks?.processed && (
+                      <span className="ml-2 bg-green-100 text-green-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">
+                        {previewData.allLinks.processed.length}
+                      </span>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setPreviewActiveTab('unprocessed')}
+                    className={`pb-3 px-1 text-sm font-medium flex items-center ${
+                      previewActiveTab === 'unprocessed'
+                        ? 'text-amber-600 border-b-2 border-amber-600'
+                        : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    <span>Link chưa xử lý</span>
+                    {previewData.allLinks?.unprocessed && (
+                      <span className="ml-2 bg-amber-100 text-amber-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">
+                        {previewData.allLinks.unprocessed.length}
+                      </span>
+                    )}
+                  </button>
+                </div>
+              </div>
+              
+              <div className="overflow-auto max-h-[calc(90vh-12rem)]">
+                {/* Tab Thông tin khóa học - Luôn hiển thị */}
+                <div className="p-6">
+                  {/* Thông tin khóa học */}
+                  <div className="mb-6">
+                    <h4 className="text-lg font-medium text-gray-900 mb-3">Thông tin khóa học</h4>
+                    <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                      <dl className="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2">
+                        <div className="sm:col-span-2">
+                          <dt className="text-sm font-medium text-gray-500">Tên khóa học</dt>
+                          <dd className="mt-1 text-base font-medium text-gray-900">{previewData.courseInfo.name}</dd>
+                        </div>
+                        <div className="sm:col-span-2">
+                          <dt className="text-sm font-medium text-gray-500">Mô tả</dt>
+                          <dd className="mt-1 text-sm text-gray-900">{previewData.courseInfo.description}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500">Giá</dt>
+                          <dd className="mt-1 text-sm text-gray-900">{previewData.courseInfo.price.toLocaleString('vi-VN')} VND</dd>
+                        </div>
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500">Trạng thái</dt>
+                          <dd className="mt-1">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              previewData.courseInfo.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                            }`}>
+                              {previewData.courseInfo.status === 'active' ? 'Đang hoạt động' : 'Ngừng hoạt động'}
+                            </span>
+                          </dd>
+                        </div>
+                      </dl>
+                    </div>
+                  </div>
+                  
+                  {/* Thống kê đồng bộ */}
+                  <div className="mb-6">
+                    <h4 className="text-lg font-medium text-gray-900 mb-3">Thống kê đồng bộ</h4>
+                    <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                      <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                        <div className="flex flex-col bg-white p-3 rounded-lg border border-blue-100">
+                          <dt className="text-sm font-medium text-gray-500">Tổng số sheet</dt>
+                          <dd className="mt-1 text-xl font-semibold text-blue-600">{previewData.stats.totalSheets}</dd>
+                        </div>
+                        <div className="flex flex-col bg-white p-3 rounded-lg border border-blue-100">
+                          <dt className="text-sm font-medium text-gray-500">Tổng số link</dt>
+                          <dd className="mt-1 text-xl font-semibold text-blue-600">{previewData.stats.totalLinks}</dd>
+                        </div>
+                        <div className="flex flex-col bg-white p-3 rounded-lg border border-blue-100">
+                          <dt className="text-sm font-medium text-gray-500">Link đã xử lý</dt>
+                          <dd className="mt-1 text-xl font-semibold text-green-600">{previewData.stats.processedLinks}</dd>
+                        </div>
+                        <div className="flex flex-col bg-white p-3 rounded-lg border border-blue-100">
+                          <dt className="text-sm font-medium text-gray-500">File đã xử lý giữ lại</dt>
+                          <dd className="mt-1 text-xl font-semibold text-purple-600">{previewData.stats.preservedProcessedFiles}</dd>
+                        </div>
+                      </dl>
+                    </div>
                   </div>
                 </div>
-                
-                {/* Thống kê đồng bộ */}
-                <div className="mb-6">
-                  <h4 className="text-lg font-medium text-gray-900 mb-3">Thống kê đồng bộ</h4>
-                  <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                    <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                      <div className="flex flex-col bg-white p-3 rounded-lg border border-blue-100">
-                        <dt className="text-sm font-medium text-gray-500">Tổng số sheet</dt>
-                        <dd className="mt-1 text-xl font-semibold text-blue-600">{previewData.stats.totalSheets}</dd>
-                      </div>
-                      <div className="flex flex-col bg-white p-3 rounded-lg border border-blue-100">
-                        <dt className="text-sm font-medium text-gray-500">Tổng số link</dt>
-                        <dd className="mt-1 text-xl font-semibold text-blue-600">{previewData.stats.totalLinks}</dd>
-                      </div>
-                      <div className="flex flex-col bg-white p-3 rounded-lg border border-blue-100">
-                        <dt className="text-sm font-medium text-gray-500">Link đã xử lý</dt>
-                        <dd className="mt-1 text-xl font-semibold text-green-600">{previewData.stats.processedLinks}</dd>
-                      </div>
-                      <div className="flex flex-col bg-white p-3 rounded-lg border border-blue-100">
-                        <dt className="text-sm font-medium text-gray-500">File đã xử lý giữ lại</dt>
-                        <dd className="mt-1 text-xl font-semibold text-purple-600">{previewData.stats.preservedProcessedFiles}</dd>
-                      </div>
-                    </dl>
-                  </div>
-                </div>
-                
-                {/* Xem trước sheet đầu tiên */}
-                {previewData.sampleSheet && (
-                  <div>
+
+                {/* Tab Sheet */}
+                {previewActiveTab === 'sheet' && previewData.sampleSheet && (
+                  <div className="px-6 pb-6">
                     <h4 className="text-lg font-medium text-gray-900 mb-3">
                       Xem trước sheet: {previewData.sampleSheet.title}
                       <span className="ml-2 text-sm text-gray-500">
@@ -1524,6 +1574,128 @@ export default function CourseDetailPage({ params }) {
                     ) : (
                       <div className="bg-gray-50 p-4 rounded-lg text-center text-gray-500">
                         Không có dữ liệu hàng nào để hiển thị
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                {/* Tab Link đã xử lý */}
+                {previewActiveTab === 'processed' && (
+                  <div className="px-6 pb-6">
+                    <h4 className="text-lg font-medium text-gray-900 mb-3">
+                      Danh sách các link đã xử lý watermark ({previewData.allLinks?.processed?.length || 0})
+                    </h4>
+                    
+                    {previewData.allLinks?.processed && previewData.allLinks.processed.length > 0 ? (
+                      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                        <div className="overflow-x-auto">
+                          <table className="min-w-full divide-y divide-gray-200">
+                            <thead>
+                              <tr className="bg-gradient-to-r from-green-600 to-emerald-600">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider w-1/4">Nội dung</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider w-1/4">Vị trí</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider w-1/4">Link gốc</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider w-1/4">Link đã xử lý</th>
+                              </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                              {previewData.allLinks.processed.map((link, index) => (
+                                <tr key={index} className="hover:bg-green-50">
+                                  <td className="px-6 py-4 text-sm">
+                                    <div className="text-gray-900 font-medium break-words">{link.displayText}</div>
+                                  </td>
+                                  <td className="px-6 py-4 text-sm text-gray-700">
+                                    Sheet: {link.position.sheet}, Hàng: {link.position.row + 1}, Cột: {link.position.col + 1}
+                                  </td>
+                                  <td className="px-6 py-4 text-sm">
+                                    <a 
+                                      href={link.originalUrl} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      className="text-blue-600 hover:text-blue-800 hover:underline flex items-center"
+                                    >
+                                      <span className="truncate max-w-xs block">{link.originalUrl}</span>
+                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                      </svg>
+                                    </a>
+                                  </td>
+                                  <td className="px-6 py-4 text-sm">
+                                    <a 
+                                      href={link.processedUrl} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      className="text-green-600 hover:text-green-800 hover:underline flex items-center"
+                                    >
+                                      <span className="truncate max-w-xs block">{link.processedUrl}</span>
+                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                      </svg>
+                                    </a>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-gray-50 p-4 rounded-lg text-center text-gray-500">
+                        Không có link nào đã được xử lý
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                {/* Tab Link chưa xử lý */}
+                {previewActiveTab === 'unprocessed' && (
+                  <div className="px-6 pb-6">
+                    <h4 className="text-lg font-medium text-gray-900 mb-3">
+                      Danh sách các link chưa xử lý watermark ({previewData.allLinks?.unprocessed?.length || 0})
+                    </h4>
+                    
+                    {previewData.allLinks?.unprocessed && previewData.allLinks.unprocessed.length > 0 ? (
+                      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                        <div className="overflow-x-auto">
+                          <table className="min-w-full divide-y divide-gray-200">
+                            <thead>
+                              <tr className="bg-gradient-to-r from-amber-500 to-amber-600">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider w-1/3">Nội dung</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider w-1/3">Vị trí</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider w-1/3">Link gốc</th>
+                              </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                              {previewData.allLinks.unprocessed.map((link, index) => (
+                                <tr key={index} className="hover:bg-amber-50">
+                                  <td className="px-6 py-4 text-sm">
+                                    <div className="text-gray-900 font-medium break-words">{link.displayText}</div>
+                                  </td>
+                                  <td className="px-6 py-4 text-sm text-gray-700">
+                                    Sheet: {link.position.sheet}, Hàng: {link.position.row + 1}, Cột: {link.position.col + 1}
+                                  </td>
+                                  <td className="px-6 py-4 text-sm">
+                                    <a 
+                                      href={link.originalUrl} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      className="text-blue-600 hover:text-blue-800 hover:underline flex items-center"
+                                    >
+                                      <span className="truncate max-w-xs block">{link.originalUrl}</span>
+                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                      </svg>
+                                    </a>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-gray-50 p-4 rounded-lg text-center text-gray-500">
+                        Không có link nào chưa được xử lý
                       </div>
                     )}
                   </div>
