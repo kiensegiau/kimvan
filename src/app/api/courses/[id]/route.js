@@ -37,6 +37,188 @@ const encryptEntireObject = (obj) => {
   }
 };
 
+// Thêm hàm phân tích và chuẩn hóa URL để so sánh chính xác hơn
+function normalizeUrl(url) {
+  if (!url) return '';
+  
+  try {
+    // Xử lý các trường hợp đặc biệt
+    let normalizedUrl = url.trim();
+    
+    // Loại bỏ các tham số theo dõi và UTM nếu có
+    try {
+      const urlObj = new URL(normalizedUrl);
+      urlObj.searchParams.delete('utm_source');
+      urlObj.searchParams.delete('utm_medium');
+      urlObj.searchParams.delete('utm_campaign');
+      normalizedUrl = urlObj.toString();
+    } catch (e) {
+      // Nếu không phân tích được URL, giữ nguyên
+      console.log(`⚠️ Không thể phân tích URL: ${url}`);
+    }
+    
+    // Xử lý các URL Google Drive
+    if (normalizedUrl.includes('drive.google.com')) {
+      // Trích xuất ID của file Google Drive từ nhiều định dạng khác nhau
+      const driveIdMatch = normalizedUrl.match(/\/d\/([^\/\?#]+)/);
+      const altDriveIdMatch = normalizedUrl.match(/id=([^&]+)/);
+      const driveId = driveIdMatch ? driveIdMatch[1] : (altDriveIdMatch ? altDriveIdMatch[1] : null);
+      
+      if (driveId) {
+        // Chuẩn hóa thành định dạng URL Google Drive tiêu chuẩn
+        return `https://drive.google.com/file/d/${driveId}`;
+      }
+    }
+    
+    return normalizedUrl;
+  } catch (error) {
+    console.error(`❌ Lỗi khi chuẩn hóa URL: ${url}`, error);
+    return url; // Trả về URL gốc nếu có lỗi
+  }
+}
+
+// Thêm hàm so sánh URL sử dụng thuật toán đo lường độ tương đồng (Levenshtein)
+function calculateSimilarity(str1, str2) {
+  if (!str1 || !str2) return 0;
+  
+  // Tính toán khoảng cách Levenshtein
+  const track = Array(str2.length + 1).fill(null).map(() => 
+    Array(str1.length + 1).fill(null));
+  
+  for (let i = 0; i <= str1.length; i += 1) {
+    track[0][i] = i;
+  }
+  
+  for (let j = 0; j <= str2.length; j += 1) {
+    track[j][0] = j;
+  }
+  
+  for (let j = 1; j <= str2.length; j += 1) {
+    for (let i = 1; i <= str1.length; i += 1) {
+      const indicator = str1[i - 1] === str2[j - 1] ? 0 : 1;
+      track[j][i] = Math.min(
+        track[j][i - 1] + 1, // deletion
+        track[j - 1][i] + 1, // insertion
+        track[j - 1][i - 1] + indicator, // substitution
+      );
+    }
+  }
+  
+  // Tính toán % giống nhau
+  const maxLength = Math.max(str1.length, str2.length);
+  const distance = track[str2.length][str1.length];
+  const similarity = ((maxLength - distance) / maxLength) * 100;
+  
+  return similarity;
+}
+
+// Hàm tìm URL đã xử lý dựa trên độ tương đồng
+function findProcessedUrl(originalUrl, processedFiles) {
+  if (!originalUrl || !processedFiles || processedFiles.length === 0) {
+    return null;
+  }
+  
+  // Chuẩn hóa URL để so sánh
+  const normalizedUrl = normalizeUrl(originalUrl);
+  
+  // Tìm kiếm khớp chính xác trước
+  const exactMatch = processedFiles.find(file => normalizeUrl(file.originalUrl) === normalizedUrl);
+  if (exactMatch) {
+    console.log(`✅ [PATCH] Tìm thấy khớp chính xác cho URL: ${originalUrl.substring(0, 50)}...`);
+    return exactMatch;
+  }
+  
+  // Nếu không có khớp chính xác, tìm kiếm URL tương tự
+  const SIMILARITY_THRESHOLD = 80; // Ngưỡng % tương đồng (80%)
+  
+  // Đối với Google Drive, kiểm tra ID của tài liệu
+  if (normalizedUrl.includes('drive.google.com')) {
+    const driveIdMatch = normalizedUrl.match(/\/d\/([^\/\?#]+)/);
+    const urlDriveId = driveIdMatch ? driveIdMatch[1] : null;
+    
+    if (urlDriveId) {
+      for (const file of processedFiles) {
+        const fileUrlNormalized = normalizeUrl(file.originalUrl);
+        const fileIdMatch = fileUrlNormalized.match(/\/d\/([^\/\?#]+)/);
+        const fileId = fileIdMatch ? fileIdMatch[1] : null;
+        
+        if (fileId && fileId === urlDriveId) {
+          console.log(`✅ [PATCH] Tìm thấy khớp ID Google Drive cho URL: ${originalUrl.substring(0, 50)}...`);
+          return file;
+        }
+      }
+    }
+  }
+  
+  // Tính toán độ tương đồng cho tất cả các URL đã xử lý
+  let bestMatch = null;
+  let highestSimilarity = 0;
+  
+  for (const file of processedFiles) {
+    const fileUrlNormalized = normalizeUrl(file.originalUrl);
+    const similarity = calculateSimilarity(normalizedUrl, fileUrlNormalized);
+    
+    if (similarity > highestSimilarity && similarity >= SIMILARITY_THRESHOLD) {
+      highestSimilarity = similarity;
+      bestMatch = file;
+    }
+  }
+  
+  if (bestMatch) {
+    console.log(`✅ [PATCH] Tìm thấy URL tương tự (${highestSimilarity.toFixed(2)}%) cho: ${originalUrl.substring(0, 50)}...`);
+    return bestMatch;
+  }
+  
+  return null;
+}
+
+// Thêm hàm tạo bản đồ vị trí cho các URL đã xử lý
+function createPositionMap(originalData, processedFiles) {
+  // Lưu trữ các link đã xử lý theo vị trí
+  const positionMap = new Map();
+  
+  if (!originalData || !originalData.sheets || !Array.isArray(originalData.sheets)) {
+    console.log('⚠️ [PATCH] Không có dữ liệu sheets trong dữ liệu gốc để tạo bản đồ vị trí');
+    return positionMap;
+  }
+  
+  console.log(`📊 [PATCH] Bắt đầu tạo bản đồ vị trí từ dữ liệu gốc với ${originalData.sheets.length} sheets`);
+  
+  // Duyệt qua toàn bộ dữ liệu để tìm vị trí của link đã xử lý
+  originalData.sheets.forEach((sheet, sheetIndex) => {
+    const sheetTitle = sheet?.properties?.title || `Sheet ${sheetIndex + 1}`;
+    
+    if (sheet.data && Array.isArray(sheet.data)) {
+      sheet.data.forEach((sheetData) => {
+        if (sheetData.rowData && Array.isArray(sheetData.rowData)) {
+          sheetData.rowData.forEach((row, rowIndex) => {
+            if (row.values && Array.isArray(row.values)) {
+              row.values.forEach((cell, cellIndex) => {
+                const originalUrl = cell.userEnteredFormat?.textFormat?.link?.uri || cell.hyperlink;
+                
+                if (originalUrl) {
+                  // Tìm trong danh sách processedFiles
+                  const processedFile = processedFiles.find(file => file.originalUrl === originalUrl);
+                  
+                  if (processedFile) {
+                    // Tạo khóa vị trí
+                    const positionKey = `${sheetTitle}|${rowIndex}|${cellIndex}`;
+                    positionMap.set(positionKey, processedFile);
+                    console.log(`📍 [PATCH] Đã lưu vị trí cho link đã xử lý: ${positionKey}`);
+                  }
+                }
+              });
+            }
+          });
+        }
+      });
+    }
+  });
+  
+  console.log(`📊 [PATCH] Đã tạo bản đồ vị trí với ${positionMap.size} entries`);
+  return positionMap;
+}
+
 // GET: Lấy một khóa học theo ID
 export async function GET(request, { params }) {
   try {
@@ -342,12 +524,9 @@ export async function PATCH(request, { params }) {
     const processedFiles = existingCourse.processedDriveFiles || [];
     console.log(`📊 [PATCH] Số lượng file đã xử lý từ dữ liệu cũ: ${processedFiles.length}`);
     
-    // Tạo map từ các file đã xử lý để tra cứu nhanh
-    const processedUrlMap = new Map();
-    processedFiles.forEach(file => {
-      processedUrlMap.set(file.originalUrl, file);
-      console.log(`🔗 [PATCH] Đã lưu link đã xử lý: ${file.originalUrl.substring(0, 50)}...`);
-    });
+    // Thay đổi: Tạo bản đồ vị trí thay vì bản đồ URL
+    const positionMap = createPositionMap(existingCourse.originalData, processedFiles);
+    console.log(`📊 [PATCH] Đã tạo bản đồ vị trí với ${positionMap.size} vị trí đã xử lý`);
     
     // Gọi API để lấy dữ liệu mới từ Kimvan
     console.log(`🔄 [PATCH] Đang gọi API kimvan với ID: ${id}`);
@@ -377,12 +556,13 @@ export async function PATCH(request, { params }) {
     let totalLinks = 0;
     let processedLinksInNewData = 0;
     
-    // Ghi đè link đã xử lý vào dữ liệu mới
+    // Sửa phần xử lý link trong dữ liệu mới
     if (kimvanData.sheets && Array.isArray(kimvanData.sheets)) {
       console.log(`📊 [PATCH] Số lượng sheets trong dữ liệu mới: ${kimvanData.sheets.length}`);
       
       kimvanData.sheets.forEach((sheet, sheetIndex) => {
-        console.log(`📝 [PATCH] Xử lý sheet ${sheetIndex + 1}: ${sheet?.properties?.title || 'Không có tiêu đề'}`);
+        const sheetTitle = sheet?.properties?.title || `Sheet ${sheetIndex + 1}`;
+        console.log(`📝 [PATCH] Xử lý sheet ${sheetIndex + 1}: ${sheetTitle}`);
         
         if (sheet.data && Array.isArray(sheet.data)) {
           sheet.data.forEach((sheetData, dataIndex) => {
@@ -397,20 +577,24 @@ export async function PATCH(request, { params }) {
                     if (originalUrl) {
                       totalLinks++;
                       
-                      // Kiểm tra nếu link này đã được xử lý trước đó
-                      if (processedUrlMap.has(originalUrl)) {
-                        const processedFile = processedUrlMap.get(originalUrl);
+                      // Tạo khóa vị trí tương ứng
+                      const positionKey = `${sheetTitle}|${rowIndex}|${cellIndex}`;
+                      
+                      // Tìm kiếm URL đã xử lý dựa trên vị trí
+                      if (positionMap.has(positionKey)) {
+                        const processedFile = positionMap.get(positionKey);
                         processedLinksInNewData++;
                         
                         // Thêm thông tin về file đã xử lý vào cell
                         cell.processedUrl = processedFile.processedUrl;
                         cell.processedAt = processedFile.processedAt;
                         
-                        console.log(`✅ [PATCH] Sheet ${sheetIndex + 1}, Hàng ${rowIndex + 1}, Cột ${cellIndex + 1}: Đã áp dụng link đã xử lý`);
-                        console.log(`   - Link gốc: ${originalUrl.substring(0, 50)}...`);
+                        console.log(`✅ [PATCH] Sheet ${sheetTitle}, Hàng ${rowIndex + 1}, Cột ${cellIndex + 1}: Đã áp dụng link đã xử lý`);
+                        console.log(`   - Link gốc (mới): ${originalUrl.substring(0, 50)}...`);
+                        console.log(`   - Link gốc (cũ): ${processedFile.originalUrl.substring(0, 50)}...`);
                         console.log(`   - Link đã xử lý: ${processedFile.processedUrl.substring(0, 50)}...`);
                       } else {
-                        console.log(`ℹ️ [PATCH] Sheet ${sheetIndex + 1}, Hàng ${rowIndex + 1}, Cột ${cellIndex + 1}: Link chưa được xử lý`);
+                        console.log(`ℹ️ [PATCH] Sheet ${sheetTitle}, Hàng ${rowIndex + 1}, Cột ${cellIndex + 1}: Không tìm thấy link đã xử lý cho vị trí này`);
                         console.log(`   - Link: ${originalUrl.substring(0, 50)}...`);
                       }
                     }
