@@ -432,45 +432,100 @@ export async function PATCH(request, { params }) {
     const kimvanData = await kimvanResponse.json();
     
     // Xử lý dữ liệu dựa vào cấu trúc thực tế từ API
-    // Kimvan API có thể trả về dữ liệu trong nhiều định dạng khác nhau
     let courseName = '';
+    let sheetData = null;
     
-    // Kiểm tra cấu trúc dữ liệu và lấy tên khóa học
-    if (kimvanData && typeof kimvanData === 'object') {
-      if (kimvanData.name) {
-        courseName = kimvanData.name;
-      } else if (kimvanData.data && kimvanData.data.name) {
-        courseName = kimvanData.data.name;
-      } else if (Array.isArray(kimvanData) && kimvanData.length > 0 && kimvanData[0].name) {
-        courseName = kimvanData[0].name;
+    // Chuyển đổi dữ liệu Google Sheet thành mảng các hàng
+    if (kimvanData && kimvanData.sheets && kimvanData.sheets.length > 0) {
+      const firstSheet = kimvanData.sheets[0];
+      courseName = firstSheet.properties?.title || '';
+      
+      if (firstSheet.data && firstSheet.data[0] && firstSheet.data[0].rowData) {
+        // Chuyển đổi rowData thành mảng các object
+        sheetData = firstSheet.data[0].rowData.map((row, rowIndex) => {
+          if (!row.values) return null;
+          
+          // Bỏ qua hàng header (hàng đầu tiên)
+          if (rowIndex === 0) return null;
+          
+          const rowObj = {};
+          row.values.forEach((cell, colIndex) => {
+            // Lấy tên cột từ hàng header
+            const headerCell = firstSheet.data[0].rowData[0].values[colIndex];
+            const columnName = headerCell?.formattedValue || `column${colIndex}`;
+            
+            rowObj[columnName] = {
+              value: cell.formattedValue || '',
+              hyperlink: cell.hyperlink || cell.userEnteredFormat?.textFormat?.link?.uri || '',
+              format: cell.userEnteredFormat || {}
+            };
+          });
+          return rowObj;
+        }).filter(row => row !== null); // Loại bỏ các hàng null
+        
+        console.log('Đã chuyển đổi dữ liệu sheet thành công');
+        console.log('Số hàng sau khi chuyển đổi:', sheetData.length);
       }
     }
     
     console.log('Tên khóa học được xác định:', courseName);
     
-    // Giữ lại _id và kimvanId từ dữ liệu cũ
-    const _id = existingCourse._id;
-    const kimvanId = existingCourse.kimvanId;
+    // Kiểm tra xem có dữ liệu sheet cũ không
+    const existingData = existingCourse.originalData || {};
     
-    // Tạo document mới hoàn toàn để thay thế dữ liệu cũ
+    // Kiểm tra cấu trúc dữ liệu cũ
+    console.log('Cấu trúc dữ liệu cũ:', {
+      isArray: Array.isArray(existingData),
+      type: typeof existingData,
+      hasSheets: existingData.sheets ? 'yes' : 'no'
+    });
+    
+    console.log('Số lượng dữ liệu mới:', Array.isArray(sheetData) ? sheetData.length : 'Không phải mảng');
+    
+    // Tạo cấu trúc dữ liệu mới giống với cấu trúc gốc từ Google Sheet
+    const newSheetData = {
+      sheets: [
+        {
+          properties: {
+            title: courseName
+          },
+          data: [
+            {
+              rowData: sheetData.map(row => {
+                // Chuyển đổi từ format mới về format gốc của Google Sheet
+                const values = Object.entries(row).map(([key, data]) => ({
+                  formattedValue: data.value,
+                  hyperlink: data.hyperlink,
+                  userEnteredFormat: data.format
+                }));
+                return { values };
+              })
+            }
+          ]
+        }
+      ]
+    };
+
+    // Tạo document mới với dữ liệu đã được hợp nhất
     const newCourseData = {
-      _id: _id,
-      kimvanId: kimvanId,
-      name: courseName || existingCourse.name, // Sử dụng tên đã xác định hoặc giữ tên cũ
+      _id: existingCourse._id,
+      kimvanId: existingCourse.kimvanId,
+      name: courseName || existingCourse.name,
       description: courseName 
         ? `Khóa học ${courseName}` 
-        : existingCourse.description, // Giữ mô tả cũ nếu không có tên mới
+        : existingCourse.description,
       price: existingCourse.price || 500000, 
       status: existingCourse.status || 'active',
       createdAt: existingCourse.createdAt || new Date(),
       updatedAt: new Date(),
-      originalData: kimvanData
+      originalData: newSheetData
     };
     
-    // Xóa document cũ và thay thế bằng document mới
-    const result = await Course.replaceOne(
+    // Cập nhật document với dữ liệu đã được hợp nhất
+    const result = await Course.findOneAndUpdate(
       { kimvanId: id },
-      newCourseData
+      { $set: newCourseData },
+      { new: true }
     );
     
     if (result.modifiedCount === 0) {
