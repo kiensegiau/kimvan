@@ -40,6 +40,9 @@ export default function CourseDetailPage({ params }) {
   const [processingAllDrive, setProcessingAllDrive] = useState(false);
   const [processAllDriveResult, setProcessAllDriveResult] = useState(null);
   const [skipWatermarkRemoval, setSkipWatermarkRemoval] = useState(true);
+  const [previewData, setPreviewData] = useState(null);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [applyingSync, setApplyingSync] = useState(false);
   
   // Hàm lấy tiêu đề của sheet
   const getSheetTitle = (index, sheets) => {
@@ -190,29 +193,39 @@ export default function CourseDetailPage({ params }) {
           inProgress: true
         });
         
-        // Sử dụng phương thức PATCH để đồng bộ khóa học
-        const response = await fetch(`/api/courses/${course.kimvanId}`, {
+        // Bước 1: Gọi API để xem trước dữ liệu
+        console.log(`🔍 Gửi yêu cầu xem trước dữ liệu đồng bộ cho khóa học: ${course.kimvanId}`);
+        const previewResponse = await fetch(`/api/courses/${course.kimvanId}`, {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
-          }
+          },
+          body: JSON.stringify({
+            preview: true
+          })
         });
         
-        const syncData = await response.json();
+        const previewResult = await previewResponse.json();
         
-        if (!response.ok) {
-          throw new Error(syncData.message || 'Không thể đồng bộ khóa học');
+        if (!previewResponse.ok) {
+          throw new Error(previewResult.message || 'Không thể xem trước dữ liệu đồng bộ');
         }
         
-        // Hiển thị kết quả đồng bộ
+        // Hiển thị kết quả xem trước
+        console.log('✅ Nhận dữ liệu xem trước thành công:', previewResult);
+        setPreviewData(previewResult.previewData);
+        setShowPreviewModal(true);
+        
+        // Cập nhật thông báo
         setSyncResult({
           success: true,
-          message: syncData.message || 'Đồng bộ khóa học thành công',
-          inProgress: false
+          message: 'Đã tải dữ liệu xem trước, vui lòng xác nhận để tiếp tục',
+          inProgress: false,
+          preview: true
         });
         
-        // Tải lại thông tin khóa học
-        await fetchCourseDetail();
+        // Dừng ở đây, đợi người dùng xác nhận từ modal
+        
       } catch (err) {
         console.error('Lỗi khi đồng bộ khóa học:', err);
         setSyncResult({
@@ -220,10 +233,69 @@ export default function CourseDetailPage({ params }) {
           message: `Lỗi đồng bộ: ${err.message}`,
           inProgress: false
         });
-      } finally {
         setSyncing(false);
       }
     }
+  };
+
+  // Hàm áp dụng đồng bộ sau khi xem trước
+  const applySync = async () => {
+    try {
+      setApplyingSync(true);
+      setSyncResult({
+        success: true,
+        message: `Đang áp dụng đồng bộ khóa học "${course.name}"...`,
+        inProgress: true
+      });
+      
+      // Gọi API để thực hiện đồng bộ thực sự
+      const response = await fetch(`/api/courses/${course.kimvanId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      const syncData = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(syncData.message || 'Không thể đồng bộ khóa học');
+      }
+      
+      // Hiển thị kết quả đồng bộ
+      setSyncResult({
+        success: true,
+        message: syncData.message || 'Đồng bộ khóa học thành công',
+        stats: syncData.stats,
+        inProgress: false
+      });
+      
+      // Tải lại thông tin khóa học
+      await fetchCourseDetail();
+      
+      // Đóng modal xem trước
+      setShowPreviewModal(false);
+      setPreviewData(null);
+      
+    } catch (err) {
+      console.error('Lỗi khi áp dụng đồng bộ khóa học:', err);
+      setSyncResult({
+        success: false,
+        message: `Lỗi áp dụng đồng bộ: ${err.message}`,
+        inProgress: false
+      });
+    } finally {
+      setApplyingSync(false);
+      setSyncing(false);
+    }
+  };
+
+  // Hàm hủy đồng bộ
+  const cancelSync = () => {
+    setShowPreviewModal(false);
+    setPreviewData(null);
+    setSyncing(false);
+    setSyncResult(null);
   };
 
   // Hàm trích xuất YouTube video ID từ URL
@@ -1295,7 +1367,7 @@ export default function CourseDetailPage({ params }) {
                   <button
                     type="submit"
                     disabled={!pdfFile || uploadingPdf}
-                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
+                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50"
                   >
                     {uploadingPdf ? (
                       <span className="flex items-center">
@@ -1308,6 +1380,179 @@ export default function CourseDetailPage({ params }) {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Modal xem trước dữ liệu đồng bộ */}
+        {showPreviewModal && previewData && (
+          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-600 to-indigo-600 flex justify-between items-center">
+                <h3 className="text-lg font-medium text-white">Xem trước dữ liệu đồng bộ</h3>
+                <button
+                  onClick={cancelSync}
+                  className="text-white hover:text-gray-200"
+                  disabled={applyingSync}
+                >
+                  <XMarkIcon className="h-6 w-6" />
+                </button>
+              </div>
+              
+              <div className="p-6 overflow-auto max-h-[calc(90vh-11rem)]">
+                {/* Thông tin khóa học */}
+                <div className="mb-6">
+                  <h4 className="text-lg font-medium text-gray-900 mb-3">Thông tin khóa học</h4>
+                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <dl className="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2">
+                      <div className="sm:col-span-2">
+                        <dt className="text-sm font-medium text-gray-500">Tên khóa học</dt>
+                        <dd className="mt-1 text-base font-medium text-gray-900">{previewData.courseInfo.name}</dd>
+                      </div>
+                      <div className="sm:col-span-2">
+                        <dt className="text-sm font-medium text-gray-500">Mô tả</dt>
+                        <dd className="mt-1 text-sm text-gray-900">{previewData.courseInfo.description}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-sm font-medium text-gray-500">Giá</dt>
+                        <dd className="mt-1 text-sm text-gray-900">{previewData.courseInfo.price.toLocaleString('vi-VN')} VND</dd>
+                      </div>
+                      <div>
+                        <dt className="text-sm font-medium text-gray-500">Trạng thái</dt>
+                        <dd className="mt-1">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            previewData.courseInfo.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {previewData.courseInfo.status === 'active' ? 'Đang hoạt động' : 'Ngừng hoạt động'}
+                          </span>
+                        </dd>
+                      </div>
+                    </dl>
+                  </div>
+                </div>
+                
+                {/* Thống kê đồng bộ */}
+                <div className="mb-6">
+                  <h4 className="text-lg font-medium text-gray-900 mb-3">Thống kê đồng bộ</h4>
+                  <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                    <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                      <div className="flex flex-col bg-white p-3 rounded-lg border border-blue-100">
+                        <dt className="text-sm font-medium text-gray-500">Tổng số sheet</dt>
+                        <dd className="mt-1 text-xl font-semibold text-blue-600">{previewData.stats.totalSheets}</dd>
+                      </div>
+                      <div className="flex flex-col bg-white p-3 rounded-lg border border-blue-100">
+                        <dt className="text-sm font-medium text-gray-500">Tổng số link</dt>
+                        <dd className="mt-1 text-xl font-semibold text-blue-600">{previewData.stats.totalLinks}</dd>
+                      </div>
+                      <div className="flex flex-col bg-white p-3 rounded-lg border border-blue-100">
+                        <dt className="text-sm font-medium text-gray-500">Link đã xử lý</dt>
+                        <dd className="mt-1 text-xl font-semibold text-green-600">{previewData.stats.processedLinks}</dd>
+                      </div>
+                      <div className="flex flex-col bg-white p-3 rounded-lg border border-blue-100">
+                        <dt className="text-sm font-medium text-gray-500">File đã xử lý giữ lại</dt>
+                        <dd className="mt-1 text-xl font-semibold text-purple-600">{previewData.stats.preservedProcessedFiles}</dd>
+                      </div>
+                    </dl>
+                  </div>
+                </div>
+                
+                {/* Xem trước sheet đầu tiên */}
+                {previewData.sampleSheet && (
+                  <div>
+                    <h4 className="text-lg font-medium text-gray-900 mb-3">
+                      Xem trước sheet: {previewData.sampleSheet.title}
+                      <span className="ml-2 text-sm text-gray-500">
+                        ({previewData.sampleSheet.rowCount} hàng)
+                      </span>
+                    </h4>
+                    
+                    {previewData.sampleSheet.firstFewRows && previewData.sampleSheet.firstFewRows.length > 0 ? (
+                      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                        <div className="overflow-x-auto">
+                          <table className="min-w-full divide-y divide-gray-200">
+                            <thead>
+                              <tr className="bg-gradient-to-r from-blue-600 to-indigo-600">
+                                {previewData.sampleSheet.firstFewRows[0]?.values?.map((cell, index) => (
+                                  <th 
+                                    key={index} 
+                                    className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider"
+                                  >
+                                    {cell.formattedValue || `Cột ${index + 1}`}
+                                  </th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                              {previewData.sampleSheet.firstFewRows.slice(1).map((row, rowIndex) => (
+                                <tr key={rowIndex} className="hover:bg-gray-50">
+                                  {row.values && row.values.map((cell, cellIndex) => {
+                                    // Kiểm tra xem cell có phải là link đã xử lý không
+                                    const hasProcessedUrl = !!cell.processedUrl;
+                                    
+                                    return (
+                                      <td 
+                                        key={cellIndex} 
+                                        className={`px-6 py-4 whitespace-nowrap text-sm ${
+                                          hasProcessedUrl ? 'bg-green-50' : ''
+                                        }`}
+                                      >
+                                        <div className="text-gray-900">{cell.formattedValue || ''}</div>
+                                        
+                                        {hasProcessedUrl && (
+                                          <div className="mt-1 flex items-center text-xs text-green-600">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                            </svg>
+                                            <span>Đã áp dụng link xử lý watermark</span>
+                                          </div>
+                                        )}
+                                      </td>
+                                    );
+                                  })}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                        
+                        {previewData.sampleSheet.rowCount > 5 && (
+                          <div className="px-6 py-3 bg-gray-50 text-center text-sm text-gray-500">
+                            Chỉ hiển thị 5 hàng đầu tiên trong tổng số {previewData.sampleSheet.rowCount} hàng
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="bg-gray-50 p-4 rounded-lg text-center text-gray-500">
+                        Không có dữ liệu hàng nào để hiển thị
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              
+              <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end space-x-3">
+                <button
+                  onClick={cancelSync}
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                  disabled={applyingSync}
+                >
+                  Hủy đồng bộ
+                </button>
+                <button
+                  onClick={applySync}
+                  disabled={applyingSync}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+                >
+                  {applyingSync ? (
+                    <span className="flex items-center">
+                      <ArrowPathIcon className="animate-spin h-4 w-4 mr-2" />
+                      Đang áp dụng...
+                    </span>
+                  ) : (
+                    'Áp dụng đồng bộ'
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         )}

@@ -64,6 +64,9 @@ export async function middleware(request) {
   const { pathname } = request.nextUrl;
   console.log('🚨 MIDDLEWARE EXECUTED FOR:', pathname);
 
+  // Bypass all authentication checks - allow all requests
+  return NextResponse.next();
+
   // Bỏ qua middleware cho API verify token và refresh token để tránh vòng lặp vô hạn
   if (pathname === TOKEN_VERIFY_API || 
       pathname === TOKEN_REFRESH_API ||

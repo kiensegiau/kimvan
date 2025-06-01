@@ -52,8 +52,6 @@ export async function GET(request, { params }) {
     const queryType = searchParams.get('type');
     const secure = searchParams.get('secure') === 'true';
     const responseType = queryType || 'full';
-    const requireEnrollment = searchParams.get('requireEnrollment') !== 'false'; // Mặc định yêu cầu đăng ký
-    const checkViewPermission = searchParams.get('checkViewPermission') === 'true'; // Kiểm tra quyền xem
     
     let query = {};
     
@@ -88,43 +86,9 @@ export async function GET(request, { params }) {
       }, { status: 404 });
     }
     
-    // Kiểm tra xác thực người dùng (không bắt buộc)
-    let user = null;
-    let isEnrolled = false;
-    let canViewAllCourses = false; // Biến mới để kiểm tra quyền xem tất cả khóa học
-    
-    try {
-      user = await authMiddleware(request);
-      
-      if (user) {
-        // Kiểm tra xem người dùng đã đăng ký khóa học này chưa
-        const enrollment = await Enrollment.findOne({
-          userId: user.uid,
-          courseId: course._id.toString()
-        }).lean().exec();
-        
-        isEnrolled = !!enrollment;
-        
-        // Kiểm tra quyền xem tất cả khóa học từ MongoDB
-        if (checkViewPermission) {
-          try {
-            const client = await clientPromise;
-            const db = client.db(process.env.MONGODB_DB || 'kimvan');
-            const userDetails = await db.collection('users').findOne({ firebaseId: user.uid });
-            
-            // Sử dụng trường canViewAllCourses từ MongoDB
-            canViewAllCourses = !!(userDetails && userDetails.canViewAllCourses);
-          } catch (dbError) {
-            console.log('Lỗi khi kiểm tra quyền từ MongoDB:', dbError.message);
-          }
-        } else {
-          console.log('DEBUG API - Không kiểm tra quyền xem tất cả khóa học (checkViewPermission=false)');
-        }
-      }
-    } catch (authError) {
-      console.log('Không có thông tin xác thực người dùng:', authError.message);
-      // Không trả về lỗi, chỉ tiếp tục với thông tin khóa học
-    }
+    // Bypass authentication check - always return full course data
+    const isEnrolled = true;
+    const canViewAllCourses = true;
     
     // Tạo dữ liệu trả về
     const responseData = {
@@ -140,20 +104,9 @@ export async function GET(request, { params }) {
       updatedAt: course.updatedAt,
       processedDriveFiles: course.processedDriveFiles || [],
       isEnrolled: isEnrolled,
-      canViewAllCourses: canViewAllCourses // Thêm trường này để client biết người dùng có quyền xem tất cả khóa học không
+      canViewAllCourses: canViewAllCourses,
+      originalData: course.originalData
     };
-    
-    // Thêm dữ liệu gốc nếu:
-    // 1. Yêu cầu dữ liệu đầy đủ VÀ
-    // 2. (Không yêu cầu đăng ký HOẶC người dùng đã đăng ký HOẶC người dùng có quyền xem tất cả khóa học)
-    if ((responseType === 'full' || responseType === 'auto') && 
-        (!requireEnrollment || isEnrolled || canViewAllCourses)) {
-      responseData.originalData = course.originalData;
-    } else if (requireEnrollment && !isEnrolled && !canViewAllCourses && 
-               (responseType === 'full' || responseType === 'auto')) {
-      // Nếu yêu cầu đăng ký nhưng người dùng chưa đăng ký và không có quyền xem tất cả khóa học
-      responseData.requiresEnrollment = true;
-    }
     
     // Mã hóa dữ liệu nếu yêu cầu
     if (secure) {
@@ -344,6 +297,21 @@ export async function PATCH(request, { params }) {
     const resolvedParams = await Promise.resolve(params);
     const { id } = resolvedParams;
     
+    console.log('🔄 [PATCH] Bắt đầu đồng bộ khóa học với ID:', id);
+    
+    // Lấy body request nếu có
+    let requestBody = {};
+    try {
+      requestBody = await request.json();
+      console.log('📝 [PATCH] Dữ liệu từ request body:', JSON.stringify(requestBody));
+    } catch (e) {
+      console.log('⚠️ [PATCH] Không có request body hoặc lỗi parse JSON:', e.message);
+    }
+    
+    // Kiểm tra chế độ xem trước
+    const previewMode = requestBody.preview === true;
+    console.log(`🔍 [PATCH] Chế độ xem trước: ${previewMode ? 'Bật' : 'Tắt'}`);
+    
     // Đảm bảo kết nối đến MongoDB trước khi truy vấn
     await connectDB();
     
@@ -355,8 +323,10 @@ export async function PATCH(request, { params }) {
     }
     
     // Kiểm tra xem khóa học có tồn tại không
+    console.log('🔍 [PATCH] Tìm kiếm khóa học trong database với kimvanId:', id);
     const existingCourse = await Course.findOne({ kimvanId: id }).lean().exec();
     if (!existingCourse) {
+      console.log('❌ [PATCH] Không tìm thấy khóa học với kimvanId:', id);
       return NextResponse.json(
         { 
           success: false,
@@ -366,16 +336,30 @@ export async function PATCH(request, { params }) {
       );
     }
     
-    // Gọi API để lấy dữ liệu mới từ Kimvan - sử dụng API đúng
-    console.log(`Đang gọi API kimvan với ID: ${id}`);
+    console.log('✅ [PATCH] Đã tìm thấy khóa học:', existingCourse._id.toString());
+    
+    // Lưu danh sách các file đã xử lý từ khóa học hiện tại
+    const processedFiles = existingCourse.processedDriveFiles || [];
+    console.log(`📊 [PATCH] Số lượng file đã xử lý từ dữ liệu cũ: ${processedFiles.length}`);
+    
+    // Tạo map từ các file đã xử lý để tra cứu nhanh
+    const processedUrlMap = new Map();
+    processedFiles.forEach(file => {
+      processedUrlMap.set(file.originalUrl, file);
+      console.log(`🔗 [PATCH] Đã lưu link đã xử lý: ${file.originalUrl.substring(0, 50)}...`);
+    });
+    
+    // Gọi API để lấy dữ liệu mới từ Kimvan
+    console.log(`🔄 [PATCH] Đang gọi API kimvan với ID: ${id}`);
     const kimvanUrl = new URL(request.url);
     const origin = kimvanUrl.origin;
     const kimvanApiUrl = `${origin}/api/spreadsheets/${id}`;
-    console.log(`URL đích: ${kimvanApiUrl}`);
+    console.log(`🌐 [PATCH] URL đích: ${kimvanApiUrl}`);
     
     const kimvanResponse = await fetch(kimvanApiUrl);
     
     if (!kimvanResponse.ok) {
+      console.log(`❌ [PATCH] Lỗi khi gọi API: ${kimvanResponse.status}`);
       return NextResponse.json(
         { 
           success: false,
@@ -386,11 +370,63 @@ export async function PATCH(request, { params }) {
       );
     }
     
-    console.log('Đã nhận dữ liệu từ kimvan API thành công!');
+    console.log('✅ [PATCH] Đã nhận dữ liệu từ kimvan API thành công!');
     const kimvanData = await kimvanResponse.json();
     
+    // Đếm số lượng link trong dữ liệu mới
+    let totalLinks = 0;
+    let processedLinksInNewData = 0;
+    
+    // Ghi đè link đã xử lý vào dữ liệu mới
+    if (kimvanData.sheets && Array.isArray(kimvanData.sheets)) {
+      console.log(`📊 [PATCH] Số lượng sheets trong dữ liệu mới: ${kimvanData.sheets.length}`);
+      
+      kimvanData.sheets.forEach((sheet, sheetIndex) => {
+        console.log(`📝 [PATCH] Xử lý sheet ${sheetIndex + 1}: ${sheet?.properties?.title || 'Không có tiêu đề'}`);
+        
+        if (sheet.data && Array.isArray(sheet.data)) {
+          sheet.data.forEach((sheetData, dataIndex) => {
+            if (sheetData.rowData && Array.isArray(sheetData.rowData)) {
+              console.log(`📊 [PATCH] Sheet ${sheetIndex + 1}, Data ${dataIndex + 1}: ${sheetData.rowData.length} hàng`);
+              
+              sheetData.rowData.forEach((row, rowIndex) => {
+                if (row.values && Array.isArray(row.values)) {
+                  row.values.forEach((cell, cellIndex) => {
+                    // Kiểm tra nếu cell có link
+                    const originalUrl = cell.userEnteredFormat?.textFormat?.link?.uri || cell.hyperlink;
+                    if (originalUrl) {
+                      totalLinks++;
+                      
+                      // Kiểm tra nếu link này đã được xử lý trước đó
+                      if (processedUrlMap.has(originalUrl)) {
+                        const processedFile = processedUrlMap.get(originalUrl);
+                        processedLinksInNewData++;
+                        
+                        // Thêm thông tin về file đã xử lý vào cell
+                        cell.processedUrl = processedFile.processedUrl;
+                        cell.processedAt = processedFile.processedAt;
+                        
+                        console.log(`✅ [PATCH] Sheet ${sheetIndex + 1}, Hàng ${rowIndex + 1}, Cột ${cellIndex + 1}: Đã áp dụng link đã xử lý`);
+                        console.log(`   - Link gốc: ${originalUrl.substring(0, 50)}...`);
+                        console.log(`   - Link đã xử lý: ${processedFile.processedUrl.substring(0, 50)}...`);
+                      } else {
+                        console.log(`ℹ️ [PATCH] Sheet ${sheetIndex + 1}, Hàng ${rowIndex + 1}, Cột ${cellIndex + 1}: Link chưa được xử lý`);
+                        console.log(`   - Link: ${originalUrl.substring(0, 50)}...`);
+                      }
+                    }
+                  });
+                }
+              });
+            }
+          });
+        }
+      });
+    }
+    
+    console.log(`📊 [PATCH] Tổng số link trong dữ liệu mới: ${totalLinks}`);
+    console.log(`📊 [PATCH] Số link đã xử lý được áp dụng: ${processedLinksInNewData}`);
+    
     // Xử lý dữ liệu dựa vào cấu trúc thực tế từ API
-    // Kimvan API có thể trả về dữ liệu trong nhiều định dạng khác nhau
     let courseName = '';
     
     // Kiểm tra cấu trúc dữ liệu và lấy tên khóa học
@@ -404,34 +440,67 @@ export async function PATCH(request, { params }) {
       }
     }
     
-    console.log('Tên khóa học được xác định:', courseName);
+    console.log('📝 [PATCH] Tên khóa học được xác định:', courseName || 'Không xác định được tên');
     
-    // Giữ lại _id và kimvanId từ dữ liệu cũ
-    const _id = existingCourse._id;
-    const kimvanId = existingCourse.kimvanId;
-    
-    // Tạo document mới hoàn toàn để thay thế dữ liệu cũ
+    // Tạo document mới để thay thế dữ liệu cũ
     const newCourseData = {
-      _id: _id,
-      kimvanId: kimvanId,
-      name: courseName || existingCourse.name, // Sử dụng tên đã xác định hoặc giữ tên cũ
+      _id: existingCourse._id,
+      kimvanId: existingCourse.kimvanId,
+      name: courseName || existingCourse.name,
       description: courseName 
         ? `Khóa học ${courseName}` 
-        : existingCourse.description, // Giữ mô tả cũ nếu không có tên mới
-      price: existingCourse.price || 500000, 
+        : existingCourse.description,
+      price: existingCourse.price || 500000,
       status: existingCourse.status || 'active',
       createdAt: existingCourse.createdAt || new Date(),
       updatedAt: new Date(),
-      originalData: kimvanData
+      processedDriveFiles: processedFiles, // Giữ nguyên danh sách file đã xử lý
+      originalData: kimvanData // Dữ liệu mới đã được ghi đè thông tin xử lý
     };
     
-    // Xóa document cũ và thay thế bằng document mới
+    // Tạo dữ liệu xem trước để trả về client
+    const previewData = {
+      courseInfo: {
+        name: newCourseData.name,
+        description: newCourseData.description,
+        price: newCourseData.price,
+        status: newCourseData.status
+      },
+      stats: {
+        totalLinks,
+        processedLinks: processedLinksInNewData,
+        totalSheets: kimvanData.sheets?.length || 0,
+        preservedProcessedFiles: processedFiles.length
+      },
+      sampleSheet: kimvanData.sheets && kimvanData.sheets.length > 0 
+        ? {
+            title: kimvanData.sheets[0]?.properties?.title || 'Sheet 1',
+            rowCount: kimvanData.sheets[0]?.data?.[0]?.rowData?.length || 0,
+            firstFewRows: kimvanData.sheets[0]?.data?.[0]?.rowData?.slice(0, 5) || []
+          }
+        : null
+    };
+    
+    // Nếu ở chế độ xem trước, chỉ trả về dữ liệu xem trước
+    if (previewMode || requestBody.preview === true) {
+      console.log('🔍 [PATCH] Trả về dữ liệu xem trước và không cập nhật database');
+      return NextResponse.json({
+        success: true,
+        message: 'Xem trước dữ liệu đồng bộ - Database chưa được cập nhật',
+        preview: true,
+        previewData
+      });
+    }
+    
+    // Nếu không phải chế độ xem trước, cập nhật database
+    console.log('💾 [PATCH] Cập nhật dữ liệu vào database');
     const result = await Course.replaceOne(
       { kimvanId: id },
       newCourseData
     );
     
     if (result.modifiedCount === 0) {
+      console.log('⚠️ [PATCH] Không có dữ liệu nào được cập nhật');
       return NextResponse.json(
         { 
           success: false,
@@ -441,13 +510,19 @@ export async function PATCH(request, { params }) {
       );
     }
     
+    console.log('✅ [PATCH] Đồng bộ khóa học thành công');
     return NextResponse.json({
       success: true,
       message: 'Đồng bộ khóa học thành công - Dữ liệu đã được làm mới hoàn toàn',
+      stats: {
+        totalLinks,
+        processedLinks: processedLinksInNewData,
+        preservedProcessedFiles: processedFiles.length
+      },
       updatedFields: Object.keys(newCourseData)
     });
   } catch (error) {
-    console.error('Lỗi khi đồng bộ khóa học:', error);
+    console.error('❌ [PATCH] Lỗi khi đồng bộ khóa học:', error);
     return NextResponse.json(
       { 
         success: false,

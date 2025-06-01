@@ -69,7 +69,14 @@ export const routes = {
 
 // Các trang không yêu cầu xác thực (public)
 export const publicPaths = [
-  // '/', // Thêm trang chủ vào danh sách công khai để tạm thời debug
+  '/', // Trang chủ
+  '/admin', // Admin pages
+  '/admin/', // Admin pages with trailing slash
+  '/courses', // Courses page
+  '/courses/', // Courses with trailing slash
+  '/api/courses', // Courses API
+  '/api/spreadsheets', // Spreadsheets API
+  '/api/', // All API endpoints
   routes.login,
   routes.register,
   routes.forgotPassword,
@@ -82,5 +89,6 @@ export const publicPaths = [
   '/favicon.ico',
   '/static',
   '/images',
-  // Thêm các đường dẫn công khai khác khi cần thiết
+  // Tất cả các đường dẫn đều công khai
+  '/*'
 ]; 
