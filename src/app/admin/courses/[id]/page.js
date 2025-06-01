@@ -234,18 +234,144 @@ export default function CourseDetailPage({ params }) {
     try {
       setSyncing(true);
       
-      // Gọi API để thực hiện đồng bộ
-      const response = await fetch(`/api/courses/${course.kimvanId}`, {
-        method: 'PATCH',
+      // Gọi API để lấy dữ liệu mới từ Kim Văn
+      const response = await fetch(`/api/courses/${course.kimvanId}/preview`, {
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         }
       });
       
-      const data = await response.json();
+      const previewData = await response.json();
       
       if (!response.ok) {
-        throw new Error(data.message || 'Không thể đồng bộ dữ liệu');
+        throw new Error(previewData.message || 'Không thể lấy dữ liệu preview');
+      }
+
+      console.log('Preview Data Structure:', previewData);
+
+      // Kiểm tra và lấy dữ liệu mới
+      let newData;
+      if (previewData?.preview?.newData?.sampleRows) {
+        // Nếu có sampleRows, sử dụng nó
+        newData = previewData.preview.newData.sampleRows;
+      } else if (previewData?.preview?.newData?.sheets?.[activeSheet]?.data?.[0]?.rowData) {
+        // Nếu có cấu trúc sheets, sử dụng nó
+        newData = previewData.preview.newData.sheets[activeSheet].data[0].rowData;
+      } else if (Array.isArray(previewData?.preview?.newData)) {
+        // Nếu newData là một mảng trực tiếp
+        newData = previewData.preview.newData;
+      } else {
+        throw new Error('Không thể xác định cấu trúc dữ liệu mới');
+      }
+
+      // Lấy dữ liệu hiện tại
+      const currentData = course.originalData.sheets[activeSheet].data[0].rowData;
+
+      console.log('Current Data:', currentData);
+      console.log('New Data:', newData);
+
+      // Tạo map để lưu trữ URL gốc theo formattedValue
+      const originalUrlMap = new Map();
+      currentData.forEach((row, rowIndex) => {
+        if (row.values) {
+          row.values.forEach((cell, cellIndex) => {
+            if (cell.formattedValue && cell.userEnteredFormat?.textFormat?.link?.uri) {
+              originalUrlMap.set(cell.formattedValue, {
+                uri: cell.userEnteredFormat.textFormat.link.uri,
+                hyperlink: cell.hyperlink,
+                rowIndex,
+                cellIndex
+              });
+              console.log(`Mapped URL for "${cell.formattedValue}":`, {
+                uri: cell.userEnteredFormat.textFormat.link.uri,
+                hyperlink: cell.hyperlink
+              });
+            }
+          });
+        }
+      });
+
+      // Xử lý dữ liệu mới để giữ lại URL gốc nếu có
+      const processedNewData = newData.map((row, rowIndex) => {
+        if (!row.values) return row;
+
+        const processedValues = row.values.map((cell, cellIndex) => {
+          if (!cell.formattedValue || !cell.userEnteredFormat?.textFormat?.link?.uri) {
+            return cell;
+          }
+
+          // Kiểm tra xem có URL gốc cho formattedValue này không
+          const originalUrlData = originalUrlMap.get(cell.formattedValue);
+          if (originalUrlData) {
+            console.log(`Found original URL for "${cell.formattedValue}":`, originalUrlData);
+            
+            // So sánh URL để log sự thay đổi
+            if (originalUrlData.uri !== cell.userEnteredFormat.textFormat.link.uri) {
+              console.log(`URL changed for "${cell.formattedValue}":`, {
+                from: originalUrlData.uri,
+                to: cell.userEnteredFormat.textFormat.link.uri
+              });
+            }
+
+            return {
+              ...cell,
+              userEnteredFormat: {
+                ...cell.userEnteredFormat,
+                textFormat: {
+                  ...cell.userEnteredFormat.textFormat,
+                  link: {
+                    uri: originalUrlData.uri
+                  }
+                }
+              },
+              hyperlink: originalUrlData.hyperlink
+            };
+          }
+
+          console.log(`No original URL found for "${cell.formattedValue}", keeping new URL:`, 
+            cell.userEnteredFormat.textFormat.link.uri);
+          return cell;
+        });
+
+        return {
+          ...row,
+          values: processedValues
+        };
+      });
+
+      console.log('Processed New Data:', processedNewData);
+
+      // Đóng gói dữ liệu theo cấu trúc sheets
+      const processedDataPayload = {
+        sheets: [
+          {
+            data: [
+              {
+                rowData: processedNewData
+              }
+            ]
+          }
+        ]
+      };
+
+      console.log('Final Payload:', processedDataPayload);
+
+      // Gọi API để thực hiện đồng bộ với dữ liệu đã xử lý
+      const syncResponse = await fetch(`/api/courses/${course._id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          processedData: processedDataPayload
+        })
+      });
+      
+      const syncResult = await syncResponse.json();
+      
+      if (!syncResponse.ok) {
+        throw new Error(syncResult.message || 'Không thể đồng bộ dữ liệu');
       }
       
       toast.success('Đồng bộ dữ liệu thành công');
