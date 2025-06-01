@@ -271,19 +271,22 @@ export default function CourseDetailPage({ params }) {
       console.log('Current Data:', currentData);
       console.log('New Data:', newData);
 
-      // Tạo map để lưu trữ URL gốc theo formattedValue
+      // Tạo map để lưu trữ URL gốc theo formattedValue và vị trí
       const originalUrlMap = new Map();
       currentData.forEach((row, rowIndex) => {
         if (row.values) {
           row.values.forEach((cell, cellIndex) => {
             if (cell.formattedValue && cell.userEnteredFormat?.textFormat?.link?.uri) {
-              originalUrlMap.set(cell.formattedValue, {
+              // Tạo key từ cả formattedValue và vị trí
+              const key = `${rowIndex}-${cellIndex}-${cell.formattedValue.trim()}`;
+              originalUrlMap.set(key, {
                 uri: cell.userEnteredFormat.textFormat.link.uri,
                 hyperlink: cell.hyperlink,
                 rowIndex,
-                cellIndex
+                cellIndex,
+                formattedValue: cell.formattedValue
               });
-              console.log(`Mapped URL for "${cell.formattedValue}":`, {
+              console.log(`Mapped URL for "${key}":`, {
                 uri: cell.userEnteredFormat.textFormat.link.uri,
                 hyperlink: cell.hyperlink
               });
@@ -301,10 +304,35 @@ export default function CourseDetailPage({ params }) {
             return cell;
           }
 
-          // Kiểm tra xem có URL gốc cho formattedValue này không
-          const originalUrlData = originalUrlMap.get(cell.formattedValue);
+          // Tìm URL gốc dựa trên vị trí và formattedValue
+          const key = `${rowIndex}-${cellIndex}-${cell.formattedValue.trim()}`;
+          const originalUrlData = originalUrlMap.get(key);
+
+          // Nếu không tìm thấy theo key chính xác, thử tìm theo nội dung
+          if (!originalUrlData) {
+            // Tìm trong map một entry có formattedValue giống
+            for (const [mapKey, mapValue] of originalUrlMap.entries()) {
+              if (mapValue.formattedValue.trim() === cell.formattedValue.trim()) {
+                console.log(`Found URL by content match for "${cell.formattedValue}":`, mapValue);
+                return {
+                  ...cell,
+                  userEnteredFormat: {
+                    ...cell.userEnteredFormat,
+                    textFormat: {
+                      ...cell.userEnteredFormat.textFormat,
+                      link: {
+                        uri: mapValue.uri
+                      }
+                    }
+                  },
+                  hyperlink: mapValue.hyperlink
+                };
+              }
+            }
+          }
+
           if (originalUrlData) {
-            console.log(`Found original URL for "${cell.formattedValue}":`, originalUrlData);
+            console.log(`Found URL by exact match for "${cell.formattedValue}":`, originalUrlData);
             
             // So sánh URL để log sự thay đổi
             if (originalUrlData.uri !== cell.userEnteredFormat.textFormat.link.uri) {
@@ -358,13 +386,14 @@ export default function CourseDetailPage({ params }) {
       console.log('Final Payload:', processedDataPayload);
 
       // Gọi API để thực hiện đồng bộ với dữ liệu đã xử lý
-      const syncResponse = await fetch(`/api/courses/${course._id}`, {
-        method: 'PATCH',
+      const syncResponse = await fetch(`/api/courses/sync/${course._id}`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          processedData: processedDataPayload
+          processedData: processedDataPayload,
+          kimvanId: course.kimvanId
         })
       });
       
