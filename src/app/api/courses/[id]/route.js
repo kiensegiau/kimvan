@@ -470,7 +470,7 @@ export async function PATCH(request, { params }) {
     
     console.log('Tên khóa học được xác định:', courseName);
     
-    // Kiểm tra xem có dữ liệu sheet cũ không
+    // Lấy dữ liệu cũ
     const existingData = existingCourse.originalData || {};
     
     // Kiểm tra cấu trúc dữ liệu cũ
@@ -479,27 +479,70 @@ export async function PATCH(request, { params }) {
       type: typeof existingData,
       hasSheets: existingData.sheets ? 'yes' : 'no'
     });
+
+    // Lấy dữ liệu sheet cũ (nếu có)
+    let existingRowData = [];
+    if (existingData.sheets?.[0]?.data?.[0]?.rowData) {
+      existingRowData = existingData.sheets[0].data[0].rowData;
+      console.log('Số hàng trong dữ liệu cũ:', existingRowData.length);
+    }
     
-    console.log('Số lượng dữ liệu mới:', Array.isArray(sheetData) ? sheetData.length : 'Không phải mảng');
-    
-    // Tạo cấu trúc dữ liệu mới giống với cấu trúc gốc từ Google Sheet
+    console.log('Số hàng trong dữ liệu mới:', sheetData.length);
+
+    // Tạo Map để lưu trữ các hàng duy nhất
+    const uniqueRows = new Map();
+    let updatedCount = 0;
+    let newCount = 0;
+
+    // Thêm dữ liệu cũ vào Map
+    existingRowData.forEach((row, index) => {
+      if (!row.values || index === 0) return; // Bỏ qua hàng header
+      const rowKey = JSON.stringify(row.values.map(cell => cell.formattedValue));
+      uniqueRows.set(rowKey, row);
+    });
+
+    console.log('Số hàng unique từ dữ liệu cũ:', uniqueRows.size);
+
+    // Chuyển đổi và thêm dữ liệu mới
+    const newRowData = sheetData.map(row => {
+      const values = Object.entries(row).map(([key, data]) => ({
+        formattedValue: data.value,
+        hyperlink: data.hyperlink,
+        userEnteredFormat: data.format
+      }));
+      
+      const rowKey = JSON.stringify(values.map(cell => cell.formattedValue));
+      
+      if (uniqueRows.has(rowKey)) {
+        updatedCount++;
+      } else {
+        newCount++;
+      }
+      
+      const newRow = { values };
+      uniqueRows.set(rowKey, newRow);
+      return newRow;
+    });
+
+    // Tạo dữ liệu sheet mới với header từ dữ liệu cũ hoặc mới
+    const headerRow = existingRowData[0] || newRowData[0];
+    const mergedRowData = [headerRow, ...Array.from(uniqueRows.values())];
+
+    console.log('Thống kê sau khi hợp nhất:');
+    console.log('- Số hàng được cập nhật:', updatedCount);
+    console.log('- Số hàng mới được thêm:', newCount);
+    console.log('- Tổng số hàng sau khi hợp nhất:', mergedRowData.length);
+
+    // Tạo cấu trúc dữ liệu mới giống với cấu trúc gốc
     const newSheetData = {
       sheets: [
         {
           properties: {
-            title: courseName
+            title: courseName || (existingData.sheets?.[0]?.properties?.title || '')
           },
           data: [
             {
-              rowData: sheetData.map(row => {
-                // Chuyển đổi từ format mới về format gốc của Google Sheet
-                const values = Object.entries(row).map(([key, data]) => ({
-                  formattedValue: data.value,
-                  hyperlink: data.hyperlink,
-                  userEnteredFormat: data.format
-                }));
-                return { values };
-              })
+              rowData: mergedRowData
             }
           ]
         }
