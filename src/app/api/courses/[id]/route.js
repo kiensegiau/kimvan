@@ -219,6 +219,9 @@ function createPositionMap(originalData, processedFiles) {
   return positionMap;
 }
 
+// Thêm biến để lưu trữ dữ liệu tạm thời
+const kimvanDataCache = new Map();
+
 // GET: Lấy một khóa học theo ID
 export async function GET(request, { params }) {
   try {
@@ -490,9 +493,14 @@ export async function PATCH(request, { params }) {
       console.log('⚠️ [PATCH] Không có request body hoặc lỗi parse JSON:', e.message);
     }
     
-    // Kiểm tra chế độ xem trước
+    // Kiểm tra chế độ xem trước và các tham số khác
     const previewMode = requestBody.preview === true;
+    const applyProcessedLinks = requestBody.applyProcessedLinks === true;
+    const useCache = requestBody.useCache === true || applyProcessedLinks === true;
+    
     console.log(`🔍 [PATCH] Chế độ xem trước: ${previewMode ? 'Bật' : 'Tắt'}`);
+    console.log(`🔗 [PATCH] Áp dụng link đã xử lý: ${applyProcessedLinks ? 'Bật' : 'Tắt'}`);
+    console.log(`💾 [PATCH] Sử dụng dữ liệu đã lưu tạm: ${useCache ? 'Bật' : 'Tắt'}`);
     
     // Đảm bảo kết nối đến MongoDB trước khi truy vấn
     await connectDB();
@@ -528,30 +536,75 @@ export async function PATCH(request, { params }) {
     const positionMap = createPositionMap(existingCourse.originalData, processedFiles);
     console.log(`📊 [PATCH] Đã tạo bản đồ vị trí với ${positionMap.size} vị trí đã xử lý`);
     
-    // Gọi API để lấy dữ liệu mới từ Kimvan
-    console.log(`🔄 [PATCH] Đang gọi API kimvan với ID: ${id}`);
-    const kimvanUrl = new URL(request.url);
-    const origin = kimvanUrl.origin;
-    const kimvanApiUrl = `${origin}/api/spreadsheets/${id}`;
-    console.log(`🌐 [PATCH] URL đích: ${kimvanApiUrl}`);
+    // Khai báo biến để lưu dữ liệu Kimvan
+    let kimvanData;
     
-    const kimvanResponse = await fetch(kimvanApiUrl);
-    
-    if (!kimvanResponse.ok) {
-      console.log(`❌ [PATCH] Lỗi khi gọi API: ${kimvanResponse.status}`);
-      return NextResponse.json(
-        { 
-          success: false,
-          message: 'Không thể lấy dữ liệu từ Kimvan API',
-          error: `Lỗi: ${kimvanResponse.status}` 
-        },
-        { status: 500 }
-      );
+    // Kiểm tra nếu sử dụng dữ liệu từ bộ nhớ tạm
+    if (useCache && kimvanDataCache.has(id)) {
+      console.log('💾 [PATCH] Sử dụng dữ liệu đã lưu trong bộ nhớ tạm');
+      kimvanData = kimvanDataCache.get(id);
+    } else {
+      // Gọi API để lấy dữ liệu mới từ Kimvan
+      console.log(`🔄 [PATCH] Đang gọi API kimvan với ID: ${id}`);
+      const kimvanUrl = new URL(request.url);
+      const origin = kimvanUrl.origin;
+      const kimvanApiUrl = `${origin}/api/spreadsheets/${id}`;
+      console.log(`🌐 [PATCH] URL đích: ${kimvanApiUrl}`);
+      
+      const kimvanResponse = await fetch(kimvanApiUrl);
+      
+      if (!kimvanResponse.ok) {
+        console.log(`❌ [PATCH] Lỗi khi gọi API: ${kimvanResponse.status}`);
+        return NextResponse.json(
+          { 
+            success: false,
+            message: 'Không thể lấy dữ liệu từ Kimvan API',
+            error: `Lỗi: ${kimvanResponse.status}` 
+          },
+          { status: 500 }
+        );
+      }
+      
+      console.log('✅ [PATCH] Đã nhận dữ liệu từ kimvan API thành công!');
+      kimvanData = await kimvanResponse.json();
+      
+      // Lưu dữ liệu vào bộ nhớ tạm nếu đang ở chế độ xem trước
+      if (previewMode) {
+        console.log('💾 [PATCH] Lưu dữ liệu vào bộ nhớ tạm');
+        kimvanDataCache.set(id, kimvanData);
+        
+        // Thiết lập xóa cache sau 30 phút
+        setTimeout(() => {
+          console.log(`🗑️ [PATCH] Xóa dữ liệu tạm cho khóa học ${id}`);
+          kimvanDataCache.delete(id);
+        }, 30 * 60 * 1000);
+      }
     }
     
-    console.log('✅ [PATCH] Đã nhận dữ liệu từ kimvan API thành công!');
-    const kimvanData = await kimvanResponse.json();
-    
+    // Thêm log để kiểm tra xem kimvanData có chứa thông tin đã xử lý không
+    console.log(`🔍 [PATCH] Kiểm tra dữ liệu trước khi lưu:`);
+    let processedUrlCount = 0;
+    if (kimvanData.sheets && Array.isArray(kimvanData.sheets)) {
+      kimvanData.sheets.forEach(sheet => {
+        if (sheet.data && Array.isArray(sheet.data)) {
+          sheet.data.forEach(sheetData => {
+            if (sheetData.rowData && Array.isArray(sheetData.rowData)) {
+              sheetData.rowData.forEach(row => {
+                if (row.values && Array.isArray(row.values)) {
+                  row.values.forEach(cell => {
+                    if (cell.processedLinks && cell.processedLinks.url) {
+                      processedUrlCount++;
+                    }
+                  });
+                }
+              });
+            }
+          });
+        }
+      });
+    }
+    console.log(`🔢 [PATCH] Số link đã xử lý trong dữ liệu sẽ lưu: ${processedUrlCount}`);
+
     // Đếm số lượng link trong dữ liệu mới
     let totalLinks = 0;
     let processedLinksInNewData = 0;
@@ -585,7 +638,15 @@ export async function PATCH(request, { params }) {
                         const processedFile = positionMap.get(positionKey);
                         processedLinksInNewData++;
                         
-                        // Thêm thông tin về file đã xử lý vào cell
+                        // Thêm thông tin về file đã xử lý vào cell - ĐẢM BẢO LƯU VÀO MONGODB
+                        // Cần đảm bảo thuộc tính này được lưu vào schema MongoDB
+                        if (!cell.processedLinks) {
+                          cell.processedLinks = {};
+                        }
+                        cell.processedLinks.url = processedFile.processedUrl;
+                        cell.processedLinks.processedAt = processedFile.processedAt;
+                        
+                        // Cách cũ - có thể bị MongoDB bỏ qua
                         cell.processedUrl = processedFile.processedUrl;
                         cell.processedAt = processedFile.processedAt;
                         
@@ -642,6 +703,9 @@ export async function PATCH(request, { params }) {
       originalData: kimvanData // Dữ liệu mới đã được ghi đè thông tin xử lý
     };
     
+    // Thêm log để kiểm tra xem dữ liệu đã xử lý đúng chưa
+    console.log(`💾 [PATCH] Lưu dữ liệu đã xử lý với ${processedLinksInNewData} link đã áp dụng`);
+
     // Tạo dữ liệu xem trước để trả về client
     const previewData = {
       courseInfo: {
@@ -690,12 +754,13 @@ export async function PATCH(request, { params }) {
                         col: cellIndex
                       };
                       
-                      if (cell.processedUrl) {
+                      // Sửa đoạn này để kiểm tra cả hai thuộc tính
+                      if (cell.processedUrl || (cell.processedLinks && cell.processedLinks.url)) {
                         // Link đã xử lý
                         previewData.allLinks.processed.push({
                           originalUrl,
-                          processedUrl: cell.processedUrl,
-                          processedAt: cell.processedAt,
+                          processedUrl: cell.processedUrl || cell.processedLinks.url,
+                          processedAt: cell.processedAt || cell.processedLinks.processedAt,
                           displayText,
                           position
                         });
@@ -733,6 +798,15 @@ export async function PATCH(request, { params }) {
     
     // Nếu không phải chế độ xem trước, cập nhật database
     console.log('💾 [PATCH] Cập nhật dữ liệu vào database');
+    
+    // Đảm bảo dữ liệu processed links được lưu đúng cách
+    // Chuyển đổi đối tượng sang chuỗi JSON và ngược lại để bảo toàn tất cả thuộc tính
+    const serializedData = JSON.stringify(kimvanData);
+    const deserializedData = JSON.parse(serializedData);
+    newCourseData.originalData = deserializedData;
+    
+    console.log(`🔧 [PATCH] Dữ liệu đã được serialize để đảm bảo lưu đúng các link đã xử lý`);
+    
     const result = await Course.replaceOne(
       { kimvanId: id },
       newCourseData

@@ -202,7 +202,8 @@ export default function CourseDetailPage({ params }) {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            preview: true
+            preview: true,
+            useCache: false // Không sử dụng cache trong xem trước ban đầu
           })
         });
         
@@ -254,7 +255,12 @@ export default function CourseDetailPage({ params }) {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-        }
+        },
+        body: JSON.stringify({
+          applyProcessedLinks: true, // Thêm tham số để đảm bảo áp dụng các link đã xử lý
+          preview: false,
+          useCache: true // Sử dụng dữ liệu đã được lưu trong cache
+        })
       });
       
       const syncData = await response.json();
@@ -1538,6 +1544,9 @@ export default function CourseDetailPage({ params }) {
                                   {row.values && row.values.map((cell, cellIndex) => {
                                     // Kiểm tra xem cell có phải là link đã xử lý không
                                     const hasProcessedUrl = !!cell.processedUrl;
+                                    // Kiểm tra có link không (link gốc hoặc link đã xử lý)
+                                    const originalUrl = cell.userEnteredFormat?.textFormat?.link?.uri || cell.hyperlink;
+                                    const processedUrl = cell.processedUrl || (cell.processedLinks && cell.processedLinks.url);
                                     
                                     return (
                                       <td 
@@ -1546,14 +1555,33 @@ export default function CourseDetailPage({ params }) {
                                           hasProcessedUrl ? 'bg-green-50' : ''
                                         }`}
                                       >
-                                        <div className="text-gray-900">{cell.formattedValue || ''}</div>
+                                        {originalUrl ? (
+                                          <div className="text-gray-900">
+                                            <a 
+                                              href={processedUrl || originalUrl} 
+                                              target="_blank" 
+                                              rel="noopener noreferrer"
+                                              className="text-blue-600 hover:text-blue-800 hover:underline"
+                                              title={processedUrl || originalUrl}
+                                            >
+                                              {cell.formattedValue || originalUrl}
+                                            </a>
+                                          </div>
+                                        ) : (
+                                          <div className="text-gray-900">{cell.formattedValue || ''}</div>
+                                        )}
                                         
                                         {hasProcessedUrl && (
                                           <div className="mt-1 flex items-center text-xs text-green-600">
                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                             </svg>
-                                            <span>Đã áp dụng link xử lý watermark</span>
+                                            <span 
+                                              className="cursor-help" 
+                                              title={processedUrl}
+                                            >
+                                              Đã áp dụng link xử lý watermark
+                                            </span>
                                           </div>
                                         )}
                                       </td>
@@ -1612,9 +1640,10 @@ export default function CourseDetailPage({ params }) {
                                       href={link.originalUrl} 
                                       target="_blank" 
                                       rel="noopener noreferrer"
-                                      className="text-blue-600 hover:text-blue-800 hover:underline flex items-center"
+                                      className="text-blue-600 hover:text-blue-800 hover:underline flex items-center group"
+                                      title={link.originalUrl}
                                     >
-                                      <span className="truncate max-w-xs block">{link.originalUrl}</span>
+                                      <span className="truncate max-w-xs block group-hover:text-blue-800">{link.originalUrl}</span>
                                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                                       </svg>
@@ -1625,9 +1654,10 @@ export default function CourseDetailPage({ params }) {
                                       href={link.processedUrl} 
                                       target="_blank" 
                                       rel="noopener noreferrer"
-                                      className="text-green-600 hover:text-green-800 hover:underline flex items-center"
+                                      className="text-green-600 hover:text-green-800 hover:underline flex items-center group"
+                                      title={link.processedUrl}
                                     >
-                                      <span className="truncate max-w-xs block">{link.processedUrl}</span>
+                                      <span className="truncate max-w-xs block group-hover:text-green-800">{link.processedUrl}</span>
                                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                                       </svg>
@@ -1679,9 +1709,10 @@ export default function CourseDetailPage({ params }) {
                                       href={link.originalUrl} 
                                       target="_blank" 
                                       rel="noopener noreferrer"
-                                      className="text-blue-600 hover:text-blue-800 hover:underline flex items-center"
+                                      className="text-blue-600 hover:text-blue-800 hover:underline flex items-center group"
+                                      title={link.originalUrl}
                                     >
-                                      <span className="truncate max-w-xs block">{link.originalUrl}</span>
+                                      <span className="truncate max-w-xs block group-hover:text-blue-800">{link.originalUrl}</span>
                                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                                       </svg>
