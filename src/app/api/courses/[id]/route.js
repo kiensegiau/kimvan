@@ -213,7 +213,12 @@ function createPositionMap(originalData) {
           sheetData.rowData.forEach((row, rowIndex) => {
             if (row.values && Array.isArray(row.values)) {
               row.values.forEach((cell, cellIndex) => {
-                const originalUrl = cell.userEnteredFormat?.textFormat?.link?.uri || cell.hyperlink;
+                // Kiểm tra các loại URL và trạng thái của cell
+                const originalUrl = cell.userEnteredFormat?.textFormat?.link?.uri || 
+                                  cell.hyperlink || 
+                                  cell.originalUrl; // Kiểm tra cả trường originalUrl đã lưu
+                const linkRemoved = cell.linkRemoved === true;
+                const isFakeLink = cell.isFakeLink === true;
                 
                 // Kiểm tra xem cell này có chứa link đã xử lý không
                 // Kiểm tra cả các trường cũ và mới
@@ -222,17 +227,19 @@ function createPositionMap(originalData) {
                 const processedAt = cell.processedAt || 
                                    (cell.processedLinks && cell.processedLinks.processedAt);
                 
-                // Lưu TẤT CẢ các vị trí có link, kể cả chưa xử lý để bảo toàn cấu trúc
-                if (originalUrl) {
+                // Lưu TẤT CẢ các vị trí có link (hoặc đã từng có link) để bảo toàn cấu trúc
+                if (originalUrl || linkRemoved) {
                   // Tạo khóa vị trí
                   const positionKey = `${sheetTitle}|${rowIndex}|${cellIndex}`;
                   
                   // Lưu thông tin về link
                   positionMap.set(positionKey, {
-                    originalUrl: originalUrl,
+                    originalUrl: originalUrl || null,
                     processedUrl: processedUrl || null,
                     processedAt: processedAt || null,
                     isProcessed: !!processedUrl,
+                    linkRemoved: linkRemoved,
+                    isFakeLink: isFakeLink,
                     position: {
                       sheet: sheetTitle,
                       row: rowIndex,
@@ -242,8 +249,13 @@ function createPositionMap(originalData) {
                   
                   if (processedUrl) {
                     console.log(`📍 [PATCH] Đã lưu vị trí cho link đã xử lý: ${positionKey}`);
-                    console.log(`   - URL gốc: ${originalUrl.substring(0, 50)}...`);
+                    console.log(`   - URL gốc: ${originalUrl ? originalUrl.substring(0, 50) + '...' : '[Link đã bị xóa]'}`);
                     console.log(`   - URL đã xử lý: ${processedUrl.substring(0, 50)}...`);
+                  } else if (linkRemoved) {
+                    console.log(`📍 [PATCH] Đã lưu vị trí cho link đã bị xóa: ${positionKey}`);
+                    if (originalUrl) {
+                      console.log(`   - URL gốc (đã lưu): ${originalUrl.substring(0, 50)}...`);
+                    }
                   }
                 }
               });
@@ -730,27 +742,24 @@ export async function PATCH(request, { params }) {
     console.log(`🔢 [PATCH] Số link đã xử lý trong dữ liệu sẽ lưu: ${processedUrlCount}`);
 
     // Đếm số lượng link trong dữ liệu mới
-    let totalLinks = 0;
     let processedLinksInNewData = 0;
+    let totalLinks = 0;
     
-    // Sửa phần xử lý link trong dữ liệu mới
+    console.log(`🔄 [PATCH] Bắt đầu xử lý dữ liệu từ KimVan, kiểm tra khớp với dữ liệu đã xử lý...`);
+    
     if (kimvanData.sheets && Array.isArray(kimvanData.sheets)) {
-      console.log(`📊 [PATCH] Số lượng sheets trong dữ liệu mới: ${kimvanData.sheets.length}`);
-      
       kimvanData.sheets.forEach((sheet, sheetIndex) => {
         const sheetTitle = sheet?.properties?.title || `Sheet ${sheetIndex + 1}`;
-        console.log(`📝 [PATCH] Xử lý sheet ${sheetIndex + 1}: ${sheetTitle}`);
+        console.log(`🔍 [PATCH] Đang xử lý sheet "${sheetTitle}"`);
         
         if (sheet.data && Array.isArray(sheet.data)) {
           sheet.data.forEach((sheetData, dataIndex) => {
             if (sheetData.rowData && Array.isArray(sheetData.rowData)) {
-              console.log(`📊 [PATCH] Sheet ${sheetIndex + 1}, Data ${dataIndex + 1}: ${sheetData.rowData.length} hàng`);
-              
               sheetData.rowData.forEach((row, rowIndex) => {
                 if (row.values && Array.isArray(row.values)) {
                   row.values.forEach((cell, cellIndex) => {
                     // Kiểm tra nếu cell có link hoặc đã bị xóa link
-                    const originalUrl = cell.userEnteredFormat?.textFormat?.link?.uri || cell.hyperlink;
+                    const originalUrl = cell.userEnteredFormat?.textFormat?.link?.uri || cell.hyperlink || cell.originalUrl;
                     const wasLinkRemoved = cell.linkRemoved === true;
                     
                     if (originalUrl || wasLinkRemoved) {
@@ -770,16 +779,24 @@ export async function PATCH(request, { params }) {
                       if (positionMap.has(positionKey)) {
                         const processedInfo = positionMap.get(positionKey);
                         
-                        // Kiểm tra xem có processedUrl không và nó không phải null
-                        if (processedInfo.isProcessed && processedInfo.processedUrl) {
+                        // Kiểm tra xem có originalUrl hay processedUrl không
+                        // Ưu tiên sử dụng processedUrl nếu có, nếu không thì dùng originalUrl
+                        const urlToUse = processedInfo.processedUrl || processedInfo.originalUrl;
+                        
+                        if (urlToUse) {
                           processedLinksInNewData++;
                           
                           // Thêm thông tin về file đã xử lý vào cell - ĐẢM BẢO LƯU VÀO MONGODB
                           if (!cell.processedLinks) {
                             cell.processedLinks = {};
                           }
-                          cell.processedLinks.url = processedInfo.processedUrl;
+                          
+                          // Lưu cả processedUrl và originalUrl để tham chiếu
+                          cell.processedLinks.url = processedInfo.processedUrl || null;
+                          cell.processedLinks.originalUrl = processedInfo.originalUrl;
                           cell.processedLinks.processedAt = processedInfo.processedAt;
+                          cell.processedLinks.usedOriginalUrl = !processedInfo.processedUrl; // Đánh dấu đã sử dụng URL gốc
+                          
                           // Thêm thông tin vị trí để dễ truy xuất sau này
                           cell.processedLinks.position = {
                             sheet: sheetTitle,
@@ -791,44 +808,48 @@ export async function PATCH(request, { params }) {
                           cell.processedUrl = processedInfo.processedUrl;
                           cell.processedAt = processedInfo.processedAt;
                           
-                          console.log(`✅ [PATCH] Sheet ${sheetTitle}, Hàng ${rowIndex + 1}, Cột ${cellIndex + 1}: Đã áp dụng link đã xử lý theo vị trí`);
+                          // QUAN TRỌNG: Đảm bảo URL được thêm vào cấu trúc cell để hiển thị trong UI
+                          // Tạo lại cấu trúc link trong cell
+                          if (!cell.userEnteredFormat) {
+                            cell.userEnteredFormat = {};
+                          }
+                          if (!cell.userEnteredFormat.textFormat) {
+                            cell.userEnteredFormat.textFormat = {};
+                          }
+                          if (!cell.userEnteredFormat.textFormat.link) {
+                            cell.userEnteredFormat.textFormat.link = {};
+                          }
+                          
+                          // Thêm URL vào cả hai vị trí để đảm bảo hiển thị
+                          cell.userEnteredFormat.textFormat.link.uri = urlToUse;
+                          cell.hyperlink = urlToUse;
+                          
+                          // Nếu không có text hiển thị, thêm một text mặc định
+                          if (!cell.formattedValue) {
+                            cell.formattedValue = processedInfo.processedUrl ? "Tài liệu đã xử lý" : "Tài liệu gốc";
+                          }
+                          
+                          console.log(`✅ [PATCH] Sheet ${sheetTitle}, Hàng ${rowIndex + 1}, Cột ${cellIndex + 1}: Đã áp dụng link theo vị trí`);
                           if (wasLinkRemoved) {
                             console.log(`   - Link gốc: [Đã xóa link giả mạo]`);
-                          } else if (isFakeLink) {
-                            console.log(`   - Link gốc (giả mạo): ${originalUrl.substring(0, 50)}...`);
                           } else {
-                            console.log(`   - Link gốc (mới): ${originalUrl.substring(0, 50)}...`);
+                            console.log(`   - Link gốc: ${originalUrl ? originalUrl.substring(0, 50) + '...' : '[Unknown]'}`);
                           }
-                          console.log(`   - Link gốc (cũ/thật): ${processedInfo.originalUrl.substring(0, 50)}...`);
-                          console.log(`   - Link đã xử lý: ${processedInfo.processedUrl.substring(0, 50)}...`);
-                        } else {
-                          // Tìm thấy vị trí khớp nhưng không có link đã xử lý
-                          // => Giữ nguyên cấu trúc, không cập nhật gì
-                          console.log(`ℹ️ [PATCH] Sheet ${sheetTitle}, Hàng ${rowIndex + 1}, Cột ${cellIndex + 1}: Giữ nguyên vị trí đã có (chưa xử lý)`);
                           
-                          // Vẫn giữ thông tin vị trí để sử dụng sau này
-                          if (!cell.processedLinks) {
-                            cell.processedLinks = {};
+                          if (processedInfo.processedUrl) {
+                            console.log(`   - Link đã xử lý: ${processedInfo.processedUrl.substring(0, 50)}...`);
+                          } else {
+                            console.log(`   - Sử dụng link gốc (chưa xử lý): ${processedInfo.originalUrl.substring(0, 50)}...`);
                           }
-                          cell.processedLinks.position = {
-                            sheet: sheetTitle,
-                            row: rowIndex,
-                            col: cellIndex
-                          };
+                          
+                          console.log(`   - Đã thêm link vào cấu trúc cell để hiển thị trong UI`);
+                        } else if (isFakeLink || wasLinkRemoved) {
+                          // Nếu là link giả đã bị xóa, nhưng không có bản đã xử lý
+                          console.log(`ℹ️ [PATCH] Sheet ${sheetTitle}, Hàng ${rowIndex + 1}, Cột ${cellIndex + 1}: Link giả mạo chưa được xử lý`);
                         }
                       } else {
-                        // Không tìm thấy vị trí trong dữ liệu cũ => hàng mới cần thêm vào
-                        console.log(`➕ [PATCH] Sheet ${sheetTitle}, Hàng ${rowIndex + 1}, Cột ${cellIndex + 1}: Thêm vị trí mới (chưa xử lý)`);
-                        
-                        // Lưu lại vị trí để sử dụng sau này
-                        if (!cell.processedLinks) {
-                          cell.processedLinks = {};
-                        }
-                        cell.processedLinks.position = {
-                          sheet: sheetTitle,
-                          row: rowIndex,
-                          col: cellIndex
-                        };
+                        // Không tìm thấy trong positionMap
+                        console.log(`ℹ️ [PATCH] Sheet ${sheetTitle}, Hàng ${rowIndex + 1}, Cột ${cellIndex + 1}: Không tìm thấy link trong bản đồ vị trí`);
                       }
                     }
                   });
@@ -938,8 +959,10 @@ export async function PATCH(request, { params }) {
               sheetData.rowData.forEach((row, rowIndex) => {
                 if (row.values && Array.isArray(row.values)) {
                   row.values.forEach((cell, cellIndex) => {
-                    const originalUrl = cell.userEnteredFormat?.textFormat?.link?.uri || cell.hyperlink;
+                    const originalUrl = cell.userEnteredFormat?.textFormat?.link?.uri || cell.hyperlink || cell.originalUrl;
                     const wasLinkRemoved = cell.linkRemoved === true;
+                    const isFakeLink = cell.isFakeLink === true;
+                    const processedUrl = cell.processedUrl || (cell.processedLinks && cell.processedLinks.url);
                     
                     if (originalUrl || wasLinkRemoved) {
                       const displayText = cell.formattedValue || "Link đã bị xóa";
@@ -949,41 +972,22 @@ export async function PATCH(request, { params }) {
                         col: cellIndex
                       };
                       
-                      // Kiểm tra xem link có được đánh dấu là giả không
-                      const isFakeLink = cell.isFakeLink === true;
+                      // Chuẩn bị thông tin link
+                      const linkInfo = {
+                        originalUrl: originalUrl || "Link đã bị xóa",
+                        displayText,
+                        position,
+                        wasLinkRemoved,
+                        isFakeLink
+                      };
                       
-                      // Kiểm tra nếu vị trí này có trong positionMap
-                      const positionKey = `${sheetTitle}|${rowIndex}|${cellIndex}`;
-                      const hasProcessedLink = positionMap.has(positionKey);
-                      
-                      // Sửa đoạn này để kiểm tra cả hai thuộc tính
-                      if (cell.processedUrl || (cell.processedLinks && cell.processedLinks.url) || hasProcessedLink) {
-                        // Link đã xử lý
-                        const processedLink = hasProcessedLink ? positionMap.get(positionKey) : null;
-                        
-                        previewData.allLinks.processed.push({
-                          originalUrl: originalUrl || "[Link đã bị xóa]",
-                          processedUrl: cell.processedUrl || 
-                                       (cell.processedLinks && cell.processedLinks.url) || 
-                                       (processedLink && processedLink.processedUrl),
-                          processedAt: cell.processedAt || 
-                                      (cell.processedLinks && cell.processedLinks.processedAt) || 
-                                      (processedLink && processedLink.processedAt),
-                          displayText,
-                          position,
-                          fromPositionMap: hasProcessedLink,
-                          isFakeLink: isFakeLink,
-                          wasLinkRemoved: wasLinkRemoved
-                        });
+                      // Phân loại link
+                      if (processedUrl) {
+                        linkInfo.processedUrl = processedUrl;
+                        linkInfo.processedAt = cell.processedAt || (cell.processedLinks && cell.processedLinks.processedAt);
+                        previewData.allLinks.processed.push(linkInfo);
                       } else {
-                        // Link chưa xử lý
-                        previewData.allLinks.unprocessed.push({
-                          originalUrl: originalUrl || "[Link đã bị xóa]",
-                          displayText,
-                          position,
-                          isFakeLink: isFakeLink,
-                          wasLinkRemoved: wasLinkRemoved
-                        });
+                        previewData.allLinks.unprocessed.push(linkInfo);
                       }
                     }
                   });

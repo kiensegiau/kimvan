@@ -93,7 +93,7 @@ function processFakeLinks(data) {
   
   let totalLinks = 0;
   let fakeLinks = 0;
-  let removedLinks = 0;
+  let markedLinks = 0;
   
   // Duyệt qua tất cả sheets
   data.sheets.forEach((sheet, sheetIndex) => {
@@ -117,21 +117,25 @@ function processFakeLinks(data) {
                   if (isFakeLink) {
                     fakeLinks++;
                     
-                    // Xóa hoàn toàn các trường link giả mạo
+                    // Lưu lại URL gốc trước khi xử lý
+                    cell.originalUrl = url;
+                    
+                    // Đánh dấu là link giả mạo, nhưng vẫn giữ lại cấu trúc
+                    cell.isFakeLink = true;
+                    cell.linkRemoved = true;
+                    
+                    // Thay thế URL trong textFormat.link bằng placeholder thay vì xóa hoàn toàn
                     if (cell.userEnteredFormat?.textFormat?.link) {
-                      // Xóa trường link trong textFormat
-                      delete cell.userEnteredFormat.textFormat.link;
-                      removedLinks++;
+                      // Thay đổi URL thành placeholder để ngăn người dùng click
+                      cell.userEnteredFormat.textFormat.link.uri = "#fake-link-removed";
+                      markedLinks++;
                     }
                     
                     if (cell.hyperlink) {
-                      // Xóa trường hyperlink
-                      delete cell.hyperlink;
-                      removedLinks++;
+                      // Thay đổi hyperlink thành placeholder
+                      cell.hyperlink = "#fake-link-removed";
+                      markedLinks++;
                     }
-                    
-                    // Đánh dấu đã xóa link giả mạo
-                    cell.linkRemoved = true;
                     
                     // Lưu vị trí để dễ khớp sau này
                     if (!cell.position) {
@@ -140,6 +144,12 @@ function processFakeLinks(data) {
                         row: rowIndex,
                         col: cellIndex
                       };
+                    }
+                    
+                    // Thêm thông báo vào formatted value nếu cần
+                    if (cell.formattedValue) {
+                      cell.originalFormattedValue = cell.formattedValue;
+                      // Không thay đổi formattedValue để giữ nguyên hiển thị
                     }
                   }
                 }
@@ -154,7 +164,7 @@ function processFakeLinks(data) {
   console.log(`===== KẾT QUẢ XỬ LÝ LINK GIẢ =====`);
   console.log(`Tổng số link: ${totalLinks}`);
   console.log(`Số link giả mạo phát hiện: ${fakeLinks}`);
-  console.log(`Số trường link đã xóa: ${removedLinks}`);
+  console.log(`Số link giả mạo đã đánh dấu: ${markedLinks}`);
   console.log(`Tỷ lệ giả mạo: ${totalLinks > 0 ? ((fakeLinks / totalLinks) * 100).toFixed(2) : 0}%`);
   
   return data;
