@@ -73,6 +73,94 @@ async function isLoggedIn(page) {
 }
 
 /**
+ * Xử lý các link giả mạo trong dữ liệu từ Kimvan
+ * @param {Object} data - Dữ liệu JSON từ Kimvan
+ * @returns {Object} Dữ liệu đã được xử lý
+ */
+function processFakeLinks(data) {
+  if (!data || !data.sheets || !Array.isArray(data.sheets)) {
+    console.log('Không có dữ liệu sheets để xử lý');
+    return data;
+  }
+
+  console.log(`===== XỬ LÝ LINK GIẢ MẠO TRONG ${data.sheets.length} SHEETS =====`);
+  
+  // Mảng chứa các mẫu URL fake
+  const FAKE_URL_PATTERNS = [
+    'drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr',
+    '/api/shared?link='
+  ];
+  
+  let totalLinks = 0;
+  let fakeLinks = 0;
+  let removedLinks = 0;
+  
+  // Duyệt qua tất cả sheets
+  data.sheets.forEach((sheet, sheetIndex) => {
+    const sheetTitle = sheet?.properties?.title || `Sheet ${sheetIndex + 1}`;
+    console.log(`Đang xử lý sheet "${sheetTitle}"`);
+    
+    if (sheet.data && Array.isArray(sheet.data)) {
+      sheet.data.forEach((sheetData, dataIndex) => {
+        if (sheetData.rowData && Array.isArray(sheetData.rowData)) {
+          sheetData.rowData.forEach((row, rowIndex) => {
+            if (row.values && Array.isArray(row.values)) {
+              row.values.forEach((cell, cellIndex) => {
+                const url = cell.userEnteredFormat?.textFormat?.link?.uri || cell.hyperlink;
+                
+                if (url) {
+                  totalLinks++;
+                  
+                  // Kiểm tra xem URL có phải là link giả không
+                  const isFakeLink = FAKE_URL_PATTERNS.some(pattern => url.includes(pattern));
+                  
+                  if (isFakeLink) {
+                    fakeLinks++;
+                    
+                    // Xóa hoàn toàn các trường link giả mạo
+                    if (cell.userEnteredFormat?.textFormat?.link) {
+                      // Xóa trường link trong textFormat
+                      delete cell.userEnteredFormat.textFormat.link;
+                      removedLinks++;
+                    }
+                    
+                    if (cell.hyperlink) {
+                      // Xóa trường hyperlink
+                      delete cell.hyperlink;
+                      removedLinks++;
+                    }
+                    
+                    // Đánh dấu đã xóa link giả mạo
+                    cell.linkRemoved = true;
+                    
+                    // Lưu vị trí để dễ khớp sau này
+                    if (!cell.position) {
+                      cell.position = {
+                        sheet: sheetTitle,
+                        row: rowIndex,
+                        col: cellIndex
+                      };
+                    }
+                  }
+                }
+              });
+            }
+          });
+        }
+      });
+    }
+  });
+  
+  console.log(`===== KẾT QUẢ XỬ LÝ LINK GIẢ =====`);
+  console.log(`Tổng số link: ${totalLinks}`);
+  console.log(`Số link giả mạo phát hiện: ${fakeLinks}`);
+  console.log(`Số trường link đã xóa: ${removedLinks}`);
+  console.log(`Tỷ lệ giả mạo: ${totalLinks > 0 ? ((fakeLinks / totalLinks) * 100).toFixed(2) : 0}%`);
+  
+  return data;
+}
+
+/**
  * Tự động lấy chi tiết sheet từ API KimVan
  * @param {string} sheetId - ID của sheet cần lấy
  * @returns {Promise<Object>} Dữ liệu sheet hoặc null nếu có lỗi
@@ -176,6 +264,9 @@ async function fetchSheetDetail(sheetId) {
       
       try {
         detailData = JSON.parse(detailContent);
+        
+        // Xử lý các link giả mạo trong dữ liệu
+        detailData = processFakeLinks(detailData);
         
         // Lưu file JSON
         const detailFileName = `sheet-${shortId}-detail.json`;

@@ -237,39 +237,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "j6IMyzTTTuUJ0sODLiWlcabtD2krql_zjviukSSBZfXEZHOqMsonxgEPo61enlKFRzxmwjtC7wK44utwQn50ZzS-F2dFsmYq1gYYarQVoi3M-BmrSnXc41G-Bv2pZq_r0_Oc1Q"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 2,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "0NzZ7Y9VTvTVC25AZsQrn6lOZud2q70qSbLMRrxXPip4CJGntCeLeT62IjBVs3EpPkA1Tp4Pf1g"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 2,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "4egyN04uwybMjJ4Vvfho8KumPGA8bV60gqK1d2xfxxR5x_WEfbUo3rF6vkYxBcpGKzlTaP39s2dCmLai9eEoh_mdQ8_ZawTiSo6FnFLuHUeueuFKsi8rfCWW9iIRET49-yYAMwIMLTvYRcHyOax1cLQ"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 2,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -314,39 +320,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "xi4k-oUXVexRSLDRxyJr5WPZ4TZsW_y3DNdo0XYVRJm5Wc6W4pHOkI4RfeBXThX6Y7XEuYOVO0r-TAa5Jt_QWS7UpWR64A56ozLQNDXhjOxbQJt5-7Wjyce61b0-fB8RKgA9xQ"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 3,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "MqmrtaiXT5YVaY16dYL5ZhP2JhMf3sEBv6C7VdKnzAfL5ULRgZVMkCoQ1Pnv9BMSW_9MvUq2W-4"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 3,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "TIenuB5VSvCey1ZllCxTR4chCHLazKGh_oQapC7DDI81hXozalYZdQ_15I2Uyae_jAt2nbQs-LhtOQ6mIc5YTMlspzvT_mqZ5ShACX6Z1QYqM5B1ALlc6OUZ17pqn1bTyZ5mzrubgKnTVenRGtCZ1AY"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 3,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -391,39 +403,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "8Xd8ruc3-LaDWm8J9rgRxuPNKz2WjHUQmE4vmD5MWPqxiG5IrhVs8LropgA9iSlya_tV1sBKkcDxwaejX_UrywLo7voHzvPiYC879xGJhKa6Csq_Up111jv49fiivl5JCFPClA"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 4,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "5rpx5s3-TIXG2ytfDJpNt500wV9aiaA-azCAF325ghXwJfSout7MNPMl6wt-6Aej7QWtrE58Jbz2deJ96TUb78QEhk_lfpTTQUvP0LIU9YOm7RMXwVC1nOSOSOl_IgqnTUPghA"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 4,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "Kmf8hkWRkU0Wu9nb4XTDMsar40WfilIZBDo816tR7SMMOK_eJNpCpzVgQK9ekF3YeOIHlOak_YgOub7EjiTxudpuwwWn6uFp4ECWYphyeMzu9UUXcSreOa_9mR2O8AYlYGR9FiAzEQZ5ASsaeQODwMA"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 4,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -468,39 +486,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "8YvJq9Vw8IycZ9tPfxyC0CZ8imQL1-2cKZaoqPBWd5GT3IeLnml89NfVMy61Hvvfbv_N-0LuMS49K98lnBhzwSZP1pj4ULbUFw5qPSE9rkHlnOu8D3u5BiBKBozsBWhNFeDrLA"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 5,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "mbGOhECIgEbJIka1SgYkz50PAreAPWKo3geeUT4tkN4yvvIYq5Zbg68kLLJqRvWc8Wrve6eeWNc"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 5,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "pJywwqqc9F7XfJzqBHb3ghpxsxh7SXGu-aTYZlfc5q1A52dIm2UXGNPzU_WaAH6tbzkHCjuSdbEyLra-7M7NvIA3dAfragwe4DyCZePaO_rztEieHfVI4fpCR4VXll_EMzJ2hMWjsR6TqrcS3CfHmps"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 5,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -545,39 +569,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "4HplvVcuVjN9NyWMfOk5SOQeXOSE09DjiQQ3aayyRPhAO93N0ib4h6owr1MEbQ7v-5u-N0-QOnFXBUZiHRuj1NAp9JyNU0RJYSCgbMEQyo8Y7thJoBJ81NRVguf5kPnJZ7qyXg"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 6,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "HW0gv2d337wfXT98uULI5AZj-SfXQSuGOq9dp7Rt1Q-rteaxJE7YyMrfDSVQNBfTQWr-FhYo0lU"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 6,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "2yn9pkxx5hA9HbAHnSpR6MU-jIA9XreOz-oS20z64-CL2b8ULJiKyQUWW87YZomO79mVdRiRXFGVxBbHrpm0bEhw45Z4mV6p4VUq7XndaMavMHW71uYHzMSQU-tWE1rrcpo3E5GESTGSMZGLn07OHms"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 6,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -622,39 +652,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "halnzIF7c7RlbneBDUp9TcXgE-GEDZQUVo8Om644FsG7v4qOITD_6QKl85uhGr_Z71xCBlTs1iaSvCEtLwFjqsDzdNS4cJpavD6JY9cqsTUFvlq5MTqX1-OaWadITpu2qx_yCw"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 7,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "wPoYr8I4EHjceoyxGBY524eIqSy0wcvU2HTqzJ-p06ecodnY99dM8VdXEhly8_j3T8qLFK_anUM"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 7,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "Ve668hLC9VObi_CFa8davGj3RFpUxxc-g0B7uyFl_cVTJE8zhRhPsQax3DcgLjWkFac4cfdpUqKrXv1661rX00Ih-6iJGYhzBEBiqF8KCKN8YgMzHH6KrzeUSt7woJG_Yv_wI0dym4e6Cg4wM4uHdC0"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 7,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -699,39 +735,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "1KQ7iH5gecR1b558QpV3G1C6OVVenGQGi0sT18-cJjj6MQVfWbM_7i7ILde8Gxjp1IucmpJDa9_CZrK4W5MHM9sT8A8p0ArAnUsF9d7dw23n2zuKYFF0QMtf8INoYgjtAvG8Mw"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 8,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "ReBiY9gWdcU2IPf5XDUjX-21uwDmFgoyOBjdzBbbi1VfhF0hLScA04gDGrWOjET4tnwMyA8Pf_c"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 8,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "VtEgp1YiHDl24hKvUxd2-_1kGrA2tORGJegGpusyXqGgOokwF6yG_TfEvRQFxV7yB-z1j0RTjPlGcDw-KEjojOGjrSoDg-Pd2Xi9DuMC6sM3ss1hNn_FpZz9rGEVSGOfX0lqTlcPGii0EzrFwzQ"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 8,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -776,39 +818,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "iQZ98GcllaoqbjuVxxbbwnxFWNJAS0LvOplVoAluaIQVRLRzNelcGtXKR-ADunw2N1nzioCCJ4iQKQceVr8GouFml1hKIrsXvwPibZeOp1XiPrvwVuOwDZhhxRuEwPYY5j2Wow"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 9,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "Znuxd_x0RBaa6Ki1q6KLtQbzPgWfl3GiI77xlQhBQeFenwBzGIUdEZfRfEHL_IZFt9mFIe5Osjs"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 9,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "M_0u8zDtOBnxAFrmSY6ZY4Ti_7IVZxVZ0SpajYWeQTiVBNJ8slclRKsaiphlFrcOMk52DxchJJ27hYkj7Oiel4w9xncnHm5q4gS_NbVurPPyJQ2FZrFdM7Tz_D7h1FQsbgHtU57GAt0Pv8KZ6dM"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 9,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -853,39 +901,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "DqxOD0JFjyRJev8EnDmGt-Q2dxzwXFOQIwBqbCTV-U849xmfYG-553lNilrNXNzS6bbvpuT4rphsUt8Fb7VndrIy9hRthpiPXwT3BuFortnLJCwW2f6QMwRttJzljY_5hl7RZA"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 10,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "wjSjpQ4jNJR7dIawkVCauyF3ZJpPoK2cEjlmmLczFfdLwnTUX2IYakUaQt6Wp2Lje0DixYwTAfY"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 10,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "D1gaS9H_rpPFV-RXul5LspdSjuaLYZREeaPah5zMw087W-V2YCfjNloR41CCeNYcFpO4-fnYF0uHUkNgzh2rcpDfZy1gXHYG_SUVdIhi8xxGbl13r5dQmvnSolTrXM2TbLBtO__yIurJ-FxCzD0"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 10,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -1031,39 +1085,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "A07RKcrlum2fGdtfZ3jQdiEzoBmKitX0eXSlPeCiHSJrGlAGYpbnpoTqK1bCAshJ5oiCE-tp44mULzEABqNZfHwXbgDSmSxEiadpWkPFe9T2QSnntX3rnD3XvJo2OXyJRoDaaA"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 12,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "M2Bp9XA9apbEL21NGmXDkcdMcdvCgfZEPGSA-PidymwFuVFVQEIp6ONc8GrQndKd4bG-B5t1DS4"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 12,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "dTvXqFLR2hN-mCEVBTh_f6SNAbn4gBzlPC7HPSU6oPKnqaQmiAxAoV2cwpgh4EeJ_FTjF1jd-gerxZG0yXNchvgPKB1AU68GXUyl_x4EjoRPVjDJ4GwM95YplAmTgfokj2pSlYXQ32fRBqeWEUM"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 12,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -1108,39 +1168,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "h96SGqj4qLt1SRZ1FmaleYjVFbz79niOq7IBWe2hAEDYyVaRECwlNNMFa_0M4mye9j9R9CnNVw1wpk5-XTGGSYPSLdnM872yR1auzbgutjUZUJExH3YJ9C-UFm4l_VbiZex2SQ"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 13,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "DEfadhkmqIhUy-2BsDbzmAi4iaqTUKKlNZSBUL_MWdqMqLA3stAjvGQQiyZWZvlsIAPFePy-Hws"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 13,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "juzchaJPiHLesiPnc3up5aA1vNCWmVAhopcXemiiWbVANQmKiO3CdFvMLa_u2arr89e-zoqmu1dIpz3rvxWXVkkHcRK-v3UpMmghea-ta_mhAFIVU3wlbtqsxVzedY1e9sYWx9HCi0i6Jv62cx4"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 13,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -1185,39 +1251,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "QynzdjdgJwN7GhSMPjCKxHfPYQJ86rSDJK36g17XGL21hGS49_Jy7oO63bLQNdF21LkbH0sFRukFs3JE8VW8MPO0FKPTAz2dJeNbkTl80Iy21Ndq8w-JXri-gf0f0bDdavZdVw"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 14,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "blNhis2BNLcD9-z7D0jHxa0rvZATOEJ8DhVnB4qV7hcUHdeWqxnJeD99YZiohcyP6G24aQ_2a8E"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 14,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "C1pVt4wXEzI9md-Ik_ZEj9yo4aFucFOWwGHK6Cqp_VXzl42i2N6G0AYtdg6yoXrVuxVA6rRRTJvyhiKVcKDms-mwBsAIasCx2aAJFjl_6OVA1sSDvbThgwX88CTlSmGEsKWcBfHGsjHPGJL6hcU"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 14,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -1262,39 +1334,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "HW7VVYA2djgpvgenOL5mNYt-hCeLQb7I3e4MAzmcznTAkEjCNMHVPyTckBCdn_dYrgXi8UNiRgMz1_8UWJcHKghH-kI8VTcwIFkei-WNFF6m27Or__CeJ2rVGNHSKcEG-TKWog"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 15,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "JjdAJl6zINrzDBx83lLsP8HzRz80z_TdCWq3HEkOUK_3FZp6aYyCvYEOn3_eWe4GKq6Vf-SMfIw"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 15,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "_Oknwl3nYp-JiOY72Pl_Nc8hF8GRrYplQ5DR_ZJBsTsjIJg42F72FmpQ9dov9OLYU2PLdjQfFxPrIaLTIr9XNdniNMYa5jsFUxyBMbIjnawCkWN-8apglcSWMsjzMTLgOdRaG8HImXnnddAP3QY"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 15,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -1339,39 +1417,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "TBKSiUfQpO4zXjG4q4kuQInyAWLTuf7oIhQ1p4x_9WtAU-CI5K_Iv6CZEEBj7x-g3UP97V9ERnZ8BjyYeChqTQorJcwz5_Q9sexA8rrQhAeu6lh9msT5aQXf6yn63fYXBEMwhg"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 16,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "pmBkQFGDS5xgVjkltfqSq0hV3S3CI4fw4rQQf2BXbp1S7OnBQMRY3SBB_Y0aABOx_4ykYn-O-FI"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 16,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "UsDYcu9Hon-2GFw0cOeYZlwucEPoR8Oq_SPRuAIeh05WorQSpj7_9iZLwHq2hNh9xU_lBSJnU2alODsw2Db1ii0A4leYn7nKQpafJz698PQziUmny6B-Ch6rqkAWmWvjMBEJIbknLAjOSxOF3FM"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 16,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -1416,39 +1500,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "kOkpLF-5diL68FrsqEHnmFeGZq4w4VjFgAVQYv0CIEZt_W_mnwkJUOfMGphMh026tm-tFd_w2ILsdiKF2m5uc8-9qKFcRRHfgQ-dd3YcIrsoJe8RDmwrkqsCn1971z3SsPtoNA"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 17,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "nbmRGVRjd0hXk8eEkcrQxvN_MpL4jMPSeGHnFITBbtvA8-85jTBi6LbSX4EOPPjJiOtchAO4lCM"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 17,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "KRSHooi3SLcYGtVMfugafmRxa4owHchYie6gRTPSKorc1AuWsZR4L-ayyJ4mM0aEtSY0NPO7-tVFIx4hZmXTrlZjVjicwRn1r15Q7kAAemoMvdAZIdwfEB9dJyM5dScrnJqNAcF_xrkJdwhyMUw"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 17,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -1493,39 +1583,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "sBzRR4M3IRXHRqCwPXOAJINAZuYGpbbP2XeRAxcpea8yKpbUlKKOzxMK0xu4Yqyp3IX5gWD3zFmT-tJShGhA7uyIS0rP9dnX6kAkGxcDvEvgHkZHlw58U031x6SQrZ392N9n0Q"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 18,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "qmwnTcn1cq5UleYyuzWRBKO40N_hwFZqp1GmxrWp_mEHHGi84m1ZTvU06yxMLDz5Rv4VZf7Fjn8"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 18,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "FOwaQMtJviaPnqsfeyuOB9VZ23z1VEnnRzHdyLRYchIcbUYhechhWM7BoVXpYOc8nqOZpcRnuvjexEgYcqPrkNKv7qfoP5hWaS24RZvNnwt9KNBD9fFPIpYfPc03xs9HGDpBEJ6Gz3vnHK1N-I6lM4M"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 18,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -1570,39 +1666,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "f-8i6kbUkM49Gn887yXCut7Y2wUJ7uFiZiGyvFtDN1CBDSD8gBaTgT8nuw31KGli3jv2hvJid1ReKrgX13D9TUpJPugQqaFpKTRoETndVDxhOQ12AmGPK6_E4GcAt7jwlStVHQ"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 19,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "2GIQ7UCAws35M60btiNymN7kdeDoSyDP2PhqrrbofGDhbBUmb1P_JiucmftibdyIrW6UmXJ7HVY"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 19,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "GNCWBUpfBXLP0yC0vx3JHQzo1Cuc1LCPxIFjXW6Yn8XrZd9DyFaaI_9d5ncsaE3y3T4KcPV0kziun6-sze2oXS2nL_oX0uVYvWc5-uNl2v9XUp89VNVDWWxjl1y-sZmkfSnY6tRXq08RLLlUpug"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 19,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -1647,39 +1749,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "N4dnutM3x1qXSnWoXNltr668Us-pmlziqgiEy-is8VcsUNtUbf1yOcX84k5Ot3znebbq_hkNCy3Iwt-IPfieKlgCUZgSBEFpgbjhDpuwjyD0GpNo4-Vq7qqXlrANZIx75QVdjg"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 20,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "eRGEHKujebvqfN9o86-9ygOWOWHOpMM5OLLHpnGFmil-A32bnQHoSY-sod6e6Yf0q0NHku4JwP0"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 20,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "wqQMJf-cclV5DQz-A0NjyXsCCQxYHXqNe-4Y6SYk69ITZayXfN_MpoRq6WR8RsnbEBxnkgv02_3XvkN3m2msymwK6bnv_x7p6XeYNqeFgb4_IcVlqjXVRGHGrws8OdyfLWzjVIeVN8aGE2qn65s"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 20,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -1724,39 +1832,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "KEhNfSXUibvrTHfSxRnNTHwhYRwht_8BQ0YtFUn6zvcf3qkjGVbvZv5cPd3bwTEzLl4aYefqi6SYDxpQk771fXc7Iza9cCbAizERqawdBgwxIRkOWmtLYpHheDsA2ENPbZZGkA"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 21,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "mF6P7y-29f-FfgV2coHhoe3Hb0EEUuML4S05tyPHfgI8nSACdT_phbV0vlOCJEn--NXlsWAXKVo"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 21,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "aOWzfnkIjLmGnYCf9yswuyYAHUZo2kqW9eEFZj8kbK-Y20oY87qytHwSgcpVNf_MunrHqztwa2qJ4D_xodDKGR0g183scGydp_3wONwyL4dOsTMLDdVEb0ds19rk3K4WJmoMRx5Psge3CEpbKtQ"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 21,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -1801,39 +1915,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "JzN6Y97u6ubp--1fzTy7wwcSWsc72sTITITG7oiXhBGry8nGVwL0K6rsM_7NYVs-q6csPgiorZPWzlTfo3uJQ_t_HoKrWQ8SOt_EkVakxlTfzoh93L00EqyBZbAU60rGzvcjhg"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 22,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "jddTm2yuu0WlYRKPKdbSBz0fBFN1lub1skbGpWZK0AFhLvspV73UkzXfL1WxQxrjP51Ewx9w6_M"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 22,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "pZI1fnJ4hHHp2lyhwA9IcnOq-rKrlikvj-KcY71wD6op3evsTlxvaArAfT3sSuMSqNLSfnfI_Oesp0ulV3y5O4_owZAmZnVfEmXKX4Z1TJSgLvKEJg6X02luXJtHcVdYP07V19eMrmpO6-yhiec"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 22,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -1878,39 +1998,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "TOLg7VKLpQOQ1LBP_5ol9fuAMY-2AkYsHwby0acPahnXhtI-JYRBDWz_ROVrcYsKVmaxQpKGMCWPCr9622rLxU8NbFpYCWGDvvH0YTI1ukiLDrFBy_KbfH0aP7ytctzi0r_TQQ"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 23,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "b-SpU2siSWyZNCXEIXqvxDKR2AEuT2iF8x5ZNQxpJMRRMMUUII_743w1yQVAA8KPkWScs7--weo"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 23,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "hcVEMiAsjGk_sxAV4AOwA1PYeXQe6xc8DcPoqBisCAk819lf950cr6LCVmfVxhPqN-5dvN5UAGOZYjklxajNC7EMbxNKJV18sQJb0d_iXf0zqe-jv3wzC6MBWuYKOftx6Y1_RFumQOrEGKfuRXE"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 23,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -1955,39 +2081,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "ZluBIIk1o-_c8V_MLqER7kjDxi1hW13E_H7eHwqtLfkyTFHLtmSNyvzCyaM7LVx5-if1uN44s8fMCU_Md_MioLKDDDGhfsMtmXL7flzCGdryqsECAaVsbcLkGcEkyuCAWJ9dxQ"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 24,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "lj3zuJbx7cnMjQrNh32ZjhlQaZZoIwtzoIw44dGn27AGvQo-LAlhB2bWk09Oiex0-aBswXsh5Nrn-k-pEeF3RFeBb2cxDVV9_HFgYHvggvECbl4qI87ybPbQ-JpSBC0-nvpQtg"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 24,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "QLD9FlajFMDi8NzAJHDBWrrnYJKIQGYZ_LOVgSS07FGnmU3SqoiSzLCGC0KTRIqohJbQfkbTvBIp4lLCkp5N4oCBA8ZkgaLzAt33WzfY4oCR2t9z4z36LS8wnaAiR2Gp0yCuwSLbcLXhQaf5r0U"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 24,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -2032,39 +2164,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "6spAU4VrJRFZ7ijAHlve8YSrBVqbQqbn6oVYQ4O-YLJE2GtCuXvrkyVA2et2gsu7VZGigS-p5S27jeCOKl5xSNKLWdd3KQwE5AH8vL0TEaE5SEg7ARREC-z46iaab5YzlcpvPw"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 25,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "VZSqoiNQcD9F6w1kiDHrpyvm13C5gIW35vUvZSAn96EnGifqD5hNRh7czYZTrXxAlocXByKu20EkX5lnIKxaiPXGcgssfOlp33eJzyCAlXQsso8818osYxQzixOLh_rMuhEBrw"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 25,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "8mdGgkZAUwtF8CIi31jEj4rEqzsXrwLGZnKe2_uQq6qD4YOPlniIkUyI7vdF8EKSqF94FOQM_m_inEqI4gOIF7fPYW01DiMyG3W0YUEJ_TeAxg-bcJVFhZOCFN0rnhqNeCSe2YGd1Y5eBzDP3ZU"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 25,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -2109,39 +2247,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "lTgE39bSrctHlg8wmPE60k0jQ-p0tqb747tB9Uggz5uXwWmFBhaS14miZkCG6GR7oT45pILC2vsbmqUn6Pb_WVOxQTv5SsMh345LyfosrSu4GjF2oLy96k-3M_7vzKpIDZ7xGw"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 26,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "fbV1oKYr1jjbW2gKDAbnwmNOt9I5rM5h7TgZwEEx7xLk10efMPcaFmV-BhIuMFcdbyMSvqWZ5qSspQfWrK3uP19vN9Qoex5g4dEh__o79U9FnOJXsv7EpWuF_D1txNI1GQcDog"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 26,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "x-rMlSyilIhyPF1i1WIwQzgNnstaMqoX5BQ45-b1CjAXZtfwub_qCoG7MCqFVtVIrMKCklrFS6ov_DbyUD6BoPX3gr0Ctw-m-O0gpgpyly99DaY2m7M1uYIHeeZjsVbUUDTEBXwjw1QpAhhuwCI"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 26,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -2186,39 +2330,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "NbixtH2OrfYlmHnQwNRq3WEMupxhCWj_3ztikFBj9TQME_n_96RQAEYr3UP0d5nDkXnYLPr-q8CSZJ37xh04M1VCQD2h9Xfu8_MhHNuvDg7H0uAziALV_LTnwPpMRfnCEW87lg"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 27,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "95QJ459uTIDPgKOvNVV5O5kxjUgcrMJQpIrc3I5c4Tut5jTt_6HVnn0PiJHExQHQV-JrP5UbC5BJPXIY4FdOma5EMbN_CMWHX4nyytTwS-E2WacVUQbTBpV46ECY_gvYyf_t_g"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 27,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "uAgUmKxw-xuxrsXKr41qPrig1QB40-KCMevheYHIkq6i-2eB3ZpMlzx3PYUOfUqKRRiGPSFgulE-OTzMhf8F9a8n6yiIcKt6rSUgsqvA6ZsjLaQdFOtLC_Q5qB-I2ID9ZKrnYn_URo0bmvSF04U"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 27,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -2263,39 +2413,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "I7CReWvH4W5pmqGaVqR_MS1oGss0EbCzlaOBjdT4d9Eons9DPPx0IOMDHIHPJUH2l8g_vOmv2WupTPbqEyCBlO8NWmT1hTSnPiRURKGSZ7tJZHEgxKQCfMXjG4A9v1UTkJlV1Q"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 28,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "14UbkWm1BDu9N_9LyyM-WXNxMJ3of9LIbHUyIRyJ6WxkEQ0zlE7RNB-mV-vnyTGPPWIbva-GqBVf0SmgCMJxyLG8ukImZJy_yHD-oalmLZUZQ5ssQL7YctrwgY7Bk028tasbTQ"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 28,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "vzgVE9b68TVNWOcqzU7AsLvBhIkG7pKd0xblVDXJAjMVFqxGYJrMzjGqkiR9jmQgWHp6WWPr82jfoOjKzRcouoAEemPPlInvJVCytDzxSTLVNZXMIqrgIGxNyr3ATfETvX_N5pzDHfnMqeawTA"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 28,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -2340,39 +2496,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "Q-WczufwVvZSgyKtgybQBHlQ4mY3f3T6b8j-ydEyZG9lEb6hJNOau6Zqf0zKzrPZZ6tdtw7P23CrVHQTCSD3En4QOikYvyIgnVULeLhviygEbriCNX2u83qc0OEm3apWYu2iPA"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 29,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "NOUpORpN0Myw0Ih-zyshf4iEBZaKqmhbGh1EXgeLN10KwsNLV1Ts2gMh-tG-MWe29LbCUfIXNOQ_3BMEfvqIPkmJ_J7C2g80-sGZmlyXTN2T6ojympe8c7vszor4XdS3hP8fAQ"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 29,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "AKl_D29JDzgpZIfdaugV8-MsPiQRnvlEQCToLbwiv7tpKY5FhITWvzzxloArnBEE7VNzfPMfl3T-CEoCHHRbadXRKJthT0Onni6jeWVTruBSmuazt9aBvd2jF4hBEMlb63-5m1aHdjLfbSr8Y_w"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 29,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -2417,39 +2579,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "XzfWmvY0GGSPpQlq6Ml_zzizDcnwKGfMuXnjZg2tDHCeWMaXwfqaW3PG5Iy5w59D3SYgq3Mmk8Bjkdmzy4VwwpetET9WMR5ZKxBNKIWgMVy8d_oVsn7QSQT8jjnayp0PNXY9FQ"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 30,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "csZkulR_EHg9oW8El1l_yhMPUwgU9cGvDfVLqjnY24HI5qpAJ_mXQTbR8w4YvTbx7lbsVy7gFj8vXHHG6NTkP5lPrzm6sYshFOJjvfvCXtjshXHFMkUX-89Z7po_08BS1y-qTA"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 30,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "LAcKiwf3tjCjz-RaenlihxMHtBZUUT6sLKMsAVMAJzRD9zgA7uyEkRg-q639xpzTao2NZNFXZ8cDXMXaVrr3qHXKuymGcxamJsTViGs1wdP3owEWwzaqrwxIP_jZ9hQUu-m6evkZuPhLkEbNb3k"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 30,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -2595,39 +2763,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "WxoIxPJEZW4EzP1c85Q_OAOySRMvYJ2nIDZ5p6cMH43I54BhATUN-_jCu-SZO9YsSsy4McCvG1g2Mt1GiNYo_xxHhvDxAdN5nX2j0IKl3y9AmRLWFimVriqhuMd8pa87yLQwew"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 32,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "cmxen3h3RxdcEQvcbWR1r52RRgLMCqZgtKfpUvd8AcSAyazUZo7ZHU4Gi22UTGbT9IPk_ZEJ_2XSQ0TaoNqK2JkLr8tJ24wTc1BKp8sYS0868aKIu1d_yrFoMC0u_fjA3A8G6Q"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 32,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "m89xA9XuHof3IUQS6y-cZda1tH_zPQosV0e1S9EoPMf0eD3rYai_2xNJ-N2MJlkyq-jwzGwzsctLlNZ3IuPMidBZ7e6pJYaLuBavu8ncoVmzuwLt3b1sYz5q5LkFWzr_FdSaQL_iF9_w8yODSRc"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 32,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -2672,39 +2846,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "QYDXSibZsGPkC-x3GlIyF5Zr2fRLpftdhZCG2OwxCojnh0KHMTz1ANWCyGITzbC68shHzolbpjKP7NjgsAHh2fi0c_R-aNLpz6a-x7fdGiGtmqAZ5a594WMQhpmxF46fBcSwSA"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 33,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "-ZFaYSRTi4sNJyZuMgqgNRloaVMi6-4oNHuzJMD4x0pMOe9zub0duaNYKu5vOoCpig0l8JYwqZkjKspwR90-JTIq29IrWiRe02eYMrnUL0ARLRp4ngN7VGteqXHi0lCLNdLAUg"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 33,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "PGStcJfHxN72mE0vAnTRamxFBfmWKm7u8alsRp6fb0K9V8gS2_4Pv3cs8V5gqrZZ6NytYZIKTwAOnzoPdupJlKqsAuBlaeB5NSJ9nzxpEkJwjDNscbXVzlOcxgw1gqePH1E1hES8GL8CzieaOg"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 33,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -2749,39 +2929,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "JhTOEuqI4VB7SG0d8JIz44w7KrQxFEuNQI2egiaVwGEMug73dkAmo-xAe4YZMOVyR8iYG8JqHQAiktulhQKv-WXrhngrVj-EvMk7ySSURkaCO3f9JPpgxXeaIOIBaNcJ0gN0sA"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 34,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "TUBDgHj5oIc5ua3Cqa-O52wYuu-bsmOZTL-sD8XSswKffR1kCQJmoGh0rcy1crC3khFXTFQ3ERYgG9MrIKPTwsMQ3YCb7ur-rMnypedABpoicypTsXz77016FDEYkHY2x4ofhg"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 34,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "evbh755B3dhDzTE6NYu3zzcG4AAaOmeE_OnBwnyHvUtwcuu8Us2RF32EN7MiY5eXSlHPro7rPgvcIGw9RFp7IGb9ZlPPjQOYrt8lrPlczaEnV_Mob5Vd20ZwjiVbLJIg5fRmEQE1HpHt1vxBZL4"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 34,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -2826,39 +3012,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "GteHTgWpYRz94SMLfhwtRFe2WKCz5v3xVV9tbUoKHM2TIKpSqpXyZeC2m6Qsi-iYhkoTv2uurCvjiAmaUzQ_GSDML3xTDAaE3mjteBHuKsLIxk8cgucBUziOYSCGvmziIlWPOA"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 35,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "K8n-qtWBQdXBAlDiNcu1Gy-_gxugr360FnU5F8m6Khd-_7eOk1BKxRNO0QF5bAQG8iBU-1zT8Fb7HY6RNHErXVQCxKm4BSe1fxGqSmuuN2ROG9yLQPvzZWG0NI-SCjINphVObw"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 35,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "chIQhGq74BISz1yTvBP7jYK75JR-g00HfgZto4g9wppxETopInsvfLc6wzPr82a2K9edFlWrla_JJr2QxGVZJeRAhlwW4zmjpGzTLR7UjkUqbafCBBkf5onCn_9oygLxCreFt_aZPawurw8hht0"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 35,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -2903,39 +3095,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "HQKS3kWYRP9ahlWJR_U2MMCR9d7NK8nnUMZvrNvblYM-BJftQYzagYcbzG4WEDjla5nOUMFFPFpYYmbpTlQ0_ktXK2_9mi4kuX0wRXNQqMnZ1U-KXlFyjY-vVsbBMzfZUm3J9g"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 36,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "1I7oyFh4qN8bbCKXfPdhpYtOEnNkZkkrRd_5F--2qtu8RlMvkLMlxRUhXBFRB-Vu0M3vXiu9Bh5-lSkW5BK6-41_tgccYmfu9H_1qZ6ClD-HUIWTAjX38T6Ocif5v8hNSqWIcw"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 36,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "TwmXI4ZC4Ychm4KK1o11vaaHfOxJJQkFsAu1AWDM7Rmz3l59vbwGAbTTqR8gHPQbsggs15rqhJcjfYtduQtR1CkGQC_rBzt9GtYZ1vCz4ewOUziuSz07L8dutvuEnw1wPpAU1fRz0pLTzhHQXf0"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 36,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -3081,39 +3279,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "uCbQxfLp5N2dElhUttqYo8YCX1VhjV_O0bxf4-MK6BGd7APv27iPaUHTLyoOADFy8B1CTTa6evk0qfNI7Tbt3H3dP3zEobODY-osEJD6vshbHdkLQLpZ_ZnC5RdNaLqiIXN08Q"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 38,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "U-9tKlYzASsvnY3F41PTMeU9fAa3q-uLiWmngbFZslDrbOg9Wi8-Iz_srd6e_GZid7JOyLFkcbQfa7b99oSv9i_3ZXS4ocRgVXPSSrR2CoOPGl-MEenLOfeZxJK5NOHmPBmKBQ"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 38,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "vZMTH1BRAmpd5uJ-hncMpUGT1RnGjlTYm2XuzcsnsBV7dLYt5GWBIEhkITxY2bINeQUR4zP1jsQAxCa8p-PAsULsBx11ANVItOZi1gvJtG8UPH1Kl6lVt-ix9ZPv6LltIM5ysiDS5Ffsu4EODGw"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 38,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -3158,39 +3362,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "CJhgXKR2RBzagwMAt6qgQorDKYJKJWBwbtNlTxZvA89VsdfuwXHzoqvl3lzRyVEfGQgq33WVwcr-7KRfM59FpgpWgjWhkib3jyvd95ZG6Jc7G4zDDOmTKbBtiy4FzUfL0MuiEg"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 39,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "yg7hx2XdF8beEZE40AigFed4i1MjmUH7Z_OfLmqLWdMEnCaKZUx5WgPEB4QGPrAaZ_eiQSgAKN2sui3hB3tXEeZPlmRDpdkKhjnrdZbIH0WjuHb2sMeTV1euUzyJl7gTssjP6w"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 39,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "NktQL1-v3jIEy_w7clxo9bMUUIE7TO1MX1kOWO8NpCm2o4IV2rqMsFOCopHY3zm5OZvd4-m0RT9-PbSImFaaPK0uk43_4gu76cV1PSGU7OZOSjjV09Gew2hhYf8pZX7X9hKU04EdFOS1OYsleqE"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 39,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -3235,39 +3445,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "lWptxUvWmPvopZvRz6qU6Xm8tcH4PY-UgpqtymKsQaYX7oy_s8XdY9jmtInbkROQrtz4_btwsS-iIQ5T1C1Yea29iP6lO39hMJ6Cet7k6DNKLJHMvebzCxafJZpXX9liAMgaaA"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 40,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "MTsAALK03YOv2X33IjBehV6ruzwAXaBn8yQ_30TDqx8rm-UpNMy4j6erXO9IghorcHCHJuJDJHAJxWeEZmqzJ7bniVWp-of31TA3o7FxLVR1cqYskmbkw3ztAvmpkeSN3QWbcA"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 40,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "cBSlos-MiEeEvgGB3BFHthVN4AU9xT78s5E_zwyGfZiGeddntjH4Zfj6n13dhpg5X0ofjqkmeCbW5U4EmUK5XnvzxGT6iTsIKtVLRGBLCRJnGoBHDUAiquNXgBNWFxM9BvuQ964sxESeaHoTCA"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 40,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -3312,39 +3528,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "lazif1ToCqZ7i1MMq5STei8qN2d1VrFX30TJ0sIHegAqFrWoSbunaUYL--ZozFwYiEiCtXUeIy29vBEKx_HFO4iBZuYV_v7bR89LoTAY7IhMKIO7G66CEhtn0KeFytmvWVO5CQ"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 41,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "pl_9AOeIuR94h4yH52GQ2Au48GwNHZ6gmQUhbyseLz9pmeKElvBLXqwlV3JAuFhCOIXAlHIDTk6NP4lpbJKS_Zt71mMfw1YP1qX3O1H-YzULyjd0qnCXRgJjxK2EvJ4nHDAS2A"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 41,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "G_7mc6yyW0JpR5IG5gR38-wvLtQHmtXJ3sIKaZHyOtvmYTkmgFhXZqpccLP_lxPV0-8jhEvrLYp_EojFMM-FrRyORZTxnTdbKgLqt8gc9EajQqe6t6WDmtEuCsy8AOeGSckQigdPbjgKfDj4x6o"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 41,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -3389,39 +3611,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "MwR5rVn70ZZbn2zR4_TidZLjppErtms_iv61K8PVrI_A6ayxFddYB6TxQBiJxmUoa1TTJ9nNpMkW_GZ1H_1af2RzQEJEOT02Btv0hPmbgWxm8dnT4Hske_QbA36eitql4rGl1g"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 42,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "XB-kd8rgjE9SkY5Zz3BVBcGbsNlaM4Ax__QY2po9dx_MwUe7KW4TY4x60oOAV7JYW4V5-Qo9LIW3aG-b8N0Y7I1UhrlQcsStmIVnsO3gC04KaWVt-eITlKC7ZmxDi8vnHcFVbQ"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 42,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "O2b9Caa_SYFdc_YhqGH3jgKk9ySNqg1re5oGPgzO_iXGQnq4jpjF26dGdCOceZlBLf6cQ-9LBZLcp6ex8gXv7FrB_kRaoXA0s3fff-ega9ziLojgwHX3XLJ-AtSKWTSbEcY8fCbYDf1-luCh5nU"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 42,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -3466,39 +3694,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "-ffcMrSjsetuGnRoQzsUM0JRmbK8m_6x0bRcxabuTOhZL9NxFgjA_EL5hrPN_-54ZAv_Xx96c8o6fj0ONHGSYND9iTjGwfDmwOHN3sCPbINQqgaVuAowBu2VkbyaxwfX9UDQ2g"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 43,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "pZMHs7iASWu8rGMsaYTAvZcRqxXhuKUEbAVrfrXuk0mqx0Y2UprqryNeh5NjzSXUuBNlcCCLOJHMA3DgYSge3ZkI606KP2y_WJ4DOX9BcAsWipbXAhBwGaK_27BlHcLBBxc4qA"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 43,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "-5yh0vvo01RQwIDeVeWFnLTWQByrtgPZIJM10AvU9n-G9ZAMAhBrDXBNH9gXfxTR44N6kVbuChG4-yB-7fJu7wH31ZK0lvd7DGMFKxPAqDPjM_hBg2HeLbq6RjUbGOJ05_37RiKAZw-ow9vTyTA"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 43,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -3543,39 +3777,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "BjaL-qjVvscmCisCo2a-iyfJOQ-nN6U26pFO3VpwdkMNqhmflYU17ptKstvLzezIgJaWDARbKQDFlzmcNdtABrk5ILFfDj9UmUNdzdiETqJzDLrvUWiIfKzeKZ7WuTgb8oPKLQ"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 44,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "Ast8HvHokSGhuy5Hm5rbW3kOu6SmhZOyEjCACBxRe1zm83D4yoKsiqzciB5FRzzkIC9lj36CL2OV8xW5_2-bL49XCt-J-Pu0J0b_NMl_QULlEJX9-ZealHbDj_3yNYzBvofSGg"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 44,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "yVDRfBzUZVCUq0aZ1R5pmbgGofSiur9xjq9uNWd7MDeXYg3yKMV3npCo3m1OcHpnxQkDPTAHqoT5gY6zCcCFfXpgC4qs5uX7ODWnzxU4ynnNpkD61zo9VscvLLoKMh8EWGmJI1D4JPzfCbGFrQ"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 44,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -3620,39 +3860,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "kcyk3kl82eHEr5-W7ztabIqbU8JZKEzGyWlk-620AhRzILSFC_W_9TR4TsiDXjhi63j2x159Fpd8ei622ft0yIMLgjE_p-cXoSkvuWpt-_XFCybJ2AXF2CkewXV6pBfeyZD-Ag"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 45,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "GkG4HH83kUjOa7Iix-3bpTwXhxAgxq1UCAGuXNaSpbZFY2IrEYlKKBXWX3yqiPwLSZklfC2JfUPo3ht9EavPeeGvn6_hIsFsG52FGrJVCkoTH6z_YFpjIVyBov1wQsFNOPiu_g"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 45,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "samSw5uq8JSbb8XToANvHkDLvUGuMxB1Qtlp8HjmAfw7l8nbAkPoc7grwofxCIVyS7dfaZkj0jQVp5olnGI8fMk5GPqFu1NPcrdFidm40n7H9gvlWviDmY4ODZBYQkK0SDRPIORDBfsCwoaFQw"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 45,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -3697,39 +3943,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "YBI9TiVJObInyGC4D18kXKoHD6jWPTz_NAiOH-7HMzlNtmY8-mhYbjs6PtvLj4ul_UH3OAsolAd_nJvfezOn3f2WBN9JT5RhegDmBenlV1IurPtmZX9_ocsMfi0SC8n_FdgmCQ"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 46,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "B5_CHFaHVCuGjQj3zU-nCDi4Qe0MeYcgeY9BBOC2rciqFbI1ykCiDtNUKK9OfELcL8ZS1jWTQ_bc-nZN-B1KM5BLl5CevaRtag0bpUEngUKdsi-br1Zeedxw2lf6WkcMSXlxlQ"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 46,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "38GlTpG0YvMHO24wvMGiZBcDKVuppJbh_kWoZa43XNeVqfnp7OodbAE_-KxV-V9y70Z8vWDtYranWC799x8dnVhimJ396qr2tMGs2Nj9y0Z5Jfbz-lZyupPCRyJ7dcDYTVN-ABpAeDso2Coxvg"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 46,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -3875,39 +4127,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "1KXK5NBR7RT5rvyx2nKiX8ss4owa1MQxNduqHYdNAxgLJKcZIT46ERvCsdeCT7xbtgFWTk1KG5dejl4Cq7bvn18AlFZIQ4hWL-SFRJO_NnLZ69DCc3z_OWJiD0i23eTaIERZUw"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 48,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "1asOtjkZEK8JCFVtg3uy178W3gpG5_wr07dxC7S5wWXEVIr44iyV2gZjoOhF1yb_LeYak9pWp2MsQsCPLnLou-voMIjfsQZsMp9SI_ETCQtpg9azH61Yi3cdv19A8C4m3FLjIA"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 48,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "Oe01wKbb2o0OyS6C84i0N7YMKMc-CuN2yPhS0AgXW9xrTkAs-ay57PIT3i0MrSY2UJuOcni45MRJpBQmv4D_sSZHoCt7gAGl-rdYC3P1vzRUQllW5LIKR2F3DN_dxFUB9yGVoThwBaWFQBRfag"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 48,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -3952,39 +4210,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "SomfAKyCqtrAJvJS6oGAD1Kh6pslHxPQpr9xvwzPKaP0u_pebMbi_L5FX2Pj4U9beTd9BPyREmvZhIegSV4WZPlC2ymldAWDj3bP9-sV1KWarjdS-NIc1qhZIx5Lm-b9D300Kw"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 49,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "0A0X7d8yBjb1KQIKGckFr5FFs7Iq5EPWlcyTOPMyL3_AJEBO160oIZhG45eBKVwDqRH_Uk4WE6JqAWkXEPFKm3ZY4VMB5NvlQGsvls8p6DJj_LXddMVgpf4G5bb7dQ93lldDmQ"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 49,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "6hq0km_ZNsNmygQKdc0XLTp4S9ggWrrXD1TRHI8M4d9lJQLAsjmvXpcw3maWcvv4xIsZdUcKZXQBr5c9sjEXD9Lf_10ns4j7zf31ZFFVrJ8AJ2ds0oNH9RCrZ2IXetGrCcVaNj6lNk3w5jTcdw"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 49,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -4029,39 +4293,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "O_n72WoGEabsjeI3Bff59-pGx3t_pRJfSnMqqfATHblxNnh5x6Hoz5IOQIuSZC0lv9zKbBu-JUzXQ9LlZCF5Prp5aOqC1_i3G96IPII3l3DeZsbWMyfGjSI-XW1v4b9eN2_rEQ"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 50,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "-eSnaA2V59KwzUued1HaiCzD1PCnAA6gRMTSXZmj-l7ybgBCdCJwHCTJRzPvI7-wfT6csbmyen7bBaAjgnIgoVJI7FNwF6yGORvn05NKVDJVfHo_xEYrjLUPO-56H7qXy7CvMw"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 50,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "GoTVhwZENN7F7WqzmUB6t_W8MRWoMIwkifSveFIJJqUCSIJbYUogaeHoflHhLYzPtvjb0BznRvCXPSGvbiRfh6d4gik1lsCJi6t-XL5kysWdzXiOpcT_OHUrAt7mBFiJFFBko5vcpM_dPLvdQg"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 50,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -4106,39 +4376,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "7H-J8SGKnO488uv1yO2I7h9w9_WNwcrpa9ESoQKc-y3fyStB40-g2hXdk10fuCHt8ys1amiPZppTkYsuKANywQH14D3Qr7ZbaJHpMVz0TIUzEipjgOr-QEy536awMg2I14YCOA"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 51,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "Q56zIDs9aAUskTCTuk0ca6A0EGwqHmEbdQnm-ZkZtOo32tPraru9C_BSWFRIFV3hZcnR0RZnJkHCY81xl93b-FC5qZpmgio3elR7T8Y7qWrm2A8157jHvy7CzKkKk04VZcI6sQ"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 51,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "qCQhrQw3oOKP-TBLG5XPJ6XLE4MxeHxPnSgv3HGc5yzVoRXm2otCGnLS5HJjkH3JecA93VuDyVe5EA2GzxhZSyHyCD_CYWg48l4Os1usgoe6KuvZH2OUBbrPv3JFHiRp2Nl5mb0oGHl0ebEIGQ"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 51,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -4183,39 +4459,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "fpoZzuM3aU7wu9o0crQcyJlaYF4gSHVUneQBwUFMzpstJZVlggQbV1J9lGPPJ1Y23sKl2wbt6CDawkjVpvA4yYih8tsjavKorBK1yP2WTzJ1OXSZj-dNDWz7hCdqAm5c6ZfwhA"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 52,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "Uq0NfFmvKqrh1ynNinBYpQxF2ZCjUnj-V4SzO1InmB8Aa6sm_0kxqrEP_4hVLlAejGg7n0xsqawDzV85e5IvJPUnrwrnI5TLIdCIO0BAcL2ouUgWb-w7GT0j0JlMmLb6vqOq8A"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 52,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "1QqiMHA8ebCVN1xDay03Gj14nOuXLALJ0pqTXD9amDMVIOGZHtpAuvTd__t60WQtazztXa04HLXthyzaqi6BDVj9MoH-MQvLPM3Lgdq8sxD7-x4cEUmhBH49OsaDMUFd-2yKdsnzbCj8KTuEBw"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 52,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -4260,39 +4542,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "dc21-ERuUDD66JIKNKei17m9Zumvo3aI17xd7SkonO5l-4HyzCClafNfV8icWqxLyIwuxT1jnlBF85EnLrGShNfIC0CsZHNq4AItYFp7HIv82x6Eg_k-2WcSL-OfxbKugoObcA"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 53,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "gKav9IP0_sO6TqBBm6WRsCeBcCsLkkHGkjJ6vYG8Mf0M5KsLQvgaDzZlo_NrVEDH7pJEpnxKK7AWRblKfEH45Gm20OZIzEZMl15ZkT4d7UqcwgCDByoR-7Kakl-_Emfc3hH7YA"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 53,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "vF5D4f4ChkOm3Wxi25X9tQzE03y9a0Jo1JS7hDqw5U-s2UUyawLVHBmmdthRX6SdtK_IcMockyWtVltjaT42gv4hDAKg7fTi2BI8V_99kgFIIN6T2bDKwV2p-6KUNsamMkJ8O9_89W1g5XHsZA"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 53,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -4337,39 +4625,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "0j0trkWwv_YpWKF6f8lpZ73jL_M_rAfEd7nj10kYhp8sAosQ7NJV0t10voXA8vkmg-DrXolNlLZc3CwBiHSMgJ8ogwhd-4f5M4zUBJnQ8acqgXU-qg8tB7c0CtqZYzrG8y9E7g"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 54,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "A1nnR2G41YM0WEvwbHoQF1T-qj_SQaJk2PLRQViuKugyW1hbmXe5hRmJEB_K3H5AQiO-VHPEbmia7wz2o30mAHNxwIQhszFv278agFa6qiTnfFXIjIcx_KigmIYi3rKHLnHajQ"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 54,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "a0avaVMl8fg5o_PUvn1wXZRmjJvSzVrgy000F0H4kHuNoMqEUYzGtwR2DzfBI0oCQkDt3Ol2Nxi1sFUZiXT6z0RyeIRP2G_POJTiXcui4kCcLbnJVOXLfhUjCBH5R__0zrndn7jooEq7PNQ-RQ"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 54,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -4414,39 +4708,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "QkpxG8IwnPDx14_38QEbG4-DBCngGsN6D4XYmz0sxa8s2fm4_LS1Mn6-_CJVgVA262BEpS088X9DDvebi7tQM48R7dgJBlZ4-Udi_enlm_m6Rw_LYvkQiLPhg18xScoHFbp0Rg"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 55,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "MJqbBMtrc3yF7p-WnYZTr_2ICE_xGFRooRUpSJzz-aZrzOG4xejucX8YgvsamgmFBdIRhC7G9jXDFaUxGzSWZ3-wZWRhcXStgrhCKNndrEi50AAObqk21vK7XXn4QEpx1lR66w"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 55,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "g42jRL6CyQ-vUcN6l2luznklkG4s8wGay-5Mk_pjoG3YZDtCSeyJwYRiceE99nw_TMpUcPNPYi7b_jrpC7LTbZppAtxgnjs0jlvjVVExcxG9Z1QlD0yKQP8bVA260yZDDLv4mA8dnDyM6HXLlA"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 55,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -4491,39 +4791,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "_nTRZm9T1J0EYIKWrl95iKxZfjIZmdiVQ4hPWVAQVkT_YqvH-C_zk6iuTRYgsN_jFxvLwOgHtcTr_D2Wr9qsSTZsFApSmpDqOyfFBx4uEXDVrfjO227r4Zll5wziF14HryoTMw"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 56,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "LvFDBAq8JB3ImHwTiibNfQnrS5ag18WpOYO4GrjyknjsTjQqgwEXQBtVXcu_297y-Hw37AtCjC8yhjdfrnvY2WOLmZi8AKomYKkX_UiDWA_aPFSsxChbipZihekxogdL3UZdzg"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 56,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "wZGhegmQmc4c1fRWNTveMmJIG_f9DUxqaBcGrPTbiCVD4ntfL6Ivs0pycdJakSpD7AFXUd9ArcZDBwAM8Cyv8WR-FNPYqHrUkl4e_5D7u-4oFPS4L7tTW-8jLgkg0DqDtVU87rWRWNC-jcTsAg"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 56,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -4568,39 +4874,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "9YNBTq4kc6gicJZwdOVFSTP2a2X7-EODCetDcJTj_U9wHWzBg6ZA0MdK42wIKSTd7U4ypqUBSaYPdtKnzM_Ne0XztyzL723GG4yIwvsEDpuO9r_SH5t2LluQ5TScXsPPlv5KDg"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 57,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "HjYbJV7wzfLtU8oMbBJGOEO5hAfbxmKgAVF732AZ2rTfYYfoB8uYgb_U6TJ2RWhjfuraguAhmMw"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 57,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "kRUXqPDzhaOT4L-XHrFFF90sJUiwKPV5T2eSqo_SUqxfz5duzFbpixl0K_aj7_iJSsQyR4PBy1Cj9L7nVsvPlsWaHjCpEsNXa30sR1JJ2ZipoaR5KS9_jyz8U8HtbWsXQGEYozprUrf8t2xsZg"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 57,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -4645,39 +4957,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "u8yDHoFZsgr098Z1BBu56mtVLW4bVgLvpPMcxBX-Ucdw1IE-LuMO2N3XmxJvbZUikUvUM1OMzKAeDxv4Z-MrjtSsLmoEFLPVfNJ2oAD8D7XDxHtRYw81vB4xVujMziZBM6Vd6w"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 58,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "WGXE4gPAqnL2qkx2XStAfY8lqRzYV_guMY6n86yNUiwmcOSkHFyyAF-3EBiZNW3yus3BkZQKoE4y7a8BSPMOLWribsvG-czBRC6p30XtHRds2PT2h5GP606AsB9BeaC9mD3uKg"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 58,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "aHQVYzkkkCcJ6FR-Z4bCT4G6kW4-SVc1tXnbuJqQJwMUxcWnyH12LHwq7AAJhTAhFosP3PqHWFq-xLzDNeqqrESVB9jN7b6295HkgsQCxf-Xl4D6OtivWmblsEql26Ij0R8ED47dXG_mbV_G7Q"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 58,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -4722,39 +5040,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "Q5W4ijn5zSsYy7tToOJ6QhX4ZWSyQKiGLYCWh64ELCIMuL8aRNQhb73nckOuZadLR89v7vO1ZIU-8awd8tnB47yDtRIop3M4N4KVjJa40jPSulnfWbbklSxkPY9Sx3580x15uw"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 59,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "ZPe6W0plqYbBnCAyu2KIgxgxnA0yOCnq3lfXKfvvDGWAJXny298lEGK8ZHG2gKQUYZBMrgvR4EN5Tz2E5KS7pS1KkfsytDZf1aujF1L7NffXtiptviScEzICPQTmEqI9XVSvaQ"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 59,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "M4xfKRL_hRYVQYS7JZysbQesvJqzgFFXbulq14ajK-kmQJmhDFnPD8NA1dafVHKITlKkwToGKcBWzzN9t3StjI_-1RTaFV-LSXQ354HVLCCbIGGBXNDit-TaF-P0zhzeOAQLOB6aCa8J4JLNGg"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 59,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -4799,39 +5123,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "gc11XzaVEZHlOvFuTUkgKLI68nO1oGQ9xGUmpUYFIfK5MZEIBBHw-CUpCL25ngLF17wAzVkahx_9bYm_pe0TW2M_aeCEH64w_Z_lLcRh0QtTVAAmhdfniIQKLhe6HNnVqFSZPw"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 60,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "P_2qN5IV4nge_ZhDZp0TKZVInd7hV06gfCTPpG7zT14X-h2q1csps27L14HUo8AulfEuZXZKRLX0e5DT5sqDtbrGgK-RmxoxAm2xfk1V5RSjjt8IeZ9hZoN7O3cVyDe-3v225g"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 60,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "GYxFwL3e3vPZGXcQCcG9zDlc_ziOJqLIwVF07O1wEL30q1cPXKxlh5utrQ4TdaIB_VakKb8f2myJk4kiajXwhg6YDI4BDIKzWcbLixo35SmwPellu3sJBcrqCIj82tQVUIqqeZ2gaoTkPsP_rg"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 60,
+                    "col": 5
+                  }
                 }
               ]
             },
@@ -4876,39 +5206,45 @@
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "wkfUBiGST3otNQgBgMI4eH3UOXZkKjCEYp7S8PlqxQggJJo7DhA-0rhsrZbNCJNBJL5_HMXhttkehBfmV9YdkeSxwnFxMScmpab8YJFRD-8-1tmeKebV-oJENflEyltN_DitZQ"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 61,
+                    "col": 3
+                  }
                 },
                 {
                   "formattedValue": "VIDEO CHỮA",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "tqzHjE-f1wAjVuiUHkRmB7pUea53IHTEGLKPXy_GxfY7p7HCgc_hBGb-po9siJix7Ix7X6kYy4E"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 61,
+                    "col": 4
+                  }
                 },
                 {
                   "formattedValue": "ĐÁP ÁN",
                   "userEnteredFormat": {
                     "horizontalAlignment": "CENTER",
                     "textFormat": {
-                      "fontSize": 14,
-                      "link": {
-                        "uri": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing"
-                      }
+                      "fontSize": 14
                     }
                   },
-                  "hyperlink": "ya08Vs-2WY6n7aZa9v67nlPv32kHerzxYgpsM1-68F804bNKSWFJp_3hOIu5_NtCw6uYv6zrG-IGZF_69Pz-Ub4S07I3MMbG29dV0POBl18ACAl9u7XbTP1-N7JS0DmITDCreVpmVK_5PSpVkA"
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "Tổng Ôn Sinh Học",
+                    "row": 61,
+                    "col": 5
+                  }
                 }
               ]
             }

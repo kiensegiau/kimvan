@@ -334,6 +334,13 @@ export default function CourseDetailPage({ params }) {
     return url.includes('drive.google.com') || url.includes('docs.google.com');
   };
   
+  // Hàm kiểm tra xem URL có phải là Google Drive PDF không
+  const isGoogleDrivePdf = (url) => {
+    if (!url) return false;
+    return (url.includes('drive.google.com') || url.includes('docs.google.com')) && 
+           (url.toLowerCase().endsWith('.pdf') || url.includes('pdf'));
+  };
+  
   // Hàm mở modal YouTube
   const openYoutubeModal = (url, title = '') => {
     const videoId = extractYoutubeId(url);
@@ -530,16 +537,44 @@ export default function CourseDetailPage({ params }) {
   };
 
   // Hàm kiểm tra và lấy URL đã xử lý
-  const getProcessedDriveFile = (originalUrl) => {
+  const getProcessedDriveFile = (originalUrl, rowIndex, cellIndex, sheetIndex) => {
     if (!course?.processedDriveFiles || !originalUrl) return null;
-    return course.processedDriveFiles.find(file => file.originalUrl === originalUrl);
-  };
-
-  // Hàm kiểm tra xem URL có phải là Google Drive PDF không
-  const isGoogleDrivePdf = (url) => {
-    if (!url) return false;
-    return (url.includes('drive.google.com') || url.includes('docs.google.com')) && 
-           (url.toLowerCase().endsWith('.pdf') || url.includes('pdf'));
+    
+    // 1. Kiểm tra theo URL gốc trước
+    const processedFile = course.processedDriveFiles.find(file => file.originalUrl === originalUrl);
+    if (processedFile) return processedFile;
+    
+    // 2. Kiểm tra theo ID nếu là Google Drive
+    if (originalUrl.includes('drive.google.com/file/d/')) {
+      const match = originalUrl.match(/\/file\/d\/([^\/\?]+)/);
+      const driveId = match ? match[1] : null;
+      
+      if (driveId) {
+        const fileByDriveId = course.processedDriveFiles.find(file => {
+          if (!file.originalUrl.includes('drive.google.com/file/d/')) return false;
+          const fileMatch = file.originalUrl.match(/\/file\/d\/([^\/\?]+)/);
+          const fileId = fileMatch ? fileMatch[1] : null;
+          return fileId === driveId;
+        });
+        
+        if (fileByDriveId) return fileByDriveId;
+      }
+    }
+    
+    // 3. Kiểm tra theo vị trí
+    if (typeof rowIndex === 'number' && typeof cellIndex === 'number') {
+      const sheetTitle = course?.originalData?.sheets?.[sheetIndex]?.properties?.title || `Sheet ${sheetIndex + 1}`;
+      for (const file of course.processedDriveFiles) {
+        if (file.position && 
+            file.position.row === rowIndex && 
+            file.position.col === cellIndex && 
+            file.position.sheet === sheetTitle) {
+          return file;
+        }
+      }
+    }
+    
+    return null;
   };
 
   // Tải thông tin khóa học khi component được tạo
@@ -1147,7 +1182,7 @@ export default function CourseDetailPage({ params }) {
                                                 {isGoogleDrivePdf(url) && (
                                                   <div className="mt-1.5">
                                                     {(() => {
-                                                      const processedFile = getProcessedDriveFile(url);
+                                                      const processedFile = getProcessedDriveFile(url, rowIndex, cellIndex, activeSheet);
                                                       
                                                       if (processedFile) {
                                                         return (
@@ -1522,6 +1557,306 @@ export default function CourseDetailPage({ params }) {
                       </span>
                     </h4>
                     
+                    {/* Thêm cảnh báo về link giả */}
+                    <div className="mb-4 bg-red-50 border-l-4 border-red-400 p-4">
+                      <div className="flex">
+                        <div className="flex-shrink-0">
+                          <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                        <div className="ml-3">
+                          <p className="text-sm text-red-700">
+                            <strong>Cảnh báo quan trọng:</strong> Tất cả link được trả về từ API Kimvan đều là giả mạo, trỏ đến cùng một file. Không thể mở trực tiếp trong Chrome. Hệ thống đã được điều chỉnh để duy trì cấu trúc và vị trí của tất cả link.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Công cụ Debug dữ liệu */}
+                    <div className="mb-4 bg-blue-50 border border-blue-200 p-4 rounded-lg">
+                      <h5 className="text-base font-medium text-blue-800 mb-2">Công cụ phân tích dữ liệu</h5>
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        <button
+                          onClick={() => {
+                            console.log('=== PHÂN TÍCH DỮ LIỆU ===');
+                            console.log('1. Dữ liệu cũ (processedLinks):', previewData.processedLinks);
+                            console.log('2. Dữ liệu mới (sheet data):', previewData.sampleSheet);
+                            
+                            // In ra một số mẫu processedLinks để phân tích
+                            if (previewData.processedLinks && previewData.processedLinks.length > 0) {
+                              console.log('1.1 Mẫu 5 processedLinks đầu tiên:');
+                              for (let i = 0; i < Math.min(5, previewData.processedLinks.length); i++) {
+                                const link = previewData.processedLinks[i];
+                                console.log(`Link #${i}:`, {
+                                  sheet: link.position.sheet,
+                                  row: link.position.row,
+                                  col: link.position.col,
+                                  originalUrl: link.originalUrl,
+                                  processedUrl: link.processedUrl
+                                });
+                              }
+                            }
+                            
+                            // Tạo bảng đối chiếu để so sánh
+                            const comparisonTable = [];
+                            
+                            // Duyệt qua dữ liệu mới
+                            if (previewData.sampleSheet && previewData.sampleSheet.firstFewRows) {
+                              const sheetTitle = previewData.sampleSheet.title;
+                              console.log('2.1 Tên sheet:', sheetTitle);
+                              
+                              previewData.sampleSheet.firstFewRows.forEach((row, rowIndex) => {
+                                if (row.values) {
+                                  row.values.forEach((cell, cellIndex) => {
+                                    const originalUrl = cell.userEnteredFormat?.textFormat?.link?.uri || cell.hyperlink;
+                                    const processedUrl = cell.processedUrl || (cell.processedLinks && cell.processedLinks.url);
+                                    
+                                    if (originalUrl) {
+                                      // Tìm xem có link đã xử lý trước đó không - tìm theo vị trí chính xác
+                                      let matchingProcessedLink = null;
+                                      if (previewData.processedLinks && Array.isArray(previewData.processedLinks)) {
+                                        matchingProcessedLink = previewData.processedLinks.find(link => 
+                                          link.position.sheet === sheetTitle && 
+                                          link.position.row === rowIndex && 
+                                          link.position.col === cellIndex
+                                        );
+                                        
+                                        // Nếu không tìm thấy, thử tìm theo cách khác
+                                        if (!matchingProcessedLink) {
+                                          // In thông tin debug
+                                          console.log(`2.2 Không tìm thấy link cho vị trí [${sheetTitle}|${rowIndex}|${cellIndex}]`);
+                                          
+                                          // Tìm kiếm tất cả vị trí có row gần bằng với rowIndex
+                                          const nearMatches = previewData.processedLinks.filter(link => 
+                                            link.position.sheet === sheetTitle && 
+                                            Math.abs(link.position.row - rowIndex) <= 1 && 
+                                            link.position.col === cellIndex
+                                          );
+                                          
+                                          if (nearMatches.length > 0) {
+                                            console.log(`2.3 Tìm thấy ${nearMatches.length} vị trí gần đúng:`, nearMatches);
+                                          }
+                                        } else {
+                                          console.log(`2.4 Tìm thấy link khớp cho vị trí [${sheetTitle}|${rowIndex}|${cellIndex}]`);
+                                        }
+                                      }
+                                      
+                                      comparisonTable.push({
+                                        position: `Hàng ${rowIndex + 1}, Cột ${cellIndex + 1}`,
+                                        positionKey: `${sheetTitle}|${rowIndex}|${cellIndex}`,
+                                        displayText: cell.formattedValue || 'N/A',
+                                        originalUrl,
+                                        processedUrl: processedUrl || 'Chưa xử lý',
+                                        hasProcessed: !!processedUrl,
+                                        matchInOldData: !!matchingProcessedLink,
+                                        oldProcessedUrl: matchingProcessedLink ? matchingProcessedLink.processedUrl : 'Không có'
+                                      });
+                                    }
+                                  });
+                                }
+                              });
+                            }
+                            
+                            console.log('3. Bảng đối chiếu:', comparisonTable);
+                            
+                            // Phân tích vị trí của các link đã xử lý
+                            console.log('4. Phân tích vị trí các link đã xử lý:');
+                            if (previewData.allLinks && previewData.allLinks.processed) {
+                              const processedByPosition = {};
+                              
+                              previewData.allLinks.processed.forEach(link => {
+                                const posKey = `${link.position.sheet}|${link.position.row}|${link.position.col}`;
+                                processedByPosition[posKey] = {
+                                  originalUrl: link.originalUrl,
+                                  processedUrl: link.processedUrl,
+                                  displayText: link.displayText
+                                };
+                              });
+                              
+                              console.log('   - Phân tích theo vị trí:', processedByPosition);
+                            }
+                            
+                            // Phân tích so sánh theo vị trí
+                            console.log('5. So sánh theo vị trí:');
+                            if (previewData.processedLinks && Array.isArray(previewData.processedLinks)) {
+                              const linksByPosition = {};
+                              
+                              previewData.processedLinks.forEach(link => {
+                                const posKey = `${link.position.sheet}|${link.position.row}|${link.position.col}`;
+                                linksByPosition[posKey] = {
+                                  originalUrl: link.originalUrl,
+                                  processedUrl: link.processedUrl
+                                };
+                              });
+                              
+                              console.log('   - Links theo vị trí:', linksByPosition);
+                              
+                              // Kiểm tra khớp vị trí trong dữ liệu mới
+                              if (previewData.sampleSheet && previewData.sampleSheet.firstFewRows) {
+                                const sheetTitle = previewData.sampleSheet.title;
+                                const matchResults = [];
+                                
+                                previewData.sampleSheet.firstFewRows.forEach((row, rowIndex) => {
+                                  if (row.values) {
+                                    row.values.forEach((cell, cellIndex) => {
+                                      const posKey = `${sheetTitle}|${rowIndex}|${cellIndex}`;
+                                      const hasMatch = !!linksByPosition[posKey];
+                                      const originalUrl = cell.userEnteredFormat?.textFormat?.link?.uri || cell.hyperlink;
+                                      
+                                      if (originalUrl) {
+                                        matchResults.push({
+                                          position: posKey,
+                                          hasMatch,
+                                          displayText: cell.formattedValue || 'N/A',
+                                          newUrl: originalUrl,
+                                          oldUrl: hasMatch ? linksByPosition[posKey].originalUrl : 'N/A',
+                                          processedUrl: hasMatch ? linksByPosition[posKey].processedUrl : 'N/A'
+                                        });
+                                      }
+                                    });
+                                  }
+                                });
+                                
+                                console.log('   - Kết quả khớp vị trí:', matchResults);
+                              }
+                            }
+                            
+                            alert('Đã ghi log phân tích dữ liệu vào Console. Mở DevTools để xem chi tiết.');
+                          }}
+                          className="px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700"
+                        >
+                          Log dữ liệu để phân tích
+                        </button>
+                        
+                        <button
+                          onClick={() => {
+                            console.log('=== TẤT CẢ DỮ LIỆU ===');
+                            console.log('Toàn bộ dữ liệu xem trước:', previewData);
+                            alert('Đã ghi log toàn bộ dữ liệu xem trước vào Console. Mở DevTools để xem chi tiết.');
+                          }}
+                          className="px-3 py-2 bg-purple-600 text-white text-sm font-medium rounded hover:bg-purple-700"
+                        >
+                          Log toàn bộ dữ liệu xem trước
+                        </button>
+                        
+                        {previewData.debug && (
+                          <button
+                            onClick={() => {
+                              console.log('=== THÔNG TIN DEBUG ===');
+                              console.log('Debug info:', previewData.debug);
+                              
+                              if (previewData.debug.positionMapInfo) {
+                                console.log('1. Thông tin bản đồ vị trí:');
+                                console.log(`- Tổng số entry: ${previewData.debug.positionMapInfo.totalEntries}`);
+                                console.log(`- Số entry đã xử lý: ${previewData.debug.positionMapInfo.processedEntries}`);
+                                console.log('- Mẫu entries:', previewData.debug.positionMapInfo.sampleEntries);
+                              }
+                              
+                              if (previewData.debug.processedDriveFilesInfo) {
+                                console.log('2. Thông tin về processedDriveFiles:');
+                                console.log(`- Tổng số file: ${previewData.debug.processedDriveFilesInfo.totalFiles}`);
+                                console.log(`- Số file có vị trí: ${previewData.debug.processedDriveFilesInfo.filesWithPosition}`);
+                                console.log('- Mẫu files:', previewData.debug.processedDriveFilesInfo.sampleFiles);
+                              }
+                              
+                              if (previewData.debug.matchingStats) {
+                                console.log('3. Thống kê việc khớp link:');
+                                console.log(`- Tổng số link trong dữ liệu mới: ${previewData.debug.matchingStats.totalLinks}`);
+                                console.log(`- Số link đã khớp và áp dụng: ${previewData.debug.matchingStats.processedMatches}`);
+                                
+                                // Tính tỷ lệ
+                                const matchRate = previewData.debug.matchingStats.totalLinks > 0 
+                                  ? ((previewData.debug.matchingStats.processedMatches / previewData.debug.matchingStats.totalLinks) * 100).toFixed(2)
+                                  : 0;
+                                
+                                console.log(`- Tỷ lệ khớp: ${matchRate}%`);
+                              }
+                              
+                              alert('Đã ghi log thông tin debug vào Console. Mở DevTools để xem chi tiết.');
+                            }}
+                            className="px-3 py-2 bg-amber-600 text-white text-sm font-medium rounded hover:bg-amber-700"
+                          >
+                            Log thông tin debug
+                          </button>
+                        )}
+                      </div>
+                      
+                      {/* Thêm thống kê về các file đã xử lý */}
+                      {previewData.processedLinks && (
+                        <div className="mb-3 bg-green-50 p-3 rounded border border-green-200">
+                          <h6 className="text-sm font-medium text-green-800 mb-2">
+                            Thống kê các link đã xử lý ({previewData.processedLinks.length} link)
+                          </h6>
+                          <div className="text-xs text-green-700">
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>Link theo vị trí: {previewData.processedLinks.length}</div>
+                              <div>Link trong dữ liệu mới: {previewData.stats.processedLinks}</div>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => {
+                              if (!previewData.processedLinks) return;
+                              
+                              // Nhóm theo sheet
+                              const linksBySheet = {};
+                              previewData.processedLinks.forEach(link => {
+                                const sheet = link.position.sheet;
+                                if (!linksBySheet[sheet]) {
+                                  linksBySheet[sheet] = [];
+                                }
+                                linksBySheet[sheet].push(link);
+                              });
+                              
+                              console.log('=== CHI TIẾT LINK ĐÃ XỬ LÝ ===');
+                              console.log('1. Tổng số link:', previewData.processedLinks.length);
+                              console.log('2. Link theo sheet:', linksBySheet);
+                              
+                              // Kiểm tra khớp vị trí trong dữ liệu mới
+                              if (previewData.sampleSheet && previewData.sampleSheet.firstFewRows) {
+                                const positionKeys = previewData.processedLinks.map(
+                                  link => `${link.position.sheet}|${link.position.row}|${link.position.col}`
+                                );
+                                
+                                console.log('3. Vị trí của các link đã xử lý:', positionKeys);
+                              }
+                              
+                              alert('Đã ghi log chi tiết các link đã xử lý vào Console. Mở DevTools để xem chi tiết.');
+                            }}
+                            className="mt-2 px-3 py-1 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700"
+                          >
+                            Phân tích chi tiết các link đã xử lý
+                          </button>
+                        </div>
+                      )}
+                      
+                      <div className="bg-white p-3 rounded border border-blue-200 text-sm text-blue-800">
+                        <p className="mb-2"><strong>Hướng dẫn sử dụng:</strong></p>
+                        <ol className="list-decimal list-inside space-y-1">
+                          <li>Nhấn vào các nút trên để log dữ liệu vào Console</li>
+                          <li>Mở DevTools bằng cách nhấn F12 hoặc Ctrl+Shift+I (Windows/Linux) hoặc Cmd+Option+I (Mac)</li>
+                          <li>Chuyển đến tab Console để xem dữ liệu được log</li>
+                          <li>Phân tích sự khác biệt giữa dữ liệu cũ và mới</li>
+                        </ol>
+                      </div>
+                    </div>
+                    
+                    {/* Thêm cảnh báo về link giả */}
+                    <div className="mb-4 bg-yellow-50 border-l-4 border-yellow-400 p-4">
+                      <div className="flex">
+                        <div className="flex-shrink-0">
+                          <svg className="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                        <div className="ml-3">
+                          <p className="text-sm text-yellow-700">
+                            <strong>Lưu ý:</strong> Hệ thống sẽ tự động giữ lại các link đã xử lý trước đó dù API trả về link giả.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
                     {previewData.sampleSheet.firstFewRows && previewData.sampleSheet.firstFewRows.length > 0 ? (
                       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                         <div className="overflow-x-auto">
@@ -1548,6 +1883,20 @@ export default function CourseDetailPage({ params }) {
                                     const originalUrl = cell.userEnteredFormat?.textFormat?.link?.uri || cell.hyperlink;
                                     const processedUrl = cell.processedUrl || (cell.processedLinks && cell.processedLinks.url);
                                     
+                                    // Kiểm tra link có vẻ giả mạo (tất cả các link đều trỏ đến một drive.google.com)
+                                    const seemsSuspicious = originalUrl && originalUrl.includes('drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr');
+                                    
+                                    // Kiểm tra xem có phải link YouTube không
+                                    const isYoutube = originalUrl && (originalUrl.includes('youtube.com') || originalUrl.includes('youtu.be'));
+                                    // Trích xuất YouTube video ID nếu có
+                                    const extractYoutubeId = (url) => {
+                                      if (!url) return null;
+                                      const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+                                      const match = url.match(regExp);
+                                      return (match && match[2].length === 11) ? match[2] : null;
+                                    };
+                                    const youtubeId = isYoutube ? extractYoutubeId(originalUrl) : null;
+                                    
                                     return (
                                       <td 
                                         key={cellIndex} 
@@ -1557,15 +1906,48 @@ export default function CourseDetailPage({ params }) {
                                       >
                                         {originalUrl ? (
                                           <div className="text-gray-900">
-                                            <a 
-                                              href={processedUrl || originalUrl} 
-                                              target="_blank" 
-                                              rel="noopener noreferrer"
-                                              className="text-blue-600 hover:text-blue-800 hover:underline"
-                                              title={processedUrl || originalUrl}
-                                            >
-                                              {cell.formattedValue || originalUrl}
-                                            </a>
+                                            <div className="flex items-center space-x-2">
+                                              <a 
+                                                href={processedUrl || originalUrl} 
+                                                target="_blank" 
+                                                rel="noopener noreferrer"
+                                                className="text-blue-600 hover:text-blue-800 hover:underline truncate max-w-xs"
+                                                title={processedUrl || originalUrl}
+                                                onClick={(e) => {
+                                                  // Ngăn mở link giả mạo
+                                                  if (!processedUrl && (originalUrl.includes('drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr') || originalUrl.includes('/api/shared?link='))) {
+                                                    e.preventDefault();
+                                                    alert('⚠️ Đây là link giả mạo từ API Kimvan. Không thể mở trực tiếp.');
+                                                    return false;
+                                                  }
+                                                }}
+                                              >
+                                                {cell.formattedValue || originalUrl}
+                                              </a>
+                                              {isYoutube && youtubeId && (
+                                                <button
+                                                  onClick={() => openYoutubeModal(originalUrl, cell.formattedValue)}
+                                                  className="p-1 bg-red-100 text-red-600 rounded hover:bg-red-200"
+                                                  title="Xem video YouTube"
+                                                >
+                                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                                                  </svg>
+                                                </button>
+                                              )}
+                                            </div>
+                                            
+                                            {originalUrl && (
+                                              <div className={`mt-1 text-xs ${seemsSuspicious ? 'text-red-500' : 'text-gray-500'} truncate flex items-center`} title={originalUrl}>
+                                                {seemsSuspicious && (
+                                                  <svg className="h-3 w-3 mr-1 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                                  </svg>
+                                                )}
+                                                <span>{seemsSuspicious ? 'Link giả mạo - không mở trong Chrome' : 'Link API trả về: '}</span>
+                                                {!seemsSuspicious && <span className="truncate">{originalUrl}</span>}
+                                              </div>
+                                            )}
                                           </div>
                                         ) : (
                                           <div className="text-gray-900">{cell.formattedValue || ''}</div>
@@ -1614,6 +1996,96 @@ export default function CourseDetailPage({ params }) {
                       Danh sách các link đã xử lý watermark ({previewData.allLinks?.processed?.length || 0})
                     </h4>
                     
+                    {/* Thêm cảnh báo về link giả trong tab link đã xử lý */}
+                    <div className="mb-4 bg-red-50 border-l-4 border-red-400 p-4">
+                      <div className="flex">
+                        <div className="flex-shrink-0">
+                          <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                        <div className="ml-3">
+                          <p className="text-sm text-red-700">
+                            <strong>Cảnh báo quan trọng:</strong> Các "link gốc" được trả về từ API Kimvan đều là giả mạo, trỏ đến cùng một file. Không thể mở trực tiếp trong Chrome. Chỉ nên sử dụng các link đã xử lý (link màu xanh lá).
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Công cụ Debug chi tiết các link đã xử lý */}
+                    <div className="mb-4 bg-blue-50 border border-blue-200 p-4 rounded-lg">
+                      <h5 className="text-base font-medium text-blue-800 mb-2">Phân tích link đã xử lý</h5>
+                      <button
+                        onClick={() => {
+                          console.log('=== CHI TIẾT LINK ĐÃ XỬ LÝ ===');
+                          if (previewData.allLinks && previewData.allLinks.processed) {
+                            // Nhóm theo sheet, row để dễ phân tích
+                            const groupedBySheet = {};
+                            
+                            previewData.allLinks.processed.forEach(link => {
+                              const sheetName = link.position.sheet;
+                              if (!groupedBySheet[sheetName]) {
+                                groupedBySheet[sheetName] = [];
+                              }
+                              groupedBySheet[sheetName].push({
+                                row: link.position.row + 1,
+                                col: link.position.col + 1,
+                                displayText: link.displayText,
+                                originalUrl: link.originalUrl,
+                                processedUrl: link.processedUrl
+                              });
+                            });
+                            
+                            console.log('Link đã xử lý theo sheet:', groupedBySheet);
+                            
+                            // Kiểm tra các link trùng lặp
+                            const urlCounts = {};
+                            let duplicateUrls = 0;
+                            
+                            previewData.allLinks.processed.forEach(link => {
+                              if (!urlCounts[link.originalUrl]) {
+                                urlCounts[link.originalUrl] = 0;
+                              }
+                              urlCounts[link.originalUrl]++;
+                              
+                              if (urlCounts[link.originalUrl] > 1) {
+                                duplicateUrls++;
+                              }
+                            });
+                            
+                            console.log('Số link trùng lặp:', duplicateUrls);
+                            console.log('Thống kê các link trùng lặp:', Object.entries(urlCounts)
+                              .filter(([_, count]) => count > 1)
+                              .map(([url, count]) => ({ url, count }))
+                            );
+                          } else {
+                            console.log('Không có dữ liệu link đã xử lý');
+                          }
+                          
+                          alert('Đã ghi log chi tiết link đã xử lý vào Console. Mở DevTools để xem chi tiết.');
+                        }}
+                        className="px-3 py-2 bg-green-600 text-white text-sm font-medium rounded hover:bg-green-700"
+                      >
+                        Phân tích chi tiết link đã xử lý
+                      </button>
+                    </div>
+                    
+                    {/* Thêm cảnh báo về link giả */}
+                    <div className="mb-4 bg-yellow-50 border-l-4 border-yellow-400 p-4">
+                      <div className="flex">
+                        <div className="flex-shrink-0">
+                          <svg className="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                        <div className="ml-3">
+                          <p className="text-sm text-yellow-700">
+                            <strong>Cảnh báo:</strong> API Kimvan có thể trả về các link giả mạo. Nhiều link trỏ đến cùng một file Drive. Hệ thống vẫn sẽ giữ lại các link đã được xử lý trước đó.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
                     {previewData.allLinks?.processed && previewData.allLinks.processed.length > 0 ? (
                       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                         <div className="overflow-x-auto">
@@ -1627,44 +2099,99 @@ export default function CourseDetailPage({ params }) {
                               </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
-                              {previewData.allLinks.processed.map((link, index) => (
-                                <tr key={index} className="hover:bg-green-50">
-                                  <td className="px-6 py-4 text-sm">
-                                    <div className="text-gray-900 font-medium break-words">{link.displayText}</div>
-                                  </td>
-                                  <td className="px-6 py-4 text-sm text-gray-700">
-                                    Sheet: {link.position.sheet}, Hàng: {link.position.row + 1}, Cột: {link.position.col + 1}
-                                  </td>
-                                  <td className="px-6 py-4 text-sm">
-                                    <a 
-                                      href={link.originalUrl} 
-                                      target="_blank" 
-                                      rel="noopener noreferrer"
-                                      className="text-blue-600 hover:text-blue-800 hover:underline flex items-center group"
-                                      title={link.originalUrl}
-                                    >
-                                      <span className="truncate max-w-xs block group-hover:text-blue-800">{link.originalUrl}</span>
-                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                      </svg>
-                                    </a>
-                                  </td>
-                                  <td className="px-6 py-4 text-sm">
-                                    <a 
-                                      href={link.processedUrl} 
-                                      target="_blank" 
-                                      rel="noopener noreferrer"
-                                      className="text-green-600 hover:text-green-800 hover:underline flex items-center group"
-                                      title={link.processedUrl}
-                                    >
-                                      <span className="truncate max-w-xs block group-hover:text-green-800">{link.processedUrl}</span>
-                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                      </svg>
-                                    </a>
-                                  </td>
-                                </tr>
-                              ))}
+                              {previewData.allLinks.processed.map((link, index) => {
+                                // Kiểm tra xem có phải link YouTube không
+                                const isYoutube = link.originalUrl && (link.originalUrl.includes('youtube.com') || link.originalUrl.includes('youtu.be'));
+                                // Kiểm tra link có vẻ giả mạo
+                                const seemsSuspicious = link.originalUrl && link.originalUrl.includes('drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr');
+                                // Trích xuất YouTube video ID nếu có
+                                const extractYoutubeId = (url) => {
+                                  if (!url) return null;
+                                  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+                                  const match = url.match(regExp);
+                                  return (match && match[2].length === 11) ? match[2] : null;
+                                };
+                                const youtubeId = isYoutube ? extractYoutubeId(link.originalUrl) : null;
+                                
+                                return (
+                                  <tr key={index} className="hover:bg-green-50">
+                                    <td className="px-6 py-4 text-sm">
+                                      <div className="text-gray-900 font-medium break-words flex items-center space-x-2">
+                                        <span>{link.displayText}</span>
+                                        {isYoutube && youtubeId && (
+                                          <button
+                                            onClick={() => openYoutubeModal(link.originalUrl, link.displayText)}
+                                            className="p-1 bg-red-100 text-red-600 rounded hover:bg-red-200"
+                                            title="Xem video YouTube"
+                                          >
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                                            </svg>
+                                          </button>
+                                        )}
+                                      </div>
+                                    </td>
+                                    <td className="px-6 py-4 text-sm text-gray-700">
+                                      Sheet: {link.position.sheet}, Hàng: {link.position.row + 1}, Cột: {link.position.col + 1}
+                                    </td>
+                                    <td className="px-6 py-4 text-sm">
+                                      <div>
+                                        <a 
+                                          href={link.originalUrl} 
+                                          target="_blank" 
+                                          rel="noopener noreferrer"
+                                          className="text-blue-600 hover:text-blue-800 hover:underline flex items-center group"
+                                          title={link.originalUrl}
+                                          onClick={(e) => {
+                                            // Ngăn mở link giả mạo
+                                            if (link.originalUrl.includes('drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr') || link.originalUrl.includes('/api/shared?link=')) {
+                                              e.preventDefault();
+                                              alert('⚠️ Đây là link giả mạo từ API Kimvan. Không thể mở trực tiếp. Vui lòng sử dụng link đã xử lý.');
+                                              return false;
+                                            }
+                                          }}
+                                        >
+                                          <span className="truncate max-w-xs block group-hover:text-blue-800">{link.originalUrl}</span>
+                                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                          </svg>
+                                        </a>
+                                        {isYoutube && (
+                                          <div className="mt-1 text-xs text-red-500 flex items-center">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                              <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                              <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                                            </svg>
+                                            <span>Link YouTube thật</span>
+                                          </div>
+                                        )}
+                                        {seemsSuspicious && (
+                                          <div className="mt-1 text-xs text-orange-500 flex items-center">
+                                            <svg className="h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                            </svg>
+                                            <span>Link có thể không đáng tin cậy</span>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </td>
+                                    <td className="px-6 py-4 text-sm">
+                                      <a 
+                                        href={link.processedUrl} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="text-green-600 hover:text-green-800 hover:underline flex items-center group"
+                                        title={link.processedUrl}
+                                      >
+                                        <span className="truncate max-w-xs block group-hover:text-green-800">{link.processedUrl}</span>
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                        </svg>
+                                      </a>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
                             </tbody>
                           </table>
                         </div>
@@ -1684,6 +2211,22 @@ export default function CourseDetailPage({ params }) {
                       Danh sách các link chưa xử lý watermark ({previewData.allLinks?.unprocessed?.length || 0})
                     </h4>
                     
+                    {/* Thêm cảnh báo về link giả trong tab link chưa xử lý */}
+                    <div className="mb-4 bg-red-50 border-l-4 border-red-400 p-4">
+                      <div className="flex">
+                        <div className="flex-shrink-0">
+                          <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                        <div className="ml-3">
+                          <p className="text-sm text-red-700">
+                            <strong>Cảnh báo quan trọng:</strong> API Kimvan trả về các link giả mạo. Tất cả link hiển thị ở đây đều là giả mạo và không thể mở trực tiếp trong Chrome. Sau khi đồng bộ, bạn cần xử lý thủ công các link này.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
                     {previewData.allLinks?.unprocessed && previewData.allLinks.unprocessed.length > 0 ? (
                       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                         <div className="overflow-x-auto">
@@ -1696,30 +2239,85 @@ export default function CourseDetailPage({ params }) {
                               </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
-                              {previewData.allLinks.unprocessed.map((link, index) => (
-                                <tr key={index} className="hover:bg-amber-50">
-                                  <td className="px-6 py-4 text-sm">
-                                    <div className="text-gray-900 font-medium break-words">{link.displayText}</div>
-                                  </td>
-                                  <td className="px-6 py-4 text-sm text-gray-700">
-                                    Sheet: {link.position.sheet}, Hàng: {link.position.row + 1}, Cột: {link.position.col + 1}
-                                  </td>
-                                  <td className="px-6 py-4 text-sm">
-                                    <a 
-                                      href={link.originalUrl} 
-                                      target="_blank" 
-                                      rel="noopener noreferrer"
-                                      className="text-blue-600 hover:text-blue-800 hover:underline flex items-center group"
-                                      title={link.originalUrl}
-                                    >
-                                      <span className="truncate max-w-xs block group-hover:text-blue-800">{link.originalUrl}</span>
-                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                      </svg>
-                                    </a>
-                                  </td>
-                                </tr>
-                              ))}
+                              {previewData.allLinks.unprocessed.map((link, index) => {
+                                // Kiểm tra xem có phải link YouTube không
+                                const isYoutube = link.originalUrl && (link.originalUrl.includes('youtube.com') || link.originalUrl.includes('youtu.be'));
+                                // Kiểm tra link có vẻ giả mạo
+                                const seemsSuspicious = link.originalUrl && link.originalUrl.includes('drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr');
+                                // Trích xuất YouTube video ID nếu có
+                                const extractYoutubeId = (url) => {
+                                  if (!url) return null;
+                                  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+                                  const match = url.match(regExp);
+                                  return (match && match[2].length === 11) ? match[2] : null;
+                                };
+                                const youtubeId = isYoutube ? extractYoutubeId(link.originalUrl) : null;
+                                
+                                return (
+                                  <tr key={index} className="hover:bg-amber-50">
+                                    <td className="px-6 py-4 text-sm">
+                                      <div className="text-gray-900 font-medium break-words flex items-center space-x-2">
+                                        <span>{link.displayText}</span>
+                                        {isYoutube && youtubeId && (
+                                          <button
+                                            onClick={() => openYoutubeModal(link.originalUrl, link.displayText)}
+                                            className="p-1 bg-red-100 text-red-600 rounded hover:bg-red-200"
+                                            title="Xem video YouTube"
+                                          >
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                                            </svg>
+                                          </button>
+                                        )}
+                                      </div>
+                                    </td>
+                                    <td className="px-6 py-4 text-sm text-gray-700">
+                                      Sheet: {link.position.sheet}, Hàng: {link.position.row + 1}, Cột: {link.position.col + 1}
+                                    </td>
+                                    <td className="px-6 py-4 text-sm">
+                                      <div>
+                                        <a 
+                                          href={link.originalUrl} 
+                                          target="_blank" 
+                                          rel="noopener noreferrer"
+                                          className="text-blue-600 hover:text-blue-800 hover:underline flex items-center group"
+                                          title={link.originalUrl}
+                                          onClick={(e) => {
+                                            // Ngăn mở link giả mạo
+                                            if (link.originalUrl.includes('drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr') || link.originalUrl.includes('/api/shared?link=')) {
+                                              e.preventDefault();
+                                              alert('⚠️ Đây là link giả mạo từ API Kimvan. Không thể mở trực tiếp.');
+                                              return false;
+                                            }
+                                          }}
+                                        >
+                                          <span className="truncate max-w-xs block group-hover:text-blue-800">{link.originalUrl}</span>
+                                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                          </svg>
+                                        </a>
+                                        {isYoutube && (
+                                          <div className="mt-1 text-xs text-red-500 flex items-center">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                              <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                              <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                                            </svg>
+                                            <span>Link YouTube thật</span>
+                                          </div>
+                                        )}
+                                        {seemsSuspicious && (
+                                          <div className="mt-1 text-xs text-orange-500 flex items-center">
+                                            <svg className="h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                            </svg>
+                                            <span>Link có thể không đáng tin cậy</span>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
                             </tbody>
                           </table>
                         </div>

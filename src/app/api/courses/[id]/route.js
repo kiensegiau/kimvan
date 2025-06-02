@@ -172,8 +172,22 @@ function findProcessedUrl(originalUrl, processedFiles) {
   return null;
 }
 
-// Thêm hàm tạo bản đồ vị trí cho các URL đã xử lý
-function createPositionMap(originalData, processedFiles) {
+// Thêm hàm trích xuất ID Google Drive từ URL
+function extractGoogleDriveId(url) {
+  if (!url) return null;
+  if (!url.includes('drive.google.com/file/d/')) return null;
+  
+  try {
+    const match = url.match(/\/file\/d\/([^\/\?#]+)/);
+    return match ? match[1] : null;
+  } catch (error) {
+    console.error(`❌ Lỗi khi trích xuất Google Drive ID từ URL: ${url}`, error);
+    return null;
+  }
+}
+
+// Thêm hàm tạo bản đồ vị trí cho các URL đã xử lý từ originalData
+function createPositionMap(originalData) {
   // Lưu trữ các link đã xử lý theo vị trí
   const positionMap = new Map();
   
@@ -187,24 +201,49 @@ function createPositionMap(originalData, processedFiles) {
   // Duyệt qua toàn bộ dữ liệu để tìm vị trí của link đã xử lý
   originalData.sheets.forEach((sheet, sheetIndex) => {
     const sheetTitle = sheet?.properties?.title || `Sheet ${sheetIndex + 1}`;
+    console.log(`🔍 [PATCH] Đang quét sheet "${sheetTitle}"`);
     
     if (sheet.data && Array.isArray(sheet.data)) {
-      sheet.data.forEach((sheetData) => {
+      sheet.data.forEach((sheetData, dataIndex) => {
+        console.log(`🔍 [PATCH] Đang quét data #${dataIndex} trong sheet "${sheetTitle}"`);
+        
         if (sheetData.rowData && Array.isArray(sheetData.rowData)) {
+          console.log(`🔍 [PATCH] Số hàng trong data #${dataIndex}: ${sheetData.rowData.length}`);
+          
           sheetData.rowData.forEach((row, rowIndex) => {
             if (row.values && Array.isArray(row.values)) {
               row.values.forEach((cell, cellIndex) => {
                 const originalUrl = cell.userEnteredFormat?.textFormat?.link?.uri || cell.hyperlink;
                 
+                // Kiểm tra xem cell này có chứa link đã xử lý không
+                // Kiểm tra cả các trường cũ và mới
+                const processedUrl = cell.processedUrl || 
+                                   (cell.processedLinks && cell.processedLinks.url);
+                const processedAt = cell.processedAt || 
+                                   (cell.processedLinks && cell.processedLinks.processedAt);
+                
+                // Lưu TẤT CẢ các vị trí có link, kể cả chưa xử lý để bảo toàn cấu trúc
                 if (originalUrl) {
-                  // Tìm trong danh sách processedFiles
-                  const processedFile = processedFiles.find(file => file.originalUrl === originalUrl);
+                  // Tạo khóa vị trí
+                  const positionKey = `${sheetTitle}|${rowIndex}|${cellIndex}`;
                   
-                  if (processedFile) {
-                    // Tạo khóa vị trí
-                    const positionKey = `${sheetTitle}|${rowIndex}|${cellIndex}`;
-                    positionMap.set(positionKey, processedFile);
+                  // Lưu thông tin về link
+                  positionMap.set(positionKey, {
+                    originalUrl: originalUrl,
+                    processedUrl: processedUrl || null,
+                    processedAt: processedAt || null,
+                    isProcessed: !!processedUrl,
+                    position: {
+                      sheet: sheetTitle,
+                      row: rowIndex,
+                      col: cellIndex
+                    }
+                  });
+                  
+                  if (processedUrl) {
                     console.log(`📍 [PATCH] Đã lưu vị trí cho link đã xử lý: ${positionKey}`);
+                    console.log(`   - URL gốc: ${originalUrl.substring(0, 50)}...`);
+                    console.log(`   - URL đã xử lý: ${processedUrl.substring(0, 50)}...`);
                   }
                 }
               });
@@ -215,7 +254,43 @@ function createPositionMap(originalData, processedFiles) {
     }
   });
   
-  console.log(`📊 [PATCH] Đã tạo bản đồ vị trí với ${positionMap.size} entries`);
+  // Kiểm tra trong processedDriveFiles nếu chưa tìm thấy link đã xử lý nào
+  const processedCount = Array.from(positionMap.values()).filter(item => item.isProcessed).length;
+  
+  if (processedCount === 0) {
+    console.log(`⚠️ [PATCH] Không tìm thấy link đã xử lý trong originalData, đang kiểm tra trong processedDriveFiles...`);
+    
+    // Kiểm tra xem có processedDriveFiles không
+    if (originalData.processedDriveFiles && Array.isArray(originalData.processedDriveFiles) && originalData.processedDriveFiles.length > 0) {
+      console.log(`🔍 [PATCH] Tìm thấy ${originalData.processedDriveFiles.length} link đã xử lý trong processedDriveFiles`);
+      
+      // Chuyển từ processedDriveFiles sang positionMap
+      originalData.processedDriveFiles.forEach((file, index) => {
+        // Nếu có thông tin position
+        if (file.position && file.position.sheet && typeof file.position.row === 'number' && typeof file.position.col === 'number') {
+          const positionKey = `${file.position.sheet}|${file.position.row}|${file.position.col}`;
+          
+          positionMap.set(positionKey, {
+            originalUrl: file.originalUrl,
+            processedUrl: file.processedUrl,
+            processedAt: file.processedAt || new Date(),
+            isProcessed: true,
+            position: file.position
+          });
+          
+          console.log(`📍 [PATCH] Đã thêm từ processedDriveFiles: ${positionKey}`);
+        } else {
+          console.log(`⚠️ [PATCH] File #${index} không có thông tin vị trí: ${file.originalUrl.substring(0, 50)}...`);
+        }
+      });
+    } else {
+      console.log(`⚠️ [PATCH] Không tìm thấy processedDriveFiles hoặc mảng trống`);
+    }
+  }
+  
+  // Cập nhật lại số lượng link đã xử lý
+  const finalProcessedCount = Array.from(positionMap.values()).filter(item => item.isProcessed).length;
+  console.log(`📊 [PATCH] Đã tạo bản đồ vị trí với ${positionMap.size} entries tổng, ${finalProcessedCount} đã xử lý`);
   return positionMap;
 }
 
@@ -528,13 +603,62 @@ export async function PATCH(request, { params }) {
     
     console.log('✅ [PATCH] Đã tìm thấy khóa học:', existingCourse._id.toString());
     
-    // Lưu danh sách các file đã xử lý từ khóa học hiện tại
-    const processedFiles = existingCourse.processedDriveFiles || [];
-    console.log(`📊 [PATCH] Số lượng file đã xử lý từ dữ liệu cũ: ${processedFiles.length}`);
+    // Kiểm tra dữ liệu originalData
+    console.log('=== THÔNG TIN DỮ LIỆU GỐC ===');
+    const hasOriginalData = !!existingCourse.originalData;
+    console.log('1. Có dữ liệu gốc:', hasOriginalData);
     
-    // Thay đổi: Tạo bản đồ vị trí thay vì bản đồ URL
-    const positionMap = createPositionMap(existingCourse.originalData, processedFiles);
+    if (hasOriginalData) {
+      const sheetCount = existingCourse.originalData.sheets?.length || 0;
+      console.log('2. Số lượng sheets trong dữ liệu gốc:', sheetCount);
+      
+      if (sheetCount > 0) {
+        const sampleSheet = existingCourse.originalData.sheets[0];
+        const rowCount = sampleSheet?.data?.[0]?.rowData?.length || 0;
+        console.log('3. Số lượng hàng trong sheet đầu tiên:', rowCount);
+        
+        // Kiểm tra xem có link đã xử lý trong dữ liệu gốc không
+        let processedLinkCount = 0;
+        if (sampleSheet?.data?.[0]?.rowData) {
+          sampleSheet.data[0].rowData.forEach(row => {
+            if (row.values) {
+              row.values.forEach(cell => {
+                const processedUrl = cell.processedUrl || (cell.processedLinks && cell.processedLinks.url);
+                if (processedUrl) processedLinkCount++;
+              });
+            }
+          });
+        }
+        console.log('4. Số lượng link đã xử lý tìm thấy trong sheet đầu tiên:', processedLinkCount);
+      }
+    }
+    
+    // Tạo bản đồ vị trí từ dữ liệu gốc (chứa cả link đã xử lý)
+    const positionMap = createPositionMap(existingCourse.originalData);
     console.log(`📊 [PATCH] Đã tạo bản đồ vị trí với ${positionMap.size} vị trí đã xử lý`);
+    
+    // Log chi tiết về positionMap để debug
+    console.log('=== THÔNG TIN CHI TIẾT POSITION MAP ===');
+    const positionKeys = Array.from(positionMap.keys());
+    console.log('1. Số lượng vị trí trong map:', positionKeys.length);
+    
+    if (positionKeys.length > 0) {
+      console.log('2. Mẫu vài vị trí đầu tiên:', positionKeys.slice(0, 5));
+      
+      // Phân tích định dạng key
+      const keySample = positionKeys[0];
+      const keyParts = keySample.split('|');
+      console.log('3. Định dạng key:', {
+        sheet: keyParts[0],
+        row: keyParts[1],
+        col: keyParts[2],
+        full: keySample
+      });
+      
+      // Lấy mẫu giá trị của position đầu tiên
+      const firstPositionValue = positionMap.get(positionKeys[0]);
+      console.log('4. Mẫu dữ liệu tại vị trí đầu tiên:', firstPositionValue);
+    }
     
     // Khai báo biến để lưu dữ liệu Kimvan
     let kimvanData;
@@ -625,38 +749,86 @@ export async function PATCH(request, { params }) {
               sheetData.rowData.forEach((row, rowIndex) => {
                 if (row.values && Array.isArray(row.values)) {
                   row.values.forEach((cell, cellIndex) => {
-                    // Kiểm tra nếu cell có link
+                    // Kiểm tra nếu cell có link hoặc đã bị xóa link
                     const originalUrl = cell.userEnteredFormat?.textFormat?.link?.uri || cell.hyperlink;
-                    if (originalUrl) {
+                    const wasLinkRemoved = cell.linkRemoved === true;
+                    
+                    if (originalUrl || wasLinkRemoved) {
                       totalLinks++;
                       
-                      // Tạo khóa vị trí tương ứng
+                      // Kiểm tra xem link có được đánh dấu là giả không từ API spreadsheets
+                      const isFakeLink = cell.isFakeLink === true;
+                      
+                      if (isFakeLink || wasLinkRemoved) {
+                        console.log(`🚫 [PATCH] ${wasLinkRemoved ? 'Link giả mạo đã bị xóa' : 'Phát hiện link giả mạo'} tại Sheet ${sheetTitle}, Hàng ${rowIndex + 1}, Cột ${cellIndex + 1}`);
+                      }
+                      
+                      // CHỈ sử dụng vị trí để tìm kiếm, bỏ qua nội dung URL
                       const positionKey = `${sheetTitle}|${rowIndex}|${cellIndex}`;
                       
-                      // Tìm kiếm URL đã xử lý dựa trên vị trí
+                      // Tìm kiếm dựa trên vị trí
                       if (positionMap.has(positionKey)) {
-                        const processedFile = positionMap.get(positionKey);
-                        processedLinksInNewData++;
+                        const processedInfo = positionMap.get(positionKey);
                         
-                        // Thêm thông tin về file đã xử lý vào cell - ĐẢM BẢO LƯU VÀO MONGODB
-                        // Cần đảm bảo thuộc tính này được lưu vào schema MongoDB
+                        // Kiểm tra xem có processedUrl không và nó không phải null
+                        if (processedInfo.isProcessed && processedInfo.processedUrl) {
+                          processedLinksInNewData++;
+                          
+                          // Thêm thông tin về file đã xử lý vào cell - ĐẢM BẢO LƯU VÀO MONGODB
+                          if (!cell.processedLinks) {
+                            cell.processedLinks = {};
+                          }
+                          cell.processedLinks.url = processedInfo.processedUrl;
+                          cell.processedLinks.processedAt = processedInfo.processedAt;
+                          // Thêm thông tin vị trí để dễ truy xuất sau này
+                          cell.processedLinks.position = {
+                            sheet: sheetTitle,
+                            row: rowIndex,
+                            col: cellIndex
+                          };
+                          
+                          // Cách cũ - có thể bị MongoDB bỏ qua
+                          cell.processedUrl = processedInfo.processedUrl;
+                          cell.processedAt = processedInfo.processedAt;
+                          
+                          console.log(`✅ [PATCH] Sheet ${sheetTitle}, Hàng ${rowIndex + 1}, Cột ${cellIndex + 1}: Đã áp dụng link đã xử lý theo vị trí`);
+                          if (wasLinkRemoved) {
+                            console.log(`   - Link gốc: [Đã xóa link giả mạo]`);
+                          } else if (isFakeLink) {
+                            console.log(`   - Link gốc (giả mạo): ${originalUrl.substring(0, 50)}...`);
+                          } else {
+                            console.log(`   - Link gốc (mới): ${originalUrl.substring(0, 50)}...`);
+                          }
+                          console.log(`   - Link gốc (cũ/thật): ${processedInfo.originalUrl.substring(0, 50)}...`);
+                          console.log(`   - Link đã xử lý: ${processedInfo.processedUrl.substring(0, 50)}...`);
+                        } else {
+                          // Tìm thấy vị trí khớp nhưng không có link đã xử lý
+                          // => Giữ nguyên cấu trúc, không cập nhật gì
+                          console.log(`ℹ️ [PATCH] Sheet ${sheetTitle}, Hàng ${rowIndex + 1}, Cột ${cellIndex + 1}: Giữ nguyên vị trí đã có (chưa xử lý)`);
+                          
+                          // Vẫn giữ thông tin vị trí để sử dụng sau này
+                          if (!cell.processedLinks) {
+                            cell.processedLinks = {};
+                          }
+                          cell.processedLinks.position = {
+                            sheet: sheetTitle,
+                            row: rowIndex,
+                            col: cellIndex
+                          };
+                        }
+                      } else {
+                        // Không tìm thấy vị trí trong dữ liệu cũ => hàng mới cần thêm vào
+                        console.log(`➕ [PATCH] Sheet ${sheetTitle}, Hàng ${rowIndex + 1}, Cột ${cellIndex + 1}: Thêm vị trí mới (chưa xử lý)`);
+                        
+                        // Lưu lại vị trí để sử dụng sau này
                         if (!cell.processedLinks) {
                           cell.processedLinks = {};
                         }
-                        cell.processedLinks.url = processedFile.processedUrl;
-                        cell.processedLinks.processedAt = processedFile.processedAt;
-                        
-                        // Cách cũ - có thể bị MongoDB bỏ qua
-                        cell.processedUrl = processedFile.processedUrl;
-                        cell.processedAt = processedFile.processedAt;
-                        
-                        console.log(`✅ [PATCH] Sheet ${sheetTitle}, Hàng ${rowIndex + 1}, Cột ${cellIndex + 1}: Đã áp dụng link đã xử lý`);
-                        console.log(`   - Link gốc (mới): ${originalUrl.substring(0, 50)}...`);
-                        console.log(`   - Link gốc (cũ): ${processedFile.originalUrl.substring(0, 50)}...`);
-                        console.log(`   - Link đã xử lý: ${processedFile.processedUrl.substring(0, 50)}...`);
-                      } else {
-                        console.log(`ℹ️ [PATCH] Sheet ${sheetTitle}, Hàng ${rowIndex + 1}, Cột ${cellIndex + 1}: Không tìm thấy link đã xử lý cho vị trí này`);
-                        console.log(`   - Link: ${originalUrl.substring(0, 50)}...`);
+                        cell.processedLinks.position = {
+                          sheet: sheetTitle,
+                          row: rowIndex,
+                          col: cellIndex
+                        };
                       }
                     }
                   });
@@ -699,8 +871,8 @@ export async function PATCH(request, { params }) {
       status: existingCourse.status || 'active',
       createdAt: existingCourse.createdAt || new Date(),
       updatedAt: new Date(),
-      processedDriveFiles: processedFiles, // Giữ nguyên danh sách file đã xử lý
-      originalData: kimvanData // Dữ liệu mới đã được ghi đè thông tin xử lý
+      processedDriveFiles: existingCourse.processedDriveFiles || [],
+      originalData: kimvanData
     };
     
     // Thêm log để kiểm tra xem dữ liệu đã xử lý đúng chưa
@@ -718,7 +890,7 @@ export async function PATCH(request, { params }) {
         totalLinks,
         processedLinks: processedLinksInNewData,
         totalSheets: kimvanData.sheets?.length || 0,
-        preservedProcessedFiles: processedFiles.length
+        preservedProcessedFiles: positionMap.size
       },
       sampleSheet: kimvanData.sheets && kimvanData.sheets.length > 0 
         ? {
@@ -731,6 +903,27 @@ export async function PATCH(request, { params }) {
       allLinks: {
         processed: [],
         unprocessed: []
+      },
+      // Thêm danh sách processedLinks để có thể phân tích
+      processedLinks: Array.from(positionMap.entries()).map(([key, value]) => {
+        const parts = key.split('|');
+        return {
+          position: {
+            key,
+            sheet: parts[0],
+            row: parseInt(parts[1]),
+            col: parseInt(parts[2])
+          },
+          originalUrl: value.originalUrl,
+          processedUrl: value.processedUrl,
+          processedAt: value.processedAt
+        };
+      }),
+      // Thêm thông tin về link giả mạo
+      fakeLinksInfo: {
+        detectionEnabled: true,
+        removalEnabled: true,
+        message: "API KimVan trả về các link giả mạo. Các link giả mạo đã bị xóa hoàn toàn khỏi dữ liệu."
       }
     };
     
@@ -746,30 +939,50 @@ export async function PATCH(request, { params }) {
                 if (row.values && Array.isArray(row.values)) {
                   row.values.forEach((cell, cellIndex) => {
                     const originalUrl = cell.userEnteredFormat?.textFormat?.link?.uri || cell.hyperlink;
-                    if (originalUrl) {
-                      const displayText = cell.formattedValue || originalUrl;
+                    const wasLinkRemoved = cell.linkRemoved === true;
+                    
+                    if (originalUrl || wasLinkRemoved) {
+                      const displayText = cell.formattedValue || "Link đã bị xóa";
                       const position = {
                         sheet: sheetTitle,
                         row: rowIndex,
                         col: cellIndex
                       };
                       
+                      // Kiểm tra xem link có được đánh dấu là giả không
+                      const isFakeLink = cell.isFakeLink === true;
+                      
+                      // Kiểm tra nếu vị trí này có trong positionMap
+                      const positionKey = `${sheetTitle}|${rowIndex}|${cellIndex}`;
+                      const hasProcessedLink = positionMap.has(positionKey);
+                      
                       // Sửa đoạn này để kiểm tra cả hai thuộc tính
-                      if (cell.processedUrl || (cell.processedLinks && cell.processedLinks.url)) {
+                      if (cell.processedUrl || (cell.processedLinks && cell.processedLinks.url) || hasProcessedLink) {
                         // Link đã xử lý
+                        const processedLink = hasProcessedLink ? positionMap.get(positionKey) : null;
+                        
                         previewData.allLinks.processed.push({
-                          originalUrl,
-                          processedUrl: cell.processedUrl || cell.processedLinks.url,
-                          processedAt: cell.processedAt || cell.processedLinks.processedAt,
+                          originalUrl: originalUrl || "[Link đã bị xóa]",
+                          processedUrl: cell.processedUrl || 
+                                       (cell.processedLinks && cell.processedLinks.url) || 
+                                       (processedLink && processedLink.processedUrl),
+                          processedAt: cell.processedAt || 
+                                      (cell.processedLinks && cell.processedLinks.processedAt) || 
+                                      (processedLink && processedLink.processedAt),
                           displayText,
-                          position
+                          position,
+                          fromPositionMap: hasProcessedLink,
+                          isFakeLink: isFakeLink,
+                          wasLinkRemoved: wasLinkRemoved
                         });
                       } else {
                         // Link chưa xử lý
                         previewData.allLinks.unprocessed.push({
-                          originalUrl,
+                          originalUrl: originalUrl || "[Link đã bị xóa]",
                           displayText,
-                          position
+                          position,
+                          isFakeLink: isFakeLink,
+                          wasLinkRemoved: wasLinkRemoved
                         });
                       }
                     }
@@ -799,6 +1012,68 @@ export async function PATCH(request, { params }) {
     // Nếu không phải chế độ xem trước, cập nhật database
     console.log('💾 [PATCH] Cập nhật dữ liệu vào database');
     
+    // Trước khi cập nhật dữ liệu, đảm bảo giữ lại thông tin processedDriveFiles hiện có
+    newCourseData.processedDriveFiles = existingCourse.processedDriveFiles || [];
+    
+    // Thêm thông tin từ positionMap vào processedDriveFiles nếu chưa có
+    // Việc này giúp lưu trữ thông tin vị trí cho các lần đồng bộ sau
+    if (positionMap.size > 0) {
+      console.log(`📝 [PATCH] Cập nhật thông tin vị trí vào processedDriveFiles`);
+      
+      // Lấy tất cả các entry từ positionMap, kể cả chưa xử lý
+      // Chỉ cần đảm bảo có thông tin vị trí
+      const allEntries = Array.from(positionMap.entries())
+        .map(([key, value]) => {
+          const parts = key.split('|');
+          return {
+            originalUrl: value.originalUrl,
+            processedUrl: value.processedUrl, // Có thể null
+            processedAt: value.processedAt, // Có thể null
+            position: {
+              sheet: parts[0],
+              row: parseInt(parts[1]),
+              col: parseInt(parts[2])
+            }
+          };
+        });
+      
+      // Tạo Map cho các processedDriveFiles hiện có để dễ dàng tìm kiếm
+      const existingFilesByPosition = {};
+      newCourseData.processedDriveFiles.forEach(file => {
+        if (file.position) {
+          const posKey = `${file.position.sheet}|${file.position.row}|${file.position.col}`;
+          existingFilesByPosition[posKey] = file;
+        }
+      });
+      
+      // Thêm hoặc cập nhật các entries
+      allEntries.forEach(entry => {
+        const posKey = `${entry.position.sheet}|${entry.position.row}|${entry.position.col}`;
+        
+        if (existingFilesByPosition[posKey]) {
+          // Vị trí đã tồn tại, kiểm tra xem có cần cập nhật không
+          const existingFile = existingFilesByPosition[posKey];
+          
+          // Chỉ cập nhật nếu có dữ liệu mới
+          if (entry.processedUrl && entry.processedUrl !== existingFile.processedUrl) {
+            existingFile.processedUrl = entry.processedUrl;
+            existingFile.processedAt = entry.processedAt || new Date();
+            console.log(`🔄 [PATCH] Đã cập nhật link đã xử lý cho vị trí ${posKey}`);
+          }
+          
+          // Luôn cập nhật originalUrl mới (URL từ API)
+          existingFile.originalUrl = entry.originalUrl;
+        } 
+        else if (!existingFilesByPosition[posKey]) {
+          // Vị trí chưa tồn tại, thêm mới vào processedDriveFiles
+          newCourseData.processedDriveFiles.push(entry);
+          console.log(`➕ [PATCH] Đã thêm vị trí mới vào processedDriveFiles: ${posKey}`);
+        }
+      });
+      
+      console.log(`📊 [PATCH] processedDriveFiles sau khi cập nhật: ${newCourseData.processedDriveFiles.length} entries`);
+    }
+    
     // Đảm bảo dữ liệu processed links được lưu đúng cách
     // Chuyển đổi đối tượng sang chuỗi JSON và ngược lại để bảo toàn tất cả thuộc tính
     const serializedData = JSON.stringify(kimvanData);
@@ -806,6 +1081,111 @@ export async function PATCH(request, { params }) {
     newCourseData.originalData = deserializedData;
     
     console.log(`🔧 [PATCH] Dữ liệu đã được serialize để đảm bảo lưu đúng các link đã xử lý`);
+    
+    // Cập nhật thông tin về processedLinks cho previewData
+    if (previewMode) {
+      // Thống kê số lượng link giả mạo
+      let fakeLinksCount = 0;
+      let removedLinksCount = 0;
+      let totalProcessedFakeLinks = 0;
+      let totalProcessedRemovedLinks = 0;
+      
+      // Đếm trong processed links
+      if (previewData.allLinks && previewData.allLinks.processed) {
+        totalProcessedFakeLinks = previewData.allLinks.processed.filter(link => link.isFakeLink).length;
+        totalProcessedRemovedLinks = previewData.allLinks.processed.filter(link => link.wasLinkRemoved).length;
+        fakeLinksCount += totalProcessedFakeLinks;
+        removedLinksCount += totalProcessedRemovedLinks;
+      }
+      
+      // Đếm trong unprocessed links
+      let totalUnprocessedFakeLinks = 0;
+      let totalUnprocessedRemovedLinks = 0;
+      if (previewData.allLinks && previewData.allLinks.unprocessed) {
+        totalUnprocessedFakeLinks = previewData.allLinks.unprocessed.filter(link => link.isFakeLink).length;
+        totalUnprocessedRemovedLinks = previewData.allLinks.unprocessed.filter(link => link.wasLinkRemoved).length;
+        fakeLinksCount += totalUnprocessedFakeLinks;
+        removedLinksCount += totalUnprocessedRemovedLinks;
+      }
+      
+      // Thêm debug info
+      previewData.debug = {
+        positionMapInfo: {
+          totalEntries: positionMap.size,
+          processedEntries: Array.from(positionMap.values()).filter(v => v.isProcessed).length,
+          sampleEntries: Array.from(positionMap.entries()).slice(0, 5).map(([key, value]) => ({
+            key,
+            originalUrl: value.originalUrl ? value.originalUrl.substring(0, 50) + '...' : null,
+            processedUrl: value.processedUrl ? value.processedUrl.substring(0, 50) + '...' : null,
+            isProcessed: value.isProcessed
+          }))
+        },
+        matchingStats: {
+          totalLinks,
+          processedMatches: processedLinksInNewData,
+          totalFakeLinks: fakeLinksCount,
+          totalRemovedLinks: removedLinksCount,
+          processedFakeLinks: totalProcessedFakeLinks,
+          processedRemovedLinks: totalProcessedRemovedLinks,
+          unprocessedFakeLinks: totalUnprocessedFakeLinks,
+          unprocessedRemovedLinks: totalUnprocessedRemovedLinks
+        }
+      };
+      
+      // Thêm thông tin từ processedDriveFiles nếu có
+      if (existingCourse.processedDriveFiles && Array.isArray(existingCourse.processedDriveFiles)) {
+        console.log(`🔍 [PATCH] Đang thêm thông tin từ ${existingCourse.processedDriveFiles.length} processedDriveFiles vào previewData`);
+        
+        // Thêm debug info về processedDriveFiles
+        previewData.debug.processedDriveFilesInfo = {
+          totalFiles: existingCourse.processedDriveFiles.length,
+          filesWithPosition: existingCourse.processedDriveFiles.filter(f => f.position).length,
+          sampleFiles: existingCourse.processedDriveFiles.slice(0, 5).map(f => ({
+            originalUrl: f.originalUrl ? f.originalUrl.substring(0, 50) + '...' : null,
+            processedUrl: f.processedUrl ? f.processedUrl.substring(0, 50) + '...' : null,
+            hasPosition: !!f.position,
+            position: f.position ? `${f.position.sheet}|${f.position.row}|${f.position.col}` : null
+          }))
+        };
+        
+        // Chuyển đổi processedDriveFiles thành dạng phù hợp với previewData.processedLinks
+        const additionalLinks = existingCourse.processedDriveFiles
+          .filter(file => file.position && file.position.sheet && typeof file.position.row === 'number' && typeof file.position.col === 'number')
+          .map(file => ({
+            position: {
+              key: `${file.position.sheet}|${file.position.row}|${file.position.col}`,
+              sheet: file.position.sheet,
+              row: file.position.row,
+              col: file.position.col
+            },
+            originalUrl: file.originalUrl,
+            processedUrl: file.processedUrl,
+            processedAt: file.processedAt || new Date(),
+            fromProcessedDriveFiles: true
+          }));
+        
+        console.log(`✅ [PATCH] Đã tìm thấy ${additionalLinks.length} link có thông tin vị trí trong processedDriveFiles`);
+        
+        // Thêm vào previewData.processedLinks nếu chưa có
+        if (additionalLinks.length > 0) {
+          // Tạo Map từ processedLinks hiện có để dễ dàng kiểm tra trùng lặp
+          const existingPositionKeys = new Set(
+            previewData.processedLinks.map(link => `${link.position.sheet}|${link.position.row}|${link.position.col}`)
+          );
+          
+          // Thêm các link không trùng lặp
+          additionalLinks.forEach(link => {
+            const posKey = `${link.position.sheet}|${link.position.row}|${link.position.col}`;
+            if (!existingPositionKeys.has(posKey)) {
+              previewData.processedLinks.push(link);
+              console.log(`➕ [PATCH] Đã thêm link từ processedDriveFiles vào previewData.processedLinks: ${posKey}`);
+            }
+          });
+          
+          console.log(`📊 [PATCH] Tổng số link trong previewData.processedLinks sau khi cập nhật: ${previewData.processedLinks.length}`);
+        }
+      }
+    }
     
     const result = await Course.replaceOne(
       { kimvanId: id },
@@ -830,7 +1210,9 @@ export async function PATCH(request, { params }) {
       stats: {
         totalLinks,
         processedLinks: processedLinksInNewData,
-        preservedProcessedFiles: processedFiles.length
+        preservedProcessedFiles: positionMap.size,
+        fakeLinksHandled: true,
+        fakeLinksRemoved: true
       },
       updatedFields: Object.keys(newCourseData)
     });
