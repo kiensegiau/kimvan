@@ -615,20 +615,31 @@ export default function CourseDetailPage({ params }) {
     const rowData = {};
     headerRow.values.forEach((headerCell, idx) => {
       const headerName = headerCell.formattedValue || `Cột ${idx + 1}`;
-      // Ưu tiên lấy giá trị từ link.uri vì hyperlink có thể bị mã hóa
       const cell = dataRow.values[idx] || {};
-      let value = cell.formattedValue || '';
       
-      // Lấy URL từ link.uri nếu có (ưu tiên cao nhất)
-      if (cell.userEnteredFormat?.textFormat?.link?.uri) {
-        value = cell.userEnteredFormat.textFormat.link.uri;
-      } 
-      // Nếu không có link.uri, thử lấy từ hyperlink (nếu là URL thật, không phải mã hóa)
-      else if (cell.hyperlink && cell.hyperlink.startsWith('http')) {
-        value = cell.hyperlink;
+      // Với các trường link, lưu trữ cả displayText và url
+      const isLinkField = headerName.toLowerCase().includes('link') || 
+                         headerName.toLowerCase().includes('video') || 
+                         headerName.toLowerCase().includes('tài liệu');
+      
+      if (isLinkField) {
+        // Lấy URL từ link.uri nếu có (ưu tiên cao nhất)
+        let url = '';
+        if (cell.userEnteredFormat?.textFormat?.link?.uri) {
+          url = cell.userEnteredFormat.textFormat.link.uri;
+        } else if (cell.hyperlink && cell.hyperlink.startsWith('http')) {
+          url = cell.hyperlink;
+        }
+        
+        // Lưu cả displayText và url riêng biệt
+        rowData[headerName] = {
+          displayText: cell.formattedValue || '',
+          url: url
+        };
+      } else {
+        // Các trường bình thường
+        rowData[headerName] = cell.formattedValue || '';
       }
-      
-      rowData[headerName] = value;
     });
     
     setEditRowData(rowData);
@@ -637,11 +648,27 @@ export default function CourseDetailPage({ params }) {
   };
   
   // Hàm thay đổi giá trị khi sửa hàng
-  const handleEditRowChange = (header, value) => {
-    setEditRowData(prev => ({
-      ...prev,
-      [header]: value
-    }));
+  const handleEditRowChange = (header, value, field = null) => {
+    setEditRowData(prev => {
+      // Nếu đây là trường link và chỉ định field (displayText hoặc url)
+      if (field) {
+        const currentValue = prev[header] || { displayText: '', url: '' };
+        return {
+          ...prev,
+          [header]: {
+            ...currentValue,
+            [field]: value
+          }
+        };
+      } 
+      // Nếu đây là trường thông thường
+      else {
+        return {
+          ...prev,
+          [header]: value
+        };
+      }
+    });
   };
   
   // Hàm cập nhật hàng đã sửa
@@ -651,37 +678,53 @@ export default function CourseDetailPage({ params }) {
     try {
       setUpdatingRow(true);
       
-      // Chuyển đổi dữ liệu từ form sang định dạng phù hợp
+      // Lấy dữ liệu hàng hiện tại và dữ liệu header
       const headerRow = course.originalData.sheets[activeSheet].data[0].rowData[0];
-      // Lấy dữ liệu hàng hiện tại để giữ lại cấu trúc
       const currentRow = course.originalData.sheets[activeSheet].data[0].rowData[editingRowIndex + 1];
-      const rowValues = [];
       
+      // Clone dữ liệu hàng hiện tại để giữ nguyên cấu trúc
+      const rowValues = JSON.parse(JSON.stringify(currentRow.values || []));
+      
+      // Cập nhật từng ô dựa trên dữ liệu đã sửa
       if (headerRow && headerRow.values) {
-        headerRow.values.forEach((cell, idx) => {
-          const headerName = cell.formattedValue || '';
-          const value = editRowData[headerName] || '';
-          const currentCell = currentRow?.values?.[idx] || {};
+        headerRow.values.forEach((headerCell, idx) => {
+          const headerName = headerCell.formattedValue || '';
+          const newValue = editRowData[headerName];
           
-          // Kiểm tra nếu giá trị là URL
-          if (value && (value.startsWith('http://') || value.startsWith('https://'))) {
-            rowValues.push({
-              formattedValue: value.split('/').pop() || value, // Giữ lại phần hiển thị ngắn hơn
-              hyperlink: value,
-              userEnteredFormat: {
-                ...(currentCell.userEnteredFormat || {}),
-                textFormat: {
-                  ...(currentCell.userEnteredFormat?.textFormat || {}),
-                  link: { uri: value }
-                }
+          if (!rowValues[idx]) {
+            rowValues[idx] = { formattedValue: '' };
+          }
+          
+          // Kiểm tra xem đây có phải là trường link không
+          const isLinkField = headerName.toLowerCase().includes('link') || 
+                             headerName.toLowerCase().includes('video') || 
+                             headerName.toLowerCase().includes('tài liệu') ||
+                             headerName.toLowerCase().includes('sách');
+          
+          if (isLinkField && typeof newValue === 'object') {
+            // Cập nhật formattedValue từ displayText
+            if (newValue.displayText) {
+              rowValues[idx].formattedValue = newValue.displayText;
+            }
+            
+            // Cập nhật URL
+            if (newValue.url) {
+              rowValues[idx].hyperlink = newValue.url;
+              if (!rowValues[idx].userEnteredFormat) rowValues[idx].userEnteredFormat = {};
+              if (!rowValues[idx].userEnteredFormat.textFormat) rowValues[idx].userEnteredFormat.textFormat = {};
+              rowValues[idx].userEnteredFormat.textFormat.link = { uri: newValue.url };
+            } else {
+              // Nếu URL bị xóa
+              delete rowValues[idx].hyperlink;
+              if (rowValues[idx].userEnteredFormat?.textFormat) {
+                delete rowValues[idx].userEnteredFormat.textFormat.link;
               }
-            });
+            }
           } else {
-            // Giữ lại định dạng cũ nhưng cập nhật giá trị
-            rowValues.push({
-              formattedValue: value,
-              ...(currentCell.userEnteredFormat ? { userEnteredFormat: currentCell.userEnteredFormat } : {})
-            });
+            // Trường thông thường
+            if (typeof newValue === 'string') {
+              rowValues[idx].formattedValue = newValue;
+            }
           }
         });
       }
@@ -2510,49 +2553,74 @@ export default function CourseDetailPage({ params }) {
                             className="max-w-lg block w-full shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border-gray-300 rounded-md"
                           />
                         ) : header.toLowerCase().includes('link') || header.toLowerCase().includes('video') || header.toLowerCase().includes('sách') || header.toLowerCase().includes('tài liệu') ? (
-                          // Các trường chứa link
-                          <div className="space-y-2">
-                            <div className="flex items-center space-x-2">
+                          // Các trường chứa link - hiển thị 2 input riêng biệt
+                          <div className="space-y-4">
+                            {/* Input cho tiêu đề hiển thị */}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-500 mb-1">
+                                Tiêu đề hiển thị:
+                              </label>
                               <input
                                 type="text"
-                                value={editRowData[header]}
-                                onChange={(e) => handleEditRowChange(header, e.target.value)}
-                                className="max-w-lg block w-full shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border-gray-300 rounded-md bg-blue-50"
-                                placeholder="Nhập URL (https://...)"
+                                value={editRowData[header]?.displayText || ''}
+                                onChange={(e) => handleEditRowChange(header, e.target.value, 'displayText')}
+                                className="max-w-lg block w-full shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border-gray-300 rounded-md"
+                                placeholder="Nhập tiêu đề hiển thị"
                               />
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  // Thêm protocol nếu chưa có
-                                  let url = editRowData[header].trim();
-                                  if (url && !url.match(/^https?:\/\//)) {
-                                    url = 'https://' + url;
-                                    handleEditRowChange(header, url);
-                                  }
-                                }}
-                                className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                                </svg>
-                                Xác nhận URL
-                              </button>
                             </div>
-                            {editRowData[header] && (
-                              <div className="flex items-center p-2 bg-gray-50 rounded">
-                                <a 
-                                  href={editRowData[header]}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-sm text-blue-600 hover:text-blue-800 break-all"
+                            
+                            {/* Input cho URL */}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-500 mb-1">
+                                URL liên kết:
+                              </label>
+                              <div className="flex items-center space-x-2">
+                                <input
+                                  type="text"
+                                  value={editRowData[header]?.url || ''}
+                                  onChange={(e) => handleEditRowChange(header, e.target.value, 'url')}
+                                  className="max-w-lg block w-full shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border-gray-300 rounded-md bg-blue-50"
+                                  placeholder="Nhập URL (https://...)"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    // Thêm protocol nếu chưa có
+                                    let url = editRowData[header]?.url?.trim() || '';
+                                    if (url && !url.match(/^https?:\/\//)) {
+                                      url = 'https://' + url;
+                                      handleEditRowChange(header, url, 'url');
+                                    }
+                                  }}
+                                  className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
                                 >
-                                  {editRowData[header]}
-                                </a>
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                                  </svg>
+                                  Xác nhận URL
+                                </button>
+                              </div>
+                            </div>
+                            
+                            {/* Xem trước liên kết */}
+                            {editRowData[header]?.url && (
+                              <div className="flex items-center p-2 bg-gray-50 rounded">
+                                <div className="flex flex-col">
+                                  <span className="text-sm font-medium">Xem trước: </span>
+                                  <a 
+                                    href={editRowData[header].url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-sm text-blue-600 hover:text-blue-800 break-all"
+                                  >
+                                    {editRowData[header].displayText || editRowData[header].url}
+                                  </a>
+                                </div>
                                 <button
                                   type="button"
                                   onClick={() => {
                                     if (window.confirm('Bạn có chắc chắn muốn xóa liên kết này?')) {
-                                      handleEditRowChange(header, '');
+                                      handleEditRowChange(header, '', 'url');
                                     }
                                   }}
                                   className="ml-2 text-red-500 hover:text-red-700"
@@ -2562,7 +2630,7 @@ export default function CourseDetailPage({ params }) {
                               </div>
                             )}
                             <p className="text-xs text-gray-500">
-                              Nhập URL của tài liệu, video hoặc bất kỳ liên kết nào khác
+                              Nhập URL của tài liệu, video hoặc bất kỳ liên kết nào khác. Tiêu đề hiển thị sẽ được giữ nguyên.
                             </p>
                           </div>
                         ) : (
