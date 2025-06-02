@@ -805,7 +805,7 @@ export default function CourseDetailPage({ params }) {
 
   return (
     <div className="min-h-screen bg-gray-100 p-2 sm:p-6">
-      <div className="w-full max-w-full sm:max-w-7xl mx-auto bg-white rounded-lg shadow p-4 sm:p-8 relative">
+      <div className="bg-white rounded-lg shadow p-4 sm:p-8 relative">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
           <button
