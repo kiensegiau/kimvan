@@ -1237,6 +1237,16 @@ export default function CourseDetailPage({ params }) {
                         <span className="text-sm text-blue-700">Vuốt ngang để xem đầy đủ nội dung</span>
                       </div>
                       
+                      {/* Thông báo các link chưa được xử lý */}
+                      <div className="bg-red-50 p-3 border-b border-red-100 flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        <span className="text-sm text-red-700">
+                          Các mục <span className="font-bold">màu đỏ</span> là các liên kết chưa được xử lý/chưa có link thực (chứa ID mà không phải URL đầy đủ)
+                        </span>
+                      </div>
+                      
                       <div className="overflow-x-auto">
                         <table className="min-w-full w-full table-fixed divide-y divide-gray-200">
                           <thead>
@@ -1320,10 +1330,61 @@ export default function CourseDetailPage({ params }) {
                                                     handleLinkClick(url, cell.formattedValue);
                                                   }}
                                                   href={url}
-                                                  className="inline-flex items-center text-blue-600 font-medium hover:text-blue-800 transition-colors duration-150 group cursor-pointer"
+                                                  className={`inline-flex items-center font-medium hover:text-blue-800 transition-colors duration-150 group cursor-pointer ${
+                                                    // Kiểm tra xem URL có phải là link thực không
+                                                    (() => {
+                                                      // Là link giả nếu:
+                                                      // 1. Không bắt đầu bằng http:// hoặc https://
+                                                      // 2. Hoặc không chứa domain phổ biến (.com, .org, .vn, .net, v.v.)
+                                                      // 3. Hoặc chỉ là chuỗi ID dài 
+                                                      const isValidUrl = /^https?:\/\/[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,}(:[0-9]{1,5})?(\/.*)?$/i.test(url);
+                                                      const containsDomain = url.includes('.com') || 
+                                                                           url.includes('.org') || 
+                                                                           url.includes('.net') || 
+                                                                           url.includes('.edu') || 
+                                                                           url.includes('.gov') || 
+                                                                           url.includes('.vn') ||
+                                                                           url.includes('.io') ||
+                                                                           url.includes('.co') ||
+                                                                           url.includes('youtube.') ||
+                                                                           url.includes('youtu.be') ||
+                                                                           url.includes('drive.google.') ||
+                                                                           url.includes('docs.google.');
+                                                      
+                                                      // Link google docs/drive cần xử lý đặc biệt vì có cấu trúc phức tạp
+                                                      if (url.includes('drive.google.com') || url.includes('docs.google.com')) {
+                                                        return containsDomain ? "text-blue-600" : "text-red-600 bg-red-50 px-2 py-1 rounded";
+                                                      }
+                                                      
+                                                      // Nếu không phải là URL hợp lệ hoặc không chứa domain phổ biến
+                                                      return (isValidUrl && containsDomain) ? "text-blue-600" : "text-red-600 bg-red-50 px-2 py-1 rounded";
+                                                    })()
+                                                  }`}
                                                 >
                                                   <span className="break-words line-clamp-2 sm:line-clamp-none">
                                                     {cell.formattedValue || (linkType === 'youtube' ? 'Xem video' : linkType === 'pdf' ? 'Xem PDF' : 'Xem tài liệu')}
+                                                    {(() => {
+                                                      // Kiểm tra xem URL có hợp lệ không
+                                                      const isValidUrl = /^https?:\/\/[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,}(:[0-9]{1,5})?(\/.*)?$/i.test(url);
+                                                      const containsDomain = url.includes('.com') || 
+                                                                           url.includes('.org') || 
+                                                                           url.includes('.net') || 
+                                                                           url.includes('.edu') || 
+                                                                           url.includes('.gov') || 
+                                                                           url.includes('.vn') ||
+                                                                           url.includes('.io') ||
+                                                                           url.includes('.co') ||
+                                                                           url.includes('youtube.') ||
+                                                                           url.includes('youtu.be') ||
+                                                                           url.includes('drive.google.') ||
+                                                                           url.includes('docs.google.');
+                                                      
+                                                      // Nếu URL không hợp lệ hoặc không có domain phổ biến
+                                                      if (!(isValidUrl && containsDomain)) {
+                                                        return <span className="ml-1 text-xs text-red-600 font-bold">(Chưa có link)</span>;
+                                                      }
+                                                      return null;
+                                                    })()}
                                                   </span>
                                                   <span className="ml-1.5 p-1 rounded-md group-hover:bg-blue-100 transition-colors duration-150">
                                                     {linkType === 'youtube' ? (
