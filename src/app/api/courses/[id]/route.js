@@ -850,6 +850,47 @@ export async function PATCH(request, { params }) {
                       } else {
                         // Không tìm thấy trong positionMap
                         console.log(`ℹ️ [PATCH] Sheet ${sheetTitle}, Hàng ${rowIndex + 1}, Cột ${cellIndex + 1}: Không tìm thấy link trong bản đồ vị trí`);
+                        
+                        // Nếu là link giả mạo, sử dụng hyperlink thay vì URL giả
+                        if (isFakeLink && cell.hyperlink) {
+                          console.log(`🔄 [PATCH] Sử dụng hyperlink làm dự phòng: ${cell.hyperlink}`);
+                          
+                          // Thêm thông tin về file vào cell
+                          if (!cell.processedLinks) {
+                            cell.processedLinks = {};
+                          }
+                          
+                          cell.processedLinks.url = cell.hyperlink;
+                          cell.processedLinks.originalUrl = originalUrl;
+                          cell.processedLinks.processedAt = new Date();
+                          cell.processedLinks.usedHyperlink = true; // Đánh dấu đã sử dụng hyperlink
+                          
+                          // Thêm thông tin vị trí để dễ truy xuất sau này
+                          cell.processedLinks.position = {
+                            sheet: sheetTitle,
+                            row: rowIndex,
+                            col: cellIndex
+                          };
+                          
+                          // Đảm bảo URL được thêm vào cấu trúc cell để hiển thị trong UI
+                          if (!cell.userEnteredFormat) {
+                            cell.userEnteredFormat = {};
+                          }
+                          if (!cell.userEnteredFormat.textFormat) {
+                            cell.userEnteredFormat.textFormat = {};
+                          }
+                          if (!cell.userEnteredFormat.textFormat.link) {
+                            cell.userEnteredFormat.textFormat.link = {};
+                          }
+                          
+                          // Thêm hyperlink vào các vị trí để đảm bảo hiển thị
+                          cell.userEnteredFormat.textFormat.link.uri = cell.hyperlink;
+                          
+                          // Đánh dấu đã sử dụng hyperlink
+                          processedLinksInNewData++;
+                          
+                          console.log(`✅ [PATCH] Sheet ${sheetTitle}, Hàng ${rowIndex + 1}, Cột ${cellIndex + 1}: Đã sử dụng hyperlink làm dự phòng`);
+                        }
                       }
                     }
                   });

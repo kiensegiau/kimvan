@@ -117,25 +117,28 @@ function processFakeLinks(data) {
                   if (isFakeLink) {
                     fakeLinks++;
                     
-                    // Lưu lại URL gốc trước khi xử lý
+                    // Lưu lại hyperlink để sử dụng thay vì URL giả
+                    const validHyperlink = cell.hyperlink;
+                    
+                    // Lưu lại URL gốc trước khi xử lý (cho mục đích debug)
                     cell.originalUrl = url;
                     
-                    // Đánh dấu là link giả mạo, nhưng vẫn giữ lại cấu trúc
+                    // Đánh dấu là link giả mạo, nhưng vẫn giữ hyperlink để làm dự phòng
                     cell.isFakeLink = true;
                     cell.linkRemoved = true;
                     
-                    // Thay thế URL trong textFormat.link bằng placeholder thay vì xóa hoàn toàn
+                    // Xóa URL giả, chỉ giữ lại hyperlink
                     if (cell.userEnteredFormat?.textFormat?.link) {
-                      // Thay đổi URL thành placeholder để ngăn người dùng click
-                      cell.userEnteredFormat.textFormat.link.uri = "#fake-link-removed";
+                      // Xóa URL giả từ textFormat.link.uri
+                      delete cell.userEnteredFormat.textFormat.link.uri;
                       markedLinks++;
                     }
                     
-                    if (cell.hyperlink) {
-                      // Thay đổi hyperlink thành placeholder
-                      cell.hyperlink = "#fake-link-removed";
-                      markedLinks++;
-                    }
+                    // Giữ lại CHỈ hyperlink - chứa ID đã mã hóa từ KimVan
+                    // Chỉ dùng làm dự phòng khi không có link cũ đã xử lý
+                    // KHÔNG xóa cell.hyperlink
+                    
+                    markedLinks++;
                     
                     // Lưu vị trí để dễ khớp sau này
                     if (!cell.position) {
