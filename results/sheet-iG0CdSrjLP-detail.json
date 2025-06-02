@@ -1,0 +1,3153 @@
+{
+  "sheets": [
+    {
+      "properties": {
+        "title": "TDMXX2026_CHINH PHỤC BẢN CHẤT NỀN TẢNG - HÀM SỐ"
+      },
+      "data": [
+        {
+          "rowData": [
+            {
+              "values": [
+                {
+                  "formattedValue": "Tên chủ đề",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.02745098,
+                        "green": 0.21568628,
+                        "blue": 0.3882353
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "File ghi chép ",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.02745098,
+                        "green": 0.21568628,
+                        "blue": 0.3882353
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Tên các BG",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.02745098,
+                        "green": 0.21568628,
+                        "blue": 0.3882353
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Truy cập BG",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.02745098,
+                        "green": 0.21568628,
+                        "blue": 0.3882353
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BVT BGiang",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.02745098,
+                        "green": 0.21568628,
+                        "blue": 0.3882353
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Đề tự luyện",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.02745098,
+                        "green": 0.21568628,
+                        "blue": 0.3882353
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Check key",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.02745098,
+                        "green": 0.21568628,
+                        "blue": 0.3882353
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Live chữa",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.02745098,
+                        "green": 0.21568628,
+                        "blue": 0.3882353
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BVT_Chữa",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Trạng thái",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "TDMXX01_Cơ bản về đơn điệu của hàm số",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Link_Tải_File",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {}
+                    }
+                  },
+                  "hyperlink": "5z6g4jDbiicWsODwHrQOb9cMyiBoL6Nw_ZaVpaCWakkftCijdneVppb0Kf5AuLytSSM3-7yPBiruRYEJILCxSyQj2e7WlGVbXgVRAgWh_DHjv6ydZk-DH6LUYtC1H1kptpZ7iW6RS60erEPB4g",
+                  "originalUrl": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing",
+                  "isFakeLink": true,
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "TDMXX2026_CHINH PHỤC BẢN CHẤT NỀN TẢNG - HÀM SỐ",
+                    "row": 1,
+                    "col": 1
+                  },
+                  "originalFormattedValue": "Link_Tải_File"
+                },
+                {
+                  "formattedValue": "Cơ bản về đơn điệu của HS",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Link_Dạy",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {}
+                    }
+                  },
+                  "hyperlink": "gWYxzuvFId28pJInDrW0L1_hOWu1WFaWcNMPT88t-QNK3bucnzXdbTO7JzKDloceTA_78P0MTRo",
+                  "originalUrl": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing",
+                  "isFakeLink": true,
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "TDMXX2026_CHINH PHỤC BẢN CHẤT NỀN TẢNG - HÀM SỐ",
+                    "row": 1,
+                    "col": 3
+                  },
+                  "originalFormattedValue": "Link_Dạy"
+                },
+                {
+                  "formattedValue": "Bản_Viết_Tay",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "fontSize": 12,
+                      "bold": true,
+                      "link": {}
+                    }
+                  },
+                  "hyperlink": "d5WxraKuEcRB9G8hLEdBz19ejexLFRh5HkFf-NmQxpx-kMZap3gUqBzh2_fCtGAM0EVjyO_oTxBf-I12hxl5AWINUfaIHzCAiUvKT76oi2kUesPlksDWEY-1BY_NG3eMiT3JErS2PMqT8LByr6A",
+                  "originalUrl": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing",
+                  "isFakeLink": true,
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "TDMXX2026_CHINH PHỤC BẢN CHẤT NỀN TẢNG - HÀM SỐ",
+                    "row": 1,
+                    "col": 4
+                  },
+                  "originalFormattedValue": "Bản_Viết_Tay"
+                },
+                {
+                  "formattedValue": "TDMXX01A",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {}
+                    }
+                  },
+                  "hyperlink": "erJBlJLdewcr-8ZDk9tbUMHLj1qwgBCvh52zHe5cDWEs9mHs80_2JF0Bi6NOt0yBoQc4dDhYw4lgkVChFYBoCkJtRfggn8BC6hgj3GarlJctROlTALwp9nU231kHkAfNXBsiFKZYu60iegSeOw",
+                  "originalUrl": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing",
+                  "isFakeLink": true,
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "TDMXX2026_CHINH PHỤC BẢN CHẤT NỀN TẢNG - HÀM SỐ",
+                    "row": 1,
+                    "col": 5
+                  },
+                  "originalFormattedValue": "TDMXX01A"
+                },
+                {
+                  "formattedValue": "Check_Key",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {}
+                    }
+                  },
+                  "hyperlink": "n_DsGN8IF5vGRkQDjiHBKmnYGz_PGGKfFCoIOF1ie1yQUgvUBjLjxQkhOdIuJwM45UMUlGzmNt7kuaofJgivUYwqpvRCakLAzyFjXGcWdfHxAppALSKgiTvro9mOK49nQaOyklLDIye-tmkFrQA",
+                  "originalUrl": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing",
+                  "isFakeLink": true,
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "TDMXX2026_CHINH PHỤC BẢN CHẤT NỀN TẢNG - HÀM SỐ",
+                    "row": 1,
+                    "col": 6
+                  },
+                  "originalFormattedValue": "Check_Key"
+                },
+                {
+                  "formattedValue": "Live_Chữa",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {}
+                    }
+                  },
+                  "hyperlink": "8QKWHxuN1EKjrRjj6vZldyIz7HPj5_xgtE-1wFLn1UVep9qd68s9QAICXOltWedO9IdHG0H7x4w",
+                  "originalUrl": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing",
+                  "isFakeLink": true,
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "TDMXX2026_CHINH PHỤC BẢN CHẤT NỀN TẢNG - HÀM SỐ",
+                    "row": 1,
+                    "col": 7
+                  },
+                  "originalFormattedValue": "Live_Chữa"
+                },
+                {
+                  "formattedValue": "BVT_Chữa",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {}
+                    }
+                  },
+                  "hyperlink": "hfXC1Vvf9fZ4ZWlf-6GrlNYR25IfSDwFIIlUAB01GA4hL8oXJjTzBs0aj0IXL_DkgDld9f7RL837BkzScUvGIn_-0i5bF91oh2ACg7ixoAbG4xXYbvca0LuPHZP3Ii3-KDj81aO7lvBgRkcBfV8",
+                  "originalUrl": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing",
+                  "isFakeLink": true,
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "TDMXX2026_CHINH PHỤC BẢN CHẤT NỀN TẢNG - HÀM SỐ",
+                    "row": 1,
+                    "col": 8
+                  },
+                  "originalFormattedValue": "BVT_Chữa"
+                },
+                {
+                  "formattedValue": "Đang phát động học",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "values": [
+                {},
+                {},
+                {},
+                {},
+                {},
+                {
+                  "formattedValue": "TDMXX01B",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.8509804,
+                      "green": 0.91764706,
+                      "blue": 0.827451
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {}
+                    }
+                  },
+                  "hyperlink": "kcHsA70NvS5T0r7pmzC7TDEuts-NEBm69ql8nSzBl5RcPTO5iE_eTcal7q8OiManaNuCCh3kI4l-TT2rYPOeYHOxFvseHyLTPmycMnzu84bvGJTYQlye82tK55aQZ11RB2K4VetP0y5FNb0K3A",
+                  "originalUrl": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing",
+                  "isFakeLink": true,
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "TDMXX2026_CHINH PHỤC BẢN CHẤT NỀN TẢNG - HÀM SỐ",
+                    "row": 2,
+                    "col": 5
+                  },
+                  "originalFormattedValue": "TDMXX01B"
+                },
+                {
+                  "formattedValue": "Check_Key",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {}
+                    }
+                  },
+                  "hyperlink": "PlJrwLP36IjrTYATiCGCBJYZKH0S30BGXY-__vY4nJIHx7TpKgo0gUCQnt0cKN15obrYSYWvrh_rZ3YOlxuY5VvYcPZZinJRsHcbOWpEfZotcFvIgCVkVfMLdnLn__oGY7t_fwmzhCS8Nif8dG0",
+                  "originalUrl": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing",
+                  "isFakeLink": true,
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "TDMXX2026_CHINH PHỤC BẢN CHẤT NỀN TẢNG - HÀM SỐ",
+                    "row": 2,
+                    "col": 6
+                  },
+                  "originalFormattedValue": "Check_Key"
+                },
+                {
+                  "formattedValue": "Live_Chữa",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {}
+                    }
+                  },
+                  "hyperlink": "KP1gkrey38L8GmcSDX2fSXtO6yGvVTij-xknqLMD9C1-VvxuHArPijWStZ7JU1zYPLpCO8CGHn4",
+                  "originalUrl": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing",
+                  "isFakeLink": true,
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "TDMXX2026_CHINH PHỤC BẢN CHẤT NỀN TẢNG - HÀM SỐ",
+                    "row": 2,
+                    "col": 7
+                  },
+                  "originalFormattedValue": "Live_Chữa"
+                },
+                {
+                  "formattedValue": "BVT_Chữa",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {}
+                    }
+                  },
+                  "hyperlink": "SJvRpiQceG4mUZKsPARCEcrV6ORNmCKqsH78rXS_WwyCoOHrhbHJwb72oXeuYaGKAORlScN4rPn5Bh22yb9szzrAJuRY7lEfNv9mu0Oh-bZAQ_h3SzfuqHUOVMTOn7tNCQJ0KRwv3I07P0F2GNo",
+                  "originalUrl": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing",
+                  "isFakeLink": true,
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "TDMXX2026_CHINH PHỤC BẢN CHẤT NỀN TẢNG - HÀM SỐ",
+                    "row": 2,
+                    "col": 8
+                  },
+                  "originalFormattedValue": "BVT_Chữa"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "TDMXX02_Mở rộng đơn điệu",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.7137255,
+                      "green": 0.84313726,
+                      "blue": 0.65882355
+                    },
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Link_Tải_File",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.7137255,
+                      "green": 0.84313726,
+                      "blue": 0.65882355
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {}
+                    }
+                  },
+                  "hyperlink": "6_60rhGSM9tmuRy_81HPFcH--vxjzTx5gb1Qbcc_lX02CAIFsjWKpZ5yg0qTiy33cm6qW8ljPGO6Nn9HlXTxzkZAZLjGe4oIO_HDePv97TOs7jROBpmvHTIKyKWfVpI7B96OkHYwJKOKAjf4jQ",
+                  "originalUrl": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing",
+                  "isFakeLink": true,
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "TDMXX2026_CHINH PHỤC BẢN CHẤT NỀN TẢNG - HÀM SỐ",
+                    "row": 3,
+                    "col": 1
+                  },
+                  "originalFormattedValue": "Link_Tải_File"
+                },
+                {
+                  "formattedValue": "Mở rộng đơn điệu",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.7137255,
+                      "green": 0.84313726,
+                      "blue": 0.65882355
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Link_Dạy",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.7137255,
+                      "green": 0.84313726,
+                      "blue": 0.65882355
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {}
+                    }
+                  },
+                  "hyperlink": "HmEefGRnMk_Ibqj1XZkel_aSNYCA5p8BlnbpfQrs8LUq8CgIcCbb3Mqwxl6aNIFU09u9BcWaFRE",
+                  "originalUrl": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing",
+                  "isFakeLink": true,
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "TDMXX2026_CHINH PHỤC BẢN CHẤT NỀN TẢNG - HÀM SỐ",
+                    "row": 3,
+                    "col": 3
+                  },
+                  "originalFormattedValue": "Link_Dạy"
+                },
+                {
+                  "formattedValue": "Bản_Viết_Tay",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.7137255,
+                      "green": 0.84313726,
+                      "blue": 0.65882355
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {}
+                    }
+                  },
+                  "hyperlink": "ylOi1IUFfzi30k11-VhP3adRODnimyIMtYjD2-cpqJwgexbByk7N0Moccgxn7VYmvdGve_c11hYrlwrxYoatPtG3SpSfrTZENyroXZJRPcn9RfC2GXaeiTr4t5QDoXDBtkSK7w_J0D_QL6_jLNQ",
+                  "originalUrl": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing",
+                  "isFakeLink": true,
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "TDMXX2026_CHINH PHỤC BẢN CHẤT NỀN TẢNG - HÀM SỐ",
+                    "row": 3,
+                    "col": 4
+                  },
+                  "originalFormattedValue": "Bản_Viết_Tay"
+                },
+                {
+                  "formattedValue": "TDMXX02",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.7137255,
+                      "green": 0.84313726,
+                      "blue": 0.65882355
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {}
+                    }
+                  },
+                  "hyperlink": "GoqQFkl7QAjCW4wnDdgsgbYNyEvhlxIiMQfmeOJkmLkQxZ_XBmfXpXOEkijYKCVlhlULEa-06mZ0mvz_xV9Sakds_oB78xjDw_YPvwtJj9CZCxCKthNJj_9tNgJtwEaE0qoT96KpwC7u-ygXDI0",
+                  "originalUrl": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing",
+                  "isFakeLink": true,
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "TDMXX2026_CHINH PHỤC BẢN CHẤT NỀN TẢNG - HÀM SỐ",
+                    "row": 3,
+                    "col": 5
+                  },
+                  "originalFormattedValue": "TDMXX02"
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.7137255,
+                      "green": 0.84313726,
+                      "blue": 0.65882355
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.7137255,
+                      "green": 0.84313726,
+                      "blue": 0.65882355
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.7137255,
+                      "green": 0.84313726,
+                      "blue": 0.65882355
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.7137255,
+                      "green": 0.84313726,
+                      "blue": 0.65882355
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "values": [
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.7137255,
+                      "green": 0.84313726,
+                      "blue": 0.65882355
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.7137255,
+                      "green": 0.84313726,
+                      "blue": 0.65882355
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.7137255,
+                      "green": 0.84313726,
+                      "blue": 0.65882355
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.7137255,
+                      "green": 0.84313726,
+                      "blue": 0.65882355
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "Tư vấn học hiệu quả TDMX2026",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.7137255,
+                      "green": 0.84313726,
+                      "blue": 0.65882355
+                    },
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.7137255,
+                      "green": 0.84313726,
+                      "blue": 0.65882355
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Tư vấn học hiệu quả TDMX2026",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.7137255,
+                      "green": 0.84313726,
+                      "blue": 0.65882355
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Link_Dạy",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.7137255,
+                      "green": 0.84313726,
+                      "blue": 0.65882355
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {}
+                    }
+                  },
+                  "hyperlink": "Pw-1gU_f0aA00kmerN0PIRWGPWBkQK_BX9YaHf180UNRcsgdQF-msZUD0pcWqsNVrHfMQtlLbxQ",
+                  "originalUrl": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing",
+                  "isFakeLink": true,
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "TDMXX2026_CHINH PHỤC BẢN CHẤT NỀN TẢNG - HÀM SỐ",
+                    "row": 5,
+                    "col": 3
+                  },
+                  "originalFormattedValue": "Link_Dạy"
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.7137255,
+                      "green": 0.84313726,
+                      "blue": 0.65882355
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.7137255,
+                      "green": 0.84313726,
+                      "blue": 0.65882355
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.7137255,
+                      "green": 0.84313726,
+                      "blue": 0.65882355
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.7137255,
+                      "green": 0.84313726,
+                      "blue": 0.65882355
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.7137255,
+                      "green": 0.84313726,
+                      "blue": 0.65882355
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.7137255,
+                      "green": 0.84313726,
+                      "blue": 0.65882355
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "TDMXX03_Cơ bản về cực trị của hàm số",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Link_Tải_File",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {}
+                    }
+                  },
+                  "hyperlink": "OQ1DaTsNecUtOzjoZ9YG4DHiAmXuyMl3ZLQxDokt5ffaoogZAB0-G9X9-L0ldXiY1ja9FF_2bTwGCL54KFTtmc-qpZM84S2KjLxa9UraH24Z8f4BBlCfEGoE9JXs8fjc-T2q6Rln6FP16UptTQ",
+                  "originalUrl": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing",
+                  "isFakeLink": true,
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "TDMXX2026_CHINH PHỤC BẢN CHẤT NỀN TẢNG - HÀM SỐ",
+                    "row": 6,
+                    "col": 1
+                  },
+                  "originalFormattedValue": "Link_Tải_File"
+                },
+                {
+                  "formattedValue": "Cơ bản về cực trị của HS",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Link_Dạy",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {}
+                    }
+                  },
+                  "hyperlink": "yrM4CQz3AEiWYnVqjkAKbsyoD0LPI5_iiTw-kUIW0MmciWXQgUR5UBkH0CTnPpIAtQgKpV50fkM",
+                  "originalUrl": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing",
+                  "isFakeLink": true,
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "TDMXX2026_CHINH PHỤC BẢN CHẤT NỀN TẢNG - HÀM SỐ",
+                    "row": 6,
+                    "col": 3
+                  },
+                  "originalFormattedValue": "Link_Dạy"
+                },
+                {
+                  "formattedValue": "Không có",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 12,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "TDMXX03A",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {}
+                    }
+                  },
+                  "hyperlink": "7eZGpegnPIv5Cxm3aBdN5db49wLmT5z99lQnHx_rZbLpFm1xTp843SyPGEQK25eCzC10Kqh3hDzH1het8oUaTF9UmBU2mP2vV8PcU4VMeWqGwJd12cpueWXDFPuum2NBWGJlsByRYFv5wHXQBA",
+                  "originalUrl": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing",
+                  "isFakeLink": true,
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "TDMXX2026_CHINH PHỤC BẢN CHẤT NỀN TẢNG - HÀM SỐ",
+                    "row": 6,
+                    "col": 5
+                  },
+                  "originalFormattedValue": "TDMXX03A"
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Live_Chữa",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {}
+                    }
+                  },
+                  "hyperlink": "JXpuzMn-PeGDPAuZDAiCLVkQ6c8wWZoPPf3XLpOHy1Y0ScwVz6S0BetvKLXOQzvXHGuYA85_8Bw",
+                  "originalUrl": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing",
+                  "isFakeLink": true,
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "TDMXX2026_CHINH PHỤC BẢN CHẤT NỀN TẢNG - HÀM SỐ",
+                    "row": 6,
+                    "col": 7
+                  },
+                  "originalFormattedValue": "Live_Chữa"
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Đang phát động học",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "blue": 1
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "values": [
+                {},
+                {},
+                {},
+                {},
+                {},
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "properties": {
+        "title": "TDMXR2026_CHINH PHỤC NỀN TẢNG TOÁN THỰC TẾ"
+      },
+      "data": [
+        {
+          "rowData": [
+            {
+              "values": [
+                {
+                  "formattedValue": "Tên chủ đề",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.02745098,
+                        "green": 0.21568628,
+                        "blue": 0.3882353
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "File ghi chép ",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.02745098,
+                        "green": 0.21568628,
+                        "blue": 0.3882353
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài giảng",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.02745098,
+                        "green": 0.21568628,
+                        "blue": 0.3882353
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Đề tự luyện",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.02745098,
+                        "green": 0.21568628,
+                        "blue": 0.3882353
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Check_Key",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.02745098,
+                        "green": 0.21568628,
+                        "blue": 0.3882353
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Live chữa",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.02745098,
+                        "green": 0.21568628,
+                        "blue": 0.3882353
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BVT_Chữa",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Trạng thái",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "TDMXR01_Tốc độ thay đổi của một đại lượng",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Tải_File",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {}
+                    }
+                  },
+                  "hyperlink": "U5YbRhjVQWajSaeZ2DKtzBZpgftNu0tP2fBcepWV7rnCIlB2ge1mJsCQe9Y0OPbsf-OpgyzvY3qGDjBo1LHLs0OeLpTXgS6N438xKbNt1fvmmCLogYMK8bmivIq7fPuX47eAy_CefVlYFipXxQ",
+                  "originalUrl": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing",
+                  "isFakeLink": true,
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "TDMXR2026_CHINH PHỤC NỀN TẢNG TOÁN THỰC TẾ",
+                    "row": 1,
+                    "col": 1
+                  },
+                  "originalFormattedValue": "Tải_File"
+                },
+                {
+                  "formattedValue": "Live_Dạy",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {}
+                    }
+                  },
+                  "hyperlink": "DGt161cMl9wL1OIC4tRzmvvHRYGHPyo61CHtb0xKqe2gAi9lHOFQxrHwbnqqBZKkId-9g2nzAiE",
+                  "originalUrl": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing",
+                  "isFakeLink": true,
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "TDMXR2026_CHINH PHỤC NỀN TẢNG TOÁN THỰC TẾ",
+                    "row": 1,
+                    "col": 2
+                  },
+                  "originalFormattedValue": "Live_Dạy"
+                },
+                {
+                  "formattedValue": "Tải_File",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {}
+                    }
+                  },
+                  "hyperlink": "Kp6CE8fCV17yztDKLiqDqV9MpO3SV8Zudrzt_vHSFeNhWnud7_BX0gfmb4M_BUs8yufcJty_As9YhFgU5ZYVXEeZxItAxmf7f7NUzDJk4f7pjmhwart0bB7WtljGJCzcMDTM--uw4xJ36U2O8w",
+                  "originalUrl": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing",
+                  "isFakeLink": true,
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "TDMXR2026_CHINH PHỤC NỀN TẢNG TOÁN THỰC TẾ",
+                    "row": 1,
+                    "col": 3
+                  },
+                  "originalFormattedValue": "Tải_File"
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Live chữa",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {}
+                    }
+                  },
+                  "hyperlink": "8rkDWUb3hiV-7NkC6BDcY8n_-ajqJduQCyooIUnlaMd5G1WT_U8H5plaflAeiU43hSwQp7uoGpE",
+                  "originalUrl": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing",
+                  "isFakeLink": true,
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "TDMXR2026_CHINH PHỤC NỀN TẢNG TOÁN THỰC TẾ",
+                    "row": 1,
+                    "col": 5
+                  },
+                  "originalFormattedValue": "Live chữa"
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "properties": {
+        "title": "TDMXC2026_CHINH PHỤC NỀN TẢNG TOÁN THỰC TẾ"
+      },
+      "data": [
+        {
+          "rowData": [
+            {
+              "values": [
+                {
+                  "formattedValue": "Tên chủ đề",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.02745098,
+                        "green": 0.21568628,
+                        "blue": 0.3882353
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "File ghi chép ",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.02745098,
+                        "green": 0.21568628,
+                        "blue": 0.3882353
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài giảng",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.02745098,
+                        "green": 0.21568628,
+                        "blue": 0.3882353
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Đề tự luyện",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.02745098,
+                        "green": 0.21568628,
+                        "blue": 0.3882353
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Check_Key",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.02745098,
+                        "green": 0.21568628,
+                        "blue": 0.3882353
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Live chữa",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.02745098,
+                        "green": 0.21568628,
+                        "blue": 0.3882353
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BVT_Chữa",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Trạng thái",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "TDMXC01_Xử lý tham số trong đơn điệu",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Tải_File",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {}
+                    }
+                  },
+                  "hyperlink": "MpRyMQjymgfH34WLa5zZw27yNccxjEQ0MSb7b6I_30MNBonnFWMZWXH5pfxVjwNUk0gX-uvUrq0_6fuQc14rsvHYvXlO-t-qZ2LOwxQUXLKsvAX_ccpz--3gNOP261Lo0ZNsIOMzlv1_6GZ3mw",
+                  "originalUrl": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing",
+                  "isFakeLink": true,
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "TDMXC2026_CHINH PHỤC NỀN TẢNG TOÁN THỰC TẾ",
+                    "row": 1,
+                    "col": 1
+                  },
+                  "originalFormattedValue": "Tải_File"
+                },
+                {
+                  "formattedValue": "Bài giảng",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {}
+                    }
+                  },
+                  "hyperlink": "v4qF32T7Ng5nbX-3gTl6Il6IdFxvwkrxv1jX3NF-6CvrRW-1JGsXAZRrln4Hmy3JisNrQW4gw4L0MDsg85rCuUulqKZN6ucwtyfelyZQvqphIK_5hpFnnW664J67qQCt6VLmTQ",
+                  "originalUrl": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing",
+                  "isFakeLink": true,
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "TDMXC2026_CHINH PHỤC NỀN TẢNG TOÁN THỰC TẾ",
+                    "row": 1,
+                    "col": 2
+                  },
+                  "originalFormattedValue": "Bài giảng"
+                },
+                {
+                  "formattedValue": "Tải_File",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {}
+                    }
+                  },
+                  "hyperlink": "S4yyo38MDzPFzjIuJNfPC1xQUv0bHuZyrhybLcpjfauClCUmu6tlGD3CElpJLLBSFXZXGXNXnkbJmTWUL2RfNWC-dMSSpgV6MLeaCvECiGBsiTX-SK28ixHeq7B_zVc3UxxRqG35nV9mx2gYyQ",
+                  "originalUrl": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing",
+                  "isFakeLink": true,
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "TDMXC2026_CHINH PHỤC NỀN TẢNG TOÁN THỰC TẾ",
+                    "row": 1,
+                    "col": 3
+                  },
+                  "originalFormattedValue": "Tải_File"
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "TDMXC02_Đơn điệu hàm hợp và KN ghép trục",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Tải_File",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {}
+                    }
+                  },
+                  "hyperlink": "Y30x-c7IWp6RdJak0ZkSgjFFRc_mCNuA06Mf0wUHFtI_aOxeoj7s-D5PmACUNhYuU1r4EqENgeh5yjj9_4rRVKaIeUlwsoBmIGXQGLFjGnLZ4ffBAyilr5ZyyscM8T5WDbTyfvCqitvETdTsUw",
+                  "originalUrl": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing",
+                  "isFakeLink": true,
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "TDMXC2026_CHINH PHỤC NỀN TẢNG TOÁN THỰC TẾ",
+                    "row": 2,
+                    "col": 1
+                  },
+                  "originalFormattedValue": "Tải_File"
+                },
+                {
+                  "formattedValue": "Bài giảng",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {}
+                    }
+                  },
+                  "hyperlink": "D6DkjSrddVL6fB-ccK4nvlKTE5DBzmlZYOaKBwQeXx-y9XpRnDmjiHcV6ECeatYa2h8sT9Z0O8Ndw9t-67c93vHoS_CsExgN790NQjoYhwOaDx0rTTiRdTXTSQ7saLjeGObIYA",
+                  "originalUrl": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing",
+                  "isFakeLink": true,
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "TDMXC2026_CHINH PHỤC NỀN TẢNG TOÁN THỰC TẾ",
+                    "row": 2,
+                    "col": 2
+                  },
+                  "originalFormattedValue": "Bài giảng"
+                },
+                {
+                  "formattedValue": "Tải_File",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {}
+                    }
+                  },
+                  "hyperlink": "ZEURiubG0ruVdgIt4LVo-hoJsqS8bM6IRNtTg66AQeBSgFaXuyimzMmWxk6QlCDfVNrpuorU2jngDw64Y5_WjUCiw5x8S5SPue5qn2sv6ysrv3rHFvuU98d9e5LOB_1DeVB4aXBy8HBPcefWgg",
+                  "originalUrl": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing",
+                  "isFakeLink": true,
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "TDMXC2026_CHINH PHỤC NỀN TẢNG TOÁN THỰC TẾ",
+                    "row": 2,
+                    "col": 3
+                  },
+                  "originalFormattedValue": "Tải_File"
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "properties": {
+        "title": "TDMYV2026_CHINH PHỤC VD VDC TỔ HỢP XÁC SUẤT"
+      },
+      "data": [
+        {
+          "rowData": [
+            {
+              "values": [
+                {
+                  "formattedValue": "Tên chủ đề",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.02745098,
+                        "green": 0.21568628,
+                        "blue": 0.3882353
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "File ghi chép ",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.02745098,
+                        "green": 0.21568628,
+                        "blue": 0.3882353
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài giảng",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.02745098,
+                        "green": 0.21568628,
+                        "blue": 0.3882353
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BVT BGiang",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.02745098,
+                        "green": 0.21568628,
+                        "blue": 0.3882353
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Đề tự luyện",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.02745098,
+                        "green": 0.21568628,
+                        "blue": 0.3882353
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Check Key",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.02745098,
+                        "green": 0.21568628,
+                        "blue": 0.3882353
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Live_Chữa",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.02745098,
+                        "green": 0.21568628,
+                        "blue": 0.3882353
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BVT_Chữa",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.02745098,
+                        "green": 0.21568628,
+                        "blue": 0.3882353
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Trạng thái",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "TDMYV05. Kĩ năng phân tập trong bài toán đếm",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Link_Tải_File",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {}
+                    }
+                  },
+                  "hyperlink": "3ew-Qgsw_H4mNY0jDnazM1Doh0i22XhH1zoE8roMHMZ3_mi7S_oAf6v32u3X5dJ9rZ5OOv0IRx6jnN91cbVXEF_ZYSJ7wTKL8d9tdswJB1Iuw-40FFaGmXRzWsmEdGQYXsBdDTFG2e8FRKCgF1Q",
+                  "originalUrl": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing",
+                  "isFakeLink": true,
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "TDMYV2026_CHINH PHỤC VD VDC TỔ HỢP XÁC SUẤT",
+                    "row": 1,
+                    "col": 1
+                  },
+                  "originalFormattedValue": "Link_Tải_File"
+                },
+                {
+                  "formattedValue": "Live_Dạy",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {}
+                    }
+                  },
+                  "hyperlink": "-pgUco48GsROP2hRH_Os0e5tbM5U2svrisatUWs2Gc_8QVOEfx9i4BvqdS-W77su7hnRn3FakJI",
+                  "originalUrl": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing",
+                  "isFakeLink": true,
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "TDMYV2026_CHINH PHỤC VD VDC TỔ HỢP XÁC SUẤT",
+                    "row": 1,
+                    "col": 2
+                  },
+                  "originalFormattedValue": "Live_Dạy"
+                },
+                {
+                  "formattedValue": "BVT",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {}
+                    }
+                  },
+                  "hyperlink": "sGCmjrPyzHUuV6PSD4kz-AlXrSaUDnccyccBceJriu6HlMSbmfmcCY2H3l4UWHhV9x2yfgOH2ZuJNZcaS4lcHdEiGxPdY54jsS3buV7ou6bbpF5uTF0u1-uHIlLPdrzi1OznZ0EYaz64_eT6ueE",
+                  "originalUrl": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing",
+                  "isFakeLink": true,
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "TDMYV2026_CHINH PHỤC VD VDC TỔ HỢP XÁC SUẤT",
+                    "row": 1,
+                    "col": 3
+                  },
+                  "originalFormattedValue": "BVT"
+                },
+                {
+                  "formattedValue": "Link_Tải_Đề",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "fontSize": 12,
+                      "bold": true,
+                      "link": {}
+                    }
+                  },
+                  "hyperlink": "lyft8vLZcu1ZASkAANLqn5Wy8ZEAmuuAhNgz2oU0nFuo4nCKEsVvMB8P4H_DD4s5l6o-zmWO9kZB_ctJBW5-9vQiA1nhFH2CVsX83JWgqSihfh1_bo9Ej8RMO2cBobBBnJwXnL0CqRXyOTOj9is",
+                  "originalUrl": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing",
+                  "isFakeLink": true,
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "TDMYV2026_CHINH PHỤC VD VDC TỔ HỢP XÁC SUẤT",
+                    "row": 1,
+                    "col": 4
+                  },
+                  "originalFormattedValue": "Link_Tải_Đề"
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Live_Chữa",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "fontSize": 12,
+                      "bold": true,
+                      "link": {}
+                    }
+                  },
+                  "hyperlink": "k9WB0wWSDIqlFeIPJryNfObYhd7Lsold0YQW-tCS7HgOxxO7u_MxfWSAxfjjpTc_5CUmJ4Vz61Q",
+                  "originalUrl": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing",
+                  "isFakeLink": true,
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "TDMYV2026_CHINH PHỤC VD VDC TỔ HỢP XÁC SUẤT",
+                    "row": 1,
+                    "col": 6
+                  },
+                  "originalFormattedValue": "Live_Chữa"
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "TDMYV13. Kĩ năng gián tiếp tương quan",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.8117647,
+                      "green": 0.8862745,
+                      "blue": 0.9529412
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.8117647,
+                      "green": 0.8862745,
+                      "blue": 0.9529412
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Live_Dạy",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.8117647,
+                      "green": 0.8862745,
+                      "blue": 0.9529412
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {}
+                    }
+                  },
+                  "hyperlink": "JX4ovMDsStWs5ZHpzjohKGXOPK62-tHbeh9bkn-6qkZOgXiof3I-teZakUjIQtjzF9qS7ZV1A6w",
+                  "originalUrl": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing",
+                  "isFakeLink": true,
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "TDMYV2026_CHINH PHỤC VD VDC TỔ HỢP XÁC SUẤT",
+                    "row": 2,
+                    "col": 2
+                  },
+                  "originalFormattedValue": "Live_Dạy"
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.8117647,
+                      "green": 0.8862745,
+                      "blue": 0.9529412
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.8117647,
+                      "green": 0.8862745,
+                      "blue": 0.9529412
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.8117647,
+                      "green": 0.8862745,
+                      "blue": 0.9529412
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.8117647,
+                      "green": 0.8862745,
+                      "blue": 0.9529412
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.8117647,
+                      "green": 0.8862745,
+                      "blue": 0.9529412
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.8117647,
+                      "green": 0.8862745,
+                      "blue": 0.9529412
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "properties": {
+        "title": "TDMYR2026_CHINH PHỤC TOÁN THỰC TẾ NÂNG CAO"
+      },
+      "data": [
+        {
+          "rowData": [
+            {
+              "values": [
+                {
+                  "formattedValue": "Tên chủ đề",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.02745098,
+                        "green": 0.21568628,
+                        "blue": 0.3882353
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "File ghi chép ",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.02745098,
+                        "green": 0.21568628,
+                        "blue": 0.3882353
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài giảng",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.02745098,
+                        "green": 0.21568628,
+                        "blue": 0.3882353
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BVT BGiang",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.02745098,
+                        "green": 0.21568628,
+                        "blue": 0.3882353
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Đề tự luyện",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.02745098,
+                        "green": 0.21568628,
+                        "blue": 0.3882353
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Check Key",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.02745098,
+                        "green": 0.21568628,
+                        "blue": 0.3882353
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Live_Chữa",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.02745098,
+                        "green": 0.21568628,
+                        "blue": 0.3882353
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BVT_Chữa",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.02745098,
+                        "green": 0.21568628,
+                        "blue": 0.3882353
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Trạng thái",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "TDMYR001. Tốc độ thay đổi của một đại lượng nâng cao",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Link_Tải_File",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {}
+                    }
+                  },
+                  "hyperlink": "vzxd9bUDE0znL9kR3c-Cl9JTASRqAIdC30yWQlt24nuBoyInITQz8hRcI09Wj-HwH2gFzK2ldaxP1AtmQX5x7S9l4ygl2fckboKHxq0uMN5iW5wMhRodjHOz3Rv1Mee5loz5LRM7JrW6xye1Os8",
+                  "originalUrl": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing",
+                  "isFakeLink": true,
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "TDMYR2026_CHINH PHỤC TOÁN THỰC TẾ NÂNG CAO",
+                    "row": 1,
+                    "col": 1
+                  },
+                  "originalFormattedValue": "Link_Tải_File"
+                },
+                {
+                  "formattedValue": "Live_Dạy",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {}
+                    }
+                  },
+                  "hyperlink": "Y9aBl8Ws5MggkFGPrBymrmTomjCWN7_CQBaJ-tpvZqgBRUZoxqL6AkWZSsVADAO-gq4rj5xKxyw",
+                  "originalUrl": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing",
+                  "isFakeLink": true,
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "TDMYR2026_CHINH PHỤC TOÁN THỰC TẾ NÂNG CAO",
+                    "row": 1,
+                    "col": 2
+                  },
+                  "originalFormattedValue": "Live_Dạy"
+                },
+                {
+                  "formattedValue": "BVT_BG",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {}
+                    }
+                  },
+                  "hyperlink": "bMax8zQQf0kM9a4bOGG__nKuhjOwzz9_fDa8LbltBIu21N6HIHKH7E0FwaDRfZCToDnG9KT7qFaW9QpGpjH9ZNMBj_7D9xn2Jl1FSq1oI55j4eTGzCe3FF5owHS-ncXfz0niBBMNGXtHdz7ZW_8",
+                  "originalUrl": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing",
+                  "isFakeLink": true,
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "TDMYR2026_CHINH PHỤC TOÁN THỰC TẾ NÂNG CAO",
+                    "row": 1,
+                    "col": 3
+                  },
+                  "originalFormattedValue": "BVT_BG"
+                },
+                {
+                  "formattedValue": "Link_Tải_Đề",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "fontSize": 12,
+                      "bold": true,
+                      "link": {}
+                    }
+                  },
+                  "hyperlink": "GM9y9bemhePXnMFBopI0y3o-y620ICNtA7yA6YUovXqOgGS4uHMHRlfSfOtj-vKdleIUytmOg-HqEEQfnglSFi_0h8_4_VB1Yx0JQHAM-EonFUQzFgest3svT-eEwPAyuIf6PufMoTqetGqsv1k",
+                  "originalUrl": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing",
+                  "isFakeLink": true,
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "TDMYR2026_CHINH PHỤC TOÁN THỰC TẾ NÂNG CAO",
+                    "row": 1,
+                    "col": 4
+                  },
+                  "originalFormattedValue": "Link_Tải_Đề"
+                },
+                {
+                  "formattedValue": "Check_Key",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {}
+                    }
+                  },
+                  "hyperlink": "nB6l8iSt2ZiQZfkkQN3rMDTYI0oxQXhPFyKhWILVDXm1hUIxuO0HtI53y7BeoTuNExxHbmqOFFaDydETKArpNNMr-qZ9ZuDbr_YJBegf3_UjMhg8pr-WZn1M5a6LQHjPLSVlcBVpRMGpDtvUuXA",
+                  "originalUrl": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing",
+                  "isFakeLink": true,
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "TDMYR2026_CHINH PHỤC TOÁN THỰC TẾ NÂNG CAO",
+                    "row": 1,
+                    "col": 5
+                  },
+                  "originalFormattedValue": "Check_Key"
+                },
+                {
+                  "formattedValue": "Live_Chữa",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {}
+                    }
+                  },
+                  "hyperlink": "QYdEKtXc3GfTog83WtuHeZ06wwZM8JxcZ62vBoR_lXaZRoeERJy4TDiKmpnSg-07fbUZt-kQWls",
+                  "originalUrl": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing",
+                  "isFakeLink": true,
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "TDMYR2026_CHINH PHỤC TOÁN THỰC TẾ NÂNG CAO",
+                    "row": 1,
+                    "col": 6
+                  },
+                  "originalFormattedValue": "Live_Chữa"
+                },
+                {
+                  "formattedValue": "BVT_CĐ",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {}
+                    }
+                  },
+                  "hyperlink": "3iHKvA6LvPjfuFSPqkOOB4fbVzF4rXiBAhYFyo4W8h0Fkk1njeUqUQ4sDS29tt4nVMFeh0wUWYFDI2Ryx6tt7PStJb-RW8bOZW0YBAcBsEUnRrWFK1_ePrekTsKBKB5sXn2W-J05Gn0Rxzw-t5g",
+                  "originalUrl": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing",
+                  "isFakeLink": true,
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "TDMYR2026_CHINH PHỤC TOÁN THỰC TẾ NÂNG CAO",
+                    "row": 1,
+                    "col": 7
+                  },
+                  "originalFormattedValue": "BVT_CĐ"
+                },
+                {
+                  "formattedValue": "Hoàn thành",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "properties": {
+        "title": "TDMYC2026_CHINH PHỤC CÁC CHUYÊN ĐỀ NÂNG CAO CHỌN LỌC"
+      },
+      "data": [
+        {
+          "rowData": [
+            {
+              "values": [
+                {
+                  "formattedValue": "Tên chủ đề",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.02745098,
+                        "green": 0.21568628,
+                        "blue": 0.3882353
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "File ghi chép ",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.02745098,
+                        "green": 0.21568628,
+                        "blue": 0.3882353
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài giảng",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.02745098,
+                        "green": 0.21568628,
+                        "blue": 0.3882353
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BVT BGiang",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.02745098,
+                        "green": 0.21568628,
+                        "blue": 0.3882353
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Đề tự luyện",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.02745098,
+                        "green": 0.21568628,
+                        "blue": 0.3882353
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Check Key",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.02745098,
+                        "green": 0.21568628,
+                        "blue": 0.3882353
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Live_Chữa",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.02745098,
+                        "green": 0.21568628,
+                        "blue": 0.3882353
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "BVT_Chữa",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.02745098,
+                        "green": 0.21568628,
+                        "blue": 0.3882353
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Trạng thái",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "TDMYC03_Mô hình tứ diện tìm Min đường đi Euler",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Link_Tải_File",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {}
+                    }
+                  },
+                  "hyperlink": "574x-jIwP7HmN7VYUeLtUy0zBrItW0bakBnXn4tUI4hlk_b0lj9FBfE0SlYbw-9gI8748qHKtv2tv390fRaCDJSdMZ7lp-pP9UIA2admUXJEf_ZFxxE62iNOdZuhSlho5sMZn-Sh-_dNXMs1Rsw",
+                  "originalUrl": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing",
+                  "isFakeLink": true,
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "TDMYC2026_CHINH PHỤC CÁC CHUYÊN ĐỀ NÂNG CAO CHỌN LỌC",
+                    "row": 1,
+                    "col": 1
+                  },
+                  "originalFormattedValue": "Link_Tải_File"
+                },
+                {
+                  "formattedValue": "Bài giảng",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {}
+                    }
+                  },
+                  "hyperlink": "CrAr4faAZq0SVFtukQWWTI3dVrEI3hSrNn7H636LkGaPR_Zi23ip-C4Cnby1r3fnIexwse7IxkY",
+                  "originalUrl": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing",
+                  "isFakeLink": true,
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "TDMYC2026_CHINH PHỤC CÁC CHUYÊN ĐỀ NÂNG CAO CHỌN LỌC",
+                    "row": 1,
+                    "col": 2
+                  },
+                  "originalFormattedValue": "Bài giảng"
+                },
+                {
+                  "formattedValue": "BVT",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {}
+                    }
+                  },
+                  "hyperlink": "ZYlrI-H-uXFxzs-cO2q2UuAKs6OaO7I3Y1mXgp7X4vC1wXyM9AZ-eX4V89qi54uZPWnlEE3tV5PTlOTr75L0jezqGu3_qTYTRM0Ebp4q0oCVPoCgPzYFd7GWadMqgN4wDl6wTpVyYAueNIPuMmY",
+                  "originalUrl": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing",
+                  "isFakeLink": true,
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "TDMYC2026_CHINH PHỤC CÁC CHUYÊN ĐỀ NÂNG CAO CHỌN LỌC",
+                    "row": 1,
+                    "col": 3
+                  },
+                  "originalFormattedValue": "BVT"
+                },
+                {
+                  "formattedValue": "Tải_File",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true,
+                      "link": {}
+                    }
+                  },
+                  "hyperlink": "OZ60vLpShpTGzrjSUtZT-bmkQTi9hE9p0u4_l7eVuZsvXo_LgB6T1TdqM2pwNBZ70-PKVU_VutBbR3-akA2Nfik0_4MnBMUWtilr_9HQp5ORD6MUix7LSWgl4NCIxvDFazqvbUxiewOqr2_SgQ",
+                  "originalUrl": "https://drive.google.com/file/d/1zEQxmW1VXzwFz4gw65mwpRSV7QiArLAr/view?usp=sharing",
+                  "isFakeLink": true,
+                  "linkRemoved": true,
+                  "position": {
+                    "sheet": "TDMYC2026_CHINH PHỤC CÁC CHUYÊN ĐỀ NÂNG CAO CHỌN LỌC",
+                    "row": 1,
+                    "col": 4
+                  },
+                  "originalFormattedValue": "Tải_File"
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -617,29 +617,20 @@ export default function CourseDetailPage({ params }) {
       const headerName = headerCell.formattedValue || `Cột ${idx + 1}`;
       const cell = dataRow.values[idx] || {};
       
-      // Với các trường link, lưu trữ cả displayText và url
-      const isLinkField = headerName.toLowerCase().includes('link') || 
-                         headerName.toLowerCase().includes('video') || 
-                         headerName.toLowerCase().includes('tài liệu');
-      
-      if (isLinkField) {
-        // Lấy URL từ link.uri nếu có (ưu tiên cao nhất)
-        let url = '';
-        if (cell.userEnteredFormat?.textFormat?.link?.uri) {
-          url = cell.userEnteredFormat.textFormat.link.uri;
-        } else if (cell.hyperlink && cell.hyperlink.startsWith('http')) {
-          url = cell.hyperlink;
-        }
-        
-        // Lưu cả displayText và url riêng biệt
-        rowData[headerName] = {
-          displayText: cell.formattedValue || '',
-          url: url
-        };
-      } else {
-        // Các trường bình thường
-        rowData[headerName] = cell.formattedValue || '';
+      // Lưu trữ cả displayText và url cho mọi trường
+      // Lấy URL từ link.uri nếu có (ưu tiên cao nhất)
+      let url = '';
+      if (cell.userEnteredFormat?.textFormat?.link?.uri) {
+        url = cell.userEnteredFormat.textFormat.link.uri;
+      } else if (cell.hyperlink && cell.hyperlink.startsWith('http')) {
+        url = cell.hyperlink;
       }
+      
+      // Lưu cả displayText và url riêng biệt cho mọi trường
+      rowData[headerName] = {
+        displayText: cell.formattedValue || '',
+        url: url
+      };
     });
     
     setEditRowData(rowData);
@@ -695,19 +686,11 @@ export default function CourseDetailPage({ params }) {
             rowValues[idx] = { formattedValue: '' };
           }
           
-          // Kiểm tra xem đây có phải là trường link không
-          const isLinkField = headerName.toLowerCase().includes('link') || 
-                             headerName.toLowerCase().includes('video') || 
-                             headerName.toLowerCase().includes('tài liệu') ||
-                             headerName.toLowerCase().includes('sách');
-          
-          if (isLinkField && typeof newValue === 'object') {
+          if (typeof newValue === 'object') {
             // Cập nhật formattedValue từ displayText
-            if (newValue.displayText) {
-              rowValues[idx].formattedValue = newValue.displayText;
-            }
+            rowValues[idx].formattedValue = newValue.displayText || '';
             
-            // Cập nhật URL
+            // Cập nhật URL nếu có
             if (newValue.url) {
               rowValues[idx].hyperlink = newValue.url;
               if (!rowValues[idx].userEnteredFormat) rowValues[idx].userEnteredFormat = {};
@@ -716,14 +699,9 @@ export default function CourseDetailPage({ params }) {
             } else {
               // Nếu URL bị xóa
               delete rowValues[idx].hyperlink;
-              if (rowValues[idx].userEnteredFormat?.textFormat) {
+              if (rowValues[idx].userEnteredFormat?.textFormat?.link) {
                 delete rowValues[idx].userEnteredFormat.textFormat.link;
               }
-            }
-          } else {
-            // Trường thông thường
-            if (typeof newValue === 'string') {
-              rowValues[idx].formattedValue = newValue;
             }
           }
         });
@@ -827,7 +805,7 @@ export default function CourseDetailPage({ params }) {
 
   return (
     <div className="min-h-screen bg-gray-100 p-2 sm:p-6">
-      <div className="max-w-4xl mx-auto bg-white rounded-lg shadow p-4 sm:p-8 relative">
+      <div className="w-full max-w-full sm:max-w-7xl mx-auto bg-white rounded-lg shadow p-4 sm:p-8 relative">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
           <button
@@ -1155,7 +1133,7 @@ export default function CourseDetailPage({ params }) {
         
         {/* Dữ liệu gốc khóa học */}
         {course.originalData && (
-          <div className="mt-6 bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <div className="mt-6 bg-white rounded-lg border border-gray-200 overflow-hidden w-full">
             <div className="px-4 sm:px-6 py-4 border-b border-gray-200 bg-gray-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
               <h3 className="text-lg font-medium text-gray-900">Dữ liệu gốc</h3>
               <div className="flex flex-wrap gap-2">
@@ -1259,27 +1237,43 @@ export default function CourseDetailPage({ params }) {
                         <span className="text-sm text-blue-700">Vuốt ngang để xem đầy đủ nội dung</span>
                       </div>
                       
-                      <div className="overflow-x-auto pb-4">
-                        <table className="min-w-full divide-y divide-gray-200">
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full w-full table-fixed divide-y divide-gray-200">
                           <thead>
                             <tr className="bg-gradient-to-r from-blue-600 to-indigo-600">
-                              {course.originalData.sheets[activeSheet].data[0].rowData[0]?.values?.map((cell, index) => (
-                                <th 
-                                  key={index} 
-                                  className={`px-3 sm:px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider ${
-                                    index === 0 ? 'text-center w-12 sm:w-16' : ''
-                                  } ${index > 2 ? 'hidden sm:table-cell' : ''}`}
-                                >
-                                  <div className="flex items-center">
-                                    {cell.formattedValue || ''}
-                                    {index > 0 && 
-                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
-                                      </svg>
-                                    }
-                                  </div>
-                                </th>
-                              ))}
+                              {course.originalData.sheets[activeSheet].data[0].rowData[0]?.values?.map((cell, index) => {
+                                // Xác định chiều rộng phù hợp cho mỗi cột
+                                let columnWidth = '';
+                                if (index === 0) {
+                                  columnWidth = 'w-12 sm:w-16'; // Cột STT hẹp
+                                } else if (
+                                  (cell.formattedValue || '').toLowerCase().includes('video') || 
+                                  (cell.formattedValue || '').toLowerCase().includes('link') || 
+                                  (cell.formattedValue || '').toLowerCase().includes('tài liệu')
+                                ) {
+                                  columnWidth = 'w-1/4'; // Cột chứa link rộng hơn
+                                } else {
+                                  columnWidth = ''; // Các cột khác tự điều chỉnh
+                                }
+                                
+                                return (
+                                  <th 
+                                    key={index} 
+                                    className={`px-3 sm:px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider ${
+                                      index === 0 ? 'text-center' : ''
+                                    } ${columnWidth} ${index > 2 ? 'hidden sm:table-cell' : ''}`}
+                                  >
+                                    <div className="flex items-center">
+                                      {cell.formattedValue || ''}
+                                      {index > 0 && 
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
+                                        </svg>
+                                      }
+                                    </div>
+                                  </th>
+                                );
+                              })}
                               {/* Thêm cột cho actions */}
                               <th className="px-3 sm:px-6 py-3 text-right text-xs font-medium text-white uppercase tracking-wider">
                                 Thao tác
@@ -2545,15 +2539,15 @@ export default function CourseDetailPage({ params }) {
                       </label>
                       <div className="mt-1 sm:mt-0 sm:col-span-2">
                         {index === 0 ? (
-                          // Trường đầu tiên (thường là STT)
+                          // Trường đầu tiên (thường là STT) chỉ cần input đơn giản
                           <input
                             type="text"
-                            value={editRowData[header]}
-                            onChange={(e) => handleEditRowChange(header, e.target.value)}
+                            value={editRowData[header]?.displayText || ''}
+                            onChange={(e) => handleEditRowChange(header, e.target.value, 'displayText')}
                             className="max-w-lg block w-full shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border-gray-300 rounded-md"
                           />
-                        ) : header.toLowerCase().includes('link') || header.toLowerCase().includes('video') || header.toLowerCase().includes('sách') || header.toLowerCase().includes('tài liệu') ? (
-                          // Các trường chứa link - hiển thị 2 input riêng biệt
+                        ) : (
+                          // Tất cả các trường khác đều có cả input cho tiêu đề và URL
                           <div className="space-y-4">
                             {/* Input cho tiêu đề hiển thị */}
                             <div>
@@ -2572,7 +2566,7 @@ export default function CourseDetailPage({ params }) {
                             {/* Input cho URL */}
                             <div>
                               <label className="block text-sm font-medium text-gray-500 mb-1">
-                                URL liên kết:
+                                URL liên kết (nếu có):
                               </label>
                               <div className="flex items-center space-x-2">
                                 <input
@@ -2629,19 +2623,6 @@ export default function CourseDetailPage({ params }) {
                                 </button>
                               </div>
                             )}
-                            <p className="text-xs text-gray-500">
-                              Nhập URL của tài liệu, video hoặc bất kỳ liên kết nào khác. Tiêu đề hiển thị sẽ được giữ nguyên.
-                            </p>
-                          </div>
-                        ) : (
-                          // Các trường khác
-                          <div className="space-y-2">
-                            <input
-                              type="text"
-                              value={editRowData[header]}
-                              onChange={(e) => handleEditRowChange(header, e.target.value)}
-                              className="max-w-lg block w-full shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border-gray-300 rounded-md"
-                            />
                           </div>
                         )}
                       </div>
