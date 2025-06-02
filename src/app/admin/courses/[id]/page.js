@@ -45,6 +45,12 @@ export default function CourseDetailPage({ params }) {
   const [applyingSync, setApplyingSync] = useState(false);
   const [previewActiveTab, setPreviewActiveTab] = useState('sheet');
   
+  // State for row editing
+  const [showEditRowModal, setShowEditRowModal] = useState(false);
+  const [editRowData, setEditRowData] = useState({});
+  const [editingRowIndex, setEditingRowIndex] = useState(null);
+  const [updatingRow, setUpdatingRow] = useState(false);
+  
   // Hàm lấy tiêu đề của sheet
   const getSheetTitle = (index, sheets) => {
     if (!sheets || !sheets[index]) return `Khóa ${index + 1}`;
@@ -589,6 +595,128 @@ export default function CourseDetailPage({ params }) {
     }
   }, [course]);
 
+  // Hàm mở modal sửa hàng
+  const handleOpenEditRowModal = (rowIndex) => {
+    if (!course?.originalData?.sheets || !course.originalData.sheets[activeSheet]) {
+      alert('Không thể sửa hàng vì không có dữ liệu sheet');
+      return;
+    }
+    
+    // Lấy dữ liệu hàng hiện tại
+    const headerRow = course.originalData.sheets[activeSheet].data[0].rowData[0];
+    const dataRow = course.originalData.sheets[activeSheet].data[0].rowData[rowIndex + 1]; // +1 vì hàng đầu tiên là header
+    
+    if (!headerRow || !headerRow.values || !dataRow || !dataRow.values) {
+      alert('Không thể lấy dữ liệu hàng để sửa');
+      return;
+    }
+    
+    // Tạo object dữ liệu từ header và data
+    const rowData = {};
+    headerRow.values.forEach((headerCell, idx) => {
+      const headerName = headerCell.formattedValue || `Cột ${idx + 1}`;
+      // Ưu tiên lấy giá trị từ link.uri vì hyperlink có thể bị mã hóa
+      const cell = dataRow.values[idx] || {};
+      let value = cell.formattedValue || '';
+      
+      // Lấy URL từ link.uri nếu có (ưu tiên cao nhất)
+      if (cell.userEnteredFormat?.textFormat?.link?.uri) {
+        value = cell.userEnteredFormat.textFormat.link.uri;
+      } 
+      // Nếu không có link.uri, thử lấy từ hyperlink (nếu là URL thật, không phải mã hóa)
+      else if (cell.hyperlink && cell.hyperlink.startsWith('http')) {
+        value = cell.hyperlink;
+      }
+      
+      rowData[headerName] = value;
+    });
+    
+    setEditRowData(rowData);
+    setEditingRowIndex(rowIndex);
+    setShowEditRowModal(true);
+  };
+  
+  // Hàm thay đổi giá trị khi sửa hàng
+  const handleEditRowChange = (header, value) => {
+    setEditRowData(prev => ({
+      ...prev,
+      [header]: value
+    }));
+  };
+  
+  // Hàm cập nhật hàng đã sửa
+  const handleUpdateRow = async () => {
+    if (!course || !course._id || editingRowIndex === null) return;
+    
+    try {
+      setUpdatingRow(true);
+      
+      // Chuyển đổi dữ liệu từ form sang định dạng phù hợp
+      const headerRow = course.originalData.sheets[activeSheet].data[0].rowData[0];
+      // Lấy dữ liệu hàng hiện tại để giữ lại cấu trúc
+      const currentRow = course.originalData.sheets[activeSheet].data[0].rowData[editingRowIndex + 1];
+      const rowValues = [];
+      
+      if (headerRow && headerRow.values) {
+        headerRow.values.forEach((cell, idx) => {
+          const headerName = cell.formattedValue || '';
+          const value = editRowData[headerName] || '';
+          const currentCell = currentRow?.values?.[idx] || {};
+          
+          // Kiểm tra nếu giá trị là URL
+          if (value && (value.startsWith('http://') || value.startsWith('https://'))) {
+            rowValues.push({
+              formattedValue: value.split('/').pop() || value, // Giữ lại phần hiển thị ngắn hơn
+              hyperlink: value,
+              userEnteredFormat: {
+                ...(currentCell.userEnteredFormat || {}),
+                textFormat: {
+                  ...(currentCell.userEnteredFormat?.textFormat || {}),
+                  link: { uri: value }
+                }
+              }
+            });
+          } else {
+            // Giữ lại định dạng cũ nhưng cập nhật giá trị
+            rowValues.push({
+              formattedValue: value,
+              ...(currentCell.userEnteredFormat ? { userEnteredFormat: currentCell.userEnteredFormat } : {})
+            });
+          }
+        });
+      }
+      
+      // Gọi API để cập nhật hàng
+      const response = await fetch(`/api/courses/${course._id}/update-row`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sheetIndex: activeSheet,
+          rowIndex: editingRowIndex + 1, // +1 vì rowIndex 0 là header
+          rowData: rowValues
+        }),
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.message || 'Không thể cập nhật hàng');
+      }
+      
+      // Đóng modal và làm mới dữ liệu
+      setShowEditRowModal(false);
+      alert('Cập nhật hàng thành công!');
+      await fetchCourseDetail();
+    } catch (error) {
+      console.error('Lỗi khi cập nhật hàng:', error);
+      alert(`Lỗi khi cập nhật hàng: ${error.message}`);
+    } finally {
+      setUpdatingRow(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-100 p-6">
@@ -1109,6 +1237,10 @@ export default function CourseDetailPage({ params }) {
                                   </div>
                                 </th>
                               ))}
+                              {/* Thêm cột cho actions */}
+                              <th className="px-3 sm:px-6 py-3 text-right text-xs font-medium text-white uppercase tracking-wider">
+                                Thao tác
+                              </th>
                             </tr>
                           </thead>
                           <tbody className="bg-white divide-y divide-gray-200">
@@ -1226,27 +1358,16 @@ export default function CourseDetailPage({ params }) {
                                   );
                                 })}
 
-                                {/* Hiển thị nút "Xem thêm" chỉ trên mobile khi có hơn 3 cột */}
-                                {row.values && row.values.length > 3 && (
-                                  <td className="px-3 py-3 text-right sm:hidden">
-                                    <button
-                                      onClick={() => {
-                                        // Tìm link đầu tiên trong dòng nếu có
-                                        const firstLink = row.values.find(cell => 
-                                          cell.userEnteredFormat?.textFormat?.link?.uri || cell.hyperlink
-                                        );
-                                        
-                                        if (firstLink) {
-                                          const url = firstLink.userEnteredFormat?.textFormat?.link?.uri || firstLink.hyperlink;
-                                          handleLinkClick(url, firstLink.formattedValue);
-                                        }
-                                      }}
-                                      className="bg-blue-50 text-blue-600 px-2 py-1 rounded text-xs font-medium hover:bg-blue-100"
-                                    >
-                                      Chi tiết
-                                    </button>
-                                  </td>
-                                )}
+                                {/* Thêm nút sửa ở cuối mỗi hàng */}
+                                <td className="px-3 sm:px-6 py-3 whitespace-nowrap text-right text-sm font-medium">
+                                  <button
+                                    onClick={() => handleOpenEditRowModal(rowIndex)}
+                                    className="text-indigo-600 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 px-3 py-1 rounded-md flex items-center"
+                                  >
+                                    <PencilIcon className="h-4 w-4 mr-1" />
+                                    Sửa
+                                  </button>
+                                </td>
                               </tr>
                             ))}
                           </tbody>
@@ -2351,6 +2472,135 @@ export default function CourseDetailPage({ params }) {
                     </span>
                   ) : (
                     'Áp dụng đồng bộ'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal sửa hàng */}
+        {showEditRowModal && (
+          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+              <div className="px-4 sm:px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                <h3 className="text-lg font-medium text-gray-900">Sửa thông tin buổi học</h3>
+                <button
+                  onClick={() => setShowEditRowModal(false)}
+                  className="text-gray-400 hover:text-gray-500"
+                >
+                  <XMarkIcon className="h-6 w-6" />
+                </button>
+              </div>
+              
+              <div className="p-4 sm:p-6 overflow-auto max-h-[calc(90vh-8rem)]">
+                <div className="space-y-6">
+                  {Object.keys(editRowData).map((header, index) => (
+                    <div key={index} className="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
+                      <label className="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+                        {header}
+                      </label>
+                      <div className="mt-1 sm:mt-0 sm:col-span-2">
+                        {index === 0 ? (
+                          // Trường đầu tiên (thường là STT)
+                          <input
+                            type="text"
+                            value={editRowData[header]}
+                            onChange={(e) => handleEditRowChange(header, e.target.value)}
+                            className="max-w-lg block w-full shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border-gray-300 rounded-md"
+                          />
+                        ) : header.toLowerCase().includes('link') || header.toLowerCase().includes('video') || header.toLowerCase().includes('sách') || header.toLowerCase().includes('tài liệu') ? (
+                          // Các trường chứa link
+                          <div className="space-y-2">
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="text"
+                                value={editRowData[header]}
+                                onChange={(e) => handleEditRowChange(header, e.target.value)}
+                                className="max-w-lg block w-full shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border-gray-300 rounded-md bg-blue-50"
+                                placeholder="Nhập URL (https://...)"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  // Thêm protocol nếu chưa có
+                                  let url = editRowData[header].trim();
+                                  if (url && !url.match(/^https?:\/\//)) {
+                                    url = 'https://' + url;
+                                    handleEditRowChange(header, url);
+                                  }
+                                }}
+                                className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                                </svg>
+                                Xác nhận URL
+                              </button>
+                            </div>
+                            {editRowData[header] && (
+                              <div className="flex items-center p-2 bg-gray-50 rounded">
+                                <a 
+                                  href={editRowData[header]}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-sm text-blue-600 hover:text-blue-800 break-all"
+                                >
+                                  {editRowData[header]}
+                                </a>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (window.confirm('Bạn có chắc chắn muốn xóa liên kết này?')) {
+                                      handleEditRowChange(header, '');
+                                    }
+                                  }}
+                                  className="ml-2 text-red-500 hover:text-red-700"
+                                >
+                                  <XMarkIcon className="h-4 w-4" />
+                                </button>
+                              </div>
+                            )}
+                            <p className="text-xs text-gray-500">
+                              Nhập URL của tài liệu, video hoặc bất kỳ liên kết nào khác
+                            </p>
+                          </div>
+                        ) : (
+                          // Các trường khác
+                          <div className="space-y-2">
+                            <input
+                              type="text"
+                              value={editRowData[header]}
+                              onChange={(e) => handleEditRowChange(header, e.target.value)}
+                              className="max-w-lg block w-full shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border-gray-300 rounded-md"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="px-4 sm:px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end">
+                <button
+                  onClick={() => setShowEditRowModal(false)}
+                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 mr-3"
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={handleUpdateRow}
+                  disabled={updatingRow}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
+                >
+                  {updatingRow ? (
+                    <span className="flex items-center">
+                      <ArrowPathIcon className="animate-spin h-4 w-4 mr-2" />
+                      Đang cập nhật...
+                    </span>
+                  ) : (
+                    'Cập nhật'
                   )}
                 </button>
               </div>
