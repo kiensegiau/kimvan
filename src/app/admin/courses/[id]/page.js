@@ -608,9 +608,12 @@ export default function CourseDetailPage({ params }) {
   // Set sheet đầu tiên nếu có dữ liệu sheets
   useEffect(() => {
     if (course?.originalData?.sheets && course.originalData.sheets.length > 0) {
-      setActiveSheet(0);
+      // Only set active sheet to 0 when the course is initially loaded
+      if (!isLoaded) {
+        setActiveSheet(0);
+      }
     }
-  }, [course]);
+  }, [course, isLoaded]);
 
   // Hàm mở modal sửa hàng
   const handleOpenEditRowModal = (rowIndex) => {
