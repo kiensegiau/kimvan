@@ -52,7 +52,7 @@ function cleanupFolders(keepFile = null) {
  * Tạo URL lấy dữ liệu chi tiết của sheet
  * @param {string} sheetId - ID của sheet
  * @param {string} originalId - ID gốc (nếu có)
- * @returns {string} URL đầy đủ
+ * @returns {string|null} URL đầy đủ hoặc null nếu không có originalId
  */
 function createDetailUrl(sheetId, originalId) {
   if (originalId) {
@@ -60,7 +60,8 @@ function createDetailUrl(sheetId, originalId) {
     // Không mã hóa lại originalId vì nó đã được mã hóa từ trước
     return `https://kimvan.id.vn/api/spreadsheets/${originalId}`;
   }
-  return `https://kimvan.id.vn/api/spreadsheets/${encodeURIComponent(sheetId)}`;
+  console.log(`Không có originalId, dừng lại`);
+  return null;
 }
 
 /**
@@ -220,6 +221,19 @@ async function fetchSheetDetail(sheetId, originalId) {
       const shortId = sheetId.substring(0, 10);
       console.log(`\nLấy chi tiết sheet: ${shortId}...`);
       const detailUrl = createDetailUrl(sheetId, originalId);
+      
+      // Kiểm tra nếu không có originalId thì dừng lại
+      if (!detailUrl) {
+        console.log(`❌ Không thể tạo URL chi tiết, thiếu originalId`);
+        return {
+          success: false,
+          error: "Thiếu originalId, không thể tạo URL chi tiết",
+          errorCode: 400,
+          sheetId: sheetId,
+          timestamp: Date.now()
+        };
+      }
+      
       console.log(`URL: ${detailUrl}`);
       
       const detailPage = await browser.newPage();

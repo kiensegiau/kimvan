@@ -50,6 +50,10 @@ export default function CourseDetailPage({ params }) {
   const [editRowData, setEditRowData] = useState({});
   const [editingRowIndex, setEditingRowIndex] = useState(null);
   const [updatingRow, setUpdatingRow] = useState(false);
+  // Thêm state mới để lưu trữ vị trí hàng header
+  const [headerRowIndex, setHeaderRowIndex] = useState(0);
+  // Thêm state để lưu trữ vị trí thực tế của hàng đang sửa trong mảng gốc
+  const [actualRowIndex, setActualRowIndex] = useState(null);
   
   // Hàm lấy tiêu đề của sheet
   const getSheetTitle = (index, sheets) => {
@@ -604,14 +608,56 @@ export default function CourseDetailPage({ params }) {
       return;
     }
     
-    // Lấy dữ liệu hàng hiện tại
-    const headerRow = course.originalData.sheets[activeSheet].data[0].rowData[0];
-    const dataRow = course.originalData.sheets[activeSheet].data[0].rowData[rowIndex + 1]; // +1 vì hàng đầu tiên là header
-    
-    if (!headerRow || !headerRow.values || !dataRow || !dataRow.values) {
-      alert('Không thể lấy dữ liệu hàng để sửa');
+    // Lấy tất cả các hàng
+    const allRows = course.originalData.sheets[activeSheet].data[0]?.rowData || [];
+    if (!allRows || allRows.length < 2) {
+      alert('Không đủ dữ liệu để sửa');
       return;
     }
+
+    console.log("=== PHÂN TÍCH THÔNG TIN CHI TIẾT ===");
+    console.log("1. Hàng được chọn (rowIndex từ UI):", rowIndex);
+
+    // Dữ liệu bảng được hiển thị bằng rowData.slice(1).map((row, rowIndex) => ...)
+    // Do đó, rowIndex = 0 thực sự là phần tử thứ 1 của mảng gốc (sau khi đã slice)
+    // Để lấy vị trí thật trong mảng gốc, ta cộng thêm 1
+    const actualRow = rowIndex + 1;
+    
+    // Log để kiểm tra đúng không
+    console.log("2. Các hàng đầu tiên trong mảng dữ liệu gốc:");
+    for (let i = 0; i < Math.min(5, allRows.length); i++) {
+      console.log(`   Hàng ${i}:`, allRows[i]?.values?.map(cell => cell.formattedValue || '-') || 'Không có dữ liệu');
+    }
+    console.log("3. Hàng được chọn để sửa (theo tính toán):");
+    console.log(`   Hàng ${actualRow}:`, allRows[actualRow]?.values?.map(cell => cell.formattedValue || '-') || 'Không có dữ liệu');
+
+    if (actualRow >= allRows.length) {
+      alert(`Hàng dữ liệu vượt quá giới hạn (${actualRow}/${allRows.length})`);
+      return;
+    }
+
+    // Lấy dữ liệu của hàng cần sửa
+    const dataRow = allRows[actualRow];
+    if (!dataRow || !dataRow.values) {
+      alert(`Không thể lấy dữ liệu hàng để sửa (vị trí ${actualRow})`);
+      return;
+    }
+
+    // Tìm header (lấy hàng đầu tiên có dữ liệu làm header)
+    let headerRow = null;
+    for (let i = 0; i < allRows.length; i++) {
+      if (allRows[i]?.values && Array.isArray(allRows[i].values) && allRows[i].values.length > 0) {
+        headerRow = allRows[i];
+        break;
+      }
+    }
+
+    if (!headerRow || !headerRow.values) {
+      alert('Không tìm thấy header trong dữ liệu');
+      return;
+    }
+
+    console.log("4. Header được sử dụng:", headerRow.values.map(cell => cell.formattedValue || '-'));
     
     // Tạo object dữ liệu từ header và data
     const rowData = {};
@@ -635,8 +681,13 @@ export default function CourseDetailPage({ params }) {
       };
     });
     
+    // Log để xác nhận dữ liệu hàng được chọn đúng
+    console.log("5. Dữ liệu sẽ hiển thị trong form sửa:", rowData);
+    
+    // Lưu lại các giá trị quan trọng để sử dụng khi cập nhật
     setEditRowData(rowData);
     setEditingRowIndex(rowIndex);
+    setActualRowIndex(actualRow);
     setShowEditRowModal(true);
   };
   
@@ -666,14 +717,41 @@ export default function CourseDetailPage({ params }) {
   
   // Hàm cập nhật hàng đã sửa
   const handleUpdateRow = async () => {
-    if (!course || !course._id || editingRowIndex === null) return;
+    if (!course || !course._id || actualRowIndex === null) return;
     
     try {
       setUpdatingRow(true);
       
-      // Lấy dữ liệu hàng hiện tại và dữ liệu header
-      const headerRow = course.originalData.sheets[activeSheet].data[0].rowData[0];
-      const currentRow = course.originalData.sheets[activeSheet].data[0].rowData[editingRowIndex + 1];
+      // Lấy tất cả các hàng
+      const allRows = course.originalData.sheets[activeSheet].data[0]?.rowData || [];
+      if (!allRows || allRows.length < 2) {
+        throw new Error('Không đủ dữ liệu để cập nhật');
+      }
+      
+      console.log("=== CẬP NHẬT DỮ LIỆU ===");
+      console.log("1. Vị trí hàng cần cập nhật (actualRowIndex):", actualRowIndex);
+      
+      // Sử dụng actualRowIndex đã được lưu trữ từ lúc mở modal
+      const currentRow = allRows[actualRowIndex];
+      if (!currentRow || !currentRow.values) {
+        throw new Error(`Không tìm thấy dữ liệu hàng để cập nhật (vị trí ${actualRowIndex})`);
+      }
+      
+      console.log("2. Dữ liệu hàng cần cập nhật:", 
+        currentRow.values.map(cell => cell.formattedValue || '-'));
+      
+      // Tìm header (lấy hàng đầu tiên có dữ liệu làm header)
+      let headerRow = null;
+      for (let i = 0; i < allRows.length; i++) {
+        if (allRows[i]?.values && Array.isArray(allRows[i].values) && allRows[i].values.length > 0) {
+          headerRow = allRows[i];
+          break;
+        }
+      }
+      
+      if (!headerRow || !headerRow.values) {
+        throw new Error('Không tìm thấy header trong dữ liệu');
+      }
       
       // Clone dữ liệu hàng hiện tại để giữ nguyên cấu trúc
       const rowValues = JSON.parse(JSON.stringify(currentRow.values || []));
@@ -709,6 +787,9 @@ export default function CourseDetailPage({ params }) {
         });
       }
       
+      console.log("3. Dữ liệu sau khi sửa:", 
+        rowValues.map(cell => cell.formattedValue || '-'));
+      
       // Gọi API để cập nhật hàng
       const response = await fetch(`/api/courses/${course._id}/update-row`, {
         method: 'PUT',
@@ -717,7 +798,7 @@ export default function CourseDetailPage({ params }) {
         },
         body: JSON.stringify({
           sheetIndex: activeSheet,
-          rowIndex: editingRowIndex + 1, // +1 vì rowIndex 0 là header
+          rowIndex: actualRowIndex,
           rowData: rowValues
         }),
       });
@@ -730,6 +811,7 @@ export default function CourseDetailPage({ params }) {
       
       // Đóng modal và làm mới dữ liệu
       setShowEditRowModal(false);
+      setActualRowIndex(null); // Reset actualRowIndex
       alert('Cập nhật hàng thành công!');
       await fetchCourseDetail();
     } catch (error) {
