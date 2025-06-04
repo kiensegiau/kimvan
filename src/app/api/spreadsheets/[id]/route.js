@@ -51,9 +51,15 @@ function cleanupFolders(keepFile = null) {
 /**
  * Tạo URL lấy dữ liệu chi tiết của sheet
  * @param {string} sheetId - ID của sheet
+ * @param {string} originalId - ID gốc (nếu có)
  * @returns {string} URL đầy đủ
  */
-function createDetailUrl(sheetId) {
+function createDetailUrl(sheetId, originalId) {
+  if (originalId) {
+    console.log(`Sử dụng originalId: ${originalId} thay cho sheetId`);
+    // Không mã hóa lại originalId vì nó đã được mã hóa từ trước
+    return `https://kimvan.id.vn/api/spreadsheets/${originalId}`;
+  }
   return `https://kimvan.id.vn/api/spreadsheets/${encodeURIComponent(sheetId)}`;
 }
 
@@ -176,11 +182,15 @@ function processFakeLinks(data) {
 /**
  * Tự động lấy chi tiết sheet từ API KimVan
  * @param {string} sheetId - ID của sheet cần lấy
+ * @param {string} originalId - ID gốc (nếu có)
  * @returns {Promise<Object>} Dữ liệu sheet hoặc null nếu có lỗi
  */
-async function fetchSheetDetail(sheetId) {
+async function fetchSheetDetail(sheetId, originalId) {
   try {
     console.log(`===== BẮT ĐẦU LẤY CHI TIẾT SHEET VỚI ID "${sheetId}" =====`);
+    if (originalId) {
+      console.log(`===== SỬ DỤNG ORIGINAL ID "${originalId}" =====`);
+    }
     
     // Đường dẫn đến thư mục dữ liệu người dùng Chrome
     const userDataDir = path.join(process.cwd(), 'chrome-user-data');
@@ -209,7 +219,7 @@ async function fetchSheetDetail(sheetId) {
     try {
       const shortId = sheetId.substring(0, 10);
       console.log(`\nLấy chi tiết sheet: ${shortId}...`);
-      const detailUrl = createDetailUrl(sheetId);
+      const detailUrl = createDetailUrl(sheetId, originalId);
       console.log(`URL: ${detailUrl}`);
       
       const detailPage = await browser.newPage();
@@ -344,6 +354,13 @@ export async function GET(request, { params }) {
       return NextResponse.json({ error: 'ID không được cung cấp' }, { status: 400 });
     }
     
+    // Lấy originalId từ query params nếu có
+    const { searchParams } = new URL(request.url);
+    const originalId = searchParams.get('originalId');
+    if (originalId) {
+      console.log(`Nhận được originalId: ${originalId} từ query params`);
+    }
+    
     // Timestamp cho header
     const timestamp = Date.now();
     const responseHeaders = {
@@ -358,7 +375,82 @@ export async function GET(request, { params }) {
     console.log('==============================================');
     
     // Gọi hàm lấy chi tiết
-    const result = await fetchSheetDetail(id);
+    const result = await fetchSheetDetail(id, originalId);
+    
+    if (result.success) {
+      // Dọn dẹp thư mục kết quả, giữ lại file vừa lấy được
+      const detailFileName = `sheet-${id.substring(0, 10)}-detail.json`;
+      const detailFilePath = path.join(resultsDir, detailFileName);
+      const filesDeleted = cleanupFolders(detailFilePath);
+      console.log(`Đã dọn dẹp ${filesDeleted} file tạm thời sau khi lấy chi tiết thành công`);
+      
+      return NextResponse.json(result.data, {
+        headers: responseHeaders
+      });
+    } else {
+      return NextResponse.json(
+        {
+          error: 'Không thể lấy chi tiết sheet',
+          detail: result.error,
+          errorCode: result.errorCode,
+          timestamp: timestamp
+        },
+        {
+          status: result.errorCode || 500,
+          headers: responseHeaders
+        }
+      );
+    }
+  } catch (error) {
+    console.error('Lỗi không xác định:', error);
+    
+    return NextResponse.json(
+      { 
+        error: `Lỗi: ${error.message}`,
+        timestamp: Date.now()
+      },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request, { params }) {
+  try {
+    // Await params trước khi sử dụng
+    const paramsData = await params;
+    const id = paramsData.id;
+    
+    if (!id) {
+      return NextResponse.json({ error: 'ID không được cung cấp' }, { status: 400 });
+    }
+    
+    // Lấy originalId từ request body
+    let originalId;
+    try {
+      const body = await request.json();
+      originalId = body.originalId;
+      if (originalId) {
+        console.log(`Nhận được originalId: ${originalId} từ request body`);
+      }
+    } catch (e) {
+      console.log('Không có request body hoặc không phải JSON');
+    }
+    
+    // Timestamp cho header
+    const timestamp = Date.now();
+    const responseHeaders = {
+      'X-Timestamp': `${timestamp}`,
+      'X-Cache-Control': 'no-cache',
+      'X-Data-Source': 'fetch-detail-only'
+    };
+    
+    console.log('==============================================');
+    console.log(`Lấy chi tiết sheet với ID: ${id}`);
+    console.log(`Timestamp: ${timestamp}`);
+    console.log('==============================================');
+    
+    // Gọi hàm lấy chi tiết
+    const result = await fetchSheetDetail(id, originalId);
     
     if (result.success) {
       // Dọn dẹp thư mục kết quả, giữ lại file vừa lấy được

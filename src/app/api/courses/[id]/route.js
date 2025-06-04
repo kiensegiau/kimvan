@@ -687,7 +687,24 @@ export async function PATCH(request, { params }) {
       const kimvanApiUrl = `${origin}/api/spreadsheets/${id}`;
       console.log(`🌐 [PATCH] URL đích: ${kimvanApiUrl}`);
       
-      const kimvanResponse = await fetch(kimvanApiUrl);
+      // Chuẩn bị options cho fetch request
+      const fetchOptions = {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      };
+      
+      // Nếu có originalId, thêm vào body của request
+      if (requestBody.originalId) {
+        console.log(`📎 [PATCH] Thêm originalId: ${requestBody.originalId} vào request`);
+        fetchOptions.method = 'POST';
+        fetchOptions.body = JSON.stringify({
+          originalId: requestBody.originalId
+        });
+      }
+      
+      const kimvanResponse = await fetch(kimvanApiUrl, fetchOptions);
       
       if (!kimvanResponse.ok) {
         console.log(`❌ [PATCH] Lỗi khi gọi API: ${kimvanResponse.status}`);
