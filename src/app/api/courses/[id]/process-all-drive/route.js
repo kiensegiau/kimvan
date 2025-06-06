@@ -88,6 +88,33 @@ export async function POST(request, { params }) {
 
     console.log(`Đã tìm thấy khóa học: ${course.name || 'Không có tên'}`);
 
+    // Làm sạch các mục đang xử lý đã quá hạn (30 phút)
+    if (course.processingDriveFiles && course.processingDriveFiles.length > 0) {
+      const now = new Date();
+      const staleThreshold = 30 * 60 * 1000; // 30 phút
+      
+      const staleEntries = course.processingDriveFiles.filter(entry => {
+        const startedAt = new Date(entry.startedAt);
+        const elapsedMs = now - startedAt;
+        return elapsedMs > staleThreshold;
+      });
+      
+      if (staleEntries.length > 0) {
+        console.log(`Xóa ${staleEntries.length} mục xử lý quá hạn (> 30 phút)`);
+        course.processingDriveFiles = course.processingDriveFiles.filter(entry => {
+          const startedAt = new Date(entry.startedAt);
+          const elapsedMs = now - startedAt;
+          return elapsedMs <= staleThreshold;
+        });
+        
+        // Cập nhật danh sách đang xử lý trong database
+        await collection.updateOne(
+          { _id: new ObjectId(id) },
+          { $set: { processingDriveFiles: course.processingDriveFiles } }
+        );
+      }
+    }
+
     // Log cấu trúc dữ liệu để debug
     console.log('Cấu trúc originalData:', course.originalData ? 
       `Có ${course.originalData.sheets?.length || 0} sheets` : 
@@ -140,8 +167,30 @@ export async function POST(request, { params }) {
 
     console.log(`Tìm thấy ${drivePdfLinks.length} links Google Drive PDF`);
 
+    // Thêm bước khử trùng links dựa trên file ID
+    const uniqueLinks = [];
+    const fileIdMap = new Map();
+    
+    for (const link of drivePdfLinks) {
+      try {
+        const { fileId } = extractGoogleDriveFileId(link.url);
+        
+        if (!fileIdMap.has(fileId)) {
+          fileIdMap.set(fileId, link);
+          uniqueLinks.push(link);
+        } else {
+          console.log(`Bỏ qua link trùng lặp: ${link.url} (trùng fileId: ${fileId})`);
+        }
+      } catch (error) {
+        console.error(`Lỗi khi trích xuất fileId từ ${link.url}: ${error.message}`);
+        uniqueLinks.push(link); // Vẫn giữ link nếu không thể trích xuất fileId
+      }
+    }
+    
+    console.log(`Sau khi khử trùng: ${uniqueLinks.length}/${drivePdfLinks.length} links độc nhất`);
+
     // Nếu không tìm thấy link nào
-    if (drivePdfLinks.length === 0) {
+    if (uniqueLinks.length === 0) {
       return NextResponse.json({
         success: true,
         message: 'Không tìm thấy link Google Drive PDF nào trong khóa học này',
@@ -154,7 +203,13 @@ export async function POST(request, { params }) {
 
     // Khởi tạo mảng processedDriveFiles nếu chưa có
     if (!course.processedDriveFiles) {
+      course.processingDriveFiles = [];
       course.processedDriveFiles = [];
+    }
+
+    // Đảm bảo mảng processingDriveFiles tồn tại
+    if (!course.processingDriveFiles) {
+      course.processingDriveFiles = [];
     }
 
     // Xử lý tuần tự từng link
@@ -162,12 +217,29 @@ export async function POST(request, { params }) {
     let successCount = 0;
     let errorCount = 0;
 
-    for (const link of drivePdfLinks) {
+    for (const link of uniqueLinks) {
       try {
         // Kiểm tra xem link đã xử lý chưa
         const existingProcessed = course.processedDriveFiles.find(
           file => file.originalUrl === link.url
         );
+
+        // Kiểm tra xem link đang được xử lý bởi request khác không
+        const isCurrentlyProcessing = course.processingDriveFiles.some(
+          processing => processing.fileId === extractGoogleDriveFileId(link.url).fileId
+        );
+
+        if (isCurrentlyProcessing) {
+          console.log(`Link đang được xử lý bởi request khác: ${link.url}`);
+          results.push({
+            originalUrl: link.url,
+            displayName: link.displayName,
+            sheetTitle: link.sheetTitle,
+            status: 'Đang được xử lý bởi request khác',
+            skipped: true
+          });
+          continue;
+        }
 
         if (existingProcessed) {
           // Link đã được xử lý trước đó, kiểm tra xem link mới còn tồn tại không
@@ -346,6 +418,24 @@ export async function POST(request, { params }) {
           console.log(`Đang xử lý link: ${link.url}`);
           const apiUrl = new URL('/api/drive/remove-watermark', request.url).toString();
           
+          // Đánh dấu link đang được xử lý
+          try {
+            const { fileId } = extractGoogleDriveFileId(link.url);
+            course.processingDriveFiles.push({
+              fileId,
+              url: link.url,
+              startedAt: new Date()
+            });
+            
+            // Cập nhật trạng thái đang xử lý vào database
+            await collection.updateOne(
+              { _id: new ObjectId(id) },
+              { $set: { processingDriveFiles: course.processingDriveFiles } }
+            );
+          } catch (markError) {
+            console.error(`Không thể đánh dấu link đang xử lý: ${markError.message}`);
+          }
+          
           try {
             // Thêm retry logic
             let retryCount = 0;
@@ -455,6 +545,20 @@ export async function POST(request, { params }) {
             
             // Thêm vào danh sách cục bộ
             course.processedDriveFiles.push(processedFile);
+            
+            // Xóa khỏi danh sách đang xử lý
+            try {
+              const { fileId } = extractGoogleDriveFileId(link.url);
+              const processingIndex = course.processingDriveFiles.findIndex(
+                processing => processing.fileId === fileId
+              );
+              
+              if (processingIndex !== -1) {
+                course.processingDriveFiles.splice(processingIndex, 1);
+              }
+            } catch (unmarkError) {
+              console.error(`Không thể xóa trạng thái đang xử lý: ${unmarkError.message}`);
+            }
 
             results.push({
               originalUrl: link.url,
@@ -467,6 +571,20 @@ export async function POST(request, { params }) {
             successCount++;
           } catch (error) {
             console.error(`Lỗi xử lý file ${link.displayName}:`, error);
+            
+            // Xóa khỏi danh sách đang xử lý khi có lỗi
+            try {
+              const { fileId } = extractGoogleDriveFileId(link.url);
+              const processingIndex = course.processingDriveFiles.findIndex(
+                processing => processing.fileId === fileId
+              );
+              
+              if (processingIndex !== -1) {
+                course.processingDriveFiles.splice(processingIndex, 1);
+              }
+            } catch (unmarkError) {
+              console.error(`Không thể xóa trạng thái đang xử lý: ${unmarkError.message}`);
+            }
             
             results.push({
               originalUrl: link.url,
@@ -494,7 +612,12 @@ export async function POST(request, { params }) {
       // Cập nhật document
       const result = await collection.updateOne(
         { _id: new ObjectId(id) },
-        { $set: { processedDriveFiles: course.processedDriveFiles } }
+        { 
+          $set: { 
+            processedDriveFiles: course.processedDriveFiles,
+            processingDriveFiles: course.processingDriveFiles
+          } 
+        }
       );
       
       if (result.modifiedCount === 0) {
