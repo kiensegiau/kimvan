@@ -344,10 +344,69 @@ export async function middleware(request) {
   response.headers.set('x-middleware-active', 'true');
   response.headers.set('x-auth-token', token);
 
-  // Kiểm tra nếu yêu cầu là cho trang admin
-  if (pathname.startsWith('/admin') && 
-      !pathname.startsWith('/admin/login')) {
+  // Kiểm tra nếu yêu cầu là cho trang công tác viên (CTV)
+  if (pathname.startsWith('/ctv') && !pathname.startsWith('/ctv/login')) {
+    console.log('🔒 Middleware - Kiểm tra quyền truy cập trang CTV cho:', pathname);
     
+    try {
+      // Xác định URL cơ sở
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || request.nextUrl.origin;
+      
+      // Gọi API verify để lấy thông tin người dùng
+      console.log('🔒 Middleware - Gọi API verify để lấy thông tin người dùng CTV');
+      const verifyResponse = await fetch(`${baseUrl}${TOKEN_VERIFY_API}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token }),
+      });
+
+      if (!verifyResponse.ok) {
+        console.log('⚠️ Middleware - Không thể xác minh token, chuyển hướng đến trang đăng nhập');
+        const redirectResponse = NextResponse.redirect(new URL(routes.login, request.url));
+        return addSecurityHeaders(redirectResponse);
+      }
+
+      const verifyData = await verifyResponse.json();
+      
+      if (!verifyData.valid) {
+        console.log('⚠️ Middleware - Token không hợp lệ, chuyển hướng đến trang đăng nhập');
+        const redirectResponse = NextResponse.redirect(new URL(routes.login, request.url));
+        return addSecurityHeaders(redirectResponse);
+      }
+      
+      // Kiểm tra user có quyền ctv (công tác viên) hay không
+      console.log('🔒 Middleware - Kiểm tra quyền CTV, vai trò hiện tại:', verifyData.user.role);
+      
+      if (!verifyData.user.role || verifyData.user.role !== 'ctv') {
+        console.log('⚠️ Middleware - Không phải là CTV, chuyển hướng đến trang chủ');
+        const redirectResponse = NextResponse.redirect(new URL('/', request.url));
+        return addSecurityHeaders(redirectResponse);
+      }
+      
+      // Thêm cookie ctv_access để đánh dấu quyền công tác viên
+      const ctvResponse = NextResponse.next();
+      ctvResponse.cookies.set('ctv_access', 'true', {
+        httpOnly: true,
+        secure: cookieConfig.secure,
+        sameSite: cookieConfig.sameSite,
+        maxAge: 60 * 60 * 2, // 2 giờ
+        path: '/',
+      });
+      
+      // Nếu hợp lệ, cho phép truy cập
+      console.log('✅ Middleware - User CTV hợp lệ, cho phép truy cập');
+      return addSecurityHeaders(ctvResponse);
+    } catch (error) {
+      console.error('❌ Middleware - Lỗi kiểm tra quyền CTV:', error);
+      const redirectResponse = NextResponse.redirect(new URL('/', request.url));
+      return addSecurityHeaders(redirectResponse);
+    }
+  }
+  
+  // Kiểm tra nếu yêu cầu là cho trang admin
+  if (pathname.startsWith('/admin') && !pathname.startsWith('/admin/login')) {
     console.log('🔒 Middleware - Kiểm tra quyền truy cập trang admin cho:', pathname);
     
     try {

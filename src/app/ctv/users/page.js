@@ -38,36 +38,61 @@ export default function UsersPage() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const response = await fetch('/api/users/me');
+        setAuthChecking(true);
         
-        if (!response.ok) {
-          // Nếu không lấy được thông tin user, chuyển hướng về trang chủ
-          console.error("API Response không thành công:", response.status, response.statusText);
-          router.push('/');
-          return;
+        // Kiểm tra cookie ctv_access
+        const cookies = document.cookie.split(';').map(cookie => cookie.trim());
+        const hasCtvAccess = cookies.some(cookie => cookie.startsWith('ctv_access=true'));
+        
+        if (hasCtvAccess) {
+          console.log("✅ Đã tìm thấy cookie ctv_access, CTV đã được middleware xác thực");
+          setIsAuthorized(true);
+          
+          // Vẫn gọi API để lấy thông tin người dùng
+          const response = await fetch('/api/users/me');
+          if (response.ok) {
+            const userData = await response.json();
+            console.log("Dữ liệu user từ API:", userData);
+            if (userData && userData.user && userData.user.email) {
+              setCurrentCtvEmail(userData.user.email);
+              console.log("Email CTV đã được lưu:", userData.user.email);
+            }
+          }
+        } else {
+          console.log("⚠️ Không tìm thấy cookie ctv_access, kiểm tra thông qua API");
+          const response = await fetch('/api/users/me');
+          
+          if (!response.ok) {
+            console.error("API Response không thành công:", response.status, response.statusText);
+            router.push('/');
+            return;
+          }
+          
+          const userData = await response.json();
+          
+          console.log("Dữ liệu user từ API:", userData);
+          
+          if (!userData || !userData.user) {
+            console.error("Dữ liệu user không hợp lệ");
+            router.push('/');
+            return;
+          }
+          
+          console.log("Role nhận được:", userData.user.role);
+          
+          if (userData.user.role !== 'ctv') {
+            console.error(`Role không hợp lệ: '${userData.user.role}' (cần role 'ctv')`);
+            router.push('/');
+            return;
+          }
+          
+          console.log("Xác thực thành công với role:", userData.user.role);
+          setCurrentCtvEmail(userData.user.email);
+          console.log("Email CTV đã được lưu:", userData.user.email);
+          setIsAuthorized(true);
         }
-        
-        const userData = await response.json();
-        
-        // Log dữ liệu nhận được từ API để debug
-        console.log("Dữ liệu user từ API:", userData);
-        console.log("Role nhận được:", userData.role);
-        
-        // Kiểm tra nếu người dùng có role là ctv
-        if (userData.role !== 'ctv') {
-          // Nếu không phải ctv, chuyển hướng về trang chủ
-          console.error(`Role không hợp lệ: '${userData.role}' (cần role 'ctv')`);
-          router.push('/');
-          return;
-        }
-        
-        // Người dùng đã xác thực và có quyền truy cập
-        console.log("Xác thực thành công với role:", userData.role);
-        setCurrentCtvEmail(userData.email); // Lưu email của CTV đang đăng nhập
-        setIsAuthorized(true);
       } catch (err) {
         console.error("Lỗi kiểm tra xác thực:", err);
-        // Chuyển hướng về trang chủ nếu có lỗi
         router.push('/');
       } finally {
         setAuthChecking(false);
@@ -79,22 +104,32 @@ export default function UsersPage() {
 
   // Hàm lấy danh sách người dùng
   const fetchUsers = async () => {
-    if (!isAuthorized) return; // Không fetch nếu chưa được xác thực
+    if (!isAuthorized || !currentCtvEmail) return; // Không fetch nếu chưa được xác thực hoặc chưa có email
     
     setLoading(true);
     setError(null);
     
     try {
       // Lấy danh sách người dùng và chỉ lọc những người do CTV hiện tại tạo
-      const response = await fetch('/api/users');
+      const response = await fetch(`/api/users?ctvEmail=${encodeURIComponent(currentCtvEmail)}`);
       const data = await response.json();
       
       if (!response.ok) {
         throw new Error(data.error || 'Lỗi khi lấy danh sách người dùng');
       }
       
-      // Lọc danh sách người dùng dựa trên email của CTV (được lưu trong trường phoneNumber)
-      const filteredData = data.data ? data.data.filter(user => user.phoneNumber === currentCtvEmail) : [];
+      console.log("Danh sách người dùng từ API:", data.data);
+      console.log("Email CTV hiện tại:", currentCtvEmail);
+      
+      // Lọc người dùng theo phoneNumber hoặc createdBy
+      const filteredData = data.data ? data.data.filter(user => {
+        const matchPhoneNumber = user.phoneNumber === currentCtvEmail;
+        const matchCreatedBy = user.createdBy === currentCtvEmail;
+        console.log(`Kiểm tra người dùng ${user.email}: phoneNumber=${user.phoneNumber}, createdBy=${user.createdBy}, match=${matchPhoneNumber || matchCreatedBy}`);
+        return matchPhoneNumber || matchCreatedBy;
+      }) : [];
+      
+      console.log("Số lượng người dùng sau khi lọc:", filteredData.length);
       setUsers(filteredData || []);
       setHasMongoConnection(true);
       
