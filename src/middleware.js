@@ -45,9 +45,9 @@ const publicPathCache = new Map();
 const TOKEN_VERIFY_API = '/api/auth/verify';
 const TOKEN_REFRESH_API = '/api/auth/refresh-token';
 
-// Email được phép truy cập trang admin
-const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'phanhuukien2001@gmail.com';
-console.log('🔧 Middleware - Email admin được cấu hình:', ADMIN_EMAIL);
+// Email được phép truy cập trang admin - không còn cần thiết vì sẽ kiểm tra theo role
+// const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'phanhuukien2001@gmail.com';
+// console.log('🔧 Middleware - Email admin được cấu hình:', ADMIN_EMAIL);
 
 // This will run when the file is loaded - check terminal for this message
 console.log('🚨 MIDDLEWARE.JS LOADED - CHECK TERMINAL FOR THIS MESSAGE');
@@ -157,6 +157,11 @@ export async function middleware(request) {
 
     const user = verifyData.user;
     
+    // Log chi tiết thông tin user để debug
+    console.log('🔍 MIDDLEWARE - Thông tin người dùng đầy đủ:', JSON.stringify(user));
+    console.log('🔍 MIDDLEWARE - Role của người dùng:', user.role);
+    console.log('🔍 MIDDLEWARE - Kiểm tra role === admin:', user.role === 'admin');
+
     // Kiểm tra xem token có sắp hết hạn không
     // Lấy thời gian hết hạn từ payload token
     const tokenExpiration = user.tokenExpiration;
@@ -226,15 +231,8 @@ export async function middleware(request) {
         return addSecurityHeaders(redirectResponse);
       }
       
-      // Kiểm tra email có phải là email admin không
-      console.log('🔒 Middleware - Email người dùng:', user.email);
-      console.log('🔒 Middleware - Email admin được cấu hình:', ADMIN_EMAIL);
-      
-      if (ADMIN_EMAIL && user.email !== ADMIN_EMAIL) {
-        console.log('⚠️ Middleware - Email không phải là admin, chuyển hướng đến trang chủ');
-        const redirectResponse = NextResponse.redirect(new URL('/', request.url));
-        return addSecurityHeaders(redirectResponse);
-      }
+      // Loại bỏ phần kiểm tra email admin - chỉ kiểm tra role
+      console.log('✅ Middleware - User có role admin hợp lệ:', user.email);
       
       // Thêm cookie admin_access để đánh dấu quyền admin
       response.cookies.set('admin_access', 'true', {

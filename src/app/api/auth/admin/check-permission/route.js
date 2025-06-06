@@ -28,9 +28,9 @@ export async function POST(request) {
         });
       }
       
-      // Chỉ kiểm tra email từ Firebase, không cần kiểm tra trong MongoDB
-      const hasAdminAccess = decodedToken.email === 'phanhuukien2001@gmail.com';
-      console.log(`🔑 Check Admin Permission - Email: ${decodedToken.email}, Có quyền admin: ${hasAdminAccess}`);
+      // Kiểm tra role từ token thay vì email cụ thể
+      const hasAdminAccess = decodedToken.role === 'admin';
+      console.log(`🔑 Check Admin Permission - Email: ${decodedToken.email}, Role: ${decodedToken.role}, Có quyền admin: ${hasAdminAccess}`);
       
       return NextResponse.json({
         hasAdminAccess,
@@ -39,7 +39,8 @@ export async function POST(request) {
           : 'Không có quyền truy cập trang quản trị',
         user: {
           uid: decodedToken.uid,
-          email: decodedToken.email
+          email: decodedToken.email,
+          role: decodedToken.role
         }
       });
     } catch (error) {

@@ -3,8 +3,6 @@ import { cookies } from 'next/headers';
 import { verifyToken } from '@/utils/auth-utils';
 import { cookieConfig } from '@/config/env-config';
 
-const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
-
 export async function adminAuthMiddleware(request) {
   try {
     console.log('🛡️ Admin Middleware - Bắt đầu kiểm tra xác thực');
@@ -56,17 +54,8 @@ export async function adminAuthMiddleware(request) {
       );
     }
     
-    // Kiểm tra email nếu có cấu hình ADMIN_EMAIL
-    if (ADMIN_EMAIL) {
-      console.log('🛡️ Admin Middleware - Kiểm tra email:', admin.email, 'với email cấu hình:', ADMIN_EMAIL);
-      if (admin.email !== ADMIN_EMAIL) {
-        console.log('🛡️ Admin Middleware - Email không khớp');
-        return NextResponse.json(
-          { error: 'Forbidden: Invalid admin email' },
-          { status: 403 }
-        );
-      }
-    }
+    // Loại bỏ phần kiểm tra email admin, chỉ kiểm tra role
+    console.log('🛡️ Admin Middleware - User admin hợp lệ:', admin.email);
     
     // Add verified admin data to the request
     console.log('🛡️ Admin Middleware - Xác thực thành công, thêm thông tin admin vào request');
