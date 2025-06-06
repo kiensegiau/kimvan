@@ -380,7 +380,7 @@ export const config = {
      * 3. _next/image (image optimization files)
      * 4. favicon.ico, images, fonts, assets (static assets)
      */
-    '/((?!api/auth/verify|api/auth/refresh-token|api/auth/logout|api/auth/admin/check-permission|login|admin/login|ctv/login|register|forgot-password|reset-password|_next/static|_next/image|favicon.ico|images|fonts|assets).*)',
+    '/((?!api/auth/verify|api/auth/refresh-token|api/auth/user-role|api/auth/logout|api/auth/admin/check-permission|api/spreadsheets|login|admin/login|ctv/login|register|forgot-password|reset-password|_next/static|_next/image|favicon.ico|images|fonts|assets).*)',
   ],
   // Edge runtime settings
   skipMiddlewareUrlNormalize: true

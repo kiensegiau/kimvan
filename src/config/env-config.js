@@ -87,6 +87,9 @@ export const publicPaths = [
   '/api/auth/admin/check-permission',
   '/api/csrf',
   
+  // API không yêu cầu xác thực
+  '/api/spreadsheets',
+  
   // Tài nguyên tĩnh
   '/_next',
   '/favicon.ico',

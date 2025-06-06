@@ -64,8 +64,7 @@ export async function authMiddleware(req) {
         try {
           console.log('🔑 Auth Middleware - Đang thử lấy token từ cookies() API');
           const { cookies } = require('next/headers');
-          const cookieStore = cookies();
-          token = cookieStore.get(cookieName)?.value;
+          token = cookies().get(cookieName)?.value;
         } catch (cookieError) {
           console.error('🔑 Auth Middleware - Lỗi khi truy cập cookies:', cookieError);
         }
