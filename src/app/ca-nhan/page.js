@@ -114,13 +114,6 @@ export default function PersonalPage() {
     setFormSuccess('');
     setIsFormSubmitting(true);
     
-    // Kiểm tra định dạng số điện thoại
-    if (formData.phone && !isValidPhoneNumber(formData.phone)) {
-      setFormError('Số điện thoại phải theo định dạng quốc tế (+84xxxxxxxxx)');
-      setIsFormSubmitting(false);
-      return;
-    }
-    
     try {
       const response = await fetch('/api/users/me', {
         method: 'PATCH',
@@ -129,7 +122,6 @@ export default function PersonalPage() {
         },
         body: JSON.stringify({
           displayName: formData.name,
-          phoneNumber: formData.phone || null,
           additionalInfo: {
             bio: formData.bio,
             ...(userData?.additionalInfo || {})
@@ -148,8 +140,6 @@ export default function PersonalPage() {
         ...prev,
         displayName: formData.name,
         name: formData.name,
-        phoneNumber: formData.phone,
-        phone: formData.phone,
         additionalInfo: {
           ...(prev?.additionalInfo || {}),
           bio: formData.bio
@@ -430,9 +420,10 @@ export default function PersonalPage() {
                         value={formData.phone}
                         onChange={handleChange}
                         placeholder="+84..."
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
+                        disabled={true}
+                        className="mt-1 block w-full rounded-md bg-gray-100 border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
                       />
-                      <p className="mt-1 text-xs text-gray-500">Định dạng quốc tế: +84xxxxxxxxx</p>
+                      <p className="mt-1 text-xs text-gray-500">Không thể thay đổi số điện thoại</p>
                     </div>
                     <div>
                       <label htmlFor="bio" className="block text-sm font-medium text-gray-700">Giới thiệu</label>

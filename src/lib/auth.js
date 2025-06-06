@@ -40,14 +40,35 @@ export const authOptions = {
 
 // Middleware để kiểm tra xác thực cho API routes
 export async function authMiddleware(req) {
-  // Return mock user with admin privileges, bypassing authentication
-  return {
-    uid: 'mock-user-id',
-    email: 'admin@example.com',
-    name: 'Admin User',
-    role: 'admin',
-    canViewAllCourses: true
-  };
+  try {
+    // Lấy token từ header hoặc cookie
+    const authHeader = req.headers?.authorization;
+    const token = authHeader ? authHeader.replace('Bearer ', '') : null;
+    
+    if (!token) {
+      return null;
+    }
+    
+    // Xác thực token với Firebase Admin
+    const firebaseAdmin = (await import('@/lib/firebase-admin')).default;
+    const decodedToken = await firebaseAdmin.auth().verifyIdToken(token);
+    
+    if (!decodedToken) {
+      return null;
+    }
+    
+    // Trả về thông tin người dùng đã xác thực
+    return {
+      uid: decodedToken.uid,
+      email: decodedToken.email,
+      name: decodedToken.name || decodedToken.displayName,
+      role: decodedToken.role || 'user',
+      canViewAllCourses: decodedToken.role === 'admin' || decodedToken.canViewAllCourses === true
+    };
+  } catch (error) {
+    console.error('Lỗi xác thực:', error);
+    return null;
+  }
 }
 
 // Hàm kiểm tra xác thực và vai trò

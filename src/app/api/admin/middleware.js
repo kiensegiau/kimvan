@@ -3,14 +3,88 @@ import { cookies } from 'next/headers';
 import { verifyToken } from '@/utils/auth-utils';
 import { cookieConfig } from '@/config/env-config';
 
+const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
+
 export async function adminAuthMiddleware(request) {
-  // Bypass all authentication, create a new request with admin privileges
-  const requestWithAdmin = new Request(request);
-  requestWithAdmin.admin = {
-    uid: 'mock-admin-id',
-    email: 'admin@example.com',
-    displayName: 'Admin User'
-  };
-  
-  return requestWithAdmin;
+  try {
+    console.log('🛡️ Admin Middleware - Bắt đầu kiểm tra xác thực');
+    
+    // Get admin token from cookies
+    const cookieStore = cookies();
+    const adminToken = await cookieStore.get(cookieConfig.authCookieName);
+    const adminAccess = await cookieStore.get('admin_access');
+    
+    console.log('🛡️ Admin Middleware - Kết quả kiểm tra cookie:');
+    console.log('- Token:', adminToken ? 'Đã tìm thấy' : 'Không tìm thấy');
+    console.log('- Admin access:', adminAccess?.value || 'Không có');
+    
+    if (!adminToken) {
+      console.log('🛡️ Admin Middleware - Không tìm thấy token, từ chối truy cập');
+      return NextResponse.json(
+        { error: 'Unauthorized: Missing admin token' },
+        { status: 401 }
+      );
+    }
+    
+    if (adminAccess?.value !== 'true') {
+      console.log('🛡️ Admin Middleware - Không có cookie admin_access, từ chối truy cập');
+      return NextResponse.json(
+        { error: 'Unauthorized: Admin authentication required' },
+        { status: 401 }
+      );
+    }
+    
+    // Verify admin token
+    console.log('🛡️ Admin Middleware - Xác thực token...');
+    const admin = await verifyToken(adminToken.value);
+    
+    if (!admin) {
+      console.log('🛡️ Admin Middleware - Token không hợp lệ');
+      return NextResponse.json(
+        { error: 'Forbidden: Invalid admin token' },
+        { status: 403 }
+      );
+    }
+    
+    // Kiểm tra role có phải là admin không
+    console.log('🛡️ Admin Middleware - Kiểm tra vai trò:', admin.role || 'không có');
+    if (!admin.role || admin.role !== 'admin') {
+      console.log('🛡️ Admin Middleware - Không phải admin role');
+      return NextResponse.json(
+        { error: 'Forbidden: Admin privileges required' },
+        { status: 403 }
+      );
+    }
+    
+    // Kiểm tra email nếu có cấu hình ADMIN_EMAIL
+    if (ADMIN_EMAIL) {
+      console.log('🛡️ Admin Middleware - Kiểm tra email:', admin.email, 'với email cấu hình:', ADMIN_EMAIL);
+      if (admin.email !== ADMIN_EMAIL) {
+        console.log('🛡️ Admin Middleware - Email không khớp');
+        return NextResponse.json(
+          { error: 'Forbidden: Invalid admin email' },
+          { status: 403 }
+        );
+      }
+    }
+    
+    // Add verified admin data to the request
+    console.log('🛡️ Admin Middleware - Xác thực thành công, thêm thông tin admin vào request');
+    const requestWithAdmin = new Request(request);
+    requestWithAdmin.admin = {
+      uid: admin.uid,
+      email: admin.email,
+      displayName: admin.displayName || admin.name,
+      role: 'admin',
+      isAdmin: true
+    };
+    
+    return requestWithAdmin;
+  } catch (error) {
+    console.error('🛡️ Admin Middleware - Lỗi xác thực:', error);
+    return NextResponse.json(
+      { error: 'Authentication failed' },
+      { status: 401 }
+    );
+  }
 } 
