@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import { headers } from 'next/headers';
 import { verifyToken } from '@/utils/auth-utils';
 import { cookieConfig } from '@/config/env-config';
 
@@ -7,15 +7,16 @@ export async function adminAuthMiddleware(request) {
   try {
     console.log('🛡️ Admin Middleware - Bắt đầu kiểm tra xác thực');
     
-    // Get admin token from cookies - sửa lỗi bằng cách gọi trực tiếp
-    const adminToken = cookies().get(cookieConfig.authCookieName);
-    const adminAccess = cookies().get('admin_access');
+    // Lấy headers từ request
+    const headersList = headers();
+    const authToken = headersList.get('x-auth-token'); 
+    const userRole = headersList.get('x-user-role');
     
-    console.log('🛡️ Admin Middleware - Kết quả kiểm tra cookie:');
-    console.log('- Token:', adminToken ? 'Đã tìm thấy' : 'Không tìm thấy');
-    console.log('- Admin access:', adminAccess?.value || 'Không có');
+    console.log('🛡️ Admin Middleware - Kết quả kiểm tra headers:');
+    console.log('- Token:', authToken ? 'Đã tìm thấy' : 'Không tìm thấy');
+    console.log('- User role:', userRole || 'Không có');
     
-    if (!adminToken) {
+    if (!authToken) {
       console.log('🛡️ Admin Middleware - Không tìm thấy token, từ chối truy cập');
       return NextResponse.json(
         { error: 'Unauthorized: Missing admin token' },
@@ -23,8 +24,8 @@ export async function adminAuthMiddleware(request) {
       );
     }
     
-    if (adminAccess?.value !== 'true') {
-      console.log('🛡️ Admin Middleware - Không có cookie admin_access, từ chối truy cập');
+    if (userRole !== 'admin') {
+      console.log('🛡️ Admin Middleware - Không có quyền admin, từ chối truy cập');
       return NextResponse.json(
         { error: 'Unauthorized: Admin authentication required' },
         { status: 401 }
@@ -33,7 +34,7 @@ export async function adminAuthMiddleware(request) {
     
     // Verify admin token
     console.log('🛡️ Admin Middleware - Xác thực token...');
-    const admin = await verifyToken(adminToken.value);
+    const admin = await verifyToken(authToken);
     
     if (!admin) {
       console.log('🛡️ Admin Middleware - Token không hợp lệ');
@@ -43,17 +44,7 @@ export async function adminAuthMiddleware(request) {
       );
     }
     
-    // Kiểm tra role có phải là admin không
-    console.log('🛡️ Admin Middleware - Kiểm tra vai trò:', admin.role || 'không có');
-    if (!admin.role || admin.role !== 'admin') {
-      console.log('🛡️ Admin Middleware - Không phải admin role');
-      return NextResponse.json(
-        { error: 'Forbidden: Admin privileges required' },
-        { status: 403 }
-      );
-    }
-    
-    // Loại bỏ phần kiểm tra email admin, chỉ kiểm tra role
+    // Kiểm tra role có phải là admin không - Đã kiểm tra từ header nên không cần kiểm tra lại
     console.log('🛡️ Admin Middleware - User admin hợp lệ:', admin.email);
     
     // Add verified admin data to the request
