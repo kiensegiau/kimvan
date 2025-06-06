@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { publicPaths, routes, cookieConfig } from '@/config/env-config';
+import clientPromise from '@/lib/mongodb';
 
 // Các Security Headers cơ bản
 const securityHeaders = [
@@ -159,8 +160,30 @@ export async function middleware(request) {
     
     // Log chi tiết thông tin user để debug
     console.log('🔍 MIDDLEWARE - Thông tin người dùng đầy đủ:', JSON.stringify(user));
-    console.log('🔍 MIDDLEWARE - Role của người dùng:', user.role);
-    console.log('🔍 MIDDLEWARE - Kiểm tra role === admin:', user.role === 'admin');
+    console.log('🔍 MIDDLEWARE - Role của người dùng từ token:', user.role);
+    
+    // THAY ĐỔI: Lấy role từ MongoDB
+    let userRole = user.role || 'user';
+    try {
+      // Kết nối MongoDB
+      const mongoClient = await clientPromise;
+      const db = mongoClient.db(process.env.MONGODB_DB || 'kimvan');
+      
+      // Tìm user trong MongoDB
+      const userFromDB = await db.collection('users').findOne({ firebaseId: user.uid });
+      console.log('🔍 MIDDLEWARE - Tìm thấy user trong MongoDB:', userFromDB ? 'Có' : 'Không');
+      
+      if (userFromDB && userFromDB.role) {
+        userRole = userFromDB.role;
+        console.log('🔍 MIDDLEWARE - Role từ MongoDB:', userRole);
+      }
+    } catch (mongoError) {
+      console.error('❌ MIDDLEWARE - Lỗi khi truy vấn MongoDB:', mongoError);
+      // Không làm gián đoạn luồng nếu lỗi MongoDB, tiếp tục sử dụng role từ token
+    }
+    
+    console.log('🔍 MIDDLEWARE - Role cuối cùng sử dụng:', userRole);
+    console.log('🔍 MIDDLEWARE - Kiểm tra role === admin:', userRole === 'admin');
 
     // Kiểm tra xem token có sắp hết hạn không
     // Lấy thời gian hết hạn từ payload token
@@ -216,7 +239,7 @@ export async function middleware(request) {
     response.headers.set('x-middleware-active', 'true');
     response.headers.set('x-auth-token', token);
     response.headers.set('x-user-id', user.uid);
-    response.headers.set('x-user-role', user.role || 'user');
+    response.headers.set('x-user-role', userRole); // Dùng userRole từ MongoDB hoặc token
 
     // ==== Kiểm tra quyền truy cập cho các đường dẫn cụ thể ====
     
@@ -224,8 +247,8 @@ export async function middleware(request) {
     if (pathname.startsWith('/admin') && !pathname.startsWith('/admin/login')) {
       console.log('🔒 Middleware - Kiểm tra quyền truy cập trang admin cho:', pathname);
       
-      // Kiểm tra user có quyền admin không
-      if (!user.role || user.role !== 'admin') {
+      // Kiểm tra user có quyền admin không - sử dụng userRole thay vì user.role
+      if (!userRole || userRole !== 'admin') {
         console.log('⚠️ Middleware - Không phải là admin, chuyển hướng đến trang chủ');
         const redirectResponse = NextResponse.redirect(new URL('/', request.url));
         return addSecurityHeaders(redirectResponse);
@@ -252,10 +275,10 @@ export async function middleware(request) {
     if (pathname.startsWith('/ctv') && !pathname.startsWith('/ctv/login')) {
       console.log('🔒 Middleware - Kiểm tra quyền truy cập trang CTV cho:', pathname);
       
-      // Kiểm tra user có quyền ctv (công tác viên) hay không
-      console.log('🔒 Middleware - Kiểm tra quyền CTV, vai trò hiện tại:', user.role);
+      // Kiểm tra user có quyền ctv (công tác viên) hay không - sử dụng userRole
+      console.log('🔒 Middleware - Kiểm tra quyền CTV, vai trò hiện tại:', userRole);
       
-      if (!user.role || user.role !== 'ctv') {
+      if (!userRole || userRole !== 'ctv') {
         console.log('⚠️ Middleware - Không phải là CTV, chuyển hướng đến trang chủ');
         const redirectResponse = NextResponse.redirect(new URL('/', request.url));
         return addSecurityHeaders(redirectResponse);
@@ -279,8 +302,8 @@ export async function middleware(request) {
     if (pathname.startsWith('/api/admin') || pathname.startsWith('/api/courses/raw')) {
       console.log('🔒 Middleware - Kiểm tra quyền truy cập API admin cho:', pathname);
       
-      // Kiểm tra user có quyền admin không
-      if (!user.role || user.role !== 'admin') {
+      // Kiểm tra user có quyền admin không - sử dụng userRole
+      if (!userRole || userRole !== 'admin') {
         console.log('⚠️ Middleware - Không phải là admin, từ chối truy cập API');
         return NextResponse.json(
           { error: 'Không có quyền truy cập API admin' },
@@ -305,8 +328,8 @@ export async function middleware(request) {
     if (pathname.startsWith('/api/ctv')) {
       console.log('🔒 Middleware - Kiểm tra quyền truy cập API CTV cho:', pathname);
       
-      // Kiểm tra user có quyền CTV không
-      if (!user.role || user.role !== 'ctv') {
+      // Kiểm tra user có quyền CTV không - sử dụng userRole
+      if (!userRole || userRole !== 'ctv') {
         console.log('⚠️ Middleware - Không phải là CTV, từ chối truy cập API');
         return NextResponse.json(
           { error: 'Không có quyền truy cập API công tác viên' },
