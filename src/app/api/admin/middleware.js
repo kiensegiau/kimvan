@@ -7,10 +7,9 @@ export async function adminAuthMiddleware(request) {
   try {
     console.log('🛡️ Admin Middleware - Bắt đầu kiểm tra xác thực');
     
-    // Get admin token from cookies
-    const cookieStore = cookies();
-    const adminToken = await cookieStore.get(cookieConfig.authCookieName);
-    const adminAccess = await cookieStore.get('admin_access');
+    // Get admin token from cookies - sửa lỗi bằng cách gọi trực tiếp
+    const adminToken = cookies().get(cookieConfig.authCookieName);
+    const adminAccess = cookies().get('admin_access');
     
     console.log('🛡️ Admin Middleware - Kết quả kiểm tra cookie:');
     console.log('- Token:', adminToken ? 'Đã tìm thấy' : 'Không tìm thấy');

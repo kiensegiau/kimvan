@@ -10,9 +10,8 @@ export async function GET(request) {
   try {
     console.log('🔒 Admin API - Kiểm tra quyền truy cập');
     
-    // Kiểm tra cookie admin_access
-    const cookieStore = cookies();
-    const adminAccess = await cookieStore.get('admin_access');
+    // Kiểm tra cookie admin_access - sửa lỗi bằng cách gán giá trị trực tiếp
+    const adminAccess = cookies().get('admin_access');
     
     // Nếu có cookie admin_access, cho phép truy cập
     if (adminAccess && adminAccess.value === 'true') {
@@ -44,9 +43,8 @@ export async function POST(request) {
   try {
     console.log('🔒 Admin API - Kiểm tra quyền truy cập');
     
-    // Kiểm tra cookie admin_access
-    const cookieStore = cookies();
-    const adminAccess = await cookieStore.get('admin_access');
+    // Kiểm tra cookie admin_access - sửa lỗi bằng cách gán giá trị trực tiếp
+    const adminAccess = cookies().get('admin_access');
     
     // Nếu có cookie admin_access, cho phép truy cập
     if (adminAccess && adminAccess.value === 'true') {
