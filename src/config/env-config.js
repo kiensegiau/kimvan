@@ -69,26 +69,28 @@ export const routes = {
 
 // Các trang không yêu cầu xác thực (public)
 export const publicPaths = [
-  '/', // Trang chủ
-  '/admin', // Admin pages
-  '/admin/', // Admin pages with trailing slash
-  '/courses', // Courses page
-  '/courses/', // Courses with trailing slash
-  '/api/courses', // Courses API
-  '/api/spreadsheets', // Spreadsheets API
-  '/api/', // All API endpoints
-  routes.login,
-  routes.register,
-  routes.forgotPassword,
-  routes.resetPassword,
-  '/api/auth',
-  '/api/drive',
+  // Trang đăng nhập
+  '/login',
+  
+  // Quên mật khẩu
+  '/forgot-password',
+  '/reset-password',
+  
+  // API cần thiết cho đăng nhập
+  '/api/auth/login',
+  '/api/auth/verify',
+  '/api/auth/refresh-token',
+  '/api/auth/logout',
+  '/api/auth/forgot-password',
+  '/api/auth/reset-password',
   '/api/auth/admin/check-permission',
   '/api/csrf',
+  
+  // Tài nguyên tĩnh
   '/_next',
   '/favicon.ico',
   '/static',
   '/images',
-  // Tất cả các đường dẫn đều công khai
-  '/*'
+  '/fonts',
+  '/assets',
 ]; 

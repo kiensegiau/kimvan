@@ -78,159 +78,25 @@ export async function middleware(request) {
     return response;
   }
 
-  // Kiểm tra nếu yêu cầu là cho trang admin
-  if (pathname.startsWith('/admin') && 
-      !pathname.startsWith('/admin/login')) {
-    
-    console.log('🔒 Middleware - Kiểm tra quyền truy cập trang admin cho:', pathname);
-    
-    // Lấy token từ cookie
-    const tokenCookie = request.cookies.get(cookieConfig.authCookieName);
-    const token = tokenCookie?.value;
-  
-    // Kiểm tra token có tồn tại và không phải là chuỗi rỗng
-    if (!token || token.trim() === '') {
-      console.log('🔒 Token không tồn tại hoặc rỗng, chuyển hướng đến trang đăng nhập');
-      
-      const redirectUrl = new URL(routes.login, request.url);
-      // Thêm returnUrl để sau khi đăng nhập có thể chuyển hướng về trang ban đầu
-      redirectUrl.searchParams.set('returnUrl', pathname);
-      const redirectResponse = NextResponse.redirect(redirectUrl);
-      return addSecurityHeaders(redirectResponse);
-    }
-    
-    try {
-      // Xác định URL cơ sở
-      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || request.nextUrl.origin;
-      
-      // Gọi API verify để lấy thông tin người dùng
-      console.log('🔒 Middleware - Gọi API verify để lấy thông tin người dùng');
-      const verifyResponse = await fetch(`${baseUrl}${TOKEN_VERIFY_API}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ token }),
-      });
-
-      if (!verifyResponse.ok) {
-        console.log('⚠️ Middleware - Không thể xác minh token, chuyển hướng đến trang đăng nhập');
-        const redirectResponse = NextResponse.redirect(new URL(routes.login, request.url));
-        return addSecurityHeaders(redirectResponse);
-      }
-
-      const verifyData = await verifyResponse.json();
-      
-      if (!verifyData.valid) {
-        console.log('⚠️ Middleware - Token không hợp lệ, chuyển hướng đến trang đăng nhập');
-        const redirectResponse = NextResponse.redirect(new URL(routes.login, request.url));
-        return addSecurityHeaders(redirectResponse);
-      }
-      
-      // Kiểm tra user có quyền admin không
-      if (!verifyData.user.role || verifyData.user.role !== 'admin') {
-        console.log('⚠️ Middleware - Không phải là admin, chuyển hướng đến trang chủ');
-        const redirectResponse = NextResponse.redirect(new URL('/', request.url));
-        return addSecurityHeaders(redirectResponse);
-      }
-      
-      // Kiểm tra email có phải là email admin không
-      console.log('🔒 Middleware - Email người dùng:', verifyData.user.email);
-      console.log('🔒 Middleware - Email admin được cấu hình:', ADMIN_EMAIL);
-      
-      if (ADMIN_EMAIL && verifyData.user.email !== ADMIN_EMAIL) {
-        console.log('⚠️ Middleware - Email không phải là admin, chuyển hướng đến trang chủ');
-        const redirectResponse = NextResponse.redirect(new URL('/', request.url));
-        return addSecurityHeaders(redirectResponse);
-      }
-      
-      // Thêm cookie admin_access để đánh dấu quyền admin
-      const adminResponse = NextResponse.next();
-      adminResponse.cookies.set('admin_access', 'true', {
-        httpOnly: true,
-        secure: cookieConfig.secure,
-        sameSite: cookieConfig.sameSite,
-        maxAge: 60 * 60 * 2, // 2 giờ
-        path: '/',
-      });
-      
-      // Nếu hợp lệ, cho phép truy cập
-      console.log('✅ Middleware - User admin hợp lệ, cho phép truy cập');
-      return addSecurityHeaders(adminResponse);
-    } catch (error) {
-      console.error('❌ Middleware - Lỗi kiểm tra quyền admin:', error);
-      const redirectResponse = NextResponse.redirect(new URL('/', request.url));
-      return addSecurityHeaders(redirectResponse);
-    }
-  }
-  
-  // Xử lý middleware cho API courses
-  if (pathname.startsWith('/api/courses/')) {
-    // Lấy Firebase token từ header Authorization hoặc cookie
-    const authHeader = request.headers.get('authorization');
-    const firebaseToken = authHeader ? authHeader.split('Bearer ')[1] : null;
-    
-    const cookieStore = request.cookies;
-    const authCookie = cookieStore.get(cookieConfig.authCookieName);
-    const cookieToken = authCookie?.value;
-    
-    // Sử dụng token từ header hoặc cookie
-    const accessToken = firebaseToken || cookieToken;
-    
-    if (!accessToken) {
-      return NextResponse.json(
-        { error: 'Không có quyền truy cập', message: 'Vui lòng đăng nhập để truy cập API' },
-        { status: 401 }
-      );
-    }
-    
-    // Lấy referer từ header
-    const referer = request.headers.get('referer') || '';
-    const isFromSameDomain = referer.includes(request.nextUrl.origin);
-    
-    // Tạo header chống CSRF
-    const headers = new Headers(request.headers);
-    headers.set('X-CSRF-Protection', 'true');
-    
-    // Thêm custom header để đánh dấu request đã qua middleware
-    const apiResponse = NextResponse.next({
-      request: {
-        headers
-      }
-    });
-    
-    // Thêm header chống cache cho dữ liệu nhạy cảm
-    apiResponse.headers.set('Cache-Control', 'no-store, max-age=0');
-    apiResponse.headers.set('Pragma', 'no-cache');
-    apiResponse.headers.set('Expires', '0');
-    
-    // Sao chép security headers
-    securityHeaders.forEach(header => {
-      apiResponse.headers.set(header.key, header.value);
-    });
-    
-    return apiResponse;
-  }
-
-  // Xử lý các đường dẫn khác
-  // Kiểm tra cache trước khi thực hiện logic
+  // Kiểm tra và cache kết quả cho đường dẫn công khai
   if (publicPathCache.has(pathname)) {
     const isPublic = publicPathCache.get(pathname);
     if (isPublic) {
+      console.log('🔓 Middleware - Đường dẫn công khai (cached):', pathname);
       return addSecurityHeaders(response);
     }
   }
 
-  // Kiểm tra và cache kết quả
   const pathIsPublic = isPublicPath(pathname);
   publicPathCache.set(pathname, pathIsPublic);
   
   // Không kiểm tra xác thực cho các đường dẫn công khai
   if (pathIsPublic) {
+    console.log('🔓 Middleware - Đường dẫn công khai:', pathname);
     return addSecurityHeaders(response);
   }
 
-  // Lấy token từ cookie
+  // Lấy token từ cookie cho tất cả các đường dẫn được bảo vệ
   const tokenCookie = request.cookies.get(cookieConfig.authCookieName);
   const token = tokenCookie?.value;
   
@@ -240,7 +106,7 @@ export async function middleware(request) {
     
     const redirectUrl = new URL(routes.login, request.url);
     // Thêm returnUrl để sau khi đăng nhập có thể chuyển hướng về trang ban đầu
-    redirectUrl.searchParams.set('returnUrl', pathname);
+    redirectUrl.searchParams.set('returnUrl', encodeURIComponent(pathname));
     const redirectResponse = NextResponse.redirect(redirectUrl);
     return addSecurityHeaders(redirectResponse);
   }
@@ -251,6 +117,7 @@ export async function middleware(request) {
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || request.nextUrl.origin;
     
     // Gọi API xác thực token
+    console.log('🔒 Middleware - Đang xác thực token cho đường dẫn:', pathname);
     const verifyResponse = await fetch(`${baseUrl}${TOKEN_VERIFY_API}`, {
       method: 'POST',
       headers: {
@@ -259,6 +126,14 @@ export async function middleware(request) {
       body: JSON.stringify({ token }),
     });
 
+    if (!verifyResponse.ok) {
+      console.log('❌ Middleware - API xác thực không trả về kết quả thành công');
+      const redirectUrl = new URL(routes.login, request.url);
+      redirectUrl.searchParams.set('returnUrl', encodeURIComponent(pathname));
+      const redirectResponse = NextResponse.redirect(redirectUrl);
+      return addSecurityHeaders(redirectResponse);
+    }
+
     const verifyData = await verifyResponse.json();
     
     // Nếu token không hợp lệ, chuyển hướng đến trang đăng nhập
@@ -266,7 +141,7 @@ export async function middleware(request) {
       console.log('🔒 Token không hợp lệ, chuyển hướng đến trang đăng nhập');
       
       const redirectUrl = new URL(routes.login, request.url);
-      redirectUrl.searchParams.set('returnUrl', pathname);
+      redirectUrl.searchParams.set('returnUrl', encodeURIComponent(pathname));
       const redirectResponse = NextResponse.redirect(redirectUrl);
       
       // Xóa cookie token không hợp lệ
@@ -279,11 +154,12 @@ export async function middleware(request) {
       
       return addSecurityHeaders(redirectResponse);
     }
+
+    const user = verifyData.user;
     
     // Kiểm tra xem token có sắp hết hạn không
     // Lấy thời gian hết hạn từ payload token
-    const tokenPayload = verifyData.user;
-    const tokenExpiration = tokenPayload.tokenExpiration;
+    const tokenExpiration = user.tokenExpiration;
     const now = Date.now();
     const timeLeft = tokenExpiration - now;
     
@@ -330,133 +206,38 @@ export async function middleware(request) {
         console.error('❌ Lỗi khi làm mới token:', refreshError);
       }
     }
-  } catch (error) {
-    console.error('❌ Lỗi khi xác thực token:', error);
     
-    // Trong trường hợp lỗi, chuyển hướng đến trang đăng nhập để an toàn
-    const redirectUrl = new URL(routes.login, request.url);
-    redirectUrl.searchParams.set('returnUrl', pathname);
-    const redirectResponse = NextResponse.redirect(redirectUrl);
-    return addSecurityHeaders(redirectResponse);
-  }
-  
-  // Nếu token hợp lệ, đặt header
-  response.headers.set('x-middleware-active', 'true');
-  response.headers.set('x-auth-token', token);
+    // Nếu token hợp lệ, đặt header
+    response.headers.set('x-middleware-active', 'true');
+    response.headers.set('x-auth-token', token);
+    response.headers.set('x-user-id', user.uid);
+    response.headers.set('x-user-role', user.role || 'user');
 
-  // Kiểm tra nếu yêu cầu là cho trang công tác viên (CTV)
-  if (pathname.startsWith('/ctv') && !pathname.startsWith('/ctv/login')) {
-    console.log('🔒 Middleware - Kiểm tra quyền truy cập trang CTV cho:', pathname);
+    // ==== Kiểm tra quyền truy cập cho các đường dẫn cụ thể ====
     
-    try {
-      // Xác định URL cơ sở
-      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || request.nextUrl.origin;
-      
-      // Gọi API verify để lấy thông tin người dùng
-      console.log('🔒 Middleware - Gọi API verify để lấy thông tin người dùng CTV');
-      const verifyResponse = await fetch(`${baseUrl}${TOKEN_VERIFY_API}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ token }),
-      });
-
-      if (!verifyResponse.ok) {
-        console.log('⚠️ Middleware - Không thể xác minh token, chuyển hướng đến trang đăng nhập');
-        const redirectResponse = NextResponse.redirect(new URL(routes.login, request.url));
-        return addSecurityHeaders(redirectResponse);
-      }
-
-      const verifyData = await verifyResponse.json();
-      
-      if (!verifyData.valid) {
-        console.log('⚠️ Middleware - Token không hợp lệ, chuyển hướng đến trang đăng nhập');
-        const redirectResponse = NextResponse.redirect(new URL(routes.login, request.url));
-        return addSecurityHeaders(redirectResponse);
-      }
-      
-      // Kiểm tra user có quyền ctv (công tác viên) hay không
-      console.log('🔒 Middleware - Kiểm tra quyền CTV, vai trò hiện tại:', verifyData.user.role);
-      
-      if (!verifyData.user.role || verifyData.user.role !== 'ctv') {
-        console.log('⚠️ Middleware - Không phải là CTV, chuyển hướng đến trang chủ');
-        const redirectResponse = NextResponse.redirect(new URL('/', request.url));
-        return addSecurityHeaders(redirectResponse);
-      }
-      
-      // Thêm cookie ctv_access để đánh dấu quyền công tác viên
-      const ctvResponse = NextResponse.next();
-      ctvResponse.cookies.set('ctv_access', 'true', {
-        httpOnly: true,
-        secure: cookieConfig.secure,
-        sameSite: cookieConfig.sameSite,
-        maxAge: 60 * 60 * 2, // 2 giờ
-        path: '/',
-      });
-      
-      // Nếu hợp lệ, cho phép truy cập
-      console.log('✅ Middleware - User CTV hợp lệ, cho phép truy cập');
-      return addSecurityHeaders(ctvResponse);
-    } catch (error) {
-      console.error('❌ Middleware - Lỗi kiểm tra quyền CTV:', error);
-      const redirectResponse = NextResponse.redirect(new URL('/', request.url));
-      return addSecurityHeaders(redirectResponse);
-    }
-  }
-  
-  // Kiểm tra nếu yêu cầu là cho trang admin
-  if (pathname.startsWith('/admin') && !pathname.startsWith('/admin/login')) {
-    console.log('🔒 Middleware - Kiểm tra quyền truy cập trang admin cho:', pathname);
-    
-    try {
-      // Xác định URL cơ sở
-      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || request.nextUrl.origin;
-      
-      // Gọi API verify để lấy thông tin người dùng
-      console.log('🔒 Middleware - Gọi API verify để lấy thông tin người dùng');
-      const verifyResponse = await fetch(`${baseUrl}${TOKEN_VERIFY_API}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ token }),
-      });
-
-      if (!verifyResponse.ok) {
-        console.log('⚠️ Middleware - Không thể xác minh token, chuyển hướng đến trang đăng nhập');
-        const redirectResponse = NextResponse.redirect(new URL(routes.login, request.url));
-        return addSecurityHeaders(redirectResponse);
-      }
-
-      const verifyData = await verifyResponse.json();
-      
-      if (!verifyData.valid) {
-        console.log('⚠️ Middleware - Token không hợp lệ, chuyển hướng đến trang đăng nhập');
-        const redirectResponse = NextResponse.redirect(new URL(routes.login, request.url));
-        return addSecurityHeaders(redirectResponse);
-      }
+    // 1. Kiểm tra nếu yêu cầu là cho trang admin
+    if (pathname.startsWith('/admin') && !pathname.startsWith('/admin/login')) {
+      console.log('🔒 Middleware - Kiểm tra quyền truy cập trang admin cho:', pathname);
       
       // Kiểm tra user có quyền admin không
-      if (!verifyData.user.role || verifyData.user.role !== 'admin') {
+      if (!user.role || user.role !== 'admin') {
         console.log('⚠️ Middleware - Không phải là admin, chuyển hướng đến trang chủ');
         const redirectResponse = NextResponse.redirect(new URL('/', request.url));
         return addSecurityHeaders(redirectResponse);
       }
       
       // Kiểm tra email có phải là email admin không
-      console.log('🔒 Middleware - Email người dùng:', verifyData.user.email);
+      console.log('🔒 Middleware - Email người dùng:', user.email);
       console.log('🔒 Middleware - Email admin được cấu hình:', ADMIN_EMAIL);
       
-      if (ADMIN_EMAIL && verifyData.user.email !== ADMIN_EMAIL) {
+      if (ADMIN_EMAIL && user.email !== ADMIN_EMAIL) {
         console.log('⚠️ Middleware - Email không phải là admin, chuyển hướng đến trang chủ');
         const redirectResponse = NextResponse.redirect(new URL('/', request.url));
         return addSecurityHeaders(redirectResponse);
       }
       
       // Thêm cookie admin_access để đánh dấu quyền admin
-      const adminResponse = NextResponse.next();
-      adminResponse.cookies.set('admin_access', 'true', {
+      response.cookies.set('admin_access', 'true', {
         httpOnly: true,
         secure: cookieConfig.secure,
         sameSite: cookieConfig.sameSite,
@@ -466,44 +247,113 @@ export async function middleware(request) {
       
       // Nếu hợp lệ, cho phép truy cập
       console.log('✅ Middleware - User admin hợp lệ, cho phép truy cập');
-      return addSecurityHeaders(adminResponse);
-    } catch (error) {
-      console.error('❌ Middleware - Lỗi kiểm tra quyền admin:', error);
-      const redirectResponse = NextResponse.redirect(new URL('/', request.url));
-      return addSecurityHeaders(redirectResponse);
-    }
-  }
-  
-  // Xử lý middleware cho API admin
-  if (pathname.startsWith('/api/admin') || pathname.startsWith('/api/courses/raw')) {
-    console.log('🔒 Middleware - Kiểm tra quyền truy cập API admin cho:', pathname);
-    
-    // Kiểm tra cookie admin_access hoặc token trong header
-    const adminAccessCookie = request.cookies.get('admin_access');
-    const adminAccess = adminAccessCookie?.value;
-    if (adminAccess !== 'true') {
-      console.log('⚠️ Middleware - Không có quyền admin, từ chối truy cập API');
-      return NextResponse.json(
-        { error: 'Không có quyền truy cập API admin' },
-        { status: 403 }
-      );
+      return addSecurityHeaders(response);
     }
     
-    console.log('✅ Middleware - Có quyền admin, cho phép truy cập API');
-    return NextResponse.next();
+    // 2. Kiểm tra nếu yêu cầu là cho trang công tác viên (CTV)
+    if (pathname.startsWith('/ctv') && !pathname.startsWith('/ctv/login')) {
+      console.log('🔒 Middleware - Kiểm tra quyền truy cập trang CTV cho:', pathname);
+      
+      // Kiểm tra user có quyền ctv (công tác viên) hay không
+      console.log('🔒 Middleware - Kiểm tra quyền CTV, vai trò hiện tại:', user.role);
+      
+      if (!user.role || user.role !== 'ctv') {
+        console.log('⚠️ Middleware - Không phải là CTV, chuyển hướng đến trang chủ');
+        const redirectResponse = NextResponse.redirect(new URL('/', request.url));
+        return addSecurityHeaders(redirectResponse);
+      }
+      
+      // Thêm cookie ctv_access để đánh dấu quyền công tác viên
+      response.cookies.set('ctv_access', 'true', {
+        httpOnly: true,
+        secure: cookieConfig.secure,
+        sameSite: cookieConfig.sameSite,
+        maxAge: 60 * 60 * 2, // 2 giờ
+        path: '/',
+      });
+      
+      // Nếu hợp lệ, cho phép truy cập
+      console.log('✅ Middleware - User CTV hợp lệ, cho phép truy cập');
+      return addSecurityHeaders(response);
+    }
+    
+    // 3. Kiểm tra nếu yêu cầu là cho API admin
+    if (pathname.startsWith('/api/admin') || pathname.startsWith('/api/courses/raw')) {
+      console.log('🔒 Middleware - Kiểm tra quyền truy cập API admin cho:', pathname);
+      
+      // Kiểm tra user có quyền admin không
+      if (!user.role || user.role !== 'admin') {
+        console.log('⚠️ Middleware - Không phải là admin, từ chối truy cập API');
+        return NextResponse.json(
+          { error: 'Không có quyền truy cập API admin' },
+          { status: 403 }
+        );
+      }
+      
+      // Cập nhật cookie admin_access
+      response.cookies.set('admin_access', 'true', {
+        httpOnly: true,
+        secure: cookieConfig.secure,
+        sameSite: cookieConfig.sameSite,
+        maxAge: 60 * 60 * 2, // 2 giờ
+        path: '/',
+      });
+      
+      console.log('✅ Middleware - Có quyền admin, cho phép truy cập API');
+      return addSecurityHeaders(response);
+    }
+    
+    // 4. Kiểm tra nếu yêu cầu là cho API công tác viên (CTV)
+    if (pathname.startsWith('/api/ctv')) {
+      console.log('🔒 Middleware - Kiểm tra quyền truy cập API CTV cho:', pathname);
+      
+      // Kiểm tra user có quyền CTV không
+      if (!user.role || user.role !== 'ctv') {
+        console.log('⚠️ Middleware - Không phải là CTV, từ chối truy cập API');
+        return NextResponse.json(
+          { error: 'Không có quyền truy cập API công tác viên' },
+          { status: 403 }
+        );
+      }
+      
+      // Cập nhật cookie ctv_access
+      response.cookies.set('ctv_access', 'true', {
+        httpOnly: true,
+        secure: cookieConfig.secure,
+        sameSite: cookieConfig.sameSite,
+        maxAge: 60 * 60 * 2, // 2 giờ
+        path: '/',
+      });
+      
+      console.log('✅ Middleware - Có quyền CTV, cho phép truy cập API');
+      return addSecurityHeaders(response);
+    }
+    
+    // Cho phép truy cập các đường dẫn khác nếu đã xác thực thành công
+    return addSecurityHeaders(response);
+  } catch (error) {
+    console.error('❌ Lỗi khi xác thực token:', error);
+    
+    // Trong trường hợp lỗi, chuyển hướng đến trang đăng nhập để an toàn
+    const redirectUrl = new URL(routes.login, request.url);
+    redirectUrl.searchParams.set('returnUrl', encodeURIComponent(pathname));
+    const redirectResponse = NextResponse.redirect(redirectUrl);
+    return addSecurityHeaders(redirectResponse);
   }
-  
-  return response;
 }
 
 // Cấu hình middleware
 export const config = {
   matcher: [
-    '/admin/:path*',
-    '/api/admin/:path*',
-    '/api/courses/:path*',
-    '/((?!_next/static|_next/image|favicon.ico|images|fonts|assets|api/auth|api/drive).*)',
+    /*
+     * Match all request paths except for:
+     * 1. The ones in publicPaths (defined in env-config.js)
+     * 2. _next/static (static files)
+     * 3. _next/image (image optimization files)
+     * 4. favicon.ico, images, fonts, assets (static assets)
+     */
+    '/((?!api/auth/verify|api/auth/refresh-token|api/auth/logout|api/auth/admin/check-permission|login|admin/login|ctv/login|register|forgot-password|reset-password|_next/static|_next/image|favicon.ico|images|fonts|assets).*)',
   ],
-  // Thêm cái này để sửa các vấn đề với edge runtime
+  // Edge runtime settings
   skipMiddlewareUrlNormalize: true
 }; 
