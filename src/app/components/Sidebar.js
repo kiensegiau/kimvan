@@ -91,11 +91,19 @@ const Sidebar = ({ closeSidebar }) => {
 
   // Hiển thị vai trò người dùng
   const getRoleDisplay = (role) => {
+    // Sử dụng roleDisplayName nếu có
+    if (userData && userData.roleDisplayName) {
+      return userData.roleDisplayName;
+    }
+
+    // Fallback cho trường hợp không có roleDisplayName
     switch (role) {
       case 'admin':
         return 'Quản trị viên';
       case 'teacher':
         return 'Giảng viên';
+      case 'ctv':
+        return 'Công tác viên';
       default:
         return 'Học viên';
     }

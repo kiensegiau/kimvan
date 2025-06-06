@@ -346,7 +346,7 @@ export default function PersonalPage() {
               <p className="text-sm text-gray-500 mt-1">{userData.email || ''}</p>
               <div className="mt-2 flex flex-wrap justify-center md:justify-start gap-2">
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
-                  {userData.role === 'admin' ? 'Quản trị viên' : userData.role === 'teacher' ? 'Giảng viên' : 'Học viên'}
+                  {userData.roleDisplayName || (userData.role === 'admin' ? 'Quản trị viên' : userData.role === 'teacher' ? 'Giảng viên' : 'Học viên')}
                 </span>
                 {userData.phone && (
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
@@ -504,7 +504,7 @@ export default function PersonalPage() {
                       </div>
                       <div className="bg-gray-50 p-4 rounded-lg">
                         <h3 className="text-sm font-medium text-gray-500">Vai trò</h3>
-                        <p className="mt-1 font-medium">{userData.role === 'admin' ? 'Quản trị viên' : userData.role === 'teacher' ? 'Giảng viên' : 'Học viên'}</p>
+                        <p className="mt-1 font-medium">{userData.roleDisplayName || (userData.role === 'admin' ? 'Quản trị viên' : userData.role === 'teacher' ? 'Giảng viên' : 'Học viên')}</p>
                       </div>
                     </div>
                     <div className="bg-gray-50 p-4 rounded-lg">
