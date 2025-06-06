@@ -167,7 +167,10 @@ export async function POST(request) {
     const requestBody = await request.json();
     let { driveLink, backgroundImage, backgroundOpacity, url, courseName, courseId, 
           highPerformance, maxWorkers, batchSize, waitTime, dpi,
-          skipWatermarkRemoval, processRecursively, maxRecursionDepth } = requestBody;
+          processRecursively, maxRecursionDepth } = requestBody;
+    
+    // Luôn đặt skipWatermarkRemoval = false để đảm bảo luôn xử lý watermark
+    const skipWatermarkRemoval = false;
 
     // Hỗ trợ cả url và driveLink (để tương thích)
     if (!driveLink && url) {

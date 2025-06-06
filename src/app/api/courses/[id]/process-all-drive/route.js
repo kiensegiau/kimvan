@@ -51,13 +51,11 @@ export async function POST(request, { params }) {
 
     // Đọc request body
     const requestBody = await request.json().catch(() => ({}));
-    const skipWatermarkRemoval = requestBody.skipWatermarkRemoval !== false; // Mặc định là true trừ khi được đặt rõ ràng là false
     
-    if (skipWatermarkRemoval) {
-      console.log('⏩ Chế độ bỏ qua xử lý watermark được bật (mặc định)');
-    } else {
-      console.log('Chế độ xử lý watermark được bật theo yêu cầu');
-    }
+    // Luôn đảm bảo luôn xử lý watermark (skipWatermarkRemoval = false)
+    const skipWatermarkRemoval = false;
+    
+    console.log('Chế độ xử lý watermark luôn được bật');
 
     console.log(`Đang xử lý các links PDF cho khóa học ID: ${id}`);
 
@@ -339,7 +337,7 @@ export async function POST(request, { params }) {
                       token: 'api@test-watermark',
                       driveLink: link.url,
                       courseName: course.name || 'Khóa học không tên',
-                      skipWatermarkRemoval: skipWatermarkRemoval,
+                      skipWatermarkRemoval: false,
                       processRecursively: true, // Thêm flag để xử lý đệ quy các thư mục con
                       maxRecursionDepth: 5 // Giới hạn độ sâu đệ quy để tránh vòng lặp vô hạn
                     }),
@@ -477,7 +475,7 @@ export async function POST(request, { params }) {
                     token: 'api@test-watermark',
                     driveLink: link.url,
                     courseName: course.name || 'Khóa học không tên',
-                    skipWatermarkRemoval: skipWatermarkRemoval
+                    skipWatermarkRemoval: false
                   }),
                   signal: requestController.signal
                 });

@@ -8,6 +8,8 @@ import { google } from 'googleapis';
 import { v4 as uuidv4 } from 'uuid';
 import { getTokenByType, getExtensionFromMimeType, cleanupTempFiles, escapeDriveQueryString } from './utils.js';
 import { TOKEN_PATHS } from './config.js';
+import { processPDF } from '../lib/drive-fix-blockdown.js';
+import { DEFAULT_CONFIG } from './config.js';
 
 // Thay thế hàm extractGoogleDriveFileId bằng phiên bản mới
 export function extractGoogleDriveFileId(url) {
@@ -1098,13 +1100,54 @@ export async function processRecursiveFolder(folderIdOrLink, maxDepth = 5, curre
           if (downloadResult.isPdf) {
             console.log(`[Đệ quy ${currentDepth}] Xử lý file PDF: ${item.name}`);
             
-            // Bỏ qua xử lý watermark nếu được yêu cầu
-            if (skipWatermarkRemoval) {
-              console.log(`[Đệ quy ${currentDepth}] ⏩ Bỏ qua xử lý watermark theo yêu cầu`);
+            try {
+              // Xử lý thực tế để loại bỏ watermark
+              console.log(`[Đệ quy ${currentDepth}] Bắt đầu xử lý watermark cho file: ${item.name}`);
               
-              // Tải trực tiếp file lên thư mục đích
-              const uploadResult = await uploadFileToDriveFolder(
+              // Tạo config cho xử lý watermark
+              const watermarkConfig = { ...DEFAULT_CONFIG };
+              
+              // Thêm hình nền nếu có
+              if (backgroundImage) {
+                let backgroundImagePath = backgroundImage;
+                
+                if (!path.isAbsolute(backgroundImage) && 
+                    !backgroundImage.includes(':/') && 
+                    !backgroundImage.includes(':\\')) {
+                  backgroundImagePath = path.join(process.cwd(), backgroundImage);
+                }
+                
+                const fileExists = fs.existsSync(backgroundImagePath);
+                
+                if (fileExists) {
+                  watermarkConfig.backgroundImage = backgroundImagePath;
+                  
+                  if (backgroundOpacity !== undefined) {
+                    watermarkConfig.backgroundOpacity = parseFloat(backgroundOpacity);
+                  }
+                }
+              }
+              
+              // Tạo đường dẫn output
+              const outputPdfName = `${path.basename(downloadResult.fileName, '.pdf')}_clean.pdf`;
+              const outputPath = path.join(outputDir, outputPdfName);
+              
+              // Gọi hàm thực tế để xử lý PDF
+              const processResult = await processPDF(
                 downloadResult.filePath,
+                outputPath,
+                watermarkConfig
+              );
+              
+              if (!processResult || !processResult.success) {
+                throw new Error(processResult?.error || 'Không thể xử lý watermark trên file PDF');
+              }
+              
+              console.log(`[Đệ quy ${currentDepth}] ✅ Đã xử lý watermark thành công cho file: ${item.name}`);
+              
+              // Upload file đã xử lý lên Drive
+              const uploadResult = await uploadFileToDriveFolder(
+                processResult.filePath || outputPath,
                 downloadResult.fileName,
                 destinationFolderId
               );
@@ -1116,22 +1159,12 @@ export async function processRecursiveFolder(folderIdOrLink, maxDepth = 5, curre
                 processedFileId: uploadResult.fileId,
                 processedFileLink: uploadResult.webViewLink,
                 processed: true,
-                skippedWatermark: true
+                watermarkRemoved: true
               });
-              
-              continue;
+            } catch (watermarkError) {
+              console.error(`[Đệ quy ${currentDepth}] ❌ Lỗi khi xử lý watermark: ${watermarkError.message}`);
+              throw watermarkError;
             }
-            
-            // TODO: Xử lý PDF để loại bỏ watermark (cần thêm code ở đây)
-            // Chú ý: Phần này nên sử dụng các hàm xử lý PDF từ các module khác
-            
-            // Giả định đã xử lý thành công
-            folderResults.nestedFilesProcessed++;
-            folderResults.folderStructure.files.push({
-              name: item.name,
-              id: item.id,
-              processed: true
-            });
           } 
           // Xử lý file ảnh
           else if (downloadResult.isImage) {
