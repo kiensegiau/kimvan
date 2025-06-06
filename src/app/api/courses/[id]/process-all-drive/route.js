@@ -339,7 +339,9 @@ export async function POST(request, { params }) {
                       token: 'api@test-watermark',
                       driveLink: link.url,
                       courseName: course.name || 'Khóa học không tên',
-                      skipWatermarkRemoval: skipWatermarkRemoval
+                      skipWatermarkRemoval: skipWatermarkRemoval,
+                      processRecursively: true, // Thêm flag để xử lý đệ quy các thư mục con
+                      maxRecursionDepth: 5 // Giới hạn độ sâu đệ quy để tránh vòng lặp vô hạn
                     }),
                     signal: folderController.signal
                   });
@@ -366,7 +368,9 @@ export async function POST(request, { params }) {
                     sheetIndex: link.sheetIndex,
                     rowIndex: link.rowIndex,
                     isFolder: true,
-                    folderInfo: folderData.folderInfo || null
+                    folderInfo: folderData.folderInfo || null,
+                    nestedFilesProcessed: folderData.nestedFilesProcessed || 0, // Số lượng files con đã xử lý
+                    nestedFoldersProcessed: folderData.nestedFoldersProcessed || 0 // Số lượng thư mục con đã xử lý
                   };
                   
                   // Thêm vào danh sách cục bộ
@@ -378,7 +382,11 @@ export async function POST(request, { params }) {
                     sheetTitle: link.sheetTitle,
                     status: 'Xử lý thành công thư mục',
                     processedUrl: folderProcessedUrl,
-                    isFolder: true
+                    isFolder: true,
+                    nestedStats: folderData.nestedStats || { 
+                      filesProcessed: folderData.nestedFilesProcessed || 0,
+                      foldersProcessed: folderData.nestedFoldersProcessed || 0
+                    }
                   });
                   
                   successCount++;

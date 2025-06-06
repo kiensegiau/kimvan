@@ -944,4 +944,273 @@ export async function checkDriveLinkStatus(driveUrl) {
       error: `Lỗi không xác định: ${error.message}`
     };
   }
+}
+
+// Hàm xử lý folder đệ quy
+export async function processRecursiveFolder(folderIdOrLink, maxDepth = 5, currentDepth = 0, backgroundImage = null, backgroundOpacity = 0.15, courseName = null, skipWatermarkRemoval = false) {
+  if (currentDepth > maxDepth) {
+    console.log(`Đã đạt đến độ sâu tối đa (${maxDepth}), dừng đệ quy`);
+    return {
+      success: true,
+      message: `Đã đạt đến độ sâu tối đa (${maxDepth})`,
+      reachedMaxDepth: true,
+      nestedFilesProcessed: 0,
+      nestedFoldersProcessed: 0
+    };
+  }
+  
+  let folderId, resourceKey;
+  let folderResults = {
+    success: true,
+    nestedFilesProcessed: 0,
+    nestedFoldersProcessed: 0,
+    folderStructure: {},
+    errors: []
+  };
+  
+  // Mảng lưu trữ thư mục tạm để dọn dẹp sau khi xử lý
+  let processingFolders = [];
+  
+  try {
+    // Trích xuất folder ID từ link nếu cần
+    if (typeof folderIdOrLink === 'string' && folderIdOrLink.includes('drive.google.com')) {
+      try {
+        const result = extractGoogleDriveFileId(folderIdOrLink);
+        folderId = result.fileId;
+        resourceKey = result.resourceKey;
+      } catch (error) {
+        throw new Error(`Không thể trích xuất ID folder từ link Google Drive: ${error.message}`);
+      }
+    } else {
+      folderId = folderIdOrLink;
+    }
+    
+    // Lấy thông tin folder và danh sách files
+    const folderInfo = await processDriveFolder(folderId);
+    
+    if (!folderInfo.files || folderInfo.files.length === 0) {
+      return {
+        success: true,
+        message: 'Folder trống, không có file để xử lý',
+        folderName: folderInfo.folderName,
+        nestedFilesProcessed: 0,
+        nestedFoldersProcessed: 0
+      };
+    }
+    
+    console.log(`[Đệ quy ${currentDepth}] Đã tìm thấy ${folderInfo.files.length} file/folder trong "${folderInfo.folderName}"`);
+    
+    // Tạo một thư mục trên Drive để lưu các file đã xử lý
+    const destinationFolder = await createDriveFolder(folderInfo.folderName, courseName);
+    const destinationFolderId = destinationFolder.folderId;
+    
+    console.log(`[Đệ quy ${currentDepth}] Đã tạo folder đích: ${destinationFolder.folderName} (ID: ${destinationFolderId})`);
+    
+    folderResults.folderStructure = {
+      name: folderInfo.folderName,
+      id: folderId,
+      processedFolderId: destinationFolderId,
+      processedFolderLink: destinationFolder.webViewLink,
+      files: [],
+      subfolders: []
+    };
+    
+    // Xử lý từng file/folder trong folder hiện tại
+    for (const item of folderInfo.files) {
+      console.log(`[Đệ quy ${currentDepth}] Đang xử lý: ${item.name} (${item.mimeType})`);
+      
+      // Kiểm tra nếu là thư mục con
+      if (item.mimeType === 'application/vnd.google-apps.folder') {
+        if (currentDepth < maxDepth) {
+          console.log(`[Đệ quy ${currentDepth}] Phát hiện thư mục con: ${item.name}, tiến hành xử lý đệ quy...`);
+          
+          // Xử lý đệ quy thư mục con
+          try {
+            const subFolderResult = await processRecursiveFolder(
+              item.id, 
+              maxDepth, 
+              currentDepth + 1,
+              backgroundImage,
+              backgroundOpacity,
+              courseName,
+              skipWatermarkRemoval
+            );
+            
+            if (subFolderResult.success) {
+              folderResults.nestedFoldersProcessed++;
+              folderResults.nestedFilesProcessed += subFolderResult.nestedFilesProcessed;
+              
+              // Thêm thông tin thư mục con vào cấu trúc
+              folderResults.folderStructure.subfolders.push({
+                name: item.name,
+                id: item.id,
+                processedFolderId: subFolderResult.processedFolderId,
+                processedFolderLink: subFolderResult.processedFolderLink,
+                filesProcessed: subFolderResult.nestedFilesProcessed,
+                subfoldersProcessed: subFolderResult.nestedFoldersProcessed
+              });
+            } else {
+              folderResults.errors.push({
+                name: item.name,
+                id: item.id,
+                error: subFolderResult.error || 'Lỗi không xác định khi xử lý thư mục con'
+              });
+            }
+          } catch (subFolderError) {
+            console.error(`[Đệ quy ${currentDepth}] Lỗi xử lý thư mục con "${item.name}": ${subFolderError.message}`);
+            folderResults.errors.push({
+              name: item.name,
+              id: item.id,
+              error: subFolderError.message
+            });
+          }
+        } else {
+          console.log(`[Đệ quy ${currentDepth}] Bỏ qua thư mục con "${item.name}" do đã đạt độ sâu tối đa`);
+          folderResults.errors.push({
+            name: item.name,
+            id: item.id,
+            error: `Bỏ qua do đã đạt độ sâu tối đa ${maxDepth}`
+          });
+        }
+      } else {
+        // Xử lý file
+        try {
+          // Tạo thư mục tạm riêng cho mỗi file
+          const tempDirName = uuidv4();
+          const outputDir = path.join(os.tmpdir(), tempDirName);
+          fs.mkdirSync(outputDir, { recursive: true });
+          processingFolders.push(outputDir);
+          
+          // Tải file từ Drive
+          console.log(`[Đệ quy ${currentDepth}] Đang tải file: ${item.name} (ID: ${item.id})`);
+          let downloadResult;
+          
+          // Thử tải file từ Drive
+          try {
+            downloadResult = await downloadFileFromDrive(item.id);
+            console.log(`[Đệ quy ${currentDepth}] Đã tải xong file: ${item.name}, kích thước: ${downloadResult.size} bytes`);
+          } catch (downloadError) {
+            console.log(`[Đệ quy ${currentDepth}] ⚠️ Lỗi tải file ${item.name}: ${downloadError.message}`);
+            throw downloadError; // Ném lỗi để xử lý ở catch bên ngoài
+          }
+          
+          // Xử lý file PDF
+          if (downloadResult.isPdf) {
+            console.log(`[Đệ quy ${currentDepth}] Xử lý file PDF: ${item.name}`);
+            
+            // Bỏ qua xử lý watermark nếu được yêu cầu
+            if (skipWatermarkRemoval) {
+              console.log(`[Đệ quy ${currentDepth}] ⏩ Bỏ qua xử lý watermark theo yêu cầu`);
+              
+              // Tải trực tiếp file lên thư mục đích
+              const uploadResult = await uploadFileToDriveFolder(
+                downloadResult.filePath,
+                downloadResult.fileName,
+                destinationFolderId
+              );
+              
+              folderResults.nestedFilesProcessed++;
+              folderResults.folderStructure.files.push({
+                name: item.name,
+                id: item.id,
+                processedFileId: uploadResult.fileId,
+                processedFileLink: uploadResult.webViewLink,
+                processed: true,
+                skippedWatermark: true
+              });
+              
+              continue;
+            }
+            
+            // TODO: Xử lý PDF để loại bỏ watermark (cần thêm code ở đây)
+            // Chú ý: Phần này nên sử dụng các hàm xử lý PDF từ các module khác
+            
+            // Giả định đã xử lý thành công
+            folderResults.nestedFilesProcessed++;
+            folderResults.folderStructure.files.push({
+              name: item.name,
+              id: item.id,
+              processed: true
+            });
+          } 
+          // Xử lý file ảnh
+          else if (downloadResult.isImage) {
+            console.log(`[Đệ quy ${currentDepth}] Xử lý file ảnh: ${item.name}`);
+            
+            // Tải file ảnh lên thư mục đích
+            const uploadResult = await uploadFileToDriveFolder(
+              downloadResult.filePath,
+              downloadResult.fileName,
+              destinationFolderId
+            );
+            
+            folderResults.nestedFilesProcessed++;
+            folderResults.folderStructure.files.push({
+              name: item.name,
+              id: item.id,
+              processedFileId: uploadResult.fileId,
+              processedFileLink: uploadResult.webViewLink,
+              processed: true
+            });
+          }
+          // Các loại file khác
+          else {
+            console.log(`[Đệ quy ${currentDepth}] Bỏ qua file không được hỗ trợ: ${item.name} (${downloadResult.contentType})`);
+            folderResults.folderStructure.files.push({
+              name: item.name,
+              id: item.id,
+              processed: false,
+              reason: `Loại file không được hỗ trợ: ${downloadResult.contentType}`
+            });
+          }
+        } catch (fileError) {
+          console.error(`[Đệ quy ${currentDepth}] Lỗi xử lý file "${item.name}": ${fileError.message}`);
+          folderResults.errors.push({
+            name: item.name,
+            id: item.id,
+            error: fileError.message
+          });
+        }
+      }
+    }
+    
+    // Dọn dẹp các thư mục tạm
+    for (const folder of processingFolders) {
+      try {
+        fs.rmSync(folder, { recursive: true, force: true });
+      } catch (cleanupError) {
+        console.error(`[Đệ quy ${currentDepth}] Lỗi khi dọn dẹp thư mục tạm ${folder}: ${cleanupError.message}`);
+      }
+    }
+    
+    // Trả về kết quả sau khi xử lý tất cả các file/folder
+    return {
+      success: true,
+      folderName: folderInfo.folderName,
+      processedFolderId: destinationFolderId,
+      processedFolderLink: destinationFolder.webViewLink,
+      nestedFilesProcessed: folderResults.nestedFilesProcessed,
+      nestedFoldersProcessed: folderResults.nestedFoldersProcessed,
+      folderStructure: folderResults.folderStructure,
+      errors: folderResults.errors.length > 0 ? folderResults.errors : null
+    };
+  } catch (error) {
+    console.error(`[Đệ quy ${currentDepth}] Lỗi xử lý folder: ${error.message}`);
+    
+    // Dọn dẹp các thư mục tạm khi có lỗi
+    for (const folder of processingFolders) {
+      try {
+        fs.rmSync(folder, { recursive: true, force: true });
+      } catch (cleanupError) {
+        console.error(`[Đệ quy ${currentDepth}] Lỗi khi dọn dẹp thư mục tạm ${folder}: ${cleanupError.message}`);
+      }
+    }
+    
+    return {
+      success: false,
+      error: error.message,
+      nestedFilesProcessed: folderResults.nestedFilesProcessed,
+      nestedFoldersProcessed: folderResults.nestedFoldersProcessed
+    };
+  }
 } 

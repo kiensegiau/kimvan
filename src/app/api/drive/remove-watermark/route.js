@@ -42,7 +42,8 @@ import {
   uploadFileToDriveFolder,
   downloadFileFromDrive,
   extractGoogleDriveFileId,
-  findOrCreateCourseFolder
+  findOrCreateCourseFolder,
+  processRecursiveFolder
 } from './lib/drive-service.js';
 import { processPDF } from './lib/drive-fix-blockdown.js';
 
@@ -165,7 +166,8 @@ export async function POST(request) {
     // Parse request body
     const requestBody = await request.json();
     let { driveLink, backgroundImage, backgroundOpacity, url, courseName, courseId, 
-          highPerformance, maxWorkers, batchSize, waitTime, dpi } = requestBody;
+          highPerformance, maxWorkers, batchSize, waitTime, dpi,
+          skipWatermarkRemoval, processRecursively, maxRecursionDepth } = requestBody;
 
     // Hỗ trợ cả url và driveLink (để tương thích)
     if (!driveLink && url) {
@@ -284,7 +286,7 @@ export async function POST(request) {
     if (isFolder) {
       console.log('Xử lý folder:', driveLink);
       // Xử lý nếu là folder
-      result = await handleDriveFolder(driveLink, backgroundImage, backgroundOpacity, courseName, courseId);
+      result = await handleDriveFolder(driveLink, backgroundImage, backgroundOpacity, courseName, courseId, skipWatermarkRemoval, processRecursively === true, maxRecursionDepth || 5);
       
       // Không cần đọc response.json() ở đây vì sẽ làm stream bị khóa
       // Log được tạo trực tiếp trong hàm handleDriveFolder rồi
@@ -567,7 +569,16 @@ async function handleDriveFile(driveLink, backgroundImage, backgroundOpacity, co
             console.log(`🔍 Đã phát hiện link là thư mục, chuyển hướng xử lý...`);
             
             // Gọi hàm xử lý thư mục
-            return await handleDriveFolder(driveLink, backgroundImage, backgroundOpacity, courseName, courseId);
+            return await handleDriveFolder(
+              driveLink, 
+              backgroundImage, 
+              backgroundOpacity, 
+              courseName, 
+              courseId,
+              skipWatermarkRemoval,
+              processRecursively === true, // Xử lý đệ quy nếu được yêu cầu
+              maxRecursionDepth || 5 // Độ sâu đệ quy mặc định là 5
+            );
           } else if (mimeType.startsWith('image/')) {
             console.log(`🖼️ Đã phát hiện link là ảnh (${mimeType}), được phép xử lý...`);
             // Cho phép tiếp tục xử lý nếu là ảnh
@@ -1133,7 +1144,7 @@ async function handleDriveFile(driveLink, backgroundImage, backgroundOpacity, co
 }
 
 // Hàm xử lý folder từ Google Drive
-async function handleDriveFolder(driveFolderLink, backgroundImage, backgroundOpacity, courseName, courseId) {
+async function handleDriveFolder(driveFolderLink, backgroundImage, backgroundOpacity, courseName, courseId, skipWatermarkRemoval = false, processRecursively = false, maxRecursionDepth = 5) {
   let folderResults = [];
   let processingFolders = [];
   let destinationFolderId = null;
@@ -1159,6 +1170,46 @@ async function handleDriveFolder(driveFolderLink, backgroundImage, backgroundOpa
   }
 
   try {
+    // Xử lý đệ quy nếu được yêu cầu
+    if (processRecursively) {
+      console.log(`Bắt đầu xử lý đệ quy folder với độ sâu tối đa ${maxRecursionDepth}...`);
+      
+      const recursiveResult = await processRecursiveFolder(
+        driveFolderLink, 
+        maxRecursionDepth, 
+        0, // currentDepth ban đầu là 0
+        backgroundImage,
+        backgroundOpacity,
+        courseName,
+        skipWatermarkRemoval
+      );
+      
+      if (!recursiveResult.success) {
+        return NextResponse.json({
+          success: false,
+          message: `Lỗi khi xử lý đệ quy folder: ${recursiveResult.error}`,
+        }, { status: 500 });
+      }
+      
+      console.log(`✅ Đã xử lý đệ quy thành công: ${recursiveResult.nestedFilesProcessed} file và ${recursiveResult.nestedFoldersProcessed} thư mục con`);
+      
+      // Trả về kết quả xử lý đệ quy
+      return NextResponse.json({
+        success: true,
+        message: `Đã xử lý đệ quy folder thành công`,
+        folderLink: recursiveResult.processedFolderLink,
+        folderName: recursiveResult.folderName,
+        nestedFilesProcessed: recursiveResult.nestedFilesProcessed,
+        nestedFoldersProcessed: recursiveResult.nestedFoldersProcessed,
+        folderStats: {
+          totalFiles: recursiveResult.nestedFilesProcessed,
+          totalFolders: recursiveResult.nestedFoldersProcessed,
+          errors: recursiveResult.errors ? recursiveResult.errors.length : 0
+        },
+        errors: recursiveResult.errors
+      });
+    }
+
     // Lấy thông tin folder và danh sách files
     const folderInfo = await processDriveFolder(driveFolderLink);
     
