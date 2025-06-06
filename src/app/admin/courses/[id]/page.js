@@ -225,7 +225,7 @@ export default function CourseDetailPage({ params }) {
           body: JSON.stringify({
             preview: true,
             useCache: false, // Không sử dụng cache trong xem trước ban đầu
-            originalId: course.originalId // Thêm originalId vào request
+            originalPrice: course.originalPrice // Thêm originalPrice vào request
           })
         });
         
@@ -282,7 +282,7 @@ export default function CourseDetailPage({ params }) {
           applyProcessedLinks: true, // Thêm tham số để đảm bảo áp dụng các link đã xử lý
           preview: false,
           useCache: true, // Sử dụng dữ liệu đã được lưu trong cache
-          originalId: course.originalId // Thêm originalId vào request
+          originalPrice: course.originalPrice // Thêm originalPrice vào request
         })
       });
       

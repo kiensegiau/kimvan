@@ -583,11 +583,18 @@ export async function PATCH(request, { params }) {
     // Kiểm tra chế độ xem trước và các tham số khác
     const previewMode = requestBody.preview === true;
     const applyProcessedLinks = requestBody.applyProcessedLinks === true;
-    const useCache = requestBody.useCache === true || applyProcessedLinks === true;
+    
+    // Sửa đổi: Kiểm tra cache trước khi quyết định có sử dụng cache hay không
+    // Nếu đã có dữ liệu trong cache cho ID này, sử dụng nó ngay cả khi không có tham số useCache
+    const hasExistingCache = kimvanDataCache.has(id);
+    const useCache = requestBody.useCache === true || applyProcessedLinks === true || hasExistingCache;
     
     console.log(`🔍 [PATCH] Chế độ xem trước: ${previewMode ? 'Bật' : 'Tắt'}`);
     console.log(`🔗 [PATCH] Áp dụng link đã xử lý: ${applyProcessedLinks ? 'Bật' : 'Tắt'}`);
     console.log(`💾 [PATCH] Sử dụng dữ liệu đã lưu tạm: ${useCache ? 'Bật' : 'Tắt'}`);
+    if (hasExistingCache) {
+      console.log(`💾 [PATCH] Đã phát hiện dữ liệu trong bộ nhớ tạm cho ID ${id}`);
+    }
     
     // Đảm bảo kết nối đến MongoDB trước khi truy vấn
     await connectDB();
@@ -695,12 +702,12 @@ export async function PATCH(request, { params }) {
         }
       };
       
-      // Nếu có originalId, thêm vào body của request
-      if (requestBody.originalId) {
-        console.log(`📎 [PATCH] Thêm originalId: ${requestBody.originalId} vào request`);
+      // Nếu có originalPrice, thêm vào body của request
+      if (requestBody.originalPrice) {
+        console.log(`📎 [PATCH] Thêm originalPrice: ${requestBody.originalPrice} vào request`);
         fetchOptions.method = 'POST';
         fetchOptions.body = JSON.stringify({
-          originalId: requestBody.originalId
+          originalPrice: requestBody.originalPrice
         });
       }
       
@@ -721,17 +728,15 @@ export async function PATCH(request, { params }) {
       console.log('✅ [PATCH] Đã nhận dữ liệu từ kimvan API thành công!');
       kimvanData = await kimvanResponse.json();
       
-      // Lưu dữ liệu vào bộ nhớ tạm nếu đang ở chế độ xem trước
-      if (previewMode) {
-        console.log('💾 [PATCH] Lưu dữ liệu vào bộ nhớ tạm');
-        kimvanDataCache.set(id, kimvanData);
-        
-        // Thiết lập xóa cache sau 30 phút
-        setTimeout(() => {
-          console.log(`🗑️ [PATCH] Xóa dữ liệu tạm cho khóa học ${id}`);
-          kimvanDataCache.delete(id);
-        }, 30 * 60 * 1000);
-      }
+      // Lưu dữ liệu vào bộ nhớ tạm dù đang ở chế độ nào - Sửa đổi ở đây
+      console.log('💾 [PATCH] Lưu dữ liệu vào bộ nhớ tạm');
+      kimvanDataCache.set(id, kimvanData);
+      
+      // Thiết lập xóa cache sau 30 phút
+      setTimeout(() => {
+        console.log(`🗑️ [PATCH] Xóa dữ liệu tạm cho khóa học ${id}`);
+        kimvanDataCache.delete(id);
+      }, 30 * 60 * 1000);
     }
     
     // Thêm log để kiểm tra xem kimvanData có chứa thông tin đã xử lý không
