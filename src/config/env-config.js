@@ -80,6 +80,7 @@ export const publicPaths = [
   '/api/auth/login',
   '/api/auth/verify',
   '/api/auth/refresh-token',
+  '/api/auth/user-role',
   '/api/auth/logout',
   '/api/auth/forgot-password',
   '/api/auth/reset-password',

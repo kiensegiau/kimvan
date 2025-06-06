@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { publicPaths, routes, cookieConfig } from '@/config/env-config';
-import clientPromise from '@/lib/mongodb';
 
 // Các Security Headers cơ bản
 const securityHeaders = [
@@ -45,6 +44,7 @@ const publicPathCache = new Map();
 // Đường dẫn API xác thực token
 const TOKEN_VERIFY_API = '/api/auth/verify';
 const TOKEN_REFRESH_API = '/api/auth/refresh-token';
+const USER_ROLE_API = '/api/auth/user-role';
 
 // Email được phép truy cập trang admin - không còn cần thiết vì sẽ kiểm tra theo role
 // const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'phanhuukien2001@gmail.com';
@@ -71,9 +71,10 @@ export async function middleware(request) {
     response.headers.set(header.key, header.value);
   });
 
-  // Bỏ qua middleware cho API verify token và refresh token để tránh vòng lặp vô hạn
+  // Bỏ qua middleware cho API verify token, refresh token và user-role để tránh vòng lặp vô hạn
   if (pathname === TOKEN_VERIFY_API || 
       pathname === TOKEN_REFRESH_API ||
+      pathname === USER_ROLE_API ||
       pathname === '/api/auth/logout' || 
       pathname === '/api/auth/admin/check-permission') {
     return response;
@@ -162,24 +163,30 @@ export async function middleware(request) {
     console.log('🔍 MIDDLEWARE - Thông tin người dùng đầy đủ:', JSON.stringify(user));
     console.log('🔍 MIDDLEWARE - Role của người dùng từ token:', user.role);
     
-    // THAY ĐỔI: Lấy role từ MongoDB
+    // Lấy role từ MongoDB thông qua API
     let userRole = user.role || 'user';
     try {
-      // Kết nối MongoDB
-      const mongoClient = await clientPromise;
-      const db = mongoClient.db(process.env.MONGODB_DB || 'kimvan');
+      console.log('🔍 MIDDLEWARE - Đang lấy role từ MongoDB qua API');
+      const roleResponse = await fetch(`${baseUrl}${USER_ROLE_API}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ uid: user.uid }),
+      });
       
-      // Tìm user trong MongoDB
-      const userFromDB = await db.collection('users').findOne({ firebaseId: user.uid });
-      console.log('🔍 MIDDLEWARE - Tìm thấy user trong MongoDB:', userFromDB ? 'Có' : 'Không');
-      
-      if (userFromDB && userFromDB.role) {
-        userRole = userFromDB.role;
-        console.log('🔍 MIDDLEWARE - Role từ MongoDB:', userRole);
+      if (roleResponse.ok) {
+        const roleData = await roleResponse.json();
+        if (roleData.success && roleData.role) {
+          userRole = roleData.role;
+          console.log('🔍 MIDDLEWARE - Role từ MongoDB:', userRole);
+        }
+      } else {
+        console.error('❌ MIDDLEWARE - Lỗi khi gọi API role:', await roleResponse.text());
       }
-    } catch (mongoError) {
-      console.error('❌ MIDDLEWARE - Lỗi khi truy vấn MongoDB:', mongoError);
-      // Không làm gián đoạn luồng nếu lỗi MongoDB, tiếp tục sử dụng role từ token
+    } catch (roleError) {
+      console.error('❌ MIDDLEWARE - Lỗi khi lấy role từ API:', roleError);
+      // Không làm gián đoạn luồng nếu lỗi API, tiếp tục sử dụng role từ token
     }
     
     console.log('🔍 MIDDLEWARE - Role cuối cùng sử dụng:', userRole);
