@@ -6,6 +6,9 @@ import puppeteer from 'puppeteer';
 // Thư mục kết quả
 const resultsDir = path.join(process.cwd(), 'results');
 
+// Thêm cache để lưu dữ liệu tạm thời
+const sheetsDataCache = new Map();
+
 // Đảm bảo thư mục tồn tại
 if (!fs.existsSync(resultsDir)) {
   fs.mkdirSync(resultsDir, { recursive: true });
@@ -184,13 +187,31 @@ function processFakeLinks(data) {
  * Tự động lấy chi tiết sheet từ API KimVan
  * @param {string} sheetId - ID của sheet cần lấy
  * @param {string} originalPrice - ID gốc (nếu có)
+ * @param {boolean} useCache - Có sử dụng dữ liệu đã lưu trong bộ nhớ tạm hay không
  * @returns {Promise<Object>} Dữ liệu sheet hoặc null nếu có lỗi
  */
-async function fetchSheetDetail(sheetId, originalPrice) {
+async function fetchSheetDetail(sheetId, originalPrice, useCache = false) {
   try {
     console.log(`===== BẮT ĐẦU LẤY CHI TIẾT SHEET VỚI ID "${sheetId}" =====`);
+    console.log(`===== SỬ DỤNG CACHE: ${useCache ? 'CÓ' : 'KHÔNG'} =====`);
+    
     if (originalPrice) {
       console.log(`===== SỬ DỤNG ORIGINAL ID "${originalPrice}" =====`);
+    }
+    
+    // Tạo cache key cho ID hiện tại
+    const cacheKey = originalPrice || sheetId;
+    
+    // Kiểm tra nếu có dữ liệu trong cache và được yêu cầu sử dụng cache
+    if (useCache && sheetsDataCache.has(cacheKey)) {
+      console.log(`💾 Đã tìm thấy dữ liệu trong bộ nhớ tạm cho ID ${cacheKey.substring(0, 10)}...`);
+      return {
+        success: true,
+        data: sheetsDataCache.get(cacheKey),
+        sheetId: sheetId,
+        fromCache: true,
+        timestamp: Date.now()
+      };
     }
     
     // Đường dẫn đến thư mục dữ liệu người dùng Chrome
@@ -311,6 +332,16 @@ async function fetchSheetDetail(sheetId, originalPrice) {
         fs.writeFileSync(detailFilePath, JSON.stringify(detailData, null, 2));
         console.log(`Đã lưu chi tiết sheet vào: ${detailFilePath}`);
         
+        // Lưu vào bộ nhớ tạm để tái sử dụng
+        console.log(`💾 Lưu dữ liệu vào bộ nhớ tạm với ID: ${cacheKey.substring(0, 10)}...`);
+        sheetsDataCache.set(cacheKey, detailData);
+        
+        // Thiết lập xóa cache sau 30 phút
+        setTimeout(() => {
+          console.log(`🗑️ Xóa dữ liệu tạm cho ID ${cacheKey.substring(0, 10)}...`);
+          sheetsDataCache.delete(cacheKey);
+        }, 30 * 60 * 1000);
+        
         // Hiển thị thông báo trong console
         console.log('\n===== LẤY JSON THÀNH CÔNG =====');
         console.log(`Đã lấy xong chi tiết sheet với ID: ${shortId}`);
@@ -342,9 +373,9 @@ async function fetchSheetDetail(sheetId, originalPrice) {
         };
       }
     } finally {
-      // Đóng trình duyệt ngay lập tức
-      await browser.close();
-      console.log('Đã đóng trình duyệt Chrome');
+      // Không đóng trình duyệt để người dùng có thể tiếp tục sử dụng
+      console.log('Giữ trình duyệt Chrome mở để tiếp tục sử dụng');
+      // await browser.close(); // Bỏ qua việc đóng trình duyệt
     }
   } catch (error) {
     console.error('Lỗi khi lấy chi tiết sheet:', error);
@@ -368,11 +399,17 @@ export async function GET(request, { params }) {
       return NextResponse.json({ error: 'ID không được cung cấp' }, { status: 400 });
     }
     
-    // Lấy originalPrice từ query params nếu có
+    // Lấy originalPrice và useCache từ query params
     const { searchParams } = new URL(request.url);
     const originalPrice = searchParams.get('originalPrice');
+    const useCache = searchParams.get('useCache') === 'true';
+    
     if (originalPrice) {
       console.log(`Nhận được originalPrice: ${originalPrice} từ query params`);
+    }
+    
+    if (useCache) {
+      console.log(`🔍 Yêu cầu sử dụng bộ nhớ tạm (useCache=true)`);
     }
     
     // Timestamp cho header
@@ -388,10 +425,30 @@ export async function GET(request, { params }) {
     console.log(`Timestamp: ${timestamp}`);
     console.log('==============================================');
     
+    // Kiểm tra cache
+    const cacheKey = originalPrice || id;
+    if (useCache && sheetsDataCache.has(cacheKey)) {
+      console.log(`💾 Đã tìm thấy dữ liệu trong bộ nhớ tạm cho ID ${cacheKey.substring(0, 10)}...`);
+      responseHeaders['X-Data-Source'] = 'memory-cache';
+      
+      return NextResponse.json(sheetsDataCache.get(cacheKey), {
+        headers: responseHeaders
+      });
+    }
+    
     // Gọi hàm lấy chi tiết
-    const result = await fetchSheetDetail(id, originalPrice);
+    const result = await fetchSheetDetail(id, originalPrice, useCache);
     
     if (result.success) {
+      // Nếu lấy từ cache
+      if (result.fromCache) {
+        console.log(`💾 Đã sử dụng dữ liệu từ bộ nhớ tạm cho ID ${id}`);
+        responseHeaders['X-Data-Source'] = 'memory-cache';
+        return NextResponse.json(result.data, {
+          headers: responseHeaders
+        });
+      }
+      
       // Dọn dẹp thư mục kết quả, giữ lại file vừa lấy được
       const detailFileName = `sheet-${id.substring(0, 10)}-detail.json`;
       const detailFilePath = path.join(resultsDir, detailFileName);
@@ -438,13 +495,20 @@ export async function POST(request, { params }) {
       return NextResponse.json({ error: 'ID không được cung cấp' }, { status: 400 });
     }
     
-    // Lấy originalPrice từ request body
+    // Lấy originalPrice và useCache từ request body
     let originalPrice;
+    let useCache = false;
     try {
       const body = await request.json();
       originalPrice = body.originalPrice;
+      useCache = body.useCache === true;
+      
       if (originalPrice) {
         console.log(`Nhận được originalPrice: ${originalPrice} từ request body`);
+      }
+      
+      if (useCache) {
+        console.log(`🔍 Yêu cầu sử dụng bộ nhớ tạm từ request body (useCache=true)`);
       }
     } catch (e) {
       console.log('Không có request body hoặc không phải JSON');
@@ -463,10 +527,30 @@ export async function POST(request, { params }) {
     console.log(`Timestamp: ${timestamp}`);
     console.log('==============================================');
     
+    // Kiểm tra cache
+    const cacheKey = originalPrice || id;
+    if (useCache && sheetsDataCache.has(cacheKey)) {
+      console.log(`💾 Đã tìm thấy dữ liệu trong bộ nhớ tạm cho ID ${cacheKey.substring(0, 10)}...`);
+      responseHeaders['X-Data-Source'] = 'memory-cache';
+      
+      return NextResponse.json(sheetsDataCache.get(cacheKey), {
+        headers: responseHeaders
+      });
+    }
+    
     // Gọi hàm lấy chi tiết
-    const result = await fetchSheetDetail(id, originalPrice);
+    const result = await fetchSheetDetail(id, originalPrice, useCache);
     
     if (result.success) {
+      // Nếu lấy từ cache
+      if (result.fromCache) {
+        console.log(`💾 Đã sử dụng dữ liệu từ bộ nhớ tạm cho ID ${id}`);
+        responseHeaders['X-Data-Source'] = 'memory-cache';
+        return NextResponse.json(result.data, {
+          headers: responseHeaders
+        });
+      }
+      
       // Dọn dẹp thư mục kết quả, giữ lại file vừa lấy được
       const detailFileName = `sheet-${id.substring(0, 10)}-detail.json`;
       const detailFilePath = path.join(resultsDir, detailFileName);
