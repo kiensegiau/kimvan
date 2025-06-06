@@ -695,12 +695,12 @@ export async function PATCH(request, { params }) {
         }
       };
       
-      // Nếu có originalId, thêm vào body của request
-      if (requestBody.originalId) {
-        console.log(`📎 [PATCH] Thêm originalId: ${requestBody.originalId} vào request`);
+      // Nếu có originalPrice, thêm vào body của request
+      if (requestBody.originalPrice) {
+        console.log(`📎 [PATCH] Thêm originalPrice: ${requestBody.originalPrice} vào request`);
         fetchOptions.method = 'POST';
         fetchOptions.body = JSON.stringify({
-          originalId: requestBody.originalId
+          originalPrice: requestBody.originalPrice
         });
       }
       

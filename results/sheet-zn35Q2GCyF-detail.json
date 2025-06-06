@@ -1,0 +1,3426 @@
+{
+  "sheets": [
+    {
+      "properties": {
+        "title": "STEP 0. THE TRUTH"
+      },
+      "data": [
+        {
+          "rowData": [
+            {
+              "values": [
+                {
+                  "formattedValue": "Thời gian",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Nội dung buổi học",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Chỉ dẫn sách",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Link video",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Link sách",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "bold": true
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "05/04/2024",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "Theme 10. Mở đầu về hình học không gian, đường thẳng và mặt phẳng trong không gian"
+                },
+                {
+                  "formattedValue": "p78 – p81",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "LIVESTREAM",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "RHIZmGtfNjuwYH10k_MX70a1wSKmY5kVB1ZQlRL1wwjsI_eV-NMI1LQ9u2ayCTvxjK2E6myQfAA"
+                },
+                {
+                  "formattedValue": "LINK SÁCH",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "VIA9lrK7_WZ2u29CrPSQM3efa_uvzbndKAlsvBqfX5eT51faR3G9pIIbSlDqBuAT2ihnVShBCWD2kfpOaso0Ckw_98VEuPEuCT8EnCwEbl0PWkYg3UXdyRpqG3I9PRcclJpLSWthkzpBULCfCN7D9EM"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "09/04/2024",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "Theme 11. Quan hệ song song trong không gian       "
+                },
+                {
+                  "formattedValue": "p82 – p87",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "LIVESTREAM",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "nRUwXV55CV9TrBtDyA23GHE3zylASqnz1eFgz81dA7AlLn8XJvIt6oRl2k73Zi7sQDJQ59bNvx8"
+                },
+                {
+                  "formattedValue": "LINK SÁCH",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "xBLUeTPBAijjw8ZPeK0DmVrMJVGVL-5WR4rNkThS8YeJIG4HpNGaEKdhO_TSDulHPA71Bp2XKYfL331nXKIPOmiWsd49OcGD_AiszdFt5QRJ63FqgLow3ll08reCl-6gAp8CU9OxOyBK9Ja-I9qSXCg"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "10/04/2024",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "Theme 12. Quan hệ vuông góc trong không gian"
+                },
+                {
+                  "formattedValue": "p88 – p95",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "LIVESTREAM",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "6suf0Cw3aB38iW9KcQ69-4WNA_PY-TDgd528mUTZOz311Zu2ZJ52skyMInStJoTE_Fn_tZWsYRY"
+                },
+                {
+                  "formattedValue": "LINK SÁCH",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "NT3-6yFCtKCk5VxVRFX1DNvFUluR8vqjYOgciUMvTK9CIKHq4aXBpBU0G2B7NWm1XYESlKdjnGe4S5iaB4tdmXvyam4ivSrIEg9-VGFxZJO96pEfGUfgnfbz7X3rxS5skR2NgF_XA9pELuYoUPSmnT0"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "18/04/2024",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "Theme 13. Góc giữa hai đường thẳng trong không gian"
+                },
+                {
+                  "formattedValue": "p96 – p97",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "LIVESTREAM",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "auUrum2a0oiJi64u5r4TmpLN3vI9Wm9cL9OjYWr8QAWDFw-pUvjhZRyCcKIoPg6nwnnDdtiyLZ4"
+                },
+                {
+                  "formattedValue": "LINK SÁCH",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "JHhBmEwVxeuKptp_PxI1ex3xaW4UxyzZKOqOhhz69-c-V7C6-fTXnv8UUI-Y9iOTKj8DpXvZoNaj_dvSnI08zifFarS10WUc7pa6gEIoQaQOrZOXNAWHT2gDIGepuJNe7OjKTS2F2yYJxdm4h40Mx4E"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "11/04/2024",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "Theme 14. Góc giữa đường thẳng và mặt phẳng trong không gian"
+                },
+                {
+                  "formattedValue": "p98 – p101",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "LIVESTREAM",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "NSziBgC7J0NVtX7uN3XyMK4ILBD8qK47AckYWCiQb_ou4TluOlMtq9bdrGSjpf7dhDnqLKyMaaU"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN BTRL",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "-oTWX9XDofDiJ15355rQCcWtZz5vTG62KqvrPO_0-SfjfihidjFRfvoy2EZY_JOz2r1hAqUZFc2g5wZA_QPURMDEvfRFWGQybWKd6mFbBh-wpkAsJI9Mltp1sRO3gRq0Z7MFncXfT-yU3FORUg"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "02/05/2024",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "Theme 15. Góc giữa hai mặt phẳng, góc nhị diện"
+                },
+                {
+                  "formattedValue": "p102 – p107",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "LIVESTREAM",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "s-1Vs56r17k5vc1ZLtha9OhQ7yNcrM4B39L-cUcnV6NYCR3rgwUxBE2EGSRSGC0KsoD3fjfR0lc"
+                },
+                {
+                  "formattedValue": "LINK SÁCH",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "FcKIKB3E_6gtWqjr7nHYGQESJdUA0zw7tgS01HYqhsbZHngXGOumMFx_UjR6EKR5y6lcl9fGe4IismPyQ_Y32YcI5nRoLwHF5DwTiYy8d0V2XjO5Bivgpxcf8RxTSasD1db7We2oCtxGxB5_jQPK_xg"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "09/05/2024",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "Theme 16. Khoảng cách từ một điểm đến một mặt phẳng"
+                },
+                {
+                  "formattedValue": "p108 – p111",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "LIVESTREAM",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "_N1nEOGetV8OBXFTMiBfhy1rADARoCYD5mJ_V0-GT2GwWrQ4Xzx0j8p79iE0Aq4G0SHCFz9th9c"
+                },
+                {
+                  "formattedValue": "LINK SÁCH",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "JuVmFPE24CVFcaf6uisDHDU4ys8z9z7clxrj4qog4B5WI42SqxgvL7S9maJAv3pjvX-rdXf1JzUKg6CqztyzIt3eAVuT2LyzcoQcsYu79BU9Mxo6tOe15BWtKoAYfVrHMiSOf0QsSuKO3IhfiLbaSy8"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "16/05/2024",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "Theme 17. Khoảng cách giữa hai đường thẳng chéo nhau"
+                },
+                {
+                  "formattedValue": "p112 – p115",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "LIVESTREAM",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "-IDCVcHeQMEiLVkxt15la5GFCiw-0ebbzLtMWk-I_EdKgUZqAZ5y6fsswVMW83mog1v5R2t68gU"
+                },
+                {
+                  "formattedValue": "LINK SÁCH",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "yFUztDnUBYX-fLgEwr07dDeRjtx4KMjDMGPLX6sk8XIcg_-auUSU6EXosITh1RY5wMgpN96KueMkW9zfKm7E669hp6fqDJ0A4VgrX9EooxnYUL9FukFp6UKPvxFA3VateHvUtk142kVzIcPVoMbOu9w"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "08/05/2024",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "Theme 18. Ba mô hình tính thể tích khối chóp"
+                },
+                {
+                  "formattedValue": "p116 – p121",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "LIVESTREAM",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "8zKgnR_8JZ3WXFGA0u1RyNuOlZ8roZ0EgYqqsvgAH25ocZJgwGP1eUCbowagOVreXFBZzf6-MJM"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN BTRL",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "K_wJRZ9elg5l_iBQWhB56DqVkrdZ9tDAp_tis3-NhnSP7-7aZyMX8mIgEVYlH59vybKH5rftELPz8-CyTkmGbv62sBZYvowuD4hMkJ8N4Klt27Ikkc_I1bDmOUI8iRux4oHpXgbNeSYm5rT2Pw"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "10/05/2024",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "Theme 19. Thể tích khối lăng trụ"
+                },
+                {
+                  "formattedValue": "p122 – p125",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "LIVESTREAM",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "hflL3vEIcuCPIbdRWrlG0lHFwCt70LTsWSrUVL83HjpmtqtQiVJQBmxOGNlxBVsUWTbEg3nwX1Q"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN BTRL",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "I9-rmRZ-r37t5UYg0WQY_1wUwk0rY_HoNWcpfCCRoHiZk0ChPHijBUPWRLS1Z8PBwTkiduSWBOZlSsO3_Jfskct3QtGtWum8AkXVUpDRRS-StX8Wx1EyPUnSeR98O_fBX9s4juWXDdbdFAT3pbGvDjQ"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "12/05/2024",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "Theme 5. Vectơ"
+                },
+                {
+                  "formattedValue": "p48 – p53",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "LIVESTREAM",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "HrYFFWpMPf1Fc2jRQz3R3EhzvZK34DnIrQmdGB0YkRC0PWIwkQv6qTF7DieeQBIvjxen9l3M1SY"
+                },
+                {
+                  "formattedValue": "LINK SÁCH",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "EqHWK2CLSdJoQqiDXsndU9_6zBzEuZlJw7izXIff0Hq0DWfoQi_hFcKKTU0Pn-CRfkp1eZH1hpk6yWwWjF2K5JM9ihuAw7ZKXUb_3cnZKHW___770noyxnfLa-78hdB7qcY6i9FdPJAS_c0w1EAXYHU"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "13/05/2024",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "Theme 6. Phương trình đường thẳng"
+                },
+                {
+                  "formattedValue": "p54 – p61",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "LIVESTREAM",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "GZMyoGnISECD4zoEEFwARfwI3rI_hCze7VfLX_jGi9_z07i-zSPtgoWVMKj6IfPaH4FFdx-IbR8"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN BTRL",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "94NNcZE7A7nIjSbGr06OS7pP3njqx-RHY6vAJYU7q7bYnlvR7XgnD9QToETJxqkLk3OtdLKkgwrAsYOXK8CYpbCedzW-dJ0SK8wQ9aHpUBDBiIwNReSytYLa7IFRCIv-NFH4fnmOLTztNbMdsPxw_mE"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "15/05/2024",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "Theme 7. Vị trí tương đối giữa hai đường thẳng, góc và khoảng cách"
+                },
+                {
+                  "formattedValue": "p62 – p65",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "LIVESTREAM",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "5rL-gVQDz6-ylm9gJ-Cv5BWSayCmmA-AD_Ka8xOeD1gv7pW-GzVg8BhG0TuP-Nc7k76_t1VxL6c"
+                },
+                {
+                  "formattedValue": "LINK SÁCH",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "ejk-2IrDIsrA17fzl7TklPg0QpJ5DS1IZc8RUJh4lEJUQIaTr4LrIyokhjD0hz0T58BaaBQdoEF13OMjZaqIYEqOpuN4Vz6bBiciJVRsCMbhRC01khw7ShKLpYVczGbvYSL5muIW87TFgZx-vK1yyKY"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "17/05/2024",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "Theme 8. Phương trình đường tròn"
+                },
+                {
+                  "formattedValue": "p66 – p69",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "LIVESTREAM",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "YfNhFLdqBjG679SQM-sQNVe8h5HI8CFwMYd2NdKQrh1YP9QT5mU9R40of0pSgpXkI4DnYT11wqk"
+                },
+                {
+                  "formattedValue": "LINK SÁCH",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "Edi-x2K7cRDujyM-WgWM52euIpgEmJawgbeD9kYB2vXmqCuqp5Va7C8AwxMboR8Y5dW8Kb1_pYdnBDozkIRyb6S6PRqjMGeerz_YsjB1aFzc8DsLfYGICqib4ZTf2_BBcqPb3UcGCcJZ6WSbUp351os"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "19/05/2024",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "Theme 9. Ba đường Conic "
+                },
+                {
+                  "formattedValue": "p70 – p75",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "LIVESTREAM",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "mN-9bcZXB0Fjb0ywTuylzKL7cxgMQP4BFPKbnu7adlvMl7V-uzrut8dfnXBQTB0PszF9ob2oE3g"
+                },
+                {
+                  "formattedValue": "LINK SÁCH",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "meJ1DwJHU3C7rj3FdsIC5LEc9KEpEof4dhNRrDRZMjl6tTuzEO8oRaUpxiZWHUlH-66I_o7TAlzDOUelKERqwTVOatAabZvMeLXB2PWDkWm86kkcY8DD013zg-N2VIvqBmgTNp0MD-pnfMdhipjFtq0"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "19/05/2024",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "Theme 9. Ba đường Conic "
+                },
+                {
+                  "formattedValue": "p70 – p75",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "PHẦN 2",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "y13zBdnGwOku4DfgdNUXqcBsKuj6_-AqSDe3g6fbVIoLRKGP5-9X10CSOiUUW4bdqB8--_U0PHY"
+                },
+                {
+                  "formattedValue": "LINK SÁCH",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "Mb4zW-Hq3E_YHDbnx7CM80yRpLvCJlpFRI7uwmH-klhPH45yVglWLlh2wFvA_NTnm_ru46DoN99pL9klDgzFfLRK_wXEEPsuYwflw1Z8NGCN0Wv2KmZXs7evevNlDhO3qekQkx35eE6kbea7DiHliJI"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "📋",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.8352941,
+                      "green": 0.6509804,
+                      "blue": 0.7411765
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.019607844,
+                        "green": 0.019607844,
+                        "blue": 0.019607844
+                      },
+                      "fontSize": 12,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "PART 2. ĐẠI SỐ & GIẢI TÍCH",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.8509804,
+                      "green": 0.91764706,
+                      "blue": 0.827451
+                    },
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 1
+                      },
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.8509804,
+                      "green": 0.91764706,
+                      "blue": 0.827451
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.8509804,
+                      "green": 0.91764706,
+                      "blue": 0.827451
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.8509804,
+                      "green": 0.91764706,
+                      "blue": 0.827451
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "12/04/2024",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "Theme 22. Giá trị lượng giác, công thức lượng giác, hàm số lượng giác"
+                },
+                {
+                  "formattedValue": "p140 – p151",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "LIVESTREAM",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "fIhbIiX8RL_618JhCcjej--IL8Na5rWEUDJc08COoqqC_njjqvqK270zwAqsB5F9ZFwmvZ5ZGmE"
+                },
+                {
+                  "formattedValue": "LINK SÁCH",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "FCOTK7FHYTqcmKMkuw44q6dSIHSX3kX_B2MkgRrNFX___3STQCrQLnhcDzp2Bwvs3uIKxhb9GTXvvQGaVSbHyLAcgU1wxFC3JSEotqW_Xq8dUQZQKPgTtAT5m-icUHLfUL3L0SQ6IIExHQhLxzrOZVk"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "16/04/2024",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "Theme 23. Giới hạn hàm số khi x → a"
+                },
+                {
+                  "formattedValue": "p152 – p159",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "LIVESTREAM",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "kXTQN7Gxrt7RnmXz4mO-kGotkQq8-Xb0Jy1LNNNPdq8zrT0bDPuzrCjg7cXRK3niI6N2bhnpy_A"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN BTRL",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "t8LqnjGKdxVwPxvhrOt4UdNp6iD2U8004K8yy2TcG5GcGhSCJljcjHOMopz5lWodWtm7bfTkfCelmQHfDAuomk5e3Jge363aupUxM94ABYEBcX63go5kO4WtGu0k5n6-oI0cEVrtAm1HhJVcALI"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "22/04/2024",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "Theme 24. Giới hạn của hàm số khi x → ∞"
+                },
+                {
+                  "formattedValue": "p160 – p165",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "LIVESTREAM",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "takWIUcPqwBJpRKN8NXbHyJT_bornLFLU4RCcSdiNeeuLOEyDr3X3lLPtnbFz8cxVkotSS2_fG0"
+                },
+                {
+                  "formattedValue": "LINK SÁCH",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "5AbojBCOaeYuOOVwdDnQJEOVLvpwU_9I0P5LZFTqrYhMEBo5vAT11BKzD0ZjHUV7yvHQr9h89xw_PlfpFXnQHD1M0AVV1XKowbiZPcoqLGHGTGcCV8nbnsYkBb5TZodU3Y0vjr8AGsm0YabK4aiszTc"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "07/05/2024",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "Theme 25. Hàm số liên tục"
+                },
+                {
+                  "formattedValue": "p166 – p169",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "LIVESTREAM",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "gYxmTDTEiVJY0Bf1WO-eTjdQSAP_QPvsD7IBZEyytWGw1y_4jfMFzs2vrQXeprHQxEnDO2QvLv8"
+                },
+                {
+                  "formattedValue": "LINK SÁCH",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "tYgElDVxzwxL3xuBKyHQr58u75XU6lwyUFI0nJVwVPZf-uJJCNYNnZooZpXnqp_78Jab1NXltLHjPCpxMRBhRytaDtTLpk6yyYSPcB4EDh-a3GOcash5VHtt42Jbgtzkg0VIP489rUInezUbKFKXuYQ"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "09/05/2024",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "Theme 26. Đạo hàm và các quy tắc tính đạo hàm"
+                },
+                {
+                  "formattedValue": "p170 – p181",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "LIVESTREAM",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "f_9qpuSUf7IslJumJdDPxREjjIKyCvsro5seC12rdKJ-2Jev9FA2nqf_aOWVu1jFJkTdCJeh1To"
+                },
+                {
+                  "formattedValue": "ĐÁP ÁN BTRL",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "dZNU5hSJXPD3X5N07uRh9dtbSiID81pwXMThC7fjaGj8aGB687Zya-JUcn7AH1OGQhmOJSvfGUxd7d71Dltwei3TMQPdA1jhk4e9sOiKbxRr5yq3HRoeptcihD0O0SZYANuNKvfc6UOEl9qIGpNiPyk"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "10/05/2024",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "✍️BUỔI 2: đạo hàm hàm hợp"
+                },
+                {},
+                {
+                  "formattedValue": "LIVESTREAM",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "MKR5RuSoy6ramEOd96cMGTtokwRyfrPeeQjIKPRk01C10oi6mL70gE2N-3r-XgMxEXQewq8WK5c"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "11/05/2024",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "Theme 27. Phương trình, bất phương trình đạo hàm"
+                },
+                {
+                  "formattedValue": "p182 – p183",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "LIVESTREAM",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "-sXZH2QK7qdRCe2k_JiJut0tXfNr7mwl1orHMKyLhiUC9I2qxdc_-BXtIll-kTwcAel0neABzhs"
+                },
+                {
+                  "formattedValue": "LINK SÁCH",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "VLk7D1G0Rla4I9zm_Y3-H8W8nK-aht9D9aNwqFqMTVJ6YtQ-cPD4v51PwsqC_kOo4LiDiWJU9Y0hCzDbqAhI8KYOsRvVh1-G8eWKWANOomFRGCr5HB6us9PGHdbUrWWcE2Tq83OnAbe5dym9FJ7DOgo"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "12/05/2024",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "Theme 28. Lũy thừa – logarit"
+                },
+                {
+                  "formattedValue": "p184 – p191",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "LIVESTREAM",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "trVz3EzH40YBIJhgbk_UgyldVVp0vvnhd55Ty586BqZF0_eUuSDmUyxtn5S9LfA7SGxH0dX7WYc"
+                },
+                {
+                  "formattedValue": "LINK SÁCH",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "89uLilzZETAiTfs9j6bafW-Ul69G7KDa35lYXoVJv3UsA6yxHgqPfu7K5aHDdUFvLQeJM0O1I4Uxip0Z09A_5go2hHrRacB4RKgADEA-Rur9COP3OSFQHw-cg7vgqc7nXrhlu5WWxgwaGVv4RubqP-w"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "14/05/2024",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "Theme 29. Hàm số mũ, hàm số logarit"
+                },
+                {
+                  "formattedValue": "p192 – p199",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "LIVESTREAM",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "fwYK0SRh8TOj_LrIW7QPXU492-4NqgkvWQI9gws2-Sp4f--tv6meCZ7n0i5kM97ulO5K0doUx_0"
+                },
+                {
+                  "formattedValue": "LINK SÁCH",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "PSxKlXlxACg6fMcGj7mA2m2Twrc1-rrhrYfloefD6-pYoomYNOkZFViZYrW0WyET8ktCl-YvLzsmaLLwA1v16EF3dxhbETLyoQurWSD53UzGsOUSa5TwP0D6-OlfX3A45g9GP-Dhqva7yqdIYy5zjU0"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "16/05/2024",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "Theme 30. Phương trình – bất phương trình mũ và logarit"
+                },
+                {
+                  "formattedValue": "p200 – p203",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "LIVESTREAM",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "P-haAlmb2xVLhl6ARwNr0YYfEEVUFzE53nqFyqwzHKjT1PmDOO8XnIP1FZ5QQES1wpFzHmT8T2U"
+                },
+                {
+                  "formattedValue": "LINK SÁCH",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "_uhLoQO21qCZ1qrcRQOZ_MM-eMMbY5I9zwChebvfQ_BXukv79BqKxCAW_zosQcpIf6jdc1Ior0f4GvXFHqBNkXNTPKs24E_x1vnPiEqptbn1990I5TB6Lfk_bzfFu-wnSSifKzaP78PvFK68dYf4k1g"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "18/05/2024",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "Theme 20. Hàm số bậc nhất – Hàm số bậc hai"
+                },
+                {
+                  "formattedValue": "p128 – p133",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "LIVESTREAM",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "6B7JijioDSaIaUw5N2TVrHOVUMSYoNPIbLunkxXBST020VNmVNHjPpYZJ8LCTTGI-NpTRROYRrs"
+                },
+                {
+                  "formattedValue": "LINK SÁCH",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "0is6PwVQK73db9wihQHlLto0jtJTU72sfo2-Ck3RkjIwSofnTvIIMPsv9GCCucHX1K9DXONMnI9yQwsHBIXP6PKx72buIvQpxuv6vRiVzfnkoh-JVeO6Sg-k3TO3DulYS4T9z2oghzREi45h8o4Tv2k"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "19/05/2024",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "Theme 21. Bất phương trình bậc nhất hai ẩn và hệ bất phương trình bậc nhất hai ẩn"
+                },
+                {
+                  "formattedValue": "p134 – p137",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "LIVESTREAM",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "VPzIZQ2LWYB1wwS_DA0KfSyXNmi5ITGI6SOkRUuYdt8gvJ7hJvjTGyGjhdGp9t1LetPYgYFMDcw"
+                },
+                {
+                  "formattedValue": "LINK SÁCH",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "Q2NmdYI5wm7JFZVxErdQDLYM1vLW5tekMQoSaMFLo-8bL3TU7geWEpSZLtehJb8n4vSx0BajTIQBi34o41EHG0bzf2b0cIK_Ne-bPbM-tJZfJzlB34ublOZBySJzoqXYwwPFVqMdptR25f-eWh50j6w"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "📋",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.8352941,
+                      "green": 0.6509804,
+                      "blue": 0.7411765
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.019607844,
+                        "green": 0.019607844,
+                        "blue": 0.019607844
+                      },
+                      "fontSize": 12,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "PART 3. XÁC SUẤT & THỐNG KÊ",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.8509804,
+                      "green": 0.91764706,
+                      "blue": 0.827451
+                    },
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 1
+                      },
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.8509804,
+                      "green": 0.91764706,
+                      "blue": 0.827451
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.8509804,
+                      "green": 0.91764706,
+                      "blue": 0.827451
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.8509804,
+                      "green": 0.91764706,
+                      "blue": 0.827451
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "13/04/2024",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "Theme 31. Quy tắc cộng, quy tắc nhân"
+                },
+                {
+                  "formattedValue": "p206 – p207",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "LIVESTREAM",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "wGk_7dlppLxHHC2C5rhaE4o0rTrgw2UauPKhQi-jiwtSdOF4FBHwf6ThdxmSPip1tx7r5lpJXEA"
+                },
+                {
+                  "formattedValue": "LINK SÁCH",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "ldX_LaWGr0nxErkcd-uFatbx4g9UATDsKc1iIbS9SGuGnG3rvqsbfsScX6dY5IoGOf3JAm0vG_heZvenuKsT6Z5I8RbnhxNKOz5smKiD_AcEsdIQqNhGRbYRxWELsWNG84K0yWJqyK_faTX5Q7sIDWU"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "20/04/2024",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "Theme 32. Hoán vị, chỉnh hợp, tổ hợp, nhị thức Newton"
+                },
+                {
+                  "formattedValue": "p208 – p211",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "LIVESTREAM",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "rPjHCuOkwAVDitItb4vG7mL4p02M94iU62KS6Y7dcaozTmE5WJDHm-5Vy6jVB-JsUU8J3CjThR4"
+                },
+                {
+                  "formattedValue": "LINK SÁCH",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "VDdFrbnNFG1xoF-F72JKvZRkuo-01ctXm3etDqKIkD6b4gq-KeeaSVRf4Juvgf2lbm0DDQAm-rbubTWZFAzAt2NBwMinItivyok2bGzbX5VJw0n_YeQPwK0xw1VUsPFVm4Qx-yElB_UzsUphoMsMt4I"
+                }
+              ]
+            },
+            {
+              "values": [
+                {},
+                {
+                  "formattedValue": "Theme 32. Hoán vị, chỉnh hợp, tổ hợp, nhị thức Newton Phần 2"
+                },
+                {},
+                {
+                  "formattedValue": "LIVESTREAM",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "jtLC6Q9vgAjRCikOo7j4i60cl-X3g-cPrMOpdwFEv7PU8-wp30jP51jZvkypDphV92mQaZMf4pE"
+                },
+                {
+                  "formattedValue": "LINK SÁCH",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "k6zvgz_Mxxdh89z0fFukeJSgKfP8jawDcSsWncN4RRIySlbTMEUDIPekA3GcX5jI9Kb08GMJuLySpHP3PsjLxYjRQCU9QjzxAa4yWQDckFoKP5hcy3eIM5nZCEsyaHMgD5N0iEbM1SjnUt7FXt5VgnI"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "22/05/2024",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "Theme 33. Tính xác suất bằng định nghĩa"
+                },
+                {
+                  "formattedValue": "p212 – p215",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "LIVESTREAM",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "ltGsKRPqEqBzcyaqFN86ckncyEvy4smimZyKeCe0aeqp2TzvjvzD63iJkceaO2ScmIEcmIZE1do"
+                },
+                {
+                  "formattedValue": "LINK SÁCH",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "r-thWsXSte4VFF3NBPEGVSy1k4nV4y6izUdIiQ60pgPg8AKp3JHiUGzktO-10HIR4Fc-ciLdVtubOL4SY_LSClEPTQ3DaIzinnj_n0ZJPMtF_tezGNvFyCXsXxztgxKWGwcZ8mWo7zvQkBGI9OMTfbo"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "23/05/2024",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "Theme 34. Các quy tắc tính xác suất "
+                },
+                {
+                  "formattedValue": "p216 – p221",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "LIVESTREAM",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "GtFXWy1wVPlm-LYprVWsQaqGac619gvdT5rNoUgD1H3SGYcn1AuNfXEK3ewVvvM1Avrc8j6Jq8I"
+                },
+                {
+                  "formattedValue": "LINK SÁCH",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "czr_pXvDt1Q_hY4EH3vEPOdQjeuwGdXmrGG2Nao3ODShNA9c7EQstn4dRWWO5uPM7BxVxgf-MfXd8rEJu2m3bVZA7WEuTY2OEwP7Pgyf53-cLBEULXLbD8uPAk8wlovhmKcM4WY_vcxiIp8y8YlidC8"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "24/05/2024",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "Theme 35. Số gần đúng, sai số"
+                },
+                {
+                  "formattedValue": "p224 – p227",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "LIVESTREAM",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "iUrqO_WOkvykaCdv0-Llvx6mulDaJ67Dk6V3Cfp8hVrCQSoCGkSYhSHnLYPIE-CQjGyndtQxaWg"
+                },
+                {
+                  "formattedValue": "LINK SÁCH",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "pZp7RrQvkgaaecTZWNpFsZr4dE9nzU6JTT-dzJ-tWeFNQH_ZBkhYZtsV7QhSF5Wh1a_G33OyviWfIS0tCVVA3wgk60zkbeIi0pszgmrbpw5KBid8V1H2t_7DyFuz19TaSU2kv1dXgUZcOl-s_qfXb9A"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "24/05/2024",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "Theme 36. Các số đặc trưng đo xu thế trung tâm của mẫu số liệu không ghép nhóm"
+                },
+                {
+                  "formattedValue": "p228 – p233",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "LIVESTREAM",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "sUgeEWpPz9fiMKID9mavZMhBoIYEcAoK_53MMsOikguDcGKZrbHr3jkxOuVhFSU0AvfJiG1xWdI"
+                },
+                {
+                  "formattedValue": "LINK SÁCH",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "49_MHAoYQg02lCSUEtsHjXjfF-v9hFs37xrjU-t7y6Q0-VKNXW0CMallmOzXp96ZlzjqMxxh1AidQLLrTwCDbPFzwx6769uGixra6EgWsbTBooeKC7LPQPMG40NupFqeA7RxK1O8RhnYo1oDM_OEqP0"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "25/05/2024",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "Theme 37. Các số đặc trưng đo độ phân tán của mẫu số liệu không ghép nhóm"
+                },
+                {
+                  "formattedValue": "p234 – p239",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "LIVESTREAM",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "M_mg4QomgbsSnDfQugmO_LE2451HWR1vklaHPCWVUteoXFbn13QdKXyue8_6G6kId1DwtQ6z6HE"
+                },
+                {
+                  "formattedValue": "LINK SÁCH",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "M-ERujfIWgWcY6XQcMwDYZRM8ZmNvboZFFv5Kd5UXeUeZba2Vn4KGnO3CRH9RYyS5MJwDuilj4SPy_tMdWjb3uILoh9E08i6nbmf1cMJLDAyFumZTtRPXLNdtAYQ7bJ_E3koT1e-y8Tf4KnIJqBxUjA"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "26/05/2024",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "Theme 38. Mẫu số liệu ghép nhóm và các số đặc trưng đo xu thế trung tâm của mẫu số liệu ghép nhóm"
+                },
+                {
+                  "formattedValue": "p240 – p247",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "LIVESTREAM",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "RYzHAdsC3yDcIvkJzkVGiNW7G1uaJByeejl7MuKrBgsIkqTx9PzzwrPJWCnZv6F2m3lVhNgoPdU"
+                },
+                {
+                  "formattedValue": "LINK SÁCH",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "red": 0.06666667,
+                        "green": 0.33333334,
+                        "blue": 0.8
+                      },
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "7h2Qg0e2T2lbHTd2hiDYJmreLNs61BiroGaXqw9Eu-qH-wUZjzyKdDThJkCMMC8RbDdVX18NxhkYx71_OPrPBQDpUIROAHWOtMId1yXWiImlSEXFKXTlYwdYbHtfPPBzNKKJuEZlKhMoO66bZN8kWUo"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "properties": {
+        "title": "STEP 1. NỀN TẢNG TOÁN 12"
+      },
+      "data": [
+        {
+          "rowData": [
+            {
+              "values": [
+                {
+                  "formattedValue": "Chapter",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "STT",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Nội dung",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Bài giảng chính",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Phụ đạo thêm (chữa BTRL)",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "green": 1,
+                      "blue": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "bold": true
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "values": [
+                {},
+                {},
+                {},
+                {
+                  "formattedValue": "Link học web",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Livestream",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 1
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "bold": true
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.8352941,
+                      "green": 0.6509804,
+                      "blue": 0.7411765
+                    },
+                    "textFormat": {
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.8352941,
+                      "green": 0.6509804,
+                      "blue": 0.7411765
+                    },
+                    "horizontalAlignment": "CENTER"
+                  }
+                },
+                {
+                  "formattedValue": "🎁🎁🎁 SÁCH 2K8 - STEP 1: NỀN TẢNG TOÁN 12 (NGỌC HUYỀN LB)",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.8352941,
+                      "green": 0.6509804,
+                      "blue": 0.7411765
+                    },
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "SÁCH",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.8352941,
+                      "green": 0.6509804,
+                      "blue": 0.7411765
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "dQB-4EKET_XX6LUScd1ygin4SoCLH2CDfL5U5rCnBcaAy6cOERYjc23qUpcaILOjpnaK66cIDKNAws0gNu2sPnyv-IG0TxmJbAhJbglmRpJAKp5KkgYgGEblmcGqsCqF5ILB-6izallAKB2ZwjtMiTh1jtqTMMvEDIAj1H9VDaqQLgcATk7oS2QzBmVsPAsjArnE7c5OBzq2_SpaavX035SF21Q3zxBzi7omrMH8ylRVW9yw20TDo7O-7mC8XhxPjC6a-jNEWO0T-Br_6TDZjZmibuql0wT0v2oz2EWhsl_hIn0yzjhdSKYFtwWR-lEXofmW-n-42zEzqbac7tqixfYQXnKogRj_Tqji3EXhPMsQomgyUAvQdz52Wg4GQ98nvQ24f2S76Z6kJJ_1otCEutNmU7bOZrvH4vF9g2lcpberO_gyh6_uljql53NGRlYj-uTdZz1GIcD88TKYXvW9j0bcjWTM5PxChtjYH5j_Ee5wt0Do6A_ne7zvr4Y_ld8h_qR0hk3RTPvhYobvdmN0CVgfyBEeavg"
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 0.8352941,
+                      "green": 0.6509804,
+                      "blue": 0.7411765
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "bold": true
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "blue": 1
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "blue": 1
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "PART 1. ĐẠI SỐ",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "blue": 1
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "blue": 1
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "blue": 1
+                      },
+                      "fontSize": 13,
+                      "bold": true
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "Chapter 1. Ứng dụng đạo hàm để khảo sát và vẽ đồ thị hàm số",
+                  "userEnteredFormat": {
+                    "textFormat": {
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Theme 1",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 11
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Sự đồng biến, nghịch biến của hàm số",
+                  "userEnteredFormat": {
+                    "textFormat": {
+                      "fontSize": 11
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "VIDEO",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "KVO0YpQiaLyIZjwGAQdlJWjwNsMxtTOGNUFDa5p5y1fXmTfqXCUiG1d8OkJOcVawtdSPxJYQdWU"
+                },
+                {
+                  "formattedValue": "VIDEO",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "XSKOKh9o_ljE5CB7Ofl9BXeDuh1TkAoSNm_0X86t0xxVWxOej0uSCqdj5CnEDGY3EpirB77iua0"
+                }
+              ]
+            },
+            {
+              "values": [
+                {},
+                {
+                  "formattedValue": "Theme 2",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 11
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Cực trị của hàm số        ",
+                  "userEnteredFormat": {
+                    "textFormat": {
+                      "fontSize": 11
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "VIDEO",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "7sXpGlQdoARgF0uOKj4XpF0FGvRclc_EJT50ahnvNh1sKcjDQE-uTgmOlScgFNKz51FgnHXK5kc"
+                },
+                {
+                  "formattedValue": "VIDEO",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "fft7tMkj07X_bMg5u0YsRkFpt7pdH4A89Jl2Wtc8du0NA-usQgbxLkthpFBE-Mh2ZvY24gCdBSw"
+                }
+              ]
+            },
+            {
+              "values": [
+                {},
+                {
+                  "formattedValue": "Theme 3",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 11
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Giá trị lớn nhất – giá trị nhỏ nhất của hàm số        ",
+                  "userEnteredFormat": {
+                    "textFormat": {
+                      "fontSize": 11
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "VIDEO",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "fLZeyOdiYbXApe_mmFk6CTr_jYQ_JJblNEUNkioTvvOeA2rJRdaJV5CyDzHmWHriBiM_LUTgxV4"
+                },
+                {
+                  "formattedValue": "VIDEO",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "MLKV8Zx0GdLH_-yBVwEIRUMJb6lnNIPA7dljRw3IPg938mmg3zqykWFfOgJp8mVXIuQX0vnmFBE"
+                }
+              ]
+            },
+            {
+              "values": [
+                {},
+                {
+                  "formattedValue": "Theme 4",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 11
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Đường tiệm cận của đồ thị hàm số",
+                  "userEnteredFormat": {
+                    "textFormat": {
+                      "fontSize": 11
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "VIDEO",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "I-X2n4K58wBX9iICe3jcEnvxwUEUiLtIZxGCnKbgwIk2l7M1dvq_tZ52MABNqsbvz2XyfjeNx4c"
+                },
+                {
+                  "formattedValue": "VIDEO",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "aBx56cb9rAy0SkrfAaRzbUteUMzwOPSvVkOSuhhGcJ37fIZ8QnoxZs5K4Ziuh_53jH2Kvjw43b0"
+                }
+              ]
+            },
+            {
+              "values": [
+                {},
+                {
+                  "formattedValue": "Theme 5",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 11
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Khảo sát sự biến thiên và vẽ đồ thị hàm số",
+                  "userEnteredFormat": {
+                    "textFormat": {
+                      "fontSize": 11
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "VIDEO",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "cqLGGJlgIxBxf-UdPKg2YHMT8KhyWK1P2iPBK7g87gHDRFSjfqnYofzCMf33HoFKJT2xHl_gGjM"
+                },
+                {
+                  "formattedValue": "VIDEO",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "cXR3FXjI-q286BkURBAIsZ01aWyCQPJE2k7mfKlX7AFHsJk0fAq1MBdTIe2oIzIuExwpDWX9KN8"
+                }
+              ]
+            },
+            {
+              "values": [
+                {},
+                {
+                  "formattedValue": "Theme 6",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 11
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Ứng dụng đạo hàm giải quyết một số vấn đề liên quan đến thực tiễn",
+                  "userEnteredFormat": {
+                    "textFormat": {
+                      "fontSize": 11
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "VIDEO",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "u4Rng2gYfwre7l3t9eWRZewEER0qtJ7eStPhQ7NpZunJbHtiFWeWXmSf-BeeUhHeM57mcL4qK_E"
+                },
+                {
+                  "formattedValue": "VIDEO",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "H8D_nylSWPomVzNkCfZtWLr8FbAzzlZeYrhZEPipc6KbQAVuSUVmEpFSVxV22qUK64AR_oRXqY8"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "Chapter 2. Nguyên hàm và tích phân",
+                  "userEnteredFormat": {
+                    "textFormat": {
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Theme 7",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 11
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Nguyên hàm và tính chất của nguyên hàm",
+                  "userEnteredFormat": {
+                    "textFormat": {
+                      "fontSize": 11
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "VIDEO",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "VIDEO",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "values": [
+                {},
+                {
+                  "formattedValue": "Theme 8",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 11
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Tích phân và tính chất của tích phân",
+                  "userEnteredFormat": {
+                    "textFormat": {
+                      "fontSize": 11
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "VIDEO",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "VIDEO",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "values": [
+                {},
+                {
+                  "formattedValue": "Theme 9",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 11
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Ứng dụng của tích phân vào tính diện tích hình phẳng",
+                  "userEnteredFormat": {
+                    "textFormat": {
+                      "fontSize": 11
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "VIDEO",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "VIDEO",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "values": [
+                {},
+                {
+                  "formattedValue": "Theme 10",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 11
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Ứng dụng của tích phân vào tính thể tích vật thể",
+                  "userEnteredFormat": {
+                    "textFormat": {
+                      "fontSize": 11
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "VIDEO",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "VIDEO",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "blue": 1
+                      },
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "blue": 1
+                      },
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "PART 2. HÌNH HỌC",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "blue": 1
+                      },
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "blue": 1
+                      },
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "blue": 1
+                      },
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "Chapter 3. Vectơ và hệ trục tọa độ trong không gian",
+                  "userEnteredFormat": {
+                    "textFormat": {
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Theme 11",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 11
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Vectơ và các phép toán vectơ trong không gian",
+                  "userEnteredFormat": {
+                    "textFormat": {
+                      "fontSize": 11
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "VIDEO",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "s0z_CcG95JZoBiv1t8yFzA_CedoA6vSpP43WmG5m2bBBF5T5OGXXQ7mkaw46QWckkUaN5iqgFws"
+                },
+                {
+                  "formattedValue": "VIDEO",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "woMN2PO66vmqLMgXY8BsLpWrznjk3C9KWFlBO538--kvXnAQGI1uGekBDNsvFLkLOQ1F9LRj9Cs"
+                }
+              ]
+            },
+            {
+              "values": [
+                {},
+                {
+                  "formattedValue": "Theme 12",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 11
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Hệ trục tọa độ trong không gian",
+                  "userEnteredFormat": {
+                    "textFormat": {
+                      "fontSize": 11
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "VIDEO",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "Pb8AVJ9IU8ctPserNo43QgpzxwYYo8y290VzXJ0O-nZCufaW01ahre9pN7RyUAq8JKk-R2ld5-g"
+                },
+                {
+                  "formattedValue": "VIDEO",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "yksq9P2ismtu_InOqhwXPrWtQenn8WgtCFKIGW8DuJwIoVMWuClZt3DMO8hmPn9eUCXb6Zdwztg"
+                }
+              ]
+            },
+            {
+              "values": [
+                {},
+                {
+                  "formattedValue": "Theme 13",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 11
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Biểu thức tọa độ của các phép toán vectơ",
+                  "userEnteredFormat": {
+                    "textFormat": {
+                      "fontSize": 11
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "VIDEO",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "nPPAbSnr8zdlj2k5j2E22jbCxq52IInrRcXTPmcfHga-UktvADoxThFkjc1-P6CQ19AO-41yokI"
+                },
+                {
+                  "formattedValue": "VIDEO",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  },
+                  "hyperlink": "VSshZTg_XjQf1GtMNZ2ER-fjHhZibSd6Wvv_xovCVINrCY9uEmr1311JXExfOLMTyBUT2VB5zks"
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "Chapter 4. Phương pháp tọa độ trong không gian",
+                  "userEnteredFormat": {
+                    "textFormat": {
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Theme 14",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 11
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Phương trình mặt phẳng",
+                  "userEnteredFormat": {
+                    "textFormat": {
+                      "fontSize": 11
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "VIDEO",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "VIDEO",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "values": [
+                {},
+                {
+                  "formattedValue": "Theme 15",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 11
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Phương trình đường thẳng",
+                  "userEnteredFormat": {
+                    "textFormat": {
+                      "fontSize": 11
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "VIDEO",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "VIDEO",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "values": [
+                {},
+                {
+                  "formattedValue": "Theme 16",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 11
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Các công thức tính góc trong không gian",
+                  "userEnteredFormat": {
+                    "textFormat": {
+                      "fontSize": 11
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "VIDEO",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "VIDEO",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "values": [
+                {},
+                {
+                  "formattedValue": "Theme 17",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 11
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Phương trình mặt cầu",
+                  "userEnteredFormat": {
+                    "textFormat": {
+                      "fontSize": 11
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "VIDEO",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "VIDEO",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "blue": 1
+                      },
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "blue": 1
+                      },
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "PART 3. THỐNG KÊ & XÁC SUẤT",
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "blue": 1
+                      },
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "blue": 1
+                      },
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "userEnteredFormat": {
+                    "backgroundColor": {
+                      "red": 1,
+                      "green": 0.9490196,
+                      "blue": 0.8
+                    },
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {
+                        "blue": 1
+                      },
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "Chapter 5. Thống kê",
+                  "userEnteredFormat": {
+                    "textFormat": {
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Theme 18",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 11
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Khoảng biến thiên và khoảng tứ phân vị của mẫu số liệu ghép nhóm",
+                  "userEnteredFormat": {
+                    "textFormat": {
+                      "fontSize": 11
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "VIDEO",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "VIDEO",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "values": [
+                {},
+                {
+                  "formattedValue": "Theme 19",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 11
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Phương sai và độ lệch chuẩn của mẫu số liệu ghép nhóm",
+                  "userEnteredFormat": {
+                    "textFormat": {
+                      "fontSize": 11
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "VIDEO",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "VIDEO",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "values": [
+                {
+                  "formattedValue": "Chapter 6. Xác suất có điều kiện",
+                  "userEnteredFormat": {
+                    "textFormat": {
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Theme 20",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 11
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Xác suất có điều kiện",
+                  "userEnteredFormat": {
+                    "textFormat": {
+                      "fontSize": 11
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "VIDEO",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "VIDEO",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "values": [
+                {},
+                {
+                  "formattedValue": "Theme 21",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "fontSize": 11
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "Công thức xác suất toàn phần và công thức Bayes",
+                  "userEnteredFormat": {
+                    "textFormat": {
+                      "fontSize": 11
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "VIDEO",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  }
+                },
+                {
+                  "formattedValue": "VIDEO",
+                  "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER",
+                    "textFormat": {
+                      "foregroundColor": {},
+                      "fontSize": 11,
+                      "bold": true
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

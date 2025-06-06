@@ -51,16 +51,16 @@ function cleanupFolders(keepFile = null) {
 /**
  * Tạo URL lấy dữ liệu chi tiết của sheet
  * @param {string} sheetId - ID của sheet
- * @param {string} originalId - ID gốc (nếu có)
- * @returns {string|null} URL đầy đủ hoặc null nếu không có originalId
+ * @param {string} originalPrice - ID gốc (nếu có)
+ * @returns {string|null} URL đầy đủ hoặc null nếu không có originalPrice
  */
-function createDetailUrl(sheetId, originalId) {
-  if (originalId) {
-    console.log(`Sử dụng originalId: ${originalId} thay cho sheetId`);
-    // Không mã hóa lại originalId vì nó đã được mã hóa từ trước
-    return `https://kimvan.id.vn/api/spreadsheets/${originalId}`;
+function createDetailUrl(sheetId, originalPrice) {
+  if (originalPrice) {
+    console.log(`Sử dụng originalPrice: ${originalPrice} thay cho sheetId`);
+    // Không mã hóa lại originalPrice vì nó đã được mã hóa từ trước
+    return `https://kimvan.id.vn/api/spreadsheets/${originalPrice}`;
   }
-  console.log(`Không có originalId, dừng lại`);
+  console.log(`Không có originalPrice, dừng lại`);
   return null;
 }
 
@@ -183,14 +183,14 @@ function processFakeLinks(data) {
 /**
  * Tự động lấy chi tiết sheet từ API KimVan
  * @param {string} sheetId - ID của sheet cần lấy
- * @param {string} originalId - ID gốc (nếu có)
+ * @param {string} originalPrice - ID gốc (nếu có)
  * @returns {Promise<Object>} Dữ liệu sheet hoặc null nếu có lỗi
  */
-async function fetchSheetDetail(sheetId, originalId) {
+async function fetchSheetDetail(sheetId, originalPrice) {
   try {
     console.log(`===== BẮT ĐẦU LẤY CHI TIẾT SHEET VỚI ID "${sheetId}" =====`);
-    if (originalId) {
-      console.log(`===== SỬ DỤNG ORIGINAL ID "${originalId}" =====`);
+    if (originalPrice) {
+      console.log(`===== SỬ DỤNG ORIGINAL ID "${originalPrice}" =====`);
     }
     
     // Đường dẫn đến thư mục dữ liệu người dùng Chrome
@@ -220,14 +220,14 @@ async function fetchSheetDetail(sheetId, originalId) {
     try {
       const shortId = sheetId.substring(0, 10);
       console.log(`\nLấy chi tiết sheet: ${shortId}...`);
-      const detailUrl = createDetailUrl(sheetId, originalId);
+      const detailUrl = createDetailUrl(sheetId, originalPrice);
       
-      // Kiểm tra nếu không có originalId thì dừng lại
+      // Kiểm tra nếu không có originalPrice thì dừng lại
       if (!detailUrl) {
-        console.log(`❌ Không thể tạo URL chi tiết, thiếu originalId`);
+        console.log(`❌ Không thể tạo URL chi tiết, thiếu originalPrice`);
         return {
           success: false,
-          error: "Thiếu originalId, không thể tạo URL chi tiết",
+          error: "Thiếu originalPrice, không thể tạo URL chi tiết",
           errorCode: 400,
           sheetId: sheetId,
           timestamp: Date.now()
@@ -368,11 +368,11 @@ export async function GET(request, { params }) {
       return NextResponse.json({ error: 'ID không được cung cấp' }, { status: 400 });
     }
     
-    // Lấy originalId từ query params nếu có
+    // Lấy originalPrice từ query params nếu có
     const { searchParams } = new URL(request.url);
-    const originalId = searchParams.get('originalId');
-    if (originalId) {
-      console.log(`Nhận được originalId: ${originalId} từ query params`);
+    const originalPrice = searchParams.get('originalPrice');
+    if (originalPrice) {
+      console.log(`Nhận được originalPrice: ${originalPrice} từ query params`);
     }
     
     // Timestamp cho header
@@ -389,7 +389,7 @@ export async function GET(request, { params }) {
     console.log('==============================================');
     
     // Gọi hàm lấy chi tiết
-    const result = await fetchSheetDetail(id, originalId);
+    const result = await fetchSheetDetail(id, originalPrice);
     
     if (result.success) {
       // Dọn dẹp thư mục kết quả, giữ lại file vừa lấy được
@@ -438,13 +438,13 @@ export async function POST(request, { params }) {
       return NextResponse.json({ error: 'ID không được cung cấp' }, { status: 400 });
     }
     
-    // Lấy originalId từ request body
-    let originalId;
+    // Lấy originalPrice từ request body
+    let originalPrice;
     try {
       const body = await request.json();
-      originalId = body.originalId;
-      if (originalId) {
-        console.log(`Nhận được originalId: ${originalId} từ request body`);
+      originalPrice = body.originalPrice;
+      if (originalPrice) {
+        console.log(`Nhận được originalPrice: ${originalPrice} từ request body`);
       }
     } catch (e) {
       console.log('Không có request body hoặc không phải JSON');
@@ -464,7 +464,7 @@ export async function POST(request, { params }) {
     console.log('==============================================');
     
     // Gọi hàm lấy chi tiết
-    const result = await fetchSheetDetail(id, originalId);
+    const result = await fetchSheetDetail(id, originalPrice);
     
     if (result.success) {
       // Dọn dẹp thư mục kết quả, giữ lại file vừa lấy được
