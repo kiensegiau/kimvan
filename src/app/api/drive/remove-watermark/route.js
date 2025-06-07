@@ -1395,6 +1395,69 @@ async function handleDriveFolder(driveFolderLink, backgroundImage, backgroundOpa
               };
               
               console.log(`✅ Đã xử lý thông tin ảnh: ${file.name}`);
+            } else if (file.mimeType.includes('google-apps') && file.mimeType !== 'application/vnd.google-apps.folder') {
+              // Xử lý Google Workspace files (Docs, Sheets, Slides...)
+              console.log(`📝 Phát hiện file Google Workspace: ${file.name} (${file.mimeType})`);
+              
+              try {
+                // Lấy token download
+                const downloadToken = getTokenByType('download');
+                if (!downloadToken) {
+                  throw new Error('Không tìm thấy token Google Drive.');
+                }
+                
+                // Tạo OAuth2 client
+                const oauth2Client = new google.auth.OAuth2(
+                  process.env.GOOGLE_CLIENT_ID,
+                  process.env.GOOGLE_CLIENT_SECRET,
+                  process.env.GOOGLE_REDIRECT_URI
+                );
+                
+                // Thiết lập credentials
+                oauth2Client.setCredentials(downloadToken);
+                
+                // Khởi tạo Google Drive API
+                const drive = google.drive({ version: 'v3', auth: oauth2Client });
+                
+                console.log(`🔄 Xuất file Google Workspace sang PDF: ${file.name}`);
+                
+                // Xuất file Google Workspace sang PDF
+                const exportResponse = await drive.files.export({
+                  fileId: file.id,
+                  mimeType: 'application/pdf',
+                  supportsAllDrives: true
+                }, {
+                  responseType: 'arraybuffer'
+                });
+                
+                // Tạo tên file xuất ra
+                const exportFileName = `${file.name}.pdf`;
+                
+                // Lưu file xuất ra vào thư mục tạm
+                const tempFileName = `${uuidv4()}.pdf`;
+                const tempFilePath = path.join(fileOutputDir, tempFileName);
+                fs.writeFileSync(tempFilePath, Buffer.from(exportResponse.data));
+                
+                console.log(`✅ Đã xuất thành công file ${file.name} sang PDF (${fs.statSync(tempFilePath).size} bytes)`);
+                
+                // Sử dụng file đã xuất mà không xử lý watermark (theo logic cũ)
+                downloadResult = {
+                  success: true,
+                  filePath: tempFilePath,
+                  fileName: exportFileName,
+                  contentType: 'application/pdf',
+                  outputDir: fileOutputDir,
+                  size: fs.statSync(tempFilePath).size,
+                  isImage: false,
+                  isPdf: true,
+                  isGoogleWorkspace: true,
+                  skipWatermarkRemoval: true
+                };
+                console.log(`✅ Đã xuất file Google Workspace: ${exportFileName} (Không xử lý watermark)`);
+              } catch (googleWorkspaceError) {
+                console.error(`❌ Lỗi khi xử lý file Google Workspace ${file.name}:`, googleWorkspaceError);
+                throw new Error(`Không thể xử lý file Google Workspace: ${googleWorkspaceError.message}`);
+              }
             } else {
               folderResults.push({
                 originalFile: file.name,
