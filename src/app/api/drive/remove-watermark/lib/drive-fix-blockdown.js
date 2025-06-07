@@ -909,15 +909,13 @@ async function processAllImages(images, outputDir, config) {
                 enhancedConfig.contrastBoost, // Độ dốc (a) vừa phải
                 -(128 * enhancedConfig.contrastBoost - 128) / 255 // Điểm cắt (b)
               )
-              // Tăng độ sắc nét nhẹ nhàng
-              .sharpen({
-                sigma: enhancedConfig.sharpenAmount,
-                m1: 0.2,
-                m2: 0.4,
-                x1: 2,
-                y2: 5,
-                y3: 5
-              });
+              // Thay thế sharpen bằng phương pháp thay thế
+              .linear(1.3, -0.1)
+              .recomb([
+                [1.1, 0, 0],
+                [0, 1.1, 0],
+                [0, 0, 1.1]
+              ]);
               
             // Nếu cần giữ màu sắc, bỏ qua bước normalise
             if (!enhancedConfig.preserveColors) {
@@ -943,12 +941,13 @@ async function processAllImages(images, outputDir, config) {
                 )
                 // Giảm nhiễu nhẹ
                 .median(2)
-                // Tăng độ sắc nét một chút
-                .sharpen({
-                  sigma: 0.8,
-                  m1: 0.2,
-                  m2: 0.5
-                })
+                // Thay thế sharpen bằng phương pháp thay thế
+                .linear(1.2, -0.05)
+                .recomb([
+                  [1.05, 0, 0],
+                  [0, 1.05, 0],
+                  [0, 0, 1.05]
+                ])
                 .png({ quality: 100 })
                 .toBuffer();
             }
@@ -968,12 +967,13 @@ async function processAllImages(images, outputDir, config) {
                 )
                 // Làm mịn ảnh để giảm nhiễu
                 .blur(0.2)
-                // Tăng độ sắc nét lần cuối
-                .sharpen({
-                  sigma: 1.0,
-                  m1: 0.3,
-                  m2: 0.5
-                })
+                // Thay thế sharpen bằng phương pháp thay thế
+                .linear(1.25, -0.08)
+                .recomb([
+                  [1.08, 0, 0],
+                  [0, 1.08, 0],
+                  [0, 0, 1.08]
+                ])
                 .png({ quality: 100 })
                 .toBuffer();
             }
@@ -984,12 +984,13 @@ async function processAllImages(images, outputDir, config) {
               
               // Sử dụng phương pháp giữ màu sắc và loại bỏ watermark
               processedBuffer = await sharp(processedBuffer)
-                // Tăng độ sắc nét để làm rõ nội dung
-                .sharpen({
-                  sigma: 1.8,  // Tăng từ 1.5 lên 1.8
-                  m1: 0.6,     // Tăng từ 0.5 lên 0.6
-                  m2: 0.8      // Tăng từ 0.7 lên 0.8
-                })
+                // Thay thế sharpen bằng phương pháp thay thế
+                .linear(1.3, -0.12)
+                .recomb([
+                  [1.12, 0, 0],
+                  [0, 1.12, 0],
+                  [0, 0, 1.12]
+                ])
                 // Tăng độ tương phản nhẹ để làm rõ văn bản
                 .linear(
                   1.25, // Tăng từ 1.2 lên 1.25

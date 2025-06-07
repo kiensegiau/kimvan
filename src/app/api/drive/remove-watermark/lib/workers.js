@@ -431,15 +431,23 @@ export async function processPage(data) {
           try {
             // Áp dụng từng bước xử lý trong try-catch riêng biệt
             try {
-              processedImage = processedImage.gamma(config.gamma, { failOnError: false });
-            } catch (gammaError) {
-              console.warn(`Không thể áp dụng gamma: ${gammaError.message}`);
+              // Thay thế gamma bằng điều chỉnh tương phản để có hiệu ứng tương tự
+              processedImage = processedImage.linear(1.2, -0.1);
+              console.log(`Đã thay thế gamma bằng điều chỉnh tương phản`);
+            } catch (contrastError) {
+              console.warn(`Không thể áp dụng thay thế gamma: ${contrastError.message}`);
             }
             
             try {
-              processedImage = processedImage.sharpen(config.sharpening, { failOnError: false });
-            } catch (sharpenError) {
-              console.warn(`Không thể áp dụng sharpen: ${sharpenError.message}`);
+              // Thay thế sharpen bằng phương pháp đơn giản hơn
+              processedImage = processedImage.recomb([
+                [1.1, 0, 0],
+                [0, 1.1, 0],
+                [0, 0, 1.1]
+              ]);
+              console.log(`Đã thay thế sharpen bằng bộ lọc recomb`);
+            } catch (recombError) {
+              console.warn(`Không thể áp dụng thay thế sharpen: ${recombError.message}`);
             }
             
             try {

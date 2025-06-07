@@ -51,11 +51,13 @@ export async function POST(request, { params }) {
 
     // Đọc request body
     const requestBody = await request.json().catch(() => ({}));
+    const skipWatermarkRemoval = requestBody.skipWatermarkRemoval !== false; // Mặc định là true trừ khi được đặt rõ ràng là false
     
-    // Luôn đảm bảo luôn xử lý watermark (skipWatermarkRemoval = false)
-    const skipWatermarkRemoval = false;
-    
-    console.log('Chế độ xử lý watermark luôn được bật');
+    if (skipWatermarkRemoval) {
+      console.log('⏩ Chế độ bỏ qua xử lý watermark được bật (mặc định)');
+    } else {
+      console.log('Chế độ xử lý watermark được bật theo yêu cầu');
+    }
 
     console.log(`Đang xử lý các links PDF cho khóa học ID: ${id}`);
 
@@ -299,7 +301,7 @@ export async function POST(request, { params }) {
             
             // Tạo controller với timeout ngắn hơn cho API kiểm tra file type
             const checkController = new AbortController();
-            const checkTimeoutId = setTimeout(() => checkController.abort(), 30000); // 30 giây là đủ
+            const checkTimeoutId = setTimeout(() => checkController.abort(), 60000); // 60 seconds (increased from 30)
             
             try {
               const checkResponse = await fetch(checkUrl, {
@@ -327,7 +329,7 @@ export async function POST(request, { params }) {
                 const folderUrl = new URL('/api/drive/remove-watermark', request.url).toString();
                 
                 const folderController = new AbortController();
-                const folderTimeoutId = setTimeout(() => folderController.abort(), 10 * 60 * 1000); // 10 phút
+                const folderTimeoutId = setTimeout(() => folderController.abort(), 20 * 60 * 1000); // 20 minutes (increased from 10)
                 
                 try {
                   const folderResponse = await fetch(folderUrl, {
@@ -337,7 +339,7 @@ export async function POST(request, { params }) {
                       token: 'api@test-watermark',
                       driveLink: link.url,
                       courseName: course.name || 'Khóa học không tên',
-                      skipWatermarkRemoval: false,
+                      skipWatermarkRemoval: skipWatermarkRemoval,
                       processRecursively: true, // Thêm flag để xử lý đệ quy các thư mục con
                       maxRecursionDepth: 5 // Giới hạn độ sâu đệ quy để tránh vòng lặp vô hạn
                     }),
@@ -456,7 +458,7 @@ export async function POST(request, { params }) {
                 const requestController = new AbortController();
                 
                 // Điều chỉnh thời gian timeout tùy theo số lần thử
-                const timeoutDuration = Math.min(5 * 60 * 1000, 2 * 60 * 1000 * (retryCount + 1));
+                const timeoutDuration = Math.min(15 * 60 * 1000, 3 * 60 * 1000 * (retryCount + 1));
                 console.log(`⏱️ Thiết lập timeout ${timeoutDuration/1000}s cho lần thử ${retryCount + 1}`);
                 
                 const requestTimeoutId = setTimeout(() => {
@@ -475,7 +477,7 @@ export async function POST(request, { params }) {
                     token: 'api@test-watermark',
                     driveLink: link.url,
                     courseName: course.name || 'Khóa học không tên',
-                    skipWatermarkRemoval: false
+                    skipWatermarkRemoval: skipWatermarkRemoval
                   }),
                   signal: requestController.signal
                 });
@@ -516,7 +518,7 @@ export async function POST(request, { params }) {
                   throw fetchError;
                 }
                 
-                const waitTime = 20000 * Math.pow(2, retryCount-1); // 20s, 40s, 80s, 160s, 320s - backoff tăng theo cấp số nhân
+                const waitTime = 30000 * Math.pow(2, retryCount-1); // 30s, 60s, 120s, 240s, 480s - backoff tăng theo cấp số nhân
                 console.log(`⏱️ Thử lại sau ${waitTime/1000} giây... (lần thử ${retryCount+1}/${maxRetries+1})`);
                 await new Promise(resolve => setTimeout(resolve, waitTime));
               }
