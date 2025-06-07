@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import mongoose from 'mongoose';
 import Course from '@/models/Course';
 import { authMiddleware, checkAuthAndRole } from '@/lib/auth';
-import { cookies } from 'next/headers';
+import { headers } from 'next/headers';
 import { connectDB } from '@/lib/mongodb';
 
 // GET: Lấy tất cả khóa học cho admin (không mã hóa)
@@ -10,12 +10,13 @@ export async function GET(request) {
   try {
     console.log('🔒 Admin API - Kiểm tra quyền truy cập');
     
-    // Kiểm tra cookie admin_access - sửa lỗi bằng cách gán giá trị trực tiếp
-    const adminAccess = cookies().get('admin_access');
+    // Kiểm tra quyền admin từ header 
+    const headersList = headers();
+    const userRole = headersList.get('x-user-role');
     
-    // Nếu có cookie admin_access, cho phép truy cập
-    if (adminAccess && adminAccess.value === 'true') {
-      console.log('🔒 Admin API - Đã có cookie admin_access, cho phép truy cập');
+    // Cho phép truy cập nếu là admin
+    if (userRole === 'admin') {
+      console.log('🔒 Admin API - Người dùng có quyền admin, cho phép truy cập');
       
       // Kết nối đến MongoDB
       await connectDB();
@@ -26,7 +27,7 @@ export async function GET(request) {
       // Trả về thông tin khóa học
       return NextResponse.json({ courses });
     } else {
-      console.log('⚠️ Admin API - Không có cookie admin_access, từ chối truy cập');
+      console.log('⚠️ Admin API - Không có quyền admin, từ chối truy cập');
       return NextResponse.json(
         { error: 'Không có quyền truy cập' },
         { status: 403 }
@@ -43,12 +44,13 @@ export async function POST(request) {
   try {
     console.log('🔒 Admin API - Kiểm tra quyền truy cập');
     
-    // Kiểm tra cookie admin_access - sửa lỗi bằng cách gán giá trị trực tiếp
-    const adminAccess = cookies().get('admin_access');
+    // Kiểm tra quyền admin từ header 
+    const headersList = headers();
+    const userRole = headersList.get('x-user-role');
     
-    // Nếu có cookie admin_access, cho phép truy cập
-    if (adminAccess && adminAccess.value === 'true') {
-      console.log('🔒 Admin API - Đã có cookie admin_access, cho phép truy cập');
+    // Cho phép truy cập nếu là admin
+    if (userRole === 'admin') {
+      console.log('🔒 Admin API - Người dùng có quyền admin, cho phép truy cập');
       
       // Kết nối đến MongoDB
       await connectDB();
@@ -98,7 +100,7 @@ export async function POST(request) {
         course: newCourse
       });
     } else {
-      console.log('⚠️ Admin API - Không có cookie admin_access, từ chối truy cập');
+      console.log('⚠️ Admin API - Không có quyền admin, từ chối truy cập');
       return NextResponse.json({
         error: 'Không có quyền truy cập'
       }, { status: 403 });
