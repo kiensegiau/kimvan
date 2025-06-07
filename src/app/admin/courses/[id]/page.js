@@ -1302,6 +1302,17 @@ export default function CourseDetailPage({ params }) {
               </div>
               
               <div>
+                <dt className="text-sm font-medium text-gray-500">Giá gốc (VND)</dt>
+                <dd className="mt-1 text-sm text-gray-900">
+                  {course.originalPrice 
+                    ? (typeof course.originalPrice === 'string' 
+                        ? parseInt(course.originalPrice).toLocaleString('vi-VN') 
+                        : course.originalPrice.toLocaleString('vi-VN'))
+                    : 'Chưa có giá gốc'}
+                </dd>
+              </div>
+              
+              <div>
                 <dt className="text-sm font-medium text-gray-500">Trạng thái</dt>
                 <dd className="mt-1">
                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -1561,6 +1572,11 @@ export default function CourseDetailPage({ params }) {
                                                           
                                                           // Link google docs/drive cần xử lý đặc biệt vì có cấu trúc phức tạp
                                                           if (url.includes('drive.google.com') || url.includes('docs.google.com')) {
+                                                            // Kiểm tra xem link drive đã có trong processedDriveFiles chưa
+                                                            const processedFile = getProcessedDriveFile(url, rowIndex, cellIndex, activeSheet);
+                                                            if (processedFile) {
+                                                              return "text-green-600"; // Đã xử lý watermark - hiện màu xanh lá
+                                                            }
                                                             return containsDomain ? "text-blue-600" : "text-red-600 bg-red-50 px-2 py-1 rounded";
                                                           }
                                                           
@@ -1967,6 +1983,16 @@ export default function CourseDetailPage({ params }) {
                         <div>
                           <dt className="text-sm font-medium text-gray-500">Giá</dt>
                           <dd className="mt-1 text-sm text-gray-900">{previewData.courseInfo.price.toLocaleString('vi-VN')} VND</dd>
+                        </div>
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500">Giá gốc</dt>
+                          <dd className="mt-1 text-sm text-gray-900">
+                            {previewData.courseInfo.originalPrice 
+                              ? (typeof previewData.courseInfo.originalPrice === 'string'
+                                 ? parseInt(previewData.courseInfo.originalPrice).toLocaleString('vi-VN')
+                                 : previewData.courseInfo.originalPrice.toLocaleString('vi-VN'))
+                              : '0'} VND
+                          </dd>
                         </div>
                         <div>
                           <dt className="text-sm font-medium text-gray-500">Trạng thái</dt>

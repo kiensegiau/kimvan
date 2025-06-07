@@ -952,6 +952,7 @@ export async function PATCH(request, { params }) {
         ? `Khóa học ${courseName}` 
         : existingCourse.description,
       price: existingCourse.price || 500000,
+      originalPrice: existingCourse.originalPrice || '',  // Giữ nguyên originalPrice
       status: existingCourse.status || 'active',
       createdAt: existingCourse.createdAt || new Date(),
       updatedAt: new Date(),
@@ -968,6 +969,7 @@ export async function PATCH(request, { params }) {
         name: newCourseData.name,
         description: newCourseData.description,
         price: newCourseData.price,
+        originalPrice: newCourseData.originalPrice,
         status: newCourseData.status
       },
       stats: {
