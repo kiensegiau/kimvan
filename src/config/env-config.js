@@ -87,6 +87,12 @@ export const publicPaths = [
   '/api/auth/admin/check-permission',
   '/api/csrf',
   
+  // API Drive không yêu cầu xác thực
+  '/api/drive/remove-watermark',
+  '/api/drive/check-file-type',
+  '/api/drive/upload',
+  '/api/courses/process-all-drive',
+  
   // API không yêu cầu xác thực
   '/api/spreadsheets',
   
