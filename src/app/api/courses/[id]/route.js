@@ -583,6 +583,7 @@ export async function PATCH(request, { params }) {
     // Kiểm tra chế độ xem trước và các tham số khác
     const previewMode = requestBody.preview === true;
     const applyProcessedLinks = requestBody.applyProcessedLinks === true;
+    const manualJson = requestBody.manualJson; // Dữ liệu JSON do người dùng nhập vào
     
     // Sửa đổi: Kiểm tra cache trước khi quyết định có sử dụng cache hay không
     // Nếu đã có dữ liệu trong cache cho ID này, sử dụng nó ngay cả khi không có tham số useCache
@@ -592,6 +593,8 @@ export async function PATCH(request, { params }) {
     console.log(`🔍 [PATCH] Chế độ xem trước: ${previewMode ? 'Bật' : 'Tắt'}`);
     console.log(`🔗 [PATCH] Áp dụng link đã xử lý: ${applyProcessedLinks ? 'Bật' : 'Tắt'}`);
     console.log(`💾 [PATCH] Sử dụng dữ liệu đã lưu tạm: ${useCache ? 'Bật' : 'Tắt'}`);
+    console.log(`📄 [PATCH] Sử dụng JSON từ người dùng: ${manualJson ? 'Có' : 'Không'}`);
+    
     if (hasExistingCache) {
       console.log(`💾 [PATCH] Đã phát hiện dữ liệu trong bộ nhớ tạm cho ID ${id}`);
     }
@@ -682,8 +685,23 @@ export async function PATCH(request, { params }) {
     // Khai báo biến để lưu dữ liệu Kimvan
     let kimvanData;
     
+    // Kiểm tra nếu có JSON từ người dùng
+    if (manualJson) {
+      console.log('📄 [PATCH] Sử dụng dữ liệu JSON do người dùng cung cấp');
+      kimvanData = manualJson;
+      
+      // Lưu dữ liệu vào bộ nhớ tạm
+      console.log('💾 [PATCH] Lưu dữ liệu JSON do người dùng cung cấp vào bộ nhớ tạm');
+      kimvanDataCache.set(id, kimvanData);
+      
+      // Thiết lập xóa cache sau 30 phút
+      setTimeout(() => {
+        console.log(`🗑️ [PATCH] Xóa dữ liệu tạm cho khóa học ${id}`);
+        kimvanDataCache.delete(id);
+      }, 30 * 60 * 1000);
+    }
     // Kiểm tra nếu sử dụng dữ liệu từ bộ nhớ tạm
-    if (useCache && kimvanDataCache.has(id)) {
+    else if (useCache && kimvanDataCache.has(id)) {
       console.log('💾 [PATCH] Sử dụng dữ liệu đã lưu trong bộ nhớ tạm');
       kimvanData = kimvanDataCache.get(id);
     } else {
@@ -1290,8 +1308,7 @@ export async function PATCH(request, { params }) {
     return NextResponse.json(
       { 
         success: false,
-        message: 'Đã xảy ra lỗi khi đồng bộ khóa học',
-        error: error.message 
+        message: `Lỗi đồng bộ khóa học: ${error.message}` 
       },
       { status: 500 }
     );

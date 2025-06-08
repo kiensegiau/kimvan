@@ -66,6 +66,11 @@ export default function CourseDetailPage({ params }) {
   });
   const [updatingCell, setUpdatingCell] = useState(false);
   
+  // Thêm state cho modal nhập JSON
+  const [showJsonInputModal, setShowJsonInputModal] = useState(false);
+  const [jsonInput, setJsonInput] = useState('');
+  const [jsonInputError, setJsonInputError] = useState(null);
+
   // Hàm lấy tiêu đề của sheet
   const getSheetTitle = (index, sheets) => {
     if (!sheets || !sheets[index]) return `Khóa ${index + 1}`;
@@ -206,59 +211,89 @@ export default function CourseDetailPage({ params }) {
   const handleSync = async () => {
     if (!course || !course.kimvanId) return;
     
-    if (window.confirm(`Bạn có muốn đồng bộ khóa học "${course.name}" không?`)) {
+    // Reset state
+    setJsonInput('');
+    setJsonInputError(null);
+    
+    // Mở modal nhập JSON
+    setShowJsonInputModal(true);
+  };
+
+  // Hàm xử lý submit form nhập JSON
+  const handleJsonSubmit = async (e) => {
+    e.preventDefault();
+    
+    try {
+      // Bắt đầu quá trình đồng bộ
+      setSyncing(true);
+      setSyncResult({
+        success: true,
+        message: `Đang đồng bộ khóa học "${course.name}"...`,
+        inProgress: true
+      });
+      
+      let jsonData;
+      
       try {
-        setSyncing(true);
-        setSyncResult({
-          success: true,
-          message: `Đang đồng bộ khóa học "${course.name}"...`,
-          inProgress: true
-        });
-        
-        // Bước 1: Gọi API để xem trước dữ liệu
-        console.log(`🔍 Gửi yêu cầu xem trước dữ liệu đồng bộ cho khóa học: ${course.kimvanId}`);
-        const previewResponse = await fetch(`/api/courses/${course.kimvanId}`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            preview: true,
-            useCache: false, // Không sử dụng cache trong xem trước ban đầu
-            originalPrice: course.originalPrice // Thêm originalPrice vào request
-          })
-        });
-        
-        const previewResult = await previewResponse.json();
-        
-        if (!previewResponse.ok) {
-          throw new Error(previewResult.message || 'Không thể xem trước dữ liệu đồng bộ');
+        // Nếu có JSON input, sử dụng nó
+        if (jsonInput.trim()) {
+          jsonData = JSON.parse(jsonInput);
         }
-        
-        // Hiển thị kết quả xem trước
-        console.log('✅ Nhận dữ liệu xem trước thành công:', previewResult);
-        setPreviewData(previewResult.previewData);
-        setShowPreviewModal(true);
-        
-        // Cập nhật thông báo
-        setSyncResult({
-          success: true,
-          message: 'Đã tải dữ liệu xem trước, vui lòng xác nhận để tiếp tục',
-          inProgress: false,
-          preview: true
-        });
-        
-        // Dừng ở đây, đợi người dùng xác nhận từ modal
-        
-      } catch (err) {
-        console.error('Lỗi khi đồng bộ khóa học:', err);
-        setSyncResult({
-          success: false,
-          message: `Lỗi đồng bộ: ${err.message}`,
-          inProgress: false
-        });
+      } catch (error) {
+        setJsonInputError(`Lỗi phân tích JSON: ${error.message}`);
         setSyncing(false);
+        return;
       }
+      
+      // Chuẩn bị data cho API
+      const requestData = {
+        preview: true,
+        useCache: false,
+        originalPrice: course.originalPrice, // Sử dụng giá gốc từ dữ liệu khóa học
+        manualJson: jsonData // Thêm JSON người dùng nhập vào nếu có
+      };
+      
+      // Gọi API để xem trước dữ liệu
+      console.log(`🔍 Gửi yêu cầu xem trước dữ liệu đồng bộ cho khóa học: ${course.kimvanId}`);
+      const previewResponse = await fetch(`/api/courses/${course.kimvanId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData)
+      });
+      
+      const previewResult = await previewResponse.json();
+      
+      if (!previewResponse.ok) {
+        throw new Error(previewResult.message || 'Không thể xem trước dữ liệu đồng bộ');
+      }
+      
+      // Đóng modal nhập JSON
+      setShowJsonInputModal(false);
+      
+      // Hiển thị kết quả xem trước
+      console.log('✅ Nhận dữ liệu xem trước thành công:', previewResult);
+      setPreviewData(previewResult.previewData);
+      setShowPreviewModal(true);
+      
+      // Cập nhật thông báo
+      setSyncResult({
+        success: true,
+        message: 'Đã tải dữ liệu xem trước, vui lòng xác nhận để tiếp tục',
+        inProgress: false,
+        preview: true
+      });
+      
+    } catch (err) {
+      console.error('Lỗi khi đồng bộ khóa học:', err);
+      setJsonInputError(`Lỗi đồng bộ: ${err.message}`);
+      setSyncResult({
+        success: false,
+        message: `Lỗi đồng bộ: ${err.message}`,
+        inProgress: false
+      });
+      setSyncing(false);
     }
   };
 
@@ -279,10 +314,11 @@ export default function CourseDetailPage({ params }) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          applyProcessedLinks: true, // Thêm tham số để đảm bảo áp dụng các link đã xử lý
+          applyProcessedLinks: true,
           preview: false,
-          useCache: true, // Sử dụng dữ liệu đã được lưu trong cache
-          originalPrice: course.originalPrice // Thêm originalPrice vào request
+          useCache: true,
+          originalPrice: course.originalPrice,
+          manualJson: previewData?.manualJson // Chuyển tiếp JSON đã nhập nếu có
         })
       });
       
@@ -3099,6 +3135,87 @@ export default function CourseDetailPage({ params }) {
                   )}
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Modal nhập JSON */}
+        {showJsonInputModal && (
+          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+              <div className="px-4 sm:px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                <h3 className="text-lg font-medium text-gray-900">Nhập dữ liệu JSON</h3>
+                <button
+                  onClick={() => setShowJsonInputModal(false)}
+                  className="text-gray-400 hover:text-gray-500"
+                >
+                  <XMarkIcon className="h-6 w-6" />
+                </button>
+              </div>
+              
+              <form onSubmit={handleJsonSubmit}>
+                <div className="p-4 sm:p-6 overflow-auto max-h-[calc(90vh-10rem)]">
+                  {jsonInputError && (
+                    <div className="mb-4 bg-red-50 border-l-4 border-red-400 p-4">
+                      <div className="flex">
+                        <div className="flex-shrink-0">
+                          <ExclamationCircleIcon className="h-5 w-5 text-red-400" />
+                        </div>
+                        <div className="ml-3">
+                          <p className="text-sm text-red-700">{jsonInputError}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div>
+                    <label htmlFor="jsonInput" className="block text-sm font-medium text-gray-700 mb-1">
+                      Dán JSON vào đây
+                    </label>
+                    <textarea
+                      id="jsonInput"
+                      value={jsonInput}
+                      onChange={(e) => setJsonInput(e.target.value)}
+                      rows="15"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm font-mono"
+                      placeholder='{"sheets": [...]}'
+                    />
+                  </div>
+                  
+                  <div className="mt-4 bg-yellow-50 p-4 rounded-md">
+                    <h4 className="text-sm font-medium text-yellow-800 mb-2">Hướng dẫn:</h4>
+                    <ul className="list-disc list-inside text-sm text-yellow-700 space-y-1">
+                      <li>Dán dữ liệu JSON vào ô trên để đồng bộ khóa học</li>
+                      <li>JSON phải có cấu trúc đúng định dạng của Google Sheets API</li>
+                      <li>Giá gốc sẽ được lấy tự động từ dữ liệu khóa học</li>
+                    </ul>
+                  </div>
+                </div>
+                
+                <div className="px-4 sm:px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setShowJsonInputModal(false)}
+                    className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 mr-3"
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+                    disabled={syncing}
+                  >
+                    {syncing ? (
+                      <span className="flex items-center">
+                        <ArrowPathIcon className="animate-spin h-4 w-4 mr-2" />
+                        Đang xử lý...
+                      </span>
+                    ) : (
+                      'Tiếp tục'
+                    )}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}
