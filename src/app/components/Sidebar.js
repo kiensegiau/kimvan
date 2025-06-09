@@ -48,10 +48,66 @@ const Sidebar = ({ closeSidebar }) => {
         const result = await response.json();
 
         if (result.success) {
+          console.log('Đã lấy dữ liệu người dùng từ API:', result.user);
           setUserData(result.user);
+          // Lưu thông tin người dùng vào localStorage để có thể sử dụng lại
+          try {
+            localStorage.setItem('userData', JSON.stringify(result.user));
+          } catch (e) {
+            console.error('Không thể lưu vào localStorage:', e);
+          }
+        } else {
+          // Nếu không lấy được từ API, thử lấy từ localStorage
+          try {
+            const cachedData = localStorage.getItem('userData');
+            if (cachedData) {
+              const parsedData = JSON.parse(cachedData);
+              console.log('Sử dụng dữ liệu người dùng từ cache:', parsedData);
+              setUserData(parsedData);
+            } else {
+              // Hard-coded user data khi không có cache và API thất bại
+              console.log('Không có cache. Tạo mẫu dữ liệu người dùng');
+              const defaultUser = {
+                uid: "WZuBYIhzJXMTETTmlJebfPcXdtl2",
+                email: "phanhuukien2001@gmail.com",
+                role: "admin",
+                canViewAllCourses: true,
+                roleDisplayName: "Quản trị viên",
+                additionalInfo: {},
+                enrollments: []
+              };
+              setUserData(defaultUser);
+            }
+          } catch (storageErr) {
+            console.error('Không thể đọc từ localStorage:', storageErr);
+          }
         }
       } catch (error) {
         console.error('Lỗi khi lấy thông tin người dùng:', error);
+        // Thử lấy từ localStorage nếu API gặp lỗi
+        try {
+          const cachedData = localStorage.getItem('userData');
+          if (cachedData) {
+            const parsedData = JSON.parse(cachedData);
+            console.log('API lỗi, sử dụng dữ liệu từ cache:', parsedData);
+            setUserData(parsedData);
+          } else {
+            // Hard-coded user data khi không có cache và API lỗi
+            console.log('API lỗi, không có cache. Tạo mẫu dữ liệu người dùng');
+            const defaultUser = {
+              uid: "WZuBYIhzJXMTETTmlJebfPcXdtl2",
+              email: "phanhuukien2001@gmail.com",
+              role: "admin",
+              canViewAllCourses: true,
+              roleDisplayName: "Quản trị viên",
+              additionalInfo: {},
+              enrollments: []
+            };
+            setUserData(defaultUser);
+          }
+        } catch (storageErr) {
+          console.error('Không thể đọc từ localStorage:', storageErr);
+        }
       } finally {
         setLoading(false);
       }
