@@ -16,8 +16,9 @@ export async function GET(request) {
     const authHeader = request.headers.get('authorization');
     console.log('🔍 API Users/me - Auth Header:', authHeader ? 'Có' : 'Không có');
     
-    // Kiểm tra cookies - sửa lỗi - gọi trực tiếp
-    const authCookie = cookies().get(cookieConfig.authCookieName);
+    // Kiểm tra cookies - thêm await để sửa lỗi
+    const cookieStore = await cookies();
+    const authCookie = cookieStore.get(cookieConfig.authCookieName);
     console.log('🔍 API Users/me - Auth Cookie:', authCookie ? 'Có' : 'Không có');
     
     // Xác thực người dùng

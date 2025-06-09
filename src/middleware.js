@@ -107,8 +107,9 @@ export async function middleware(request) {
     console.log('🔒 Token không tồn tại hoặc rỗng, chuyển hướng đến trang đăng nhập');
     
     const redirectUrl = new URL(routes.login, request.url);
-    // Thêm returnUrl để sau khi đăng nhập có thể chuyển hướng về trang ban đầu
-    redirectUrl.searchParams.set('returnUrl', encodeURIComponent(pathname));
+    // Thêm returnUrl và đảm bảo không bị mã hóa hai lần
+    const rawPathname = pathname; // Lưu lại đường dẫn gốc
+    redirectUrl.searchParams.set('returnUrl', rawPathname);
     const redirectResponse = NextResponse.redirect(redirectUrl);
     return addSecurityHeaders(redirectResponse);
   }
@@ -131,7 +132,7 @@ export async function middleware(request) {
     if (!verifyResponse.ok) {
       console.log('❌ Middleware - API xác thực không trả về kết quả thành công');
       const redirectUrl = new URL(routes.login, request.url);
-      redirectUrl.searchParams.set('returnUrl', encodeURIComponent(pathname));
+      redirectUrl.searchParams.set('returnUrl', pathname);
       const redirectResponse = NextResponse.redirect(redirectUrl);
       return addSecurityHeaders(redirectResponse);
     }
@@ -143,7 +144,7 @@ export async function middleware(request) {
       console.log('🔒 Token không hợp lệ, chuyển hướng đến trang đăng nhập');
       
       const redirectUrl = new URL(routes.login, request.url);
-      redirectUrl.searchParams.set('returnUrl', encodeURIComponent(pathname));
+      redirectUrl.searchParams.set('returnUrl', pathname);
       const redirectResponse = NextResponse.redirect(redirectUrl);
       
       // Xóa cookie token không hợp lệ
@@ -364,7 +365,7 @@ export async function middleware(request) {
     
     // Trong trường hợp lỗi, chuyển hướng đến trang đăng nhập để an toàn
     const redirectUrl = new URL(routes.login, request.url);
-    redirectUrl.searchParams.set('returnUrl', encodeURIComponent(pathname));
+    redirectUrl.searchParams.set('returnUrl', pathname);
     const redirectResponse = NextResponse.redirect(redirectUrl);
     return addSecurityHeaders(redirectResponse);
   }
