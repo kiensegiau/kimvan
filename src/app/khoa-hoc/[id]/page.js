@@ -14,6 +14,13 @@ import CryptoJS from 'crypto-js';
 const ENCRYPTION_KEY = 'kimvan-secure-key-2024';
 // Thời gian cache - 12 giờ tính bằng milliseconds
 const CACHE_DURATION = 12 * 60 * 60 * 1000;
+// Phiên bản cache hiện tại
+const CACHE_VERSION = '1.1';
+// Key quyền truy cập
+const PERMISSION_KEYS = {
+  isEnrolled: 'isEnrolled',
+  canViewAllCourses: 'canViewAllCourses'
+};
 
 export default function CourseDetailPage({ params }) {
   const router = useRouter();
@@ -63,6 +70,26 @@ export default function CourseDetailPage({ params }) {
     }
   };
 
+  // Hàm kiểm tra quyền truy cập
+  const checkPermission = (courseData) => {
+    // Trả về true nếu người dùng có quyền truy cập
+    return courseData?.isEnrolled === true || 
+           courseData?.canViewAllCourses === true ||
+           courseData?.requiresEnrollment !== true;
+  };
+  
+  // Hàm xóa cache
+  const clearCache = () => {
+    try {
+      localStorage.removeItem(`course-${id}`);
+      setCacheStatus('cleared');
+      return true;
+    } catch (e) {
+      console.error('Lỗi khi xóa cache:', e);
+      return false;
+    }
+  };
+
   // Hàm lấy thông tin chi tiết của khóa học
   const fetchCourseDetail = async () => {
     setLoading(true);
@@ -71,46 +98,84 @@ export default function CourseDetailPage({ params }) {
     try {
       // Kiểm tra xem đã đăng nhập hay chưa và lấy thông tin quyền truy cập
       let hasPermissionChange = false;
+      let currentPermissions = null;
+      
       try {
         const permissionResponse = await fetch('/api/users/me');
         if (permissionResponse.ok) {
           const userData = await permissionResponse.json();
-          // Kiểm tra xem người dùng có quyền xem tất cả khóa học không
-          if (userData && userData.canViewAllCourses) {
-            // Xóa cache không cần kiểm tra để đảm bảo luôn tải dữ liệu mới nhất
-            try {
-              localStorage.removeItem(`course-${id}`);
-              hasPermissionChange = true;
-            } catch (cacheError) {
-              // Bỏ qua lỗi khi xóa cache
-            }
-          }
+          currentPermissions = {
+            [PERMISSION_KEYS.canViewAllCourses]: userData?.canViewAllCourses || false,
+            [PERMISSION_KEYS.isEnrolled]: userData?.enrolledCourses?.includes(id) || false
+          };
+        } else {
+          // Nếu không lấy được thông tin người dùng, giả định không có quyền
+          currentPermissions = { 
+            [PERMISSION_KEYS.canViewAllCourses]: false, 
+            [PERMISSION_KEYS.isEnrolled]: false 
+          };
         }
       } catch (permError) {
-        // Bỏ qua lỗi khi kiểm tra quyền
+        // Nếu có lỗi khi kiểm tra quyền, giả định không có quyền
+        currentPermissions = { 
+          [PERMISSION_KEYS.canViewAllCourses]: false, 
+          [PERMISSION_KEYS.isEnrolled]: false 
+        };
+        console.error('Lỗi khi kiểm tra quyền truy cập:', permError);
       }
 
-      // Kiểm tra cache trước nếu không có thay đổi quyền
-      if (!hasPermissionChange) {
-        const cachedCourse = getFromCache();
-        if (cachedCourse) {
-          // Sử dụng dữ liệu cache
-          setCourse(cachedCourse);
-          setPermissionChecked(true); // Đánh dấu đã kiểm tra quyền khi dùng cache
-          setLoading(false);
-          
-          // Hiệu ứng fade-in
-          setTimeout(() => {
-            setIsLoaded(true);
-          }, 50); // Giảm thời gian chờ xuống 50ms
-          
-          // Tải lại dữ liệu mới ngay lập tức nếu đã đăng nhập để cập nhật quyền
-          refreshCourseData(false);
-          return;
+      // Kiểm tra cache trước
+      const cachedCourse = getFromCache();
+      
+      // So sánh quyền hiện tại với quyền được lưu trong cache
+      if (cachedCourse) {
+        const cachedPermissions = {
+          [PERMISSION_KEYS.canViewAllCourses]: cachedCourse[PERMISSION_KEYS.canViewAllCourses] || false,
+          [PERMISSION_KEYS.isEnrolled]: cachedCourse[PERMISSION_KEYS.isEnrolled] || false
+        };
+        
+        // Kiểm tra xem quyền có thay đổi không
+        if (
+          (cachedPermissions[PERMISSION_KEYS.canViewAllCourses] && !currentPermissions[PERMISSION_KEYS.canViewAllCourses]) || 
+          (cachedPermissions[PERMISSION_KEYS.isEnrolled] && !currentPermissions[PERMISSION_KEYS.isEnrolled])
+        ) {
+          // Quyền đã bị thu hồi, xóa cache ngay lập tức
+          if (clearCache()) {
+            hasPermissionChange = true;
+            console.log('Phát hiện thay đổi quyền truy cập, đã xóa cache');
+          }
+        } 
+        else if (
+          (!cachedPermissions[PERMISSION_KEYS.canViewAllCourses] && !cachedPermissions[PERMISSION_KEYS.isEnrolled]) && 
+          (currentPermissions[PERMISSION_KEYS.canViewAllCourses] || currentPermissions[PERMISSION_KEYS.isEnrolled])
+        ) {
+          // Người dùng có quyền mới, cập nhật cache
+          hasPermissionChange = true;
         }
       }
+
+      // Kiểm tra cache nếu không có thay đổi quyền
+      if (!hasPermissionChange && cachedCourse) {
+        // Cập nhật thông tin quyền truy cập vào dữ liệu cache
+        cachedCourse[PERMISSION_KEYS.canViewAllCourses] = currentPermissions[PERMISSION_KEYS.canViewAllCourses];
+        cachedCourse[PERMISSION_KEYS.isEnrolled] = currentPermissions[PERMISSION_KEYS.isEnrolled];
+        
+        // Sử dụng dữ liệu cache
+        setCourse(cachedCourse);
+        setPermissionChecked(true);
+        setLoading(false);
+        
+        // Hiệu ứng fade-in
+        setTimeout(() => {
+          setIsLoaded(true);
+        }, 50);
+        
+        // Tải lại dữ liệu mới trong nền để cập nhật quyền và nội dung
+        refreshCourseData(false);
+        return;
+      }
       
-      // Nếu không có cache hoặc cache hết hạn, fetch từ API
+      // Nếu không có cache hoặc cache hết hạn hoặc quyền thay đổi, fetch từ API
       await refreshCourseData(true);
       
     } catch (error) {
@@ -119,26 +184,35 @@ export default function CourseDetailPage({ params }) {
       setLoading(false);
       
       // Xóa cache nếu có lỗi để buộc tải lại dữ liệu trong lần tới
-      try {
-        localStorage.removeItem(`course-${id}`);
-      } catch (e) {
-        // Bỏ qua lỗi khi xóa cache
-      }
+      clearCache();
     }
   };
   
   // Hàm tải lại dữ liệu từ API
   const refreshCourseData = async (showLoading = true) => {
     try {
+      // Tham số API đồng nhất
+      const apiParams = new URLSearchParams({
+        type: 'auto',
+        secure: 'true',
+        requireEnrollment: 'true',
+        checkViewPermission: 'true',
+        _: Date.now()
+      });
+      
       // Sử dụng tham số secure=true để nhận dữ liệu được mã hóa hoàn toàn
       // Thêm tham số requireEnrollment=true để kiểm tra quyền truy cập
-      const response = await fetch(`/api/courses/${id}?type=auto&secure=true&requireEnrollment=true&checkViewPermission=true`);
+      const response = await fetch(`/api/courses/${id}?${apiParams.toString()}`);
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         
         // Xử lý các mã lỗi cụ thể
-        if (response.status === 400) {
+        if (response.status === 403) {
+          // Không có quyền truy cập, xóa cache ngay lập tức
+          clearCache();
+          throw new Error(`Bạn không có quyền truy cập khóa học này. Vui lòng liên hệ quản trị viên.`);
+        } else if (response.status === 400) {
           throw new Error(`ID khóa học không hợp lệ. Vui lòng kiểm tra lại đường dẫn.`);
         } else if (response.status === 404) {
           throw new Error(`Không tìm thấy khóa học với ID: ${id}`);
@@ -151,13 +225,34 @@ export default function CourseDetailPage({ params }) {
       const encryptedResponse = await response.json();
       let fullCourseData;
       
+      // Đồng nhất cách xử lý quyền truy cập
+      const extractPermissions = (data) => {
+        return {
+          [PERMISSION_KEYS.isEnrolled]: data.isEnrolled || false,
+          [PERMISSION_KEYS.canViewAllCourses]: data.canViewAllCourses || false,
+          requiresEnrollment: data.requiresEnrollment || false
+        };
+      };
+      
       // Kiểm tra nếu nhận được dữ liệu được mã hóa hoàn toàn
       if (encryptedResponse._secureData) {
         try {
           // Giải mã toàn bộ đối tượng
-          fullCourseData = decryptData(encryptedResponse._secureData);
+          fullCourseData = {
+            ...decryptData(encryptedResponse._secureData),
+            ...extractPermissions(encryptedResponse)
+          };
+          
           setCourse(fullCourseData);
           setPermissionChecked(true); // Đánh dấu đã kiểm tra quyền
+          
+          // Nếu không có quyền truy cập, ngừng xử lý
+          if (!checkPermission(fullCourseData)) {
+            setError(null);
+            if (showLoading) setLoading(false);
+            return;
+          }
+          
           // Lưu vào cache
           saveToCache(fullCourseData);
         } catch (decryptError) {
@@ -175,9 +270,19 @@ export default function CourseDetailPage({ params }) {
           // Khôi phục dữ liệu gốc
           fullCourseData = {
             ...encryptedResponse,
-            originalData: decryptedData
+            originalData: decryptedData,
+            ...extractPermissions(encryptedResponse)
           };
           delete fullCourseData._encryptedData;
+          
+          // Nếu không có quyền truy cập, ngừng xử lý
+          if (!checkPermission(fullCourseData)) {
+            setCourse(fullCourseData);
+            setPermissionChecked(true); // Đánh dấu đã kiểm tra quyền
+            setError(null);
+            if (showLoading) setLoading(false);
+            return;
+          }
           
           setCourse(fullCourseData);
           setPermissionChecked(true); // Đánh dấu đã kiểm tra quyền
@@ -191,7 +296,10 @@ export default function CourseDetailPage({ params }) {
         }
       } else if (!encryptedResponse.originalData && encryptedResponse.requiresEnrollment) {
         // Trường hợp API trả về yêu cầu đăng ký
-        fullCourseData = encryptedResponse;
+        fullCourseData = {
+          ...encryptedResponse,
+          ...extractPermissions(encryptedResponse)
+        };
         setCourse(fullCourseData);
         setPermissionChecked(true); // Đánh dấu đã kiểm tra quyền
         // Lưu vào cache
@@ -203,7 +311,20 @@ export default function CourseDetailPage({ params }) {
         return;
       } else {
         // Trường hợp dữ liệu không được mã hóa
-        fullCourseData = encryptedResponse;
+        fullCourseData = {
+          ...encryptedResponse,
+          ...extractPermissions(encryptedResponse)
+        };
+        
+        // Nếu không có quyền truy cập, ngừng xử lý
+        if (!checkPermission(fullCourseData)) {
+          setCourse(fullCourseData);
+          setPermissionChecked(true); // Đánh dấu đã kiểm tra quyền
+          setError(null);
+          if (showLoading) setLoading(false);
+          return;
+        }
+        
         setCourse(fullCourseData);
         setPermissionChecked(true); // Đánh dấu đã kiểm tra quyền
         // Lưu vào cache
@@ -220,6 +341,11 @@ export default function CourseDetailPage({ params }) {
       if (showLoading) {
         setError(`Không thể lấy thông tin khóa học: ${error.message}`);
         setLoading(false);
+      }
+      
+      // Xóa cache nếu lỗi liên quan đến quyền truy cập
+      if (error.message.includes("không có quyền truy cập") || error.message.includes("quyền")) {
+        clearCache();
       }
     }
   };
@@ -247,7 +373,8 @@ export default function CourseDetailPage({ params }) {
       
       const cacheItem = {
         data: cacheData,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        version: CACHE_VERSION // Sử dụng hằng số cho phiên bản cache
       };
       
       // Kiểm tra kích thước dữ liệu trước khi lưu
@@ -308,6 +435,7 @@ export default function CourseDetailPage({ params }) {
       }
     } catch (error) {
       // Xử lý lỗi im lặng
+      console.error('Lỗi khi lưu cache:', error);
     }
   };
 
@@ -322,9 +450,16 @@ export default function CourseDetailPage({ params }) {
       const cacheItem = JSON.parse(cachedData);
       const now = Date.now();
       
-      // Kiểm tra xem cache có còn hiệu lực không (12 giờ)
+      // Kiểm tra phiên bản cache
+      if (!cacheItem.version || cacheItem.version !== CACHE_VERSION) {
+        clearCache();
+        setCacheStatus('outdated');
+        return null;
+      }
+      
+      // Kiểm tra xem cache có còn hiệu lực không
       if (now - cacheItem.timestamp > CACHE_DURATION) {
-        localStorage.removeItem(`course-${id}`);
+        clearCache();
         setCacheStatus('expired');
         return null;
       }
@@ -332,7 +467,9 @@ export default function CourseDetailPage({ params }) {
       setCacheStatus('hit');
       return cacheItem.data;
     } catch (error) {
-      // Xử lý lỗi im lặng
+      // Xử lý lỗi im lặng và xóa cache lỗi
+      console.error('Lỗi khi đọc cache:', error);
+      clearCache();
       return null;
     }
   };
@@ -696,6 +833,21 @@ export default function CourseDetailPage({ params }) {
   // Tải thông tin khóa học khi component được tạo
   useEffect(() => {
     fetchCourseDetail();
+    
+    // Thêm xử lý sự kiện khi cửa sổ trở nên visible lại
+    // Sử dụng để kiểm tra quyền khi người dùng quay lại tab
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        // Kiểm tra lại quyền truy cập khi tab được kích hoạt lại
+        refreshCourseData(false);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [id]);
 
   // Set sheet đầu tiên nếu có dữ liệu sheets
@@ -830,7 +982,7 @@ export default function CourseDetailPage({ params }) {
   }
   
   // Kiểm tra quyền truy cập - nếu khóa học chưa đăng ký và người dùng không có quyền xem tất cả khóa học, hiển thị thông báo yêu cầu đăng ký
-  if (!loading && course && permissionChecked && !course.isEnrolled && !course.canViewAllCourses) {
+  if (!loading && course && permissionChecked && !checkPermission(course)) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white p-6">
         <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden">

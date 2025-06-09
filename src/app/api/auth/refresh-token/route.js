@@ -86,7 +86,7 @@ export async function POST(request) {
     console.log(`🍪 API refresh-token: Thiết lập cookie với thời gian sống ${maxAge} giây`);
     
     // Thiết lập cookie với token mới
-    cookieStore.set(cookieConfig.authCookieName, newIdToken, {
+    await cookieStore.set(cookieConfig.authCookieName, newIdToken, {
       path: '/',
       maxAge,
       httpOnly: true,
