@@ -64,32 +64,73 @@ const checkCourseAccess = async (request, course) => {
   // Kiểm tra người dùng hiện tại nếu cần phải kiểm tra quyền
   if (requireEnrollment || checkViewPermission) {
     try {
-      // Xác thực người dùng qua middleware
-      user = await authMiddleware(request);
+      // Lấy token từ cookies
+      const cookieHeader = request.headers.get('cookie');
+      const authToken = cookieHeader?.split(';').find(c => c.trim().startsWith('auth-token='))?.split('=')[1];
       
-      if (user) {
-        // Kiểm tra nếu người dùng có quyền xem tất cả khóa học (admin hoặc flag đặc biệt)
-        canViewAllCourses = user.role === 'admin' || user.canViewAllCourses === true;
-        
-        // Kiểm tra đăng ký khóa học của người dùng
-        if (!canViewAllCourses) {
-          const enrollment = await Enrollment.findOne({
-            userId: user.uid,
-            courseId: course._id
-          }).lean().exec();
-          
-          isEnrolled = !!enrollment;
-        }
-        
-        console.log(`👤 Kiểm tra quyền cho người dùng ${user.uid}:`);
-        console.log(`   - ${PERMISSION_TYPES.ENROLLED}: ${isEnrolled}`);
-        console.log(`   - ${PERMISSION_TYPES.VIEW_ALL}: ${canViewAllCourses}`);
-        console.log(`   - Thời gian: ${new Date().toISOString()}`);
+      if (!authToken) {
+        console.log('❌ Không tìm thấy auth-token trong cookies');
+        // Không có token, coi như không có quyền
       } else {
-        console.log('❌ Không tìm thấy người dùng đã xác thực');
+        // Sử dụng server fetch để gọi API /api/users/me
+        const protocol = request.headers.get('x-forwarded-proto') || 'http';
+        const host = request.headers.get('host');
+        const baseUrl = `${protocol}://${host}`;
+        
+        console.log(`🔍 Gọi trực tiếp API /api/users/me để kiểm tra quyền người dùng`);
+        const userResponse = await fetch(`${baseUrl}/api/users/me`, {
+          headers: {
+            'Cookie': `auth-token=${authToken}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (userResponse.ok) {
+          const userData = await userResponse.json();
+          
+          if (userData.success && userData.user) {
+            user = userData.user;
+            
+            console.log(`🔍 Thông tin người dùng từ API users/me:`, {
+              uid: user.uid,
+              role: user.role,
+              canViewAllCourses: user.canViewAllCourses
+            });
+            
+            // Đảm bảo admin luôn có quyền xem tất cả khóa học
+            if (user.role === 'admin') {
+              canViewAllCourses = true;
+            } else {
+              canViewAllCourses = user.canViewAllCourses === true;
+            }
+            
+            // Kiểm tra đăng ký khóa học của người dùng nếu không có quyền xem tất cả
+            if (!canViewAllCourses) {
+              const enrollment = await Enrollment.findOne({
+                userId: user.uid,
+                courseId: course._id
+              }).lean().exec();
+              
+              isEnrolled = !!enrollment;
+            } else {
+              // Admin hoặc người có quyền xem tất cả cũng được xem như đã đăng ký
+              isEnrolled = true;
+            }
+            
+            console.log(`👤 Kết quả kiểm tra quyền cho người dùng ${user.uid}:`);
+            console.log(`   - Role: ${user.role}`);
+            console.log(`   - ${PERMISSION_TYPES.ENROLLED}: ${isEnrolled}`);
+            console.log(`   - ${PERMISSION_TYPES.VIEW_ALL}: ${canViewAllCourses}`);
+            console.log(`   - Thời gian: ${new Date().toISOString()}`);
+          } else {
+            console.log('❌ API users/me trả về dữ liệu không hợp lệ:', userData);
+          }
+        } else {
+          console.error(`❌ Lỗi khi gọi API users/me: ${userResponse.status} ${userResponse.statusText}`);
+        }
       }
     } catch (authError) {
-      console.error('❌ Lỗi xác thực:', authError);
+      console.error('❌ Lỗi khi kiểm tra xác thực:', authError);
     }
   } else {
     // Nếu không yêu cầu kiểm tra quyền, cho phép truy cập đầy đủ
