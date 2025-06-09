@@ -1164,66 +1164,94 @@ export async function processRecursiveFolder(folderIdOrLink, maxDepth = 5, curre
             console.log(`[Đệ quy ${currentDepth}] Xử lý file PDF: ${item.name}`);
             
             try {
-              // Xử lý thực tế để loại bỏ watermark
-              console.log(`[Đệ quy ${currentDepth}] Bắt đầu xử lý watermark cho file: ${item.name}`);
-              
-              // Tạo config cho xử lý watermark
-              const watermarkConfig = { ...DEFAULT_CONFIG };
-              
-              // Thêm hình nền nếu có
-              if (backgroundImage) {
-                let backgroundImagePath = backgroundImage;
+              // Kiểm tra xem file đã được xử lý watermark chưa (từ phương pháp puppeteer)
+              if (downloadResult.alreadyProcessed) {
+                console.log(`[Đệ quy ${currentDepth}] ✅ File PDF đã được xử lý watermark bằng phương pháp puppeteer, bỏ qua bước xử lý watermark thông thường`);
                 
-                if (!path.isAbsolute(backgroundImage) && 
-                    !backgroundImage.includes(':/') && 
-                    !backgroundImage.includes(':\\')) {
-                  backgroundImagePath = path.join(process.cwd(), backgroundImage);
-                }
+                // Upload file đã xử lý lên Drive
+                console.log(`[Đệ quy ${currentDepth}] 📤 Đang tải file đã xử lý lên Google Drive: ${downloadResult.fileName}`);
                 
-                const fileExists = fs.existsSync(backgroundImagePath);
+                const uploadResult = await uploadFileToDriveFolder(
+                  downloadResult.filePath,
+                  downloadResult.fileName,
+                  destinationFolderId
+                );
                 
-                if (fileExists) {
-                  watermarkConfig.backgroundImage = backgroundImagePath;
+                console.log(`[Đệ quy ${currentDepth}] ✅ Đã tải file lên Google Drive thành công: ${uploadResult.webViewLink}`);
+                
+                folderResults.nestedFilesProcessed++;
+                folderResults.folderStructure.files.push({
+                  name: item.name,
+                  id: item.id,
+                  processedFileId: uploadResult.fileId,
+                  processedFileLink: uploadResult.webViewLink,
+                  processed: true,
+                  watermarkRemoved: true,
+                  method: "puppeteer"
+                });
+                
+              } else {
+                // Xử lý thực tế để loại bỏ watermark (cho file thông thường)
+                console.log(`[Đệ quy ${currentDepth}] Bắt đầu xử lý watermark cho file: ${item.name}`);
+                
+                // Tạo config cho xử lý watermark
+                const watermarkConfig = { ...DEFAULT_CONFIG };
+                
+                // Thêm hình nền nếu có
+                if (backgroundImage) {
+                  let backgroundImagePath = backgroundImage;
                   
-                  if (backgroundOpacity !== undefined) {
-                    watermarkConfig.backgroundOpacity = parseFloat(backgroundOpacity);
+                  if (!path.isAbsolute(backgroundImage) && 
+                      !backgroundImage.includes(':/') && 
+                      !backgroundImage.includes(':\\')) {
+                    backgroundImagePath = path.join(process.cwd(), backgroundImage);
+                  }
+                  
+                  const fileExists = fs.existsSync(backgroundImagePath);
+                  
+                  if (fileExists) {
+                    watermarkConfig.backgroundImage = backgroundImagePath;
+                    
+                    if (backgroundOpacity !== undefined) {
+                      watermarkConfig.backgroundOpacity = parseFloat(backgroundOpacity);
+                    }
                   }
                 }
+                
+                // Tạo đường dẫn output
+                const outputPdfName = `${path.basename(downloadResult.fileName, '.pdf')}_clean.pdf`;
+                const outputPath = path.join(outputDir, outputPdfName);
+                
+                // Gọi hàm thực tế để xử lý PDF
+                const processResult = await processPDF(
+                  downloadResult.filePath,
+                  outputPath,
+                  watermarkConfig
+                );
+                
+                if (!processResult || !processResult.success) {
+                  throw new Error(processResult?.error || 'Không thể xử lý watermark trên file PDF');
+                }
+                
+                console.log(`[Đệ quy ${currentDepth}] ✅ Đã xử lý watermark thành công cho file: ${item.name}`);
+                
+                // Upload file đã xử lý lên Drive
+                const uploadResult = await uploadFileToDriveFolder(
+                  processResult.filePath || outputPath,
+                  downloadResult.fileName,
+                  destinationFolderId
+                );
+                
+                folderResults.nestedFilesProcessed++;
+                folderResults.folderStructure.files.push({
+                  name: item.name,
+                  id: item.id,
+                  processedFileId: uploadResult.fileId,
+                  processedFileLink: uploadResult.webViewLink,
+                  processed: true,
+                  watermarkRemoved: true
+                });
               }
-              
-              // Tạo đường dẫn output
-              const outputPdfName = `${path.basename(downloadResult.fileName, '.pdf')}_clean.pdf`;
-              const outputPath = path.join(outputDir, outputPdfName);
-              
-              // Gọi hàm thực tế để xử lý PDF
-              const processResult = await processPDF(
-                downloadResult.filePath,
-                outputPath,
-                watermarkConfig
-              );
-              
-              if (!processResult || !processResult.success) {
-                throw new Error(processResult?.error || 'Không thể xử lý watermark trên file PDF');
-              }
-              
-              console.log(`[Đệ quy ${currentDepth}] ✅ Đã xử lý watermark thành công cho file: ${item.name}`);
-              
-              // Upload file đã xử lý lên Drive
-              const uploadResult = await uploadFileToDriveFolder(
-                processResult.filePath || outputPath,
-                downloadResult.fileName,
-                destinationFolderId
-              );
-              
-              folderResults.nestedFilesProcessed++;
-              folderResults.folderStructure.files.push({
-                name: item.name,
-                id: item.id,
-                processedFileId: uploadResult.fileId,
-                processedFileLink: uploadResult.webViewLink,
-                processed: true,
-                watermarkRemoved: true
-              });
             } catch (watermarkError) {
               console.error(`[Đệ quy ${currentDepth}] ❌ Lỗi khi xử lý watermark: ${watermarkError.message}`);
               throw watermarkError;
