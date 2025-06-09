@@ -380,7 +380,7 @@ const YouTubePlaylistModal = ({ isOpen, playlistId, videoId, onClose, title }) =
       }}>
       <div 
         ref={modalRef} 
-        className="relative w-[98%] md:w-[95%] flex flex-col rounded-lg overflow-hidden shadow-2xl bg-black"
+        className="relative w-[80%] flex flex-col rounded-lg overflow-hidden shadow-2xl bg-black"
       >
         {/* Thanh tiêu đề */}
         <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-2 px-3 flex items-center justify-between">
