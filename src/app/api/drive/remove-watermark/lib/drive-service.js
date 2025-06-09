@@ -1093,7 +1093,70 @@ export async function processRecursiveFolder(folderIdOrLink, maxDepth = 5, curre
             console.log(`[Đệ quy ${currentDepth}] Đã tải xong file: ${item.name}, kích thước: ${downloadResult.size} bytes`);
           } catch (downloadError) {
             console.log(`[Đệ quy ${currentDepth}] ⚠️ Lỗi tải file ${item.name}: ${downloadError.message}`);
-            throw downloadError; // Ném lỗi để xử lý ở catch bên ngoài
+            
+            // Kiểm tra xem có phải lỗi "cannot be downloaded" không
+            if (downloadError.message.includes('cannot be downloaded') || 
+                downloadError.message.includes('cannotDownloadFile') ||
+                downloadError.message.includes('403')) {
+              console.log(`[Đệ quy ${currentDepth}] 🔄 Thử tải file bằng phương pháp chụp PDF...`);
+              
+              // Kiểm tra nếu là PDF theo tên file hoặc mimeType
+              if (item.mimeType === 'application/pdf' || item.name.toLowerCase().endsWith('.pdf')) {
+                console.log(`[Đệ quy ${currentDepth}] 📑 Sử dụng giải pháp xử lý file PDF bị chặn...`);
+                
+                // Tạo config cho xử lý watermark
+                const watermarkConfig = { ...DEFAULT_CONFIG };
+                
+                // Thêm hình nền nếu có
+                if (backgroundImage) {
+                  let backgroundImagePath = backgroundImage;
+                  
+                  if (!path.isAbsolute(backgroundImage) && 
+                      !backgroundImage.includes(':/') && 
+                      !backgroundImage.includes(':\\')) {
+                    backgroundImagePath = path.join(process.cwd(), backgroundImage);
+                  }
+                  
+                  const fileExists = fs.existsSync(backgroundImagePath);
+                  
+                  if (fileExists) {
+                    watermarkConfig.backgroundImage = backgroundImagePath;
+                    
+                    if (backgroundOpacity !== undefined) {
+                      watermarkConfig.backgroundOpacity = parseFloat(backgroundOpacity);
+                    }
+                  }
+                }
+                
+                // Sử dụng hàm processPDF với flag isBlocked=true
+                const outputPath = path.join(outputDir, `${path.basename(item.name, '.pdf')}_clean.pdf`);
+                const processResult = await processPDF(null, outputPath, watermarkConfig, true, item.id);
+                
+                if (processResult.success) {
+                  downloadResult = {
+                    success: true,
+                    filePath: processResult.filePath,
+                    fileName: item.name,
+                    contentType: 'application/pdf',
+                    outputDir: outputDir,
+                    size: fs.statSync(processResult.filePath).size,
+                    isImage: false,
+                    isPdf: true,
+                    originalSize: processResult.originalSize || 0,
+                    processedSize: processResult.processedSize || fs.statSync(processResult.filePath).size,
+                    processingTime: processResult.processingTime || 0,
+                    alreadyProcessed: true // Đánh dấu đã xử lý watermark
+                  };
+                  console.log(`[Đệ quy ${currentDepth}] ✅ Đã tải và xử lý thành công file ${item.name} bằng phương pháp chụp PDF`);
+                } else {
+                  throw new Error(`[Đệ quy ${currentDepth}] Không thể xử lý file PDF: ${processResult.error}`);
+                }
+              } else {
+                throw downloadError; // Nếu không phải PDF, ném lại lỗi để xử lý bên ngoài
+              }
+            } else {
+              throw downloadError; // Ném lỗi để xử lý ở catch bên ngoài
+            }
           }
           
           // Xử lý file PDF
@@ -1188,13 +1251,32 @@ export async function processRecursiveFolder(folderIdOrLink, maxDepth = 5, curre
           }
           // Các loại file khác
           else {
-            console.log(`[Đệ quy ${currentDepth}] Bỏ qua file không được hỗ trợ: ${item.name} (${downloadResult.contentType})`);
-            folderResults.folderStructure.files.push({
-              name: item.name,
-              id: item.id,
-              processed: false,
-              reason: `Loại file không được hỗ trợ: ${downloadResult.contentType}`
-            });
+            console.log(`[Đệ quy ${currentDepth}] Đang xử lý loại file không phải PDF/ảnh: ${item.name} (${downloadResult.contentType})`);
+            
+            try {
+              // Tải trực tiếp file lên thư mục đích mà không xử lý
+              const uploadResult = await uploadFileToDriveFolder(
+                downloadResult.filePath,
+                downloadResult.fileName,
+                destinationFolderId
+              );
+              
+              console.log(`[Đệ quy ${currentDepth}] ✅ Đã tải lên thành công file: ${downloadResult.fileName}`);
+              
+              folderResults.nestedFilesProcessed++;
+              folderResults.folderStructure.files.push({
+                name: item.name,
+                id: item.id,
+                processedFileId: uploadResult.fileId,
+                processedFileLink: uploadResult.webViewLink,
+                processed: true,
+                directUpload: true,
+                fileType: downloadResult.contentType
+              });
+            } catch (uploadError) {
+              console.error(`[Đệ quy ${currentDepth}] ❌ Lỗi khi tải lên file: ${downloadResult.fileName}`, uploadError);
+              throw new Error(`Không thể tải lên file: ${uploadError.message}`);
+            }
           }
         } catch (fileError) {
           console.error(`[Đệ quy ${currentDepth}] Lỗi xử lý file "${item.name}": ${fileError.message}`);

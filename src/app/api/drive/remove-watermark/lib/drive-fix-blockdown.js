@@ -119,16 +119,16 @@ export async function processPDF(inputPath, outputPath, config = DEFAULT_CONFIG,
       
       // Thêm xử lý timeout và retry
       let retryCount = 0;
-      const maxRetries = 2;
+      const maxRetries = 3; // Tăng số lần retry lên 3
       let lastError = null;
       
       while (retryCount <= maxRetries) {
         try {
-          console.log(`Thử tải PDF bị chặn lần ${retryCount + 1}...`);
+          console.log(`Thử tải PDF bị chặn lần ${retryCount + 1}/${maxRetries + 1}...`);
           
           // Thiết lập timeout cho toàn bộ quá trình
           const timeoutPromise = new Promise((_, reject) => {
-            setTimeout(() => reject(new Error('Quá thời gian xử lý (10 phút)')), 10 * 60 * 1000);
+            setTimeout(() => reject(new Error('Quá thời gian xử lý (15 phút)')), 15 * 60 * 1000); // Tăng timeout lên 15 phút
           });
           
           // Chạy quá trình tải với timeout
@@ -153,8 +153,10 @@ export async function processPDF(inputPath, outputPath, config = DEFAULT_CONFIG,
             throw downloadError;
           }
           
-          console.log(`⚠️ Lỗi khi tải PDF bị chặn: ${downloadError.message}. Thử lại sau 5 giây...`);
-          await new Promise(resolve => setTimeout(resolve, 5000));
+          // Tăng thời gian chờ giữa các lần thử
+          const delayTime = RETRY_DELAY * retryCount; // Tăng thời gian đợi theo số lần retry
+          console.log(`⚠️ Lỗi khi tải PDF bị chặn: ${downloadError.message}. Thử lại sau ${delayTime/1000} giây...`);
+          await new Promise(resolve => setTimeout(resolve, delayTime));
         }
       }
       
@@ -253,10 +255,11 @@ export async function processPDF(inputPath, outputPath, config = DEFAULT_CONFIG,
 }
 
 /**
- * Tải xuống file PDF bị chặn từ Google Drive và xử lý watermark
+ * Tải file PDF từ Google Drive bị chặn tải xuống
+ * Sử dụng puppeteer để mở PDF viewer và chụp lại các trang
  * @param {string} fileId - ID của file Google Drive
- * @param {string} fileName - Tên file
- * @param {string} tempDir - Thư mục tạm để lưu file
+ * @param {string} fileName - Tên file để lưu
+ * @param {string} tempDir - Thư mục tạm để lưu các file trung gian
  * @param {Object} watermarkConfig - Cấu hình xử lý watermark (tùy chọn)
  * @returns {Promise<{success: boolean, filePath: string, error: string}>}
  */
@@ -340,7 +343,7 @@ export async function downloadBlockedPDF(fileId, fileName, tempDir, watermarkCon
     // Khởi tạo trình duyệt với cấu hình nâng cao
     try {
       browser = await puppeteer.launch({
-        headless: false,
+        headless: false, // Hiển thị trình duyệt để dễ debug
         channel: "chrome",
         executablePath: chromePath,
         args: [
@@ -373,10 +376,10 @@ export async function downloadBlockedPDF(fileId, fileName, tempDir, watermarkCon
         ],
         defaultViewport: null,
         ignoreDefaultArgs: ["--enable-automation"],
-        // Tăng timeout lên 120s cho máy yếu
-        timeout: 120000,
+        // Tăng timeout lên 180s cho máy yếu
+        timeout: 180000, // 3 phút
         // Thêm slowMo để làm chậm puppeteer cho máy yếu
-        slowMo: 100,
+        slowMo: 50, // Giảm từ 100ms xuống 50ms để tăng tốc nhưng vẫn đảm bảo ổn định
       });
     } catch (browserError) {
       console.error(`Lỗi khởi tạo trình duyệt: ${browserError.message}`);
@@ -386,7 +389,7 @@ export async function downloadBlockedPDF(fileId, fileName, tempDir, watermarkCon
     // Tạo tab mới
     try {
       page = await browser.newPage();
-      await page.setDefaultNavigationTimeout(60000);
+      await page.setDefaultNavigationTimeout(120000); // 2 phút timeout cho mỗi lần navigation
     } catch (pageError) {
       console.error(`Lỗi tạo tab mới: ${pageError.message}`);
       throw new Error(`Không thể tạo tab trình duyệt: ${pageError.message}`);
@@ -428,7 +431,7 @@ export async function downloadBlockedPDF(fileId, fileName, tempDir, watermarkCon
       console.log(`🌐 Mở PDF viewer cho file: ${fileId}`);
       await page.goto(`https://drive.google.com/file/d/${fileId}/view`, {
         waitUntil: 'networkidle2',
-        timeout: 300000 // Tăng timeout cho trang để tải trọn vẹn
+        timeout: 300000 // Tăng timeout cho trang để tải trọn vẹn (5 phút)
       });
     } catch (navigationError) {
       console.error(`Lỗi mở file PDF từ Drive: ${navigationError.message}`);
