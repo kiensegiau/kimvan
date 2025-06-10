@@ -11,11 +11,16 @@ const nextConfig = {
   },
   webpack: (config, { isServer }) => {
     // Loại trừ các thư viện gây lỗi
-    config.module = {
-      ...config.module,
-      exprContextCritical: false,
-      unknownContextCritical: false
-    };
+    config.module.rules.push({
+      test: /\.(js|mjs|jsx|ts|tsx)$/,
+      include: /node_modules\/node-apiless-youtube-upload/,
+      use: 'null-loader',
+    });
+    
+    config.module.unknownContextCritical = false;
+    config.module.exprContextCritical = false;
+    config.module.unknownContextRegExp = /^(electron)$/;
+    config.module.unknownContextCritical = false;
     
     // Only apply this on the server build
     if (isServer) {
