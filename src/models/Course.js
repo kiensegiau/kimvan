@@ -27,6 +27,10 @@ const courseSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
+  originId: {
+    type: String,
+    trim: true
+  },
   originalData: {
     type: mongoose.Schema.Types.Mixed
   },
@@ -47,7 +51,10 @@ const courseSchema = new mongoose.Schema({
       processedAt: Date,         // Thời gian xử lý
       fileName: String,          // Tên file
       sheetIndex: Number,        // Index của sheet
-      rowIndex: Number           // Index của row
+      rowIndex: Number,          // Index của row
+      originId: String,          // Thêm trường originId cho processedDriveFiles
+      isFolder: Boolean,         // Thêm trường isFolder
+      folderInfo: mongoose.Schema.Types.Mixed  // Thông tin thêm cho thư mục
     }
   ]
 }, {

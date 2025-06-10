@@ -3,6 +3,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { ArrowRightIcon, AcademicCapIcon, UserCircleIcon, ClockIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import Link from 'next/link';
+import styles from './page.module.css';
 
 export default function Home() {
   const router = useRouter();
@@ -233,6 +236,75 @@ export default function Home() {
           }
         }
       `}</style>
+
+      <main className={styles.main}>
+        <div className={styles.description}>
+          <p>
+            Công cụ trích xuất dữ liệu từ Google Sheets
+          </p>
+          <div>
+            <a
+              href="https://github.com/yourusername/kimvan"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Image
+                src="/github.svg"
+                alt="GitHub Logo"
+                width={24}
+                height={24}
+                priority
+              />
+            </a>
+          </div>
+        </div>
+
+        <div className={styles.center}>
+          <h1 className={styles.title}>
+            Trích xuất <span className={styles.highlight}>Google Sheets</span>
+          </h1>
+        </div>
+
+        <div className={styles.grid}>
+          <Link href="/test-sheets" className={styles.card}>
+            <h2>
+              Mở Google Sheets <span>-&gt;</span>
+            </h2>
+            <p>Nhập liên kết Google Sheets để mở và xem trước.</p>
+          </Link>
+
+          <Link href="/guide" className={styles.card}>
+            <h2>
+              Hướng dẫn trích xuất <span>-&gt;</span>
+            </h2>
+            <p>Các phương pháp trích xuất HTML từ Google Sheets.</p>
+          </Link>
+
+          <a
+            href="/autoExtract.js"
+            download
+            className={styles.card}
+          >
+            <h2>
+              Tải script tự động <span>-&gt;</span>
+            </h2>
+            <p>Script tự động trích xuất HTML (hoạt động với Chrome cũ).</p>
+          </a>
+
+          <Link
+            href="https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/preview"
+            target="_blank"
+            className={styles.card}
+          >
+            <h2>
+              Thử với mẫu <span>-&gt;</span>
+            </h2>
+            <p>
+              Mở bảng tính mẫu để thử các công cụ trích xuất.
+            </p>
+          </Link>
+        </div>
+      </main>
     </div>
   );
 }

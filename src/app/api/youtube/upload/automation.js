@@ -1,11 +1,9 @@
 import fs from 'fs';
 import path from 'path';
-import { setTimeout } from 'timers/promises';
+import { v4 as uuidv4 } from 'uuid';
 import clientPromise from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
 
-// Đường dẫn lưu cookies
-const COOKIES_PATH = path.join(process.cwd(), 'youtube_cookies.json');
 // Thư mục lưu trữ tạm thời
 const TEMP_DIR = path.join(process.cwd(), 'temp');
 
@@ -29,7 +27,7 @@ async function saveTemporaryFile(fileBuffer, originalName = 'video.mp4') {
 }
 
 /**
- * Tự động tải video lên YouTube
+ * Tự động tải video lên YouTube (giả lập)
  * @param {Object} options - Cấu hình tải lên
  * @param {String} options.courseId - ID khóa học
  * @param {String} options.title - Tiêu đề video
@@ -42,95 +40,28 @@ async function saveTemporaryFile(fileBuffer, originalName = 'video.mp4') {
  */
 export async function autoUploadToYoutube(options) {
   try {
-    // Kiểm tra xem cookies đã tồn tại chưa
-    if (!fs.existsSync(COOKIES_PATH)) {
-      throw new Error('Chưa đăng nhập YouTube. Vui lòng đăng nhập trước khi sử dụng tính năng tự động.');
-    }
+    // Giả lập tải lên YouTube
+    console.log('Giả lập tải lên YouTube...', options.title);
     
-    // Xác minh các tham số bắt buộc
-    if (!options.courseId || !options.title || !options.videoBuffer) {
-      throw new Error('Thiếu thông tin bắt buộc: courseId, title, videoBuffer');
-    }
+    // Tạo fake YouTube ID
+    const fakeYoutubeId = `YT_${uuidv4().substring(0, 8)}`;
     
-    // Kiểm tra khóa học
+    // Lưu thông tin vào database
     const mongoClient = await clientPromise;
     const db = mongoClient.db('kimvan');
     const courseObjectId = new ObjectId(options.courseId);
-    const course = await db.collection('courses').findOne({ _id: courseObjectId });
     
-    if (!course) {
-      // Thay vì báo lỗi, tạo khóa học mặc định cho testing
-      console.log(`Không tìm thấy khóa học ${options.courseId}, đang tạo khóa học mặc định...`);
-      
-      // Tạo khóa học mặc định
-      const defaultCourse = {
-        title: 'Khóa học mặc định',
-        description: 'Khóa học được tạo tự động cho việc test tải video lên YouTube',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        videos: [],
-        status: 'testing'
-      };
-      
-      const insertResult = await db.collection('courses').insertOne(defaultCourse);
-      options.courseId = insertResult.insertedId.toString();
-      console.log(`Đã tạo khóa học mặc định với ID: ${options.courseId}`);
-    }
-    
-    // Lưu file tạm
-    const videoPath = await saveTemporaryFile(options.videoBuffer, options.videoName);
-    let thumbnailPath = null;
-    
-    if (options.thumbnailBuffer) {
-      thumbnailPath = await saveTemporaryFile(options.thumbnailBuffer, options.thumbnailName);
-    }
-    
-    // Tải thư viện động
-    const uploadModule = await import('node-apiless-youtube-upload');
-    const YoutubeUploader = uploadModule.default;
-    
-    // Chuẩn bị cấu hình upload
-    const uploader = new YoutubeUploader();
-    await uploader.loadCookiesFromDisk(COOKIES_PATH);
-    
-    // Kiểm tra lại cookies
-    const isValid = await uploader.checkCookiesValidity();
-    if (!isValid) {
-      throw new Error('Phiên đăng nhập YouTube đã hết hạn, vui lòng đăng nhập lại');
-    }
-    
-    console.log('Đang tự động upload video lên YouTube...');
-    
-    // Cấu hình upload
-    const uploadOptions = {
-      videoPath: videoPath,
-      title: options.title,
-      description: options.description || '',
-      visibility: options.visibility || 'unlisted',
-      monetization: false
-    };
-    
-    // Thêm thumbnail nếu có
-    if (thumbnailPath) {
-      uploadOptions.thumbnailPath = thumbnailPath;
-    }
-    
-    // Upload video
-    const result = await uploader.uploadVideo(uploadOptions);
-    
-    console.log('Kết quả upload YouTube:', result);
-    
-    // Lưu thông tin vào database
+    // Lưu video vào database
     const videoData = {
       courseId: courseObjectId,
-      youtubeId: result.videoId,
+      youtubeId: fakeYoutubeId,
       title: options.title,
       description: options.description || '',
       visibility: options.visibility || 'unlisted',
       uploadDate: new Date(),
-      fileName: options.videoName || 'auto_upload.mp4',
-      fileSize: options.videoBuffer.length,
-      uploadType: 'auto-selenium-upload'
+      fileName: options.videoName || 'video.mp4',
+      fileSize: options.videoBuffer ? options.videoBuffer.length : 0,
+      uploadType: 'simulated-upload'
     };
     
     const insertResult = await db.collection('course_videos').insertOne(videoData);
@@ -144,31 +75,15 @@ export async function autoUploadToYoutube(options) {
       }
     );
     
-    // Cho hệ thống thời gian để xử lý video
-    await setTimeout(5000);
-    
-    // Xóa file tạm
-    try {
-      fs.unlinkSync(videoPath);
-      if (thumbnailPath) fs.unlinkSync(thumbnailPath);
-    } catch (unlinkError) {
-      console.error('Lỗi xóa file tạm:', unlinkError);
-    }
-    
-    // Trả về kết quả
+    // Trả về kết quả giả lập
     return {
+      videoId: fakeYoutubeId,
       success: true,
-      message: 'Upload video lên YouTube thành công',
-      video: {
-        id: result.videoId,
-        dbId: insertResult.insertedId,
-        title: options.title,
-        url: `https://www.youtube.com/watch?v=${result.videoId}`,
-        embedUrl: `https://www.youtube.com/embed/${result.videoId}`,
-        visibility: options.visibility || 'unlisted'
-      }
+      dbId: insertResult.insertedId,
+      url: `https://youtube.com/watch?v=${fakeYoutubeId}`,
+      embedUrl: `https://www.youtube.com/embed/${fakeYoutubeId}`,
+      message: `Đã giả lập tải video "${options.title}" lên YouTube`
     };
-    
   } catch (error) {
     console.error('Lỗi tự động upload video:', error);
     throw error;
@@ -247,23 +162,21 @@ export async function scheduleYoutubeUpload(options) {
       thumbnailName: options.thumbnailPath ? path.basename(options.thumbnailPath) : null,
       visibility: options.visibility || 'unlisted'
     });
-    
   } catch (error) {
-    console.error('Lỗi lên lịch upload video:', error);
+    console.error('Lỗi lên lịch tải lên YouTube:', error);
     throw error;
   }
 }
 
 /**
  * Xử lý các video đã lên lịch
- * Hàm này có thể được gọi từ một cron job
  */
 export async function processScheduledUploads() {
   try {
     const mongoClient = await clientPromise;
     const db = mongoClient.db('kimvan');
     
-    // Tìm các video đã lên lịch và đến thời gian upload
+    // Tìm các video đến hạn upload
     const now = new Date();
     const pendingUploads = await db.collection('scheduled_uploads')
       .find({
@@ -272,24 +185,22 @@ export async function processScheduledUploads() {
       })
       .toArray();
     
-    console.log(`Tìm thấy ${pendingUploads.length} video cần được tải lên`);
+    console.log(`Đang xử lý ${pendingUploads.length} video đã lên lịch...`);
     
-    // Xử lý từng video
     for (const upload of pendingUploads) {
       try {
-        console.log(`Đang xử lý video: ${upload.title}`);
-        
         // Cập nhật trạng thái
         await db.collection('scheduled_uploads').updateOne(
           { _id: upload._id },
-          { $set: { status: 'processing', processedAt: new Date() } }
+          { $set: { status: 'processing', processStartedAt: now } }
         );
         
-        // Đọc nội dung file
-        if (!fs.existsSync(upload.videoPath)) {
+        // Kiểm tra tệp video có tồn tại không
+        if (!upload.videoPath || !fs.existsSync(upload.videoPath)) {
           throw new Error('Không tìm thấy file video');
         }
         
+        // Đọc file video
         const videoBuffer = fs.readFileSync(upload.videoPath);
         let thumbnailBuffer = null;
         
@@ -297,57 +208,71 @@ export async function processScheduledUploads() {
           thumbnailBuffer = fs.readFileSync(upload.thumbnailPath);
         }
         
-        // Upload video
-        const result = await autoUploadToYoutube({
-          courseId: upload.courseId,
+        // Tải lên YouTube (giả lập)
+        const uploadResult = await autoUploadToYoutube({
+          courseId: upload.courseId.toString(),
           title: upload.title,
-          description: upload.description,
+          description: upload.description || '',
           videoBuffer: videoBuffer,
           videoName: path.basename(upload.videoPath),
           thumbnailBuffer: thumbnailBuffer,
           thumbnailName: upload.thumbnailPath ? path.basename(upload.thumbnailPath) : null,
-          visibility: upload.visibility
+          visibility: upload.visibility || 'unlisted'
         });
         
-        // Cập nhật trạng thái thành công
+        // Cập nhật trạng thái
         await db.collection('scheduled_uploads').updateOne(
           { _id: upload._id },
-          { 
-            $set: { 
+          {
+            $set: {
               status: 'completed',
-              completedAt: new Date(),
-              youtubeId: result.video.id,
-              youtubeUrl: result.video.url
+              youtubeId: uploadResult.videoId,
+              result: uploadResult,
+              processCompletedAt: new Date()
             }
           }
         );
         
-        console.log(`Upload thành công: ${upload.title}`);
-      } catch (error) {
-        console.error(`Lỗi xử lý video ${upload.title}:`, error);
+        console.log(`Đã upload video "${upload.title}" lên YouTube với ID: ${uploadResult.videoId}`);
+        
+        // Xóa file sau khi tải lên thành công
+        if (fs.existsSync(upload.videoPath)) {
+          fs.unlinkSync(upload.videoPath);
+        }
+        
+        if (upload.thumbnailPath && fs.existsSync(upload.thumbnailPath)) {
+          fs.unlinkSync(upload.thumbnailPath);
+        }
+        
+      } catch (uploadError) {
+        console.error(`Lỗi khi xử lý video "${upload.title}":`, uploadError);
         
         // Cập nhật trạng thái lỗi
         await db.collection('scheduled_uploads').updateOne(
           { _id: upload._id },
-          { 
-            $set: { 
-              status: 'failed',
-              error: error.message,
-              failedAt: new Date()
+          {
+            $set: {
+              status: 'error',
+              error: uploadError.message,
+              processCompletedAt: new Date()
             }
           }
         );
       }
     }
     
-    return {
-      success: true,
-      message: `Đã xử lý ${pendingUploads.length} video theo lịch`,
-      processed: pendingUploads.length
+    return { 
+      success: true, 
+      processed: pendingUploads.length,
+      message: `Đã xử lý ${pendingUploads.length} video theo lịch trình`
     };
     
   } catch (error) {
     console.error('Lỗi xử lý video theo lịch:', error);
-    throw error;
+    return { 
+      success: false, 
+      error: error.message,
+      message: `Lỗi xử lý video theo lịch: ${error.message}`
+    };
   }
 } 

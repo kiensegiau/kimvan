@@ -60,6 +60,17 @@ export async function verifyServerAuthToken(token) {
     console.log('👤 verifyServerAuthToken: Đang lấy thông tin người dùng...');
     const userRecord = await firebaseAdmin.auth().getUser(uid);
     
+    // DEBUG: Chi tiết về user với UID cụ thể
+    if (uid === 'WZuBYIhzJXMTETTmlJebfPcXdtl2') {
+      console.log('🔎 DEBUG USER - Firebase Auth record:', JSON.stringify({
+        uid: userRecord.uid,
+        email: userRecord.email,
+        customClaims: userRecord.customClaims || {}
+      }));
+      console.log('🔎 DEBUG USER - Role từ customClaims:', userRecord.customClaims?.role);
+      console.log('🔎 DEBUG USER - Decoded token:', JSON.stringify(decodedToken));
+    }
+    
     const user = {
       uid: userRecord.uid,
       email: userRecord.email,
@@ -70,6 +81,11 @@ export async function verifyServerAuthToken(token) {
       // Thêm thông tin về thời gian hết hạn của token
       tokenExpiration: decodedToken.exp * 1000, // Chuyển từ giây sang mili giây
     };
+    
+    // DEBUG: Log thông tin cuối cùng về user
+    if (uid === 'WZuBYIhzJXMTETTmlJebfPcXdtl2') {
+      console.log('🔎 DEBUG USER - Final user object:', JSON.stringify(user));
+    }
     
     console.log(`✅ verifyServerAuthToken: Xác thực thành công, token hết hạn vào: ${new Date(user.tokenExpiration).toLocaleString()}`);
     

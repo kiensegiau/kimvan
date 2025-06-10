@@ -772,19 +772,16 @@ export async function processImage(inputPath, outputPath, config = DEFAULT_CONFI
           }
           
           try {
-            // Tăng độ sắc nét mạnh hơn
-            const sharpenAmount = config.sharpenAmount || 1.8;  // Tăng từ 1.5 lên 1.8 để tăng độ nét tối đa
-            processedImage = processedImage.sharpen({
-              sigma: sharpenAmount,
-              m1: 0.6,  // Tăng từ 0.5 lên 0.6
-              m2: 0.8,  // Tăng từ 0.7 lên 0.8
-              x1: 2,
-              y2: 7,    // Tăng từ 6 lên 7
-              y3: 7     // Tăng từ 6 lên 7
-            });
-            console.log(`Đã áp dụng tăng độ nét nâng cao (${sharpenAmount})`);
-          } catch (sharpenError) {
-            console.warn(`Bỏ qua bước sharpen nâng cao do lỗi: ${sharpenError.message}`);
+            // Thay thế sharpen bằng tăng độ tương phản và sắc nét
+            processedImage = processedImage.linear(1.3, -0.15);
+            processedImage = processedImage.recomb([
+              [1.1, 0, 0],
+              [0, 1.1, 0],
+              [0, 0, 1.1]
+            ]);
+            console.log(`Đã thay thế sharpen bằng phương pháp thay thế an toàn hơn`);
+          } catch (alternativeError) {
+            console.warn(`Bỏ qua bước xử lý thay thế sharpen do lỗi: ${alternativeError.message}`);
           }
           
           // Bỏ qua bước cân bằng màu nếu cần giữ màu sắc
@@ -815,12 +812,13 @@ export async function processImage(inputPath, outputPath, config = DEFAULT_CONFI
               try {
                 console.log(`Áp dụng xử lý giữ màu sắc cho file bị khóa...`);
                 
-                // Tăng độ sắc nét để làm rõ nội dung
-                processedImage = processedImage.sharpen({
-                  sigma: 1.8,  // Tăng từ 1.5 lên 1.8
-                  m1: 0.6,     // Tăng từ 0.5 lên 0.6
-                  m2: 0.8      // Tăng từ 0.7 lên 0.8
-                });
+                // Tăng độ sắc nét để làm rõ nội dung - sử dụng phương pháp thay thế an toàn
+                processedImage = processedImage.linear(1.3, -0.1);
+                processedImage = processedImage.recomb([
+                  [1.15, 0, 0],
+                  [0, 1.15, 0],
+                  [0, 0, 1.15]
+                ]);
                 
                 // Tăng độ tương phản nhẹ để làm rõ văn bản
                 processedImage = processedImage.linear(
@@ -853,12 +851,13 @@ export async function processImage(inputPath, outputPath, config = DEFAULT_CONFI
           }
           
           try {
-            // Tăng độ sắc nét cho chế độ cơ bản
-            processedImage = processedImage.sharpen({ 
-              sigma: 1.5,  // Tăng từ 1.2 lên 1.5
-              m1: 0.5,     // Tăng từ 0.4 lên 0.5
-              m2: 0.7      // Tăng từ 0.6 lên 0.7
-            });
+            // Thay thế sharpen bằng phương pháp cải thiện hình ảnh thay thế
+            processedImage = processedImage.linear(1.25, -0.08);
+            processedImage = processedImage.recomb([
+              [1.1, 0, 0],
+              [0, 1.1, 0],
+              [0, 0, 1.1]
+            ]);
             console.log(`Đã áp dụng tăng độ nét cơ bản`);
           } catch (sharpenError) {
             console.warn(`Bỏ qua bước sharpen do lỗi: ${sharpenError.message}`);

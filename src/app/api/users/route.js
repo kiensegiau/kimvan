@@ -82,6 +82,14 @@ export async function GET(request) {
     //   }, { status: 403 });
     // }
     
+    // Lấy thông tin CTV từ query string (nếu có)
+    const url = new URL(request.url);
+    const ctvEmail = url.searchParams.get('ctvEmail');
+    
+    if (ctvEmail) {
+      console.log('🔍 API Users GET - Lọc theo CTV Email:', ctvEmail);
+    }
+    
     // Kết nối đến MongoDB
     const client = await clientPromise;
     const db = client.db(process.env.MONGODB_DB || 'kimvan');
@@ -103,7 +111,8 @@ export async function GET(request) {
         id: firebaseUser.uid,
         email: firebaseUser.email,
         displayName: firebaseUser.displayName || '',
-        phoneNumber: firebaseUser.phoneNumber || '',
+        phoneNumber: mongoUser.phoneNumber || firebaseUser.phoneNumber || '',
+        createdBy: mongoUser.createdBy || mongoUser.phoneNumber || '',  // Lấy thông tin người tạo
         photoURL: firebaseUser.photoURL || '',
         emailVerified: firebaseUser.emailVerified,
         disabled: firebaseUser.disabled,
@@ -117,6 +126,14 @@ export async function GET(request) {
         ...mongoUser
       };
     });
+    
+    // Debug các giá trị phoneNumber và createdBy
+    const phoneInfo = combinedUsers.map(u => ({
+      email: u.email, 
+      phoneNumber: u.phoneNumber || 'N/A',
+      createdBy: u.createdBy || 'N/A'
+    }));
+    console.log('🔍 Users phoneNumber/createdBy info:', phoneInfo);
     
     return NextResponse.json({ 
       success: true,
@@ -144,7 +161,15 @@ export async function POST(request) {
     
     // Lấy dữ liệu từ request
     const body = await request.json();
-    const { email, password, accountType, trialEndsAt, canViewAllCourses } = body;
+    const { email, password, accountType, trialEndsAt, canViewAllCourses, phoneNumber } = body;
+    
+    // Log thông tin để debug
+    console.log('🔧 API Users POST - Dữ liệu nhận được:', { 
+      email, 
+      accountType, 
+      phoneNumber,
+      canViewAllCourses
+    });
     
     // Kiểm tra các trường bắt buộc
     if (!email || !password) {
@@ -183,7 +208,7 @@ export async function POST(request) {
         firebaseId: userRecord.uid,
         email,
         displayName: null,
-        phoneNumber: null,
+        phoneNumber: phoneNumber || null,  // Lưu email của CTV vào trường phoneNumber
         role: 'user',
         status: 'active',
         emailVerified: false,
@@ -192,17 +217,23 @@ export async function POST(request) {
         trialEndsAt: trialEndsAt ? new Date(trialEndsAt) : null,
         canViewAllCourses: userCanViewAllCourses, // Đảm bảo tài khoản dùng thử luôn có quyền xem tất cả khóa học
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
+        createdBy: phoneNumber || null  // Thêm trường này để lưu email của CTV tạo ra user
+      });
+      
+      console.log('✅ API Users POST - Đã tạo người dùng:', {
+        id: userRecord.uid,
+        email,
+        phoneNumber: phoneNumber || null
       });
       
       return NextResponse.json({ 
         success: true,
         data: { id: userRecord.uid }
       });
-    } catch (error) {
-      console.error('Firebase error:', error);
-      // Xử lý lỗi Firebase Auth
-      const { message, status } = handleFirebaseError(error);
+    } catch (firebaseError) {
+      const { message, status } = handleFirebaseError(firebaseError);
+      
       return NextResponse.json({ 
         success: false, 
         error: message 

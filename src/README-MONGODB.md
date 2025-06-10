@@ -1,47 +1,42 @@
 # Tối ưu hóa kết nối MongoDB trong ứng dụng Next.js
 
 ## Vấn đề
-Trong quá trình phát triển và vận hành API, chúng ta gặp phải hiện tượng *"Kết nối MongoDB thành công"* xuất hiện nhiều lần trong log hệ thống. Nguyên nhân là do mỗi lần gọi API, ứng dụng lại tạo một kết nối mới đến MongoDB, dẫn đến:
+Trong quá trình phát triển và vận hành API, chúng ta gặp phải hiện tượng *"Kết nối MongoDB thành công"* xuất hiện nhiều lần trong log hệ thống và quá nhiều kết nối được tạo (hơn 500). Nguyên nhân là do mỗi lần gọi API, ứng dụng lại tạo một kết nối mới đến MongoDB, dẫn đến:
 
 1. **Lãng phí tài nguyên**: Mỗi kết nối sẽ tiêu tốn bộ nhớ và CPU
 2. **Hiệu suất kém**: Phải chờ thiết lập kết nối mới cho từng request
 3. **Rủi ro quá tải**: Có thể vượt quá giới hạn kết nối của MongoDB (mặc định là 100 kết nối)
 
-## Giải pháp
+## Giải pháp Mới
 
-Áp dụng các kỹ thuật tối ưu kết nối sau:
+Triển khai mô hình singleton thực sự cho kết nối MongoDB:
 
-### 1. Tối ưu hóa kết nối Native MongoDB
-- Cải tiến file `src/lib/mongodb.js`
-- Thực hiện caching kết nối trong biến global
-- Thêm cờ trạng thái kiểm soát quá trình kết nối
-- Tránh log không cần thiết cho mỗi lần kết nối
+### 1. Hợp nhất các phương thức kết nối 
+- Đã hợp nhất các file `src/lib/mongodb.js` và `src/lib/mongodb-connection.js`
+- Triển khai cache kết nối ở cấp độ module với theo dõi trạng thái chi tiết
+- Sử dụng cơ chế khóa để đảm bảo không có nhiều kết nối được tạo đồng thời
 
-### 2. Tạo kết nối Mongoose được chia sẻ toàn ứng dụng
-- Tạo file `src/lib/mongoose.js` mới
-- Cung cấp hàm `dbConnect()` sử dụng caching và theo dõi trạng thái
-- Đảm bảo chỉ một kết nối Mongoose cho toàn ứng dụng
+### 2. Tối ưu hóa cấu hình kết nối
+- Thiết lập `maxPoolSize` và `minPoolSize` phù hợp
+- Thêm tham số `maxIdleTimeMS` để đóng kết nối không sử dụng
+- Xử lý đóng kết nối khi ứng dụng tắt
 
-### 3. Cập nhật các API Route
-- Thay thế các hàm kết nối tự tạo (`connectDB`) bằng hàm `dbConnect()` mới
-- Đảm bảo nhất quán trong toàn hệ thống
+### 3. Giám sát kết nối
+- Thêm API endpoint `/api/health-check/mongodb` để theo dõi số lượng kết nối
+- Cung cấp API `/api/health-check/mongodb-reset` để reset kết nối trong trường hợp khẩn cấp
+- Tính năng đếm số lần sử dụng kết nối từ cache
 
-## Lợi ích
-- **Giảm tài nguyên sử dụng**: Dùng lại kết nối sẵn có
-- **Tăng hiệu năng API**: Không phải chờ thiết lập kết nối mới
-- **Đảm bảo ổn định**: Không vượt quá giới hạn kết nối khi lưu lượng tăng cao
-- **Dễ bảo trì**: Mã nguồn đồng nhất, dễ quản lý
+## Cách sử dụng API
 
-## Cách sử dụng
 ```javascript
 // Import hàm kết nối
-import dbConnect from '@/lib/mongoose';
+import { connectDB } from '@/lib/mongodb';
 
 // Trong API Route handler:
 export async function GET(request) {
   try {
-    // Kết nối đến MongoDB - tự động sử dụng kết nối cache
-    await dbConnect();
+    // Kết nối đến MongoDB - sử dụng kết nối được cache
+    await connectDB();
     
     // Thực hiện truy vấn với Mongoose models
     const data = await Model.find();
@@ -53,5 +48,29 @@ export async function GET(request) {
 }
 ```
 
-## Theo dõi hiệu năng
-Sau khi triển khai cải tiến, không còn hiện tượng lặp lại nhiều dòng *"Kết nối MongoDB thành công"* trong log hệ thống nữa, đồng thời giảm thời gian phản hồi của API và giảm tải tài nguyên server. 
+## Theo dõi kết nối
+
+Để kiểm tra số lượng kết nối hiện tại:
+
+```
+GET /api/health-check/mongodb
+```
+
+Để reset kết nối trong trường hợp khẩn cấp:
+
+```
+POST /api/health-check/mongodb-reset
+{
+  "admin_key": "YOUR_ADMIN_SECRET_KEY"
+}
+```
+
+## Cấu hình trong .env
+
+Thêm biến môi trường sau để sử dụng API reset:
+
+```
+# MongoDB
+MONGODB_URI=mongodb://username:password@host:port/database
+ADMIN_SECRET_KEY=your_secret_key_here
+``` 

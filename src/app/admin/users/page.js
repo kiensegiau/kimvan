@@ -1149,16 +1149,17 @@ export default function UsersPage() {
                 {/* Email - chỉ hiển thị khi thêm mới */}
                 {!currentUser.id && (
                   <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                    <label htmlFor="user_email_field" className="block text-sm font-medium text-gray-700">
                       Email <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="email"
-                      id="email"
+                      id="user_email_field"
+                      name="user_email_field"
                       value={currentUser.email || ''}
                       onChange={(e) => setCurrentUser({...currentUser, email: e.target.value})}
                       required
-                      autoComplete="off"
+                      autoComplete="new-password"
                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm text-gray-900"
                     />
                   </div>
@@ -1167,16 +1168,17 @@ export default function UsersPage() {
                 {/* Mật khẩu - chỉ hiển thị khi thêm mới */}
                 {!currentUser.id && (
                   <div>
-                    <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                    <label htmlFor="user_pwd_field" className="block text-sm font-medium text-gray-700">
                       Mật khẩu <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="password"
-                      id="password"
+                      id="user_pwd_field"
+                      name="user_pwd_field"
                       value={currentUser.password || ''}
                       onChange={(e) => setCurrentUser({...currentUser, password: e.target.value})}
                       required
-                      autoComplete="off"
+                      autoComplete="new-password"
                       minLength={6}
                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm text-gray-900"
                     />
@@ -1439,16 +1441,17 @@ export default function UsersPage() {
                 
                 {/* Mật khẩu mới */}
                 <div>
-                  <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="new_pwd_field" className="block text-sm font-medium text-gray-700">
                     Mật khẩu mới <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="password"
-                    id="newPassword"
+                    id="new_pwd_field"
+                    name="new_pwd_field"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     required
-                    autoComplete="off"
+                    autoComplete="new-password"
                     minLength={6}
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm text-gray-900"
                   />

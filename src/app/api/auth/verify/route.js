@@ -1,5 +1,68 @@
 import { NextResponse } from 'next/server';
 import { verifyServerAuthToken } from '@/utils/server-auth';
+import { connectDB } from '@/lib/mongodb';
+import mongoose from 'mongoose';
+
+// Hàm chuyển đổi mã vai trò thành tên đầy đủ
+function getRoleDisplayName(role) {
+  const roleMap = {
+    'admin': 'Quản trị viên',
+    'user': 'Người dùng',
+    'ctv': 'Công tác viên',
+    'staff': 'Nhân viên',
+    'instructor': 'Giảng viên',
+    'student': 'Học viên',
+    'guest': 'Khách'
+  };
+  
+  return roleMap[role] || role;
+}
+
+// Hàm lấy thông tin chi tiết người dùng từ MongoDB
+async function getUserDetails(uid) {
+  try {
+    await connectDB();
+    const db = mongoose.connection.db;
+    const userCollection = db.collection('users');
+    return await userCollection.findOne({ firebaseId: uid });
+  } catch (error) {
+    console.error('❌ Lỗi khi lấy thông tin từ MongoDB:', error);
+    return null;
+  }
+}
+
+// Hàm kết hợp thông tin người dùng từ Firebase và MongoDB
+async function enrichUserData(firebaseUser) {
+  try {
+    // Lấy thông tin user từ MongoDB
+    const userDetails = await getUserDetails(firebaseUser.uid);
+    console.log('🔍 API verify: Thông tin từ MongoDB:', userDetails ? 'Tìm thấy' : 'Không tìm thấy');
+    
+    // Lấy vai trò từ DB nếu có, ngược lại sử dụng từ token
+    const userRole = userDetails?.role || firebaseUser.role || 'user';
+    
+    // Chuyển đổi mã vai trò thành tên đầy đủ
+    const roleDisplayName = getRoleDisplayName(userRole);
+    
+    // Kết hợp thông tin từ Firebase và MongoDB
+    return {
+      ...firebaseUser,
+      // Ưu tiên thông tin từ MongoDB
+      role: userRole,
+      roleDisplayName: roleDisplayName,
+      // Thêm các thông tin từ MongoDB nếu có
+      canViewAllCourses: userDetails?.canViewAllCourses || false,
+      additionalInfo: userDetails?.additionalInfo || {},
+      enrollments: userDetails?.enrollments || [],
+      // Thêm thông tin khác từ MongoDB nếu có
+      phoneNumber: userDetails?.phoneNumber || null
+    };
+  } catch (error) {
+    console.error('❌ API verify: Lỗi khi làm giàu dữ liệu từ MongoDB:', error);
+    // Trả về thông tin cơ bản nếu có lỗi
+    return firebaseUser;
+  }
+}
 
 /**
  * API route để xác thực token
@@ -21,9 +84,9 @@ export async function POST(request) {
 
     console.log('🔍 API verify: Đang xác thực token...');
     // Xác thực token với Firebase Admin
-    const user = await verifyServerAuthToken(token);
+    const firebaseUser = await verifyServerAuthToken(token);
 
-    if (!user) {
+    if (!firebaseUser) {
       console.log('❌ API verify: Token không hợp lệ hoặc đã hết hạn');
       return NextResponse.json(
         { valid: false, error: 'Token không hợp lệ hoặc đã hết hạn' },
@@ -31,19 +94,14 @@ export async function POST(request) {
       );
     }
 
-    console.log('✅ API verify: Token hợp lệ, trả về thông tin người dùng');
-    // Trả về thông tin người dùng nếu token hợp lệ
+    console.log('✅ API verify: Token hợp lệ, lấy thông tin người dùng đầy đủ');
+    // Lấy thông tin người dùng đầy đủ kết hợp từ MongoDB
+    const enrichedUser = await enrichUserData(firebaseUser);
+    
+    // Trả về thông tin người dùng đầy đủ
     return NextResponse.json({
       valid: true,
-      user: {
-        uid: user.uid,
-        email: user.email,
-        emailVerified: user.emailVerified,
-        displayName: user.displayName,
-        photoURL: user.photoURL,
-        role: user.role || 'user',
-        tokenExpiration: user.tokenExpiration || null,
-      }
+      user: enrichedUser
     });
 
   } catch (error) {
@@ -75,9 +133,9 @@ export async function GET(request) {
 
     console.log('🔍 API verify GET: Đang xác thực token từ cookie...');
     // Xác thực token với Firebase Admin
-    const user = await verifyServerAuthToken(token);
+    const firebaseUser = await verifyServerAuthToken(token);
 
-    if (!user) {
+    if (!firebaseUser) {
       console.log('❌ API verify GET: Token không hợp lệ hoặc đã hết hạn');
       return NextResponse.json(
         { authenticated: false, error: 'Token không hợp lệ hoặc đã hết hạn' },
@@ -85,19 +143,14 @@ export async function GET(request) {
       );
     }
 
-    console.log('✅ API verify GET: Token hợp lệ, trả về thông tin người dùng');
-    // Trả về thông tin người dùng nếu token hợp lệ
+    console.log('✅ API verify GET: Token hợp lệ, lấy thông tin người dùng đầy đủ');
+    // Lấy thông tin người dùng đầy đủ kết hợp từ MongoDB
+    const enrichedUser = await enrichUserData(firebaseUser);
+    
+    // Trả về thông tin người dùng đầy đủ
     return NextResponse.json({
       authenticated: true,
-      user: {
-        uid: user.uid,
-        email: user.email,
-        emailVerified: user.emailVerified,
-        displayName: user.displayName,
-        photoURL: user.photoURL,
-        role: user.role || 'user',
-        tokenExpiration: user.tokenExpiration || null,
-      }
+      user: enrichedUser
     });
 
   } catch (error) {

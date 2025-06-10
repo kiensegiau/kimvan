@@ -30,7 +30,7 @@ export function createConvertWorker(gsPath, pdfPath, pngPath, page, numPages, dp
           page,
           numPages,
           dpi,
-          connectToDB: false // Thêm flag không kết nối đến DB
+          connectToDB: false // Đảm bảo luôn tắt kết nối DB trong worker
         }
       });
       
@@ -131,7 +131,7 @@ export function createProcessWorker(pngPath, page, numPages, config) {
           page,
           numPages,
           config,
-          connectToDB: false // Thêm flag không kết nối đến DB
+          connectToDB: false // Luôn tắt kết nối DB trong worker để tránh quá nhiều kết nối
         }
       });
       
@@ -202,20 +202,17 @@ export function createProcessWorker(pngPath, page, numPages, config) {
                 page,
                 index: page - 1,
                 processedPngPath,
-                warning: `Sử dụng file gốc do worker exit với mã lỗi ${code}`
+                warning: `Sử dụng file gốc do worker kết thúc với mã lỗi ${code}`
               });
               return;
             }
           } catch (copyError) {
-            console.error(`Không thể sao chép file gốc từ worker exit: ${copyError.message}`);
+            console.error(`Không thể sao chép file gốc khi worker exit: ${copyError.message}`);
           }
-          
-          // Nếu không thể sao chép, reject với lỗi
-          reject(new Error(`Worker kết thúc với mã lỗi ${code}`));
         }
       });
-    } catch (workerError) {
-      reject(new Error(`Không thể tạo worker xử lý ảnh: ${workerError.message}`));
+    } catch (error) {
+      reject(error);
     }
   });
 }
@@ -431,15 +428,23 @@ export async function processPage(data) {
           try {
             // Áp dụng từng bước xử lý trong try-catch riêng biệt
             try {
-              processedImage = processedImage.gamma(config.gamma, { failOnError: false });
-            } catch (gammaError) {
-              console.warn(`Không thể áp dụng gamma: ${gammaError.message}`);
+              // Thay thế gamma bằng điều chỉnh tương phản để có hiệu ứng tương tự
+              processedImage = processedImage.linear(1.2, -0.1);
+              console.log(`Đã thay thế gamma bằng điều chỉnh tương phản`);
+            } catch (contrastError) {
+              console.warn(`Không thể áp dụng thay thế gamma: ${contrastError.message}`);
             }
             
             try {
-              processedImage = processedImage.sharpen(config.sharpening, { failOnError: false });
-            } catch (sharpenError) {
-              console.warn(`Không thể áp dụng sharpen: ${sharpenError.message}`);
+              // Thay thế sharpen bằng phương pháp đơn giản hơn
+              processedImage = processedImage.recomb([
+                [1.1, 0, 0],
+                [0, 1.1, 0],
+                [0, 0, 1.1]
+              ]);
+              console.log(`Đã thay thế sharpen bằng bộ lọc recomb`);
+            } catch (recombError) {
+              console.warn(`Không thể áp dụng thay thế sharpen: ${recombError.message}`);
             }
             
             try {

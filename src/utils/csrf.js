@@ -19,8 +19,7 @@ export function generateCsrfToken() {
  * @param {number} maxAge - Thời gian sống của cookie (mặc định 1 giờ)
  */
 export async function setCsrfCookie(token, maxAge = 3600) {
-  const cookieStore = await cookies();
-  await cookieStore.set(CSRF_COOKIE_NAME, token, {
+  await cookies().set(CSRF_COOKIE_NAME, token, {
     path: '/',
     maxAge,
     httpOnly: true,
@@ -34,8 +33,7 @@ export async function setCsrfCookie(token, maxAge = 3600) {
  * @returns {string|null} CSRF token hoặc null nếu không tìm thấy
  */
 export async function getCsrfToken() {
-  const cookieStore = await cookies();
-  return (await cookieStore.get(CSRF_COOKIE_NAME))?.value || null;
+  return (await cookies().get(CSRF_COOKIE_NAME))?.value || null;
 }
 
 /**

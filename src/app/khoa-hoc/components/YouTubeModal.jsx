@@ -193,7 +193,7 @@ const YouTubeModal = ({ isOpen, videoId, onClose }) => {
       }}>
       <div 
         ref={modalRef} 
-        className="relative w-[90%] md:w-[80%] rounded-lg overflow-hidden shadow-2xl"
+        className="relative w-[80%] rounded-lg overflow-hidden shadow-2xl"
         style={{
           aspectRatio: '16/9'
         }}

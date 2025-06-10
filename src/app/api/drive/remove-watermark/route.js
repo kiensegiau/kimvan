@@ -27,7 +27,7 @@ import { google } from 'googleapis';
 import { ObjectId } from 'mongodb';
 import { cookies } from 'next/headers';
 import { cookieConfig } from '@/config/env-config';
-import { getMongoClient } from '@/lib/mongodb-connection';
+import { getMongoClient } from '@/lib/mongodb';
 
 // Import các module đã tách
 import { API_TOKEN, DEFAULT_CONFIG } from './lib/config.js';
@@ -42,7 +42,8 @@ import {
   uploadFileToDriveFolder,
   downloadFileFromDrive,
   extractGoogleDriveFileId,
-  findOrCreateCourseFolder
+  findOrCreateCourseFolder,
+  processRecursiveFolder
 } from './lib/drive-service.js';
 import { processPDF } from './lib/drive-fix-blockdown.js';
 
@@ -138,19 +139,21 @@ if (!isMainThread) {
 
 // Next.js API route handler
 export async function POST(request) {
+  let mongoClient = null;
   let tempDir = null;
   let processedFilePath = null;
   let processingFolders = [];
   
-  // Bắt đầu theo dõi bộ nhớ
-  memoryMonitor.logMemoryStats('Bắt đầu API');
-  
   try {
-    // Kết nối MongoDB ngay từ đầu trong thread chính
-    // để tất cả các worker thread có thể sử dụng lại kết nối này
+    // Bắt đầu đo thời gian
+    const startTime = Date.now();
+    
+    // Log thông tin bộ nhớ
+    memoryMonitor.logMemoryStats('Bắt đầu API');
+    
+    // Kết nối MongoDB ngay từ đầu trong thread chính - CHỈ KẾT NỐI MỘT LẦN
     try {
-      // Sử dụng module kết nối tập trung thay vì clientPromise
-      const mongoClient = await getMongoClient();
+      mongoClient = await getMongoClient();
       console.log('📊 Thiết lập kết nối MongoDB trong thread chính thành công');
     } catch (mongoError) {
       console.error(`📊 Lỗi kết nối MongoDB: ${mongoError.message}`);
@@ -165,7 +168,11 @@ export async function POST(request) {
     // Parse request body
     const requestBody = await request.json();
     let { driveLink, backgroundImage, backgroundOpacity, url, courseName, courseId, 
-          highPerformance, maxWorkers, batchSize, waitTime, dpi } = requestBody;
+          highPerformance, maxWorkers, batchSize, waitTime, dpi,
+          processRecursively, maxRecursionDepth } = requestBody;
+    
+    // Luôn đặt skipWatermarkRemoval = false để đảm bảo luôn xử lý watermark
+    const skipWatermarkRemoval = false;
 
     // Hỗ trợ cả url và driveLink (để tương thích)
     if (!driveLink && url) {
@@ -284,7 +291,7 @@ export async function POST(request) {
     if (isFolder) {
       console.log('Xử lý folder:', driveLink);
       // Xử lý nếu là folder
-      result = await handleDriveFolder(driveLink, backgroundImage, backgroundOpacity, courseName, courseId);
+      result = await handleDriveFolder(driveLink, backgroundImage, backgroundOpacity, courseName, courseId, skipWatermarkRemoval, processRecursively === true, maxRecursionDepth || 5);
       
       // Không cần đọc response.json() ở đây vì sẽ làm stream bị khóa
       // Log được tạo trực tiếp trong hàm handleDriveFolder rồi
@@ -567,7 +574,16 @@ async function handleDriveFile(driveLink, backgroundImage, backgroundOpacity, co
             console.log(`🔍 Đã phát hiện link là thư mục, chuyển hướng xử lý...`);
             
             // Gọi hàm xử lý thư mục
-            return await handleDriveFolder(driveLink, backgroundImage, backgroundOpacity, courseName, courseId);
+            return await handleDriveFolder(
+              driveLink, 
+              backgroundImage, 
+              backgroundOpacity, 
+              courseName, 
+              courseId,
+              skipWatermarkRemoval,
+              processRecursively === true, // Xử lý đệ quy nếu được yêu cầu
+              maxRecursionDepth || 5 // Độ sâu đệ quy mặc định là 5
+            );
           } else if (mimeType.startsWith('image/')) {
             console.log(`🖼️ Đã phát hiện link là ảnh (${mimeType}), được phép xử lý...`);
             // Cho phép tiếp tục xử lý nếu là ảnh
@@ -720,7 +736,29 @@ async function handleDriveFile(driveLink, backgroundImage, backgroundOpacity, co
             
             console.log(`✅ Đã xử lý thông tin ảnh: ${fileName}`);
           } else {
-            throw new Error(`Loại file ${mimeType} không hỗ trợ tải xuống khi bị chặn. Chỉ hỗ trợ PDF và ảnh.`);
+            // Các loại file khác - trả về đường dẫn trực tiếp
+            console.log(`📄 File khác: ${fileName} (${mimeType}) - Tiến hành tải lên trực tiếp`);
+                        
+            // Tạo đường dẫn cho file trống để chuyển hướng
+            const tempFilePath = path.join(tempDir, `other_${uuidv4()}${path.extname(fileName)}`);
+            fs.writeFileSync(tempFilePath, Buffer.from('dummy content'));
+            
+            downloadResult = {
+              success: true,
+              filePath: tempFilePath,
+              fileName: fileName,
+              contentType: mimeType,
+              outputDir: tempDir,
+              size: fs.statSync(tempFilePath).size,
+              isImage: false,
+              isPdf: false,
+              originalSize: fs.statSync(tempFilePath).size,
+              processedSize: fs.statSync(tempFilePath).size,
+              processingTime: 0,
+              directUpload: true
+            };
+            
+            console.log(`✅ Đã chuẩn bị upload trực tiếp: ${fileName}`);
           }
         } catch (unblockError) {
           throw new Error(`Không thể tải file bị chặn: ${unblockError.message}`);
@@ -1090,13 +1128,80 @@ async function handleDriveFile(driveLink, backgroundImage, backgroundOpacity, co
       return NextResponse.json(responseData, { status: 200 });
       
     } else {
-      // Loại file không được hỗ trợ
-      cleanupTempFiles(tempDir);
+      // Các loại file khác - xử lý tất cả các loại file còn lại
+      console.log(`Đang xử lý file khác (không phải PDF/ảnh): ${downloadResult.fileName} (${downloadResult.contentType})`);
       
-      return NextResponse.json(
-        { error: 'Loại file không được hỗ trợ. API này chỉ hỗ trợ xử lý file PDF và ảnh.' },
-        { status: 400 }
-      );
+      // Upload trực tiếp file gốc lên Drive không cần chỉnh sửa
+      let uploadResult;
+      try {
+        uploadResult = await uploadToDrive(downloadResult.filePath, downloadResult.fileName, downloadResult.contentType, courseName);
+      } catch (uploadError) {
+        // Clean up temp files
+        if (tempDir && fs.existsSync(tempDir)) {
+          cleanupTempFiles(tempDir);
+        }
+        
+        return NextResponse.json(
+          { error: `Không thể tải file lên Google Drive: ${uploadError.message}` },
+          { status: 500 }
+        );
+      }
+      
+      // Clean up temp files
+      try {
+        cleanupTempFiles(tempDir);
+        tempDir = null;
+      } catch (cleanupError) {
+        // Handle cleanup error
+      }
+      
+      // Chuẩn bị dữ liệu trả về
+      const responseData = {
+        success: true,
+        message: `Đã tải file lên Google Drive thành công.`,
+        originalFilename: downloadResult.fileName,
+        processedFilename: uploadResult.fileName,
+        viewLink: uploadResult.webViewLink,
+        downloadLink: uploadResult.downloadLink,
+        fileType: downloadResult.contentType,
+        size: downloadResult.size,
+        directUpload: true
+      };
+      
+      // Nếu có courseId, cập nhật thông tin file vào DB
+      try {
+        if (courseId) {
+          // Chuẩn bị courseId
+          let dbCourseId;
+          try {
+            dbCourseId = new ObjectId(courseId);
+          } catch (idError) {
+            console.error(`CourseId không hợp lệ: ${courseId}`);
+            // Vẫn tiếp tục luồng xử lý ngay cả khi ID không hợp lệ
+          }
+          
+          if (dbCourseId) {
+            console.log(`Cập nhật thông tin file đã xử lý vào DB cho courseId: ${courseId}`);
+            
+            // Kết nối MongoDB
+            const mongoClient = await getMongoClient();
+            
+            // Cập nhật thông tin file đã xử lý vào DB
+            await updateProcessedFileInDB(
+              mongoClient,
+              dbCourseId,
+              driveLink,
+              responseData
+            );
+          }
+        }
+      } catch (dbError) {
+        console.error(`Lỗi khi cập nhật DB: ${dbError.message}`);
+        // Vẫn tiếp tục luồng xử lý ngay cả khi có lỗi DB
+      }
+      
+      // Return success response
+      return NextResponse.json(responseData, { status: 200 });
     }
     
   } catch (error) {
@@ -1133,7 +1238,7 @@ async function handleDriveFile(driveLink, backgroundImage, backgroundOpacity, co
 }
 
 // Hàm xử lý folder từ Google Drive
-async function handleDriveFolder(driveFolderLink, backgroundImage, backgroundOpacity, courseName, courseId) {
+async function handleDriveFolder(driveFolderLink, backgroundImage, backgroundOpacity, courseName, courseId, skipWatermarkRemoval = false, processRecursively = false, maxRecursionDepth = 5) {
   let folderResults = [];
   let processingFolders = [];
   let destinationFolderId = null;
@@ -1159,6 +1264,47 @@ async function handleDriveFolder(driveFolderLink, backgroundImage, backgroundOpa
   }
 
   try {
+    // Xử lý đệ quy nếu được yêu cầu
+    if (processRecursively) {
+      console.log(`Bắt đầu xử lý đệ quy folder với độ sâu tối đa ${maxRecursionDepth}...`);
+      
+      const recursiveResult = await processRecursiveFolder(
+        driveFolderLink, 
+        maxRecursionDepth, 
+        0, // currentDepth ban đầu là 0
+        backgroundImage,
+        backgroundOpacity,
+        courseName,
+        skipWatermarkRemoval,
+        mongoClient // Truyền kết nối MongoDB đã tồn tại vào hàm xử lý đệ quy
+      );
+      
+      if (!recursiveResult.success) {
+        return NextResponse.json({
+          success: false,
+          message: `Lỗi khi xử lý đệ quy folder: ${recursiveResult.error}`,
+        }, { status: 500 });
+      }
+      
+      console.log(`✅ Đã xử lý đệ quy thành công: ${recursiveResult.nestedFilesProcessed} file và ${recursiveResult.nestedFoldersProcessed} thư mục con`);
+      
+      // Trả về kết quả xử lý đệ quy
+      return NextResponse.json({
+        success: true,
+        message: `Đã xử lý đệ quy folder thành công`,
+        folderLink: recursiveResult.processedFolderLink,
+        folderName: recursiveResult.folderName,
+        nestedFilesProcessed: recursiveResult.nestedFilesProcessed,
+        nestedFoldersProcessed: recursiveResult.nestedFoldersProcessed,
+        folderStats: {
+          totalFiles: recursiveResult.nestedFilesProcessed,
+          totalFolders: recursiveResult.nestedFoldersProcessed,
+          errors: recursiveResult.errors ? recursiveResult.errors.length : 0
+        },
+        errors: recursiveResult.errors
+      });
+    }
+
     // Lấy thông tin folder và danh sách files
     const folderInfo = await processDriveFolder(driveFolderLink);
     
@@ -1341,13 +1487,91 @@ async function handleDriveFolder(driveFolderLink, backgroundImage, backgroundOpa
               };
               
               console.log(`✅ Đã xử lý thông tin ảnh: ${file.name}`);
+            } else if (file.mimeType.includes('google-apps') && file.mimeType !== 'application/vnd.google-apps.folder') {
+              // Xử lý Google Workspace files (Docs, Sheets, Slides...)
+              console.log(`📝 Phát hiện file Google Workspace: ${file.name} (${file.mimeType})`);
+              
+              try {
+                // Lấy token download
+                const downloadToken = getTokenByType('download');
+                if (!downloadToken) {
+                  throw new Error('Không tìm thấy token Google Drive.');
+                }
+                
+                // Tạo OAuth2 client
+                const oauth2Client = new google.auth.OAuth2(
+                  process.env.GOOGLE_CLIENT_ID,
+                  process.env.GOOGLE_CLIENT_SECRET,
+                  process.env.GOOGLE_REDIRECT_URI
+                );
+                
+                // Thiết lập credentials
+                oauth2Client.setCredentials(downloadToken);
+                
+                // Khởi tạo Google Drive API
+                const drive = google.drive({ version: 'v3', auth: oauth2Client });
+                
+                console.log(`🔄 Xuất file Google Workspace sang PDF: ${file.name}`);
+                
+                // Xuất file Google Workspace sang PDF
+                const exportResponse = await drive.files.export({
+                  fileId: file.id,
+                  mimeType: 'application/pdf',
+                  supportsAllDrives: true
+                }, {
+                  responseType: 'arraybuffer'
+                });
+                
+                // Tạo tên file xuất ra
+                const exportFileName = `${file.name}.pdf`;
+                
+                // Lưu file xuất ra vào thư mục tạm
+                const tempFileName = `${uuidv4()}.pdf`;
+                const tempFilePath = path.join(fileOutputDir, tempFileName);
+                fs.writeFileSync(tempFilePath, Buffer.from(exportResponse.data));
+                
+                console.log(`✅ Đã xuất thành công file ${file.name} sang PDF (${fs.statSync(tempFilePath).size} bytes)`);
+                
+                // Sử dụng file đã xuất mà không xử lý watermark (theo logic cũ)
+                downloadResult = {
+                  success: true,
+                  filePath: tempFilePath,
+                  fileName: exportFileName,
+                  contentType: 'application/pdf',
+                  outputDir: fileOutputDir,
+                  size: fs.statSync(tempFilePath).size,
+                  isImage: false,
+                  isPdf: true,
+                  isGoogleWorkspace: true,
+                  skipWatermarkRemoval: true
+                };
+                console.log(`✅ Đã xuất file Google Workspace: ${exportFileName} (Không xử lý watermark)`);
+              } catch (googleWorkspaceError) {
+                console.error(`❌ Lỗi khi xử lý file Google Workspace ${file.name}:`, googleWorkspaceError);
+                throw new Error(`Không thể xử lý file Google Workspace: ${googleWorkspaceError.message}`);
+              }
             } else {
-              folderResults.push({
-                originalFile: file.name,
-                skipped: true,
-                reason: `Loại file ${file.mimeType} không hỗ trợ tải xuống khi bị chặn. Chỉ hỗ trợ PDF và ảnh.`
-              });
-              continue;
+              // Xử lý các loại file khác bị chặn
+              console.log(`📄 Tạo tệp tạm cho loại file bị chặn: ${file.name} (${file.mimeType})`);
+              
+              // Tạo tệp rỗng để có thể tiếp tục quy trình
+              const tempFileName = `temp_${uuidv4()}${path.extname(file.name) || ''}`;
+              const tempFilePath = path.join(fileOutputDir, tempFileName);
+              fs.writeFileSync(tempFilePath, Buffer.from([]));
+              
+              downloadResult = {
+                success: true,
+                filePath: tempFilePath,
+                fileName: file.name,
+                contentType: file.mimeType,
+                outputDir: fileOutputDir,
+                size: fs.statSync(tempFilePath).size,
+                isImage: false,
+                isPdf: false,
+                isOtherFile: true
+              };
+              
+              console.log(`✅ Đã tạo tệp tạm cho: ${file.name}`);
             }
           } else {
             folderResults.push({
@@ -1560,13 +1784,31 @@ async function handleDriveFolder(driveFolderLink, backgroundImage, backgroundOpa
           });
           
         } else {
-          console.log(`Bỏ qua file không được hỗ trợ: ${file.name}`);
-          // Bỏ qua các loại file không được hỗ trợ
-          folderResults.push({
-            originalFile: file.name,
-            skipped: true,
-            reason: 'Loại file không được hỗ trợ'
-          });
+          // Các loại file khác - xử lý trực tiếp không thay đổi
+          console.log(`Đang xử lý loại file khác: ${file.name} (${downloadResult.contentType})`);
+          
+          try {
+            // Tải trực tiếp file lên thư mục đích
+            const uploadResult = await uploadFileToDriveFolder(
+              downloadResult.filePath,
+              downloadResult.fileName,
+              destinationFolderId
+            );
+            
+            console.log(`✅ Đã tải lên Drive thành công cho file khác: ${file.name}`);
+            
+            folderResults.push({
+              originalFile: file.name,
+              processedFile: uploadResult.fileName,
+              viewLink: uploadResult.webViewLink,
+              downloadLink: uploadResult.downloadLink,
+              fileType: downloadResult.contentType,
+              directUpload: true
+            });
+          } catch (uploadError) {
+            console.error(`❌ Lỗi khi tải lên file ${file.name}:`, uploadError);
+            throw new Error(`Không thể tải lên file: ${uploadError.message}`);
+          }
         }
       } catch (fileError) {
         console.error(`Lỗi khi xử lý file ${file.name}: ${fileError.message}`);

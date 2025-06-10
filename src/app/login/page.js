@@ -87,8 +87,38 @@ function LoginForm() {
         throw new Error(data.error || 'Đăng nhập thất bại. Vui lòng thử lại.');
       }
       
-      // Sử dụng window.location.href thay vì router.push để đảm bảo chuyển hướng hoạt động trên Vercel
-      window.location.href = returnUrl;
+      // Xử lý đặc biệt cho returnUrl
+      let redirectTo = returnUrl;
+      
+      // Kiểm tra nếu returnUrl bị mã hóa gấp đôi
+      if (returnUrl && returnUrl.includes('%252F')) {
+        try {
+          // Giải mã một lần
+          const decodedOnce = decodeURIComponent(returnUrl);
+          
+          // Nếu vẫn có %2F (mã hóa của /), giải mã thêm một lần nữa
+          if (decodedOnce.includes('%2F')) {
+            redirectTo = decodeURIComponent(decodedOnce);
+          } else {
+            redirectTo = decodedOnce;
+          }
+          
+          console.log('Đã xử lý URL bị mã hóa gấp đôi:', redirectTo);
+        } catch (e) {
+          console.error('Lỗi khi giải mã returnUrl:', e);
+          // Fallback về trang chủ nếu có lỗi
+          redirectTo = routes.home;
+        }
+      }
+      
+      // Đảm bảo URL không bắt đầu bằng /api/ để tránh lỗi 404
+      if (redirectTo.startsWith('/api/')) {
+        console.log('Phát hiện chuyển hướng đến API URL, chuyển về trang chủ');
+        redirectTo = routes.home;
+      }
+      
+      // Sử dụng window.location.href để đảm bảo chuyển hướng hoạt động
+      window.location.href = redirectTo;
     } catch (error) {
       setError(error.message);
     } finally {

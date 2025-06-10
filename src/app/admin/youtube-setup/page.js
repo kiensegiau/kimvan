@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeftIcon, CheckCircleIcon, ExclamationCircleIcon, ArrowPathIcon, PlusCircleIcon, CloudArrowUpIcon, CloudArrowDownIcon, CheckBadgeIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, CheckCircleIcon, ExclamationCircleIcon, ArrowPathIcon, PlusCircleIcon, CloudArrowUpIcon, CloudArrowDownIcon, CheckBadgeIcon, CookieIcon } from '@heroicons/react/24/outline';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faChrome, faCookie } from '@fortawesome/free-brands-svg-icons';
+import { faChrome } from '@fortawesome/free-brands-svg-icons';
+import { faCookieCustom } from '@/utils/icons';
 
 export default function DriveSetupPage() {
   const router = useRouter();
@@ -42,7 +43,7 @@ export default function DriveSetupPage() {
     {
       title: 'Cập nhật Token KimVan',
       description: 'Cập nhật token KimVan để kết nối với hệ thống KimVan',
-      icon: <FontAwesomeIcon icon={faCookie} className="h-6 w-6 text-yellow-600" />,
+      icon: <CookieIcon className="h-6 w-6 text-yellow-600" />,
       href: '/admin/kimvan-token',
       disabled: false
     },

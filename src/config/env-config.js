@@ -69,18 +69,38 @@ export const routes = {
 
 // Các trang không yêu cầu xác thực (public)
 export const publicPaths = [
-  // '/', // Thêm trang chủ vào danh sách công khai để tạm thời debug
-  routes.login,
-  routes.register,
-  routes.forgotPassword,
-  routes.resetPassword,
-  '/api/auth',
-  '/api/drive',
+  // Trang đăng nhập
+  '/login',
+  
+  // Quên mật khẩu
+  '/forgot-password',
+  '/reset-password',
+  
+  // API cần thiết cho đăng nhập
+  '/api/auth/login',
+  '/api/auth/verify',
+  '/api/auth/refresh-token',
+  '/api/auth/user-role',
+  '/api/auth/logout',
+  '/api/auth/forgot-password',
+  '/api/auth/reset-password',
   '/api/auth/admin/check-permission',
   '/api/csrf',
+  
+  // API Drive không yêu cầu xác thực
+  '/api/drive/remove-watermark',
+  '/api/drive/check-file-type',
+  '/api/drive/upload',
+  '/api/courses/process-all-drive',
+  
+  // API không yêu cầu xác thực
+  '/api/spreadsheets',
+  
+  // Tài nguyên tĩnh
   '/_next',
   '/favicon.ico',
   '/static',
   '/images',
-  // Thêm các đường dẫn công khai khác khi cần thiết
+  '/fonts',
+  '/assets',
 ]; 
