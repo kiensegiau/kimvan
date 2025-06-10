@@ -1077,6 +1077,57 @@ export async function processRecursiveFolder(folderIdOrLink, maxDepth = 5, curre
       } else {
         // Xử lý file
         try {
+          // Kiểm tra xem file đã tồn tại trong thư mục đích chưa
+          console.log(`[Đệ quy ${currentDepth}] Kiểm tra xem file "${item.name}" đã tồn tại ở thư mục đích chưa...`);
+          
+          // Lấy token download
+          const downloadToken = getTokenByType('download');
+          if (!downloadToken) {
+            throw new Error('Không tìm thấy token Google Drive.');
+          }
+          
+          // Tạo OAuth2 client
+          const oauth2Client = new google.auth.OAuth2(
+            process.env.GOOGLE_CLIENT_ID,
+            process.env.GOOGLE_CLIENT_SECRET,
+            process.env.GOOGLE_REDIRECT_URI
+          );
+          
+          // Thiết lập credentials
+          oauth2Client.setCredentials(downloadToken);
+          
+          // Khởi tạo Google Drive API
+          const drive = google.drive({ version: 'v3', auth: oauth2Client });
+          
+          // Kiểm tra xem file đã tồn tại trong folder chưa
+          const escapedFileName = escapeDriveQueryString(item.name);
+          const searchQuery = `name='${escapedFileName}' and '${destinationFolderId}' in parents and trashed=false`;
+          const existingFileResponse = await drive.files.list({
+            q: searchQuery,
+            fields: 'files(id, name, webViewLink, webContentLink)',
+            spaces: 'drive'
+          });
+          
+          // Nếu file đã tồn tại, bỏ qua việc tải xuống và xử lý
+          if (existingFileResponse.data.files && existingFileResponse.data.files.length > 0) {
+            const existingFile = existingFileResponse.data.files[0];
+            console.log(`[Đệ quy ${currentDepth}] ✅ File "${item.name}" đã tồn tại trong thư mục đích (ID: ${existingFile.id}), bỏ qua xử lý`);
+            
+            folderResults.nestedFilesProcessed++;
+            folderResults.folderStructure.files.push({
+              name: item.name,
+              id: item.id,
+              processedFileId: existingFile.id,
+              processedFileLink: existingFile.webViewLink,
+              processed: true,
+              skipped: true
+            });
+            
+            continue; // Bỏ qua phần xử lý phía dưới
+          }
+          
+          console.log(`[Đệ quy ${currentDepth}] File "${item.name}" chưa tồn tại, bắt đầu tải xuống và xử lý...`);
+          
           // Tạo thư mục tạm riêng cho mỗi file
           const tempDirName = uuidv4();
           const outputDir = path.join(os.tmpdir(), tempDirName);
