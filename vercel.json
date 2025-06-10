@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm ci && npm run build",
+  "buildCommand": "npm config set git-tag-version false && npm ci && npm run build",
   "env": {
     "NEXT_TELEMETRY_DISABLED": "1",
     "NODE_OPTIONS": "--max_old_space_size=4096"

@@ -34,6 +34,7 @@
     "mongodb": "^6.5.0",
     "mongoose": "^8.3.0",
     "next": "15.3.0",
+    "node-apiless-youtube-upload": "github:evilive3000/node-apiless-youtube-upload",
     "node-cron": "^3.0.3",
     "os": "^0.1.2",
     "path": "^0.12.7",

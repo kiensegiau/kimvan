@@ -87,7 +87,7 @@ export async function autoUploadToYoutube(options) {
     
     // Tải thư viện động
     const uploadModule = await import('node-apiless-youtube-upload');
-    const YoutubeUploader = uploadModule.default;
+    const YoutubeUploader = uploadModule.default || uploadModule;
     
     // Chuẩn bị cấu hình upload
     const uploader = new YoutubeUploader();

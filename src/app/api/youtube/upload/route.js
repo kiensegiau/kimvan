@@ -33,7 +33,7 @@ export async function GET(request) {
       console.error('Lỗi import thư viện:', importError);
       return NextResponse.json({
         success: false,
-        message: 'Thư viện node-apiless-youtube-upload chưa được cài đặt. Vui lòng cài đặt bằng lệnh: npm install node-apiless-youtube-upload',
+        message: 'Lỗi khi tải thư viện YouTube upload. Thư viện đã được cài đặt từ GitHub repository.',
         error: importError.message
       }, { status: 500 });
     }
