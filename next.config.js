@@ -6,9 +6,7 @@ const nextConfig = {
     domains: ['lh3.googleusercontent.com', 'i.imgur.com', 'firebasestorage.googleapis.com'],
   },
   // Exclude problematic modules from the server build
-  experimental: {
-    serverComponentsExternalPackages: ['node-apiless-youtube-upload']
-  },
+  serverExternalPackages: ['node-apiless-youtube-upload'],
   webpack: (config, { isServer }) => {
     // Loại trừ các thư viện gây lỗi
     config.module.rules.push({
