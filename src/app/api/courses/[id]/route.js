@@ -11,20 +11,6 @@ import { authMiddleware } from '@/lib/auth';
 // Khóa mã hóa - phải giống với khóa ở phía client
 const ENCRYPTION_KEY = 'kimvan-secure-key-2024';
 
-// Thêm các hằng số cho tham số API và quyền truy cập
-const API_PARAMS = {
-  SECURE: 'secure',
-  REQUIRE_ENROLLMENT: 'requireEnrollment',
-  CHECK_PERMISSION: 'checkViewPermission',
-  TYPE: 'type'
-};
-
-const PERMISSION_TYPES = {
-  ENROLLED: 'isEnrolled',
-  VIEW_ALL: 'canViewAllCourses',
-  REQUIRES_ENROLLMENT: 'requiresEnrollment'
-};
-
 // Hàm mã hóa dữ liệu với xử lý lỗi tốt hơn
 const encryptData = (data) => {
   try {
@@ -50,193 +36,6 @@ const encryptEntireObject = (obj) => {
     throw new Error(`Không thể mã hóa: ${error.message}`);
   }
 };
-
-// Hàm trợ giúp kiểm tra quyền truy cập
-const checkCourseAccess = async (request, course) => {
-  const { searchParams } = new URL(request.url);
-  const requireEnrollment = searchParams.get(API_PARAMS.REQUIRE_ENROLLMENT) === 'true';
-  const checkViewPermission = searchParams.get(API_PARAMS.CHECK_PERMISSION) === 'true';
-  
-  let isEnrolled = false;
-  let canViewAllCourses = false;
-  let user = null;
-  
-  // Kiểm tra người dùng hiện tại nếu cần phải kiểm tra quyền
-  if (requireEnrollment || checkViewPermission) {
-    try {
-      // Lấy token từ cookies
-      const cookieHeader = request.headers.get('cookie');
-      const authToken = cookieHeader?.split(';').find(c => c.trim().startsWith('auth-token='))?.split('=')[1];
-      
-      if (!authToken) {
-        console.log('❌ Không tìm thấy auth-token trong cookies');
-        // Không có token, coi như không có quyền
-      } else {
-        // Sử dụng server fetch để gọi API /api/users/me
-        const protocol = request.headers.get('x-forwarded-proto') || 'http';
-        const host = request.headers.get('host');
-        const baseUrl = `${protocol}://${host}`;
-        
-        console.log(`🔍 Gọi trực tiếp API /api/users/me để kiểm tra quyền người dùng`);
-        const userResponse = await fetch(`${baseUrl}/api/users/me`, {
-          headers: {
-            'Cookie': `auth-token=${authToken}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        if (userResponse.ok) {
-          const userData = await userResponse.json();
-          
-          if (userData.success && userData.user) {
-            user = userData.user;
-            
-            console.log(`🔍 Thông tin người dùng từ API users/me:`, {
-              uid: user.uid,
-              role: user.role,
-              canViewAllCourses: user.canViewAllCourses
-            });
-            
-            // Đảm bảo admin luôn có quyền xem tất cả khóa học
-            if (user.role === 'admin') {
-              canViewAllCourses = true;
-            } else {
-              canViewAllCourses = user.canViewAllCourses === true;
-            }
-            
-            // Kiểm tra đăng ký khóa học của người dùng nếu không có quyền xem tất cả
-            if (!canViewAllCourses) {
-              const enrollment = await Enrollment.findOne({
-                userId: user.uid,
-                courseId: course._id
-              }).lean().exec();
-              
-              isEnrolled = !!enrollment;
-            } else {
-              // Admin hoặc người có quyền xem tất cả cũng được xem như đã đăng ký
-              isEnrolled = true;
-            }
-            
-            console.log(`👤 Kết quả kiểm tra quyền cho người dùng ${user.uid}:`);
-            console.log(`   - Role: ${user.role}`);
-            console.log(`   - ${PERMISSION_TYPES.ENROLLED}: ${isEnrolled}`);
-            console.log(`   - ${PERMISSION_TYPES.VIEW_ALL}: ${canViewAllCourses}`);
-            console.log(`   - Thời gian: ${new Date().toISOString()}`);
-          } else {
-            console.log('❌ API users/me trả về dữ liệu không hợp lệ:', userData);
-          }
-        } else {
-          console.error(`❌ Lỗi khi gọi API users/me: ${userResponse.status} ${userResponse.statusText}`);
-        }
-      }
-    } catch (authError) {
-      console.error('❌ Lỗi khi kiểm tra xác thực:', authError);
-    }
-  } else {
-    // Nếu không yêu cầu kiểm tra quyền, cho phép truy cập đầy đủ
-    console.log('⚠️ Bỏ qua kiểm tra quyền vì không có tham số requireEnrollment hoặc checkViewPermission');
-    canViewAllCourses = true;
-    isEnrolled = true;
-  }
-  
-  // Đánh dấu nếu khóa học yêu cầu đăng ký
-  const requiresEnrollment = course.requiresEnrollment !== false; // Mặc định là true
-  
-  // Nếu khóa học yêu cầu đăng ký và người dùng không có quyền xem
-  const hasPermission = canViewAllCourses || isEnrolled || !requiresEnrollment;
-  
-  return {
-    isEnrolled,
-    canViewAllCourses,
-    requiresEnrollment,
-    hasPermission,
-    user
-  };
-};
-
-// Hàm chuẩn hóa response
-const createResponse = (data, permissions, secure = false) => {
-  // Tạo dữ liệu trả về
-  const responseData = {
-    ...data,
-    [PERMISSION_TYPES.ENROLLED]: permissions.isEnrolled,
-    [PERMISSION_TYPES.VIEW_ALL]: permissions.canViewAllCourses,
-    [PERMISSION_TYPES.REQUIRES_ENROLLMENT]: permissions.requiresEnrollment
-  };
-  
-  // Mã hóa dữ liệu nếu yêu cầu
-  if (secure) {
-    try {
-      const encryptedData = encryptData(responseData);
-      return NextResponse.json({ 
-        _secureData: encryptedData,
-        [PERMISSION_TYPES.ENROLLED]: permissions.isEnrolled,
-        [PERMISSION_TYPES.VIEW_ALL]: permissions.canViewAllCourses,
-        [PERMISSION_TYPES.REQUIRES_ENROLLMENT]: permissions.requiresEnrollment,
-        success: true 
-      });
-    } catch (encryptError) {
-      console.error("Lỗi khi mã hóa dữ liệu:", encryptError);
-      return NextResponse.json({ 
-        error: 'Lỗi khi xử lý dữ liệu khóa học',
-        message: encryptError.message,
-        success: false
-      }, { status: 500 });
-    }
-  }
-  
-  // Trả về dữ liệu không mã hóa
-  return NextResponse.json({
-    ...responseData,
-    success: true
-  });
-};
-
-// Hàm lấy thông tin khóa học theo query
-const getCourseByQuery = async (id, queryType) => {
-  let query = {};
-  
-  // Truy vấn theo loại ID - ưu tiên kimvanId trước
-  if (queryType === '_id') {
-    // Truy vấn theo MongoDB _id 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return { error: 'ID khóa học không hợp lệ', status: 400 };
-    }
-    query = { _id: new ObjectId(id) };
-  } else {
-    // Truy vấn theo kimvanId
-    query = { kimvanId: id };
-    
-    // Nếu không tìm thấy bằng kimvanId, thử tìm bằng _id
-    const courseByKimvanId = await Course.findOne(query).lean().exec();
-    if (!courseByKimvanId && mongoose.Types.ObjectId.isValid(id)) {
-      query = { _id: new ObjectId(id) };
-    }
-  }
-  
-  // Tìm khóa học theo query đã xác định
-  const course = await Course.findOne(query).lean().exec();
-  
-  if (!course) {
-    return { error: 'Không tìm thấy khóa học', status: 404 };
-  }
-  
-  return { course };
-};
-
-// Thêm hàm trích xuất ID Google Drive từ URL
-function extractGoogleDriveId(url) {
-  if (!url) return null;
-  if (!url.includes('drive.google.com/file/d/')) return null;
-  
-  try {
-    const match = url.match(/\/file\/d\/([^\/\?#]+)/);
-    return match ? match[1] : null;
-  } catch (error) {
-    console.error(`❌ Lỗi khi trích xuất Google Drive ID từ URL: ${url}`, error);
-    return null;
-  }
-}
 
 // Thêm hàm phân tích và chuẩn hóa URL để so sánh chính xác hơn
 function normalizeUrl(url) {
@@ -373,6 +172,20 @@ function findProcessedUrl(originalUrl, processedFiles) {
   return null;
 }
 
+// Thêm hàm trích xuất ID Google Drive từ URL
+function extractGoogleDriveId(url) {
+  if (!url) return null;
+  if (!url.includes('drive.google.com/file/d/')) return null;
+  
+  try {
+    const match = url.match(/\/file\/d\/([^\/\?#]+)/);
+    return match ? match[1] : null;
+  } catch (error) {
+    console.error(`❌ Lỗi khi trích xuất Google Drive ID từ URL: ${url}`, error);
+    return null;
+  }
+}
+
 // Thêm hàm tạo bản đồ vị trí cho các URL đã xử lý từ originalData
 function createPositionMap(originalData) {
   // Lưu trữ các link đã xử lý theo vị trí
@@ -499,9 +312,6 @@ const kimvanDataCache = new Map();
 // GET: Lấy một khóa học theo ID
 export async function GET(request, { params }) {
   try {
-    console.log(`🔍 GET API - Bắt đầu xử lý request cho khóa học ID: ${params.id}`);
-    console.log(`🔍 Thời gian: ${new Date().toISOString()}`);
-    
     // Đảm bảo params được awaited
     const resolvedParams = await Promise.resolve(params);
     const { id } = resolvedParams;
@@ -509,55 +319,51 @@ export async function GET(request, { params }) {
     // Đảm bảo kết nối đến MongoDB trước khi truy vấn
     await connectDB();
     
-    // Kiểm tra tham số
+    // Kiểm tra xem có tham số type=_id không
     const { searchParams } = new URL(request.url);
-    const queryType = searchParams.get(API_PARAMS.TYPE);
-    const secure = searchParams.get(API_PARAMS.SECURE) === 'true';
+    const queryType = searchParams.get('type');
+    const secure = searchParams.get('secure') === 'true';
+    const responseType = queryType || 'full';
     
-    // Lấy thông tin khóa học từ database
-    const courseResult = await getCourseByQuery(id, queryType);
+    let query = {};
     
-    // Kiểm tra nếu có lỗi
-    if (courseResult.error) {
+    // Truy vấn theo loại ID - ưu tiên kimvanId trước
+    if (queryType === '_id') {
+      // Truy vấn theo MongoDB _id 
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return NextResponse.json({ 
+          success: false,
+          message: 'ID khóa học không hợp lệ' 
+        }, { status: 400 });
+      }
+      query = { _id: new ObjectId(id) };
+    } else {
+      // Truy vấn theo kimvanId
+      query = { kimvanId: id };
+      
+      // Nếu không tìm thấy bằng kimvanId, thử tìm bằng _id
+      const courseByKimvanId = await Course.findOne(query).lean().exec();
+      if (!courseByKimvanId && mongoose.Types.ObjectId.isValid(id)) {
+        query = { _id: new ObjectId(id) };
+      }
+    }
+    
+    // Tìm khóa học theo query đã xác định
+    const course = await Course.findOne(query).lean().exec();
+    
+    if (!course) {
       return NextResponse.json({ 
         success: false,
-        message: courseResult.error
-      }, { status: courseResult.status });
+        message: 'Không tìm thấy khóa học' 
+      }, { status: 404 });
     }
     
-    const course = courseResult.course;
+    // Bypass authentication check - always return full course data
+    const isEnrolled = true;
+    const canViewAllCourses = true;
     
-    // Kiểm tra quyền truy cập
-    const permissions = await checkCourseAccess(request, course);
-    
-    // Nếu khóa học yêu cầu đăng ký và người dùng không có quyền xem
-    if (permissions.requiresEnrollment && !permissions.hasPermission) {
-      // Trả về thông báo lỗi quyền truy cập nếu checkViewPermission=true
-      if (searchParams.get(API_PARAMS.CHECK_PERMISSION) === 'true') {
-        return NextResponse.json({
-          success: false,
-          message: 'Bạn không có quyền truy cập khóa học này',
-          [PERMISSION_TYPES.REQUIRES_ENROLLMENT]: true,
-          [PERMISSION_TYPES.ENROLLED]: false,
-          [PERMISSION_TYPES.VIEW_ALL]: false
-        }, { status: 403 });
-      }
-      
-      // Nếu không kiểm tra quyền, trả về thông tin giới hạn của khóa học
-      const limitedData = {
-        _id: course._id,
-        name: course.name,
-        description: course.description,
-        [PERMISSION_TYPES.REQUIRES_ENROLLMENT]: true, 
-        [PERMISSION_TYPES.ENROLLED]: false,
-        [PERMISSION_TYPES.VIEW_ALL]: false
-      };
-      
-      return createResponse(limitedData, permissions, secure);
-    }
-    
-    // Tạo dữ liệu trả về đầy đủ cho người dùng có quyền
-    const fullData = {
+    // Tạo dữ liệu trả về
+    const responseData = {
       _id: course._id,
       name: course.name,
       description: course.description,
@@ -569,12 +375,29 @@ export async function GET(request, { params }) {
       createdAt: course.createdAt,
       updatedAt: course.updatedAt,
       processedDriveFiles: course.processedDriveFiles || [],
+      isEnrolled: isEnrolled,
+      canViewAllCourses: canViewAllCourses,
       originalData: course.originalData
     };
     
-    return createResponse(fullData, permissions, secure);
+    // Mã hóa dữ liệu nếu yêu cầu
+    if (secure) {
+      try {
+        const encryptedData = encryptData(responseData);
+        return NextResponse.json({ _secureData: encryptedData });
+      } catch (encryptError) {
+        console.error("Lỗi khi mã hóa dữ liệu:", encryptError);
+        return NextResponse.json({ 
+          error: 'Lỗi khi xử lý dữ liệu khóa học',
+          message: encryptError.message 
+        }, { status: 500 });
+      }
+    }
+    
+    // Trả về dữ liệu không mã hóa
+    return NextResponse.json(responseData);
   } catch (error) {
-    console.error('❌ Lỗi khi lấy thông tin khóa học:', error);
+    console.error('Lỗi khi lấy thông tin khóa học:', error);
     return NextResponse.json({ 
       success: false,
       message: 'Đã xảy ra lỗi khi lấy thông tin khóa học',
@@ -586,9 +409,6 @@ export async function GET(request, { params }) {
 // PUT: Cập nhật một khóa học
 export async function PUT(request, { params }) {
   try {
-    console.log(`🔄 PUT API - Bắt đầu xử lý request cho khóa học ID: ${params.id}`);
-    console.log(`🔄 Thời gian: ${new Date().toISOString()}`);
-    
     // Đảm bảo params được awaited
     const resolvedParams = await Promise.resolve(params);
     const { id } = resolvedParams;
@@ -597,38 +417,52 @@ export async function PUT(request, { params }) {
     await connectDB();
     
     if (!id) {
-      return NextResponse.json({ 
-        success: false,
-        message: 'Thiếu ID khóa học'
-      }, { status: 400 });
+      return NextResponse.json(
+        { message: 'Thiếu ID khóa học' },
+        { status: 400 }
+      );
     }
     
     // Kiểm tra xem có tham số type=_id không
     const { searchParams } = new URL(request.url);
-    const queryType = searchParams.get(API_PARAMS.TYPE);
+    const type = searchParams.get('type');
     
-    // Lấy thông tin khóa học từ database
-    const courseResult = await getCourseByQuery(id, queryType);
+    let query = {};
     
-    // Kiểm tra nếu có lỗi
-    if (courseResult.error) {
-      return NextResponse.json({ 
-        success: false,
-        message: courseResult.error
-      }, { status: courseResult.status });
+    // Truy vấn theo loại ID - ưu tiên kimvanId trước
+    if (type === '_id') {
+      // Truy vấn theo MongoDB _id 
+      try {
+        query = { _id: new ObjectId(id) };
+      } catch (err) {
+        return NextResponse.json(
+          { message: 'ID không hợp lệ' },
+          { status: 400 }
+        );
+      }
+    } else {
+      // Truy vấn theo kimvanId
+      query = { kimvanId: id };
+      
+      // Nếu không tìm thấy bằng kimvanId, thử tìm bằng _id
+      const course = await Course.findOne(query).lean().exec();
+      if (!course) {
+        try {
+          if (mongoose.Types.ObjectId.isValid(id)) {
+            query = { _id: new ObjectId(id) };
+          }
+        } catch (err) {
+          // Nếu không phải ObjectId hợp lệ, giữ nguyên query kimvanId
+        }
+      }
     }
     
-    const course = courseResult.course;
-    
-    // Kiểm tra quyền truy cập - chỉ admin mới có thể cập nhật
-    const permissions = await checkCourseAccess(request, course);
-    
-    // PUT yêu cầu quyền admin
-    if (!permissions.canViewAllCourses || !permissions.user || permissions.user.role !== 'admin') {
-      return NextResponse.json({ 
-        success: false,
-        message: 'Bạn không có quyền cập nhật khóa học này'
-      }, { status: 403 });
+    const course = await Course.findOne(query).lean().exec();
+    if (!course) {
+      return NextResponse.json(
+        { message: 'Không tìm thấy khóa học' },
+        { status: 404 }
+      );
     }
     
     const data = await request.json();
@@ -640,40 +474,36 @@ export async function PUT(request, { params }) {
     data.originalData = course.originalData;
     
     const result = await Course.updateOne(
-      { _id: course._id },
+      query,
       { $set: data }
     );
     
     if (result.modifiedCount === 0) {
-      return NextResponse.json({ 
-        success: false,
-        message: 'Không có thay đổi nào được cập nhật'
-      }, { status: 400 });
+      return NextResponse.json(
+        { message: 'Không có thay đổi nào được cập nhật' },
+        { status: 400 }
+      );
     }
     
     return NextResponse.json({ 
       message: 'Cập nhật khóa học thành công',
-      success: true,
-      [PERMISSION_TYPES.ENROLLED]: permissions.isEnrolled,
-      [PERMISSION_TYPES.VIEW_ALL]: permissions.canViewAllCourses,
-      [PERMISSION_TYPES.REQUIRES_ENROLLMENT]: permissions.requiresEnrollment
+      success: true
     });
   } catch (error) {
-    console.error('❌ Lỗi khi cập nhật khóa học:', error);
-    return NextResponse.json({ 
-      success: false,
-      message: 'Lỗi khi cập nhật khóa học',
-      error: error.message 
-    }, { status: 500 });
+    console.error('Lỗi khi cập nhật khóa học:', error);
+    return NextResponse.json(
+      { 
+        message: 'Lỗi khi cập nhật khóa học',
+        error: error.message 
+      },
+      { status: 500 }
+    );
   }
 }
 
 // DELETE: Xóa một khóa học
 export async function DELETE(request, { params }) {
   try {
-    console.log(`❌ DELETE API - Bắt đầu xử lý request cho khóa học ID: ${params.id}`);
-    console.log(`❌ Thời gian: ${new Date().toISOString()}`);
-    
     // Đảm bảo params được awaited
     const resolvedParams = await Promise.resolve(params);
     const { id } = resolvedParams;
@@ -683,64 +513,47 @@ export async function DELETE(request, { params }) {
     
     // Kiểm tra xem có tham số type=_id không
     const { searchParams } = new URL(request.url);
-    const queryType = searchParams.get(API_PARAMS.TYPE);
+    const type = searchParams.get('type');
     
-    // Lấy thông tin khóa học từ database
-    const courseResult = await getCourseByQuery(id, queryType);
+    let query = {};
+    let result;
     
-    // Nếu không tìm thấy khóa học, vẫn tiếp tục vì đây là DELETE operation
-    if (courseResult.error && courseResult.status !== 404) {
-      return NextResponse.json({ 
-        success: false,
-        message: courseResult.error
-      }, { status: courseResult.status });
-    }
-    
-    // Nếu tìm thấy khóa học, kiểm tra quyền truy cập
-    if (courseResult.course) {
-      const permissions = await checkCourseAccess(request, courseResult.course);
-      
-      // DELETE yêu cầu quyền admin
-      if (!permissions.canViewAllCourses || !permissions.user || permissions.user.role !== 'admin') {
+    // Truy vấn theo loại ID
+    if (type === '_id') {
+      // Xóa theo MongoDB _id
+      if (!mongoose.Types.ObjectId.isValid(id)) {
         return NextResponse.json({ 
           success: false,
-          message: 'Bạn không có quyền xóa khóa học này'
-        }, { status: 403 });
+          message: 'ID không hợp lệ' 
+        }, { status: 400 });
       }
-    }
-    
-    let result;
-    let query = {};
-    
-    // Xác định query dựa trên loại ID
-    if (queryType === '_id' && mongoose.Types.ObjectId.isValid(id)) {
-      query = { _id: new ObjectId(id) };
+      result = await Course.deleteOne({ _id: new ObjectId(id) });
     } else {
-      // Thử xóa theo kimvanId
-      query = { kimvanId: id };
-    }
-    
-    result = await Course.deleteOne(query);
-    
-    // Nếu không tìm thấy bằng query đầu tiên, thử query thứ hai
-    if (result.deletedCount === 0 && queryType !== '_id' && mongoose.Types.ObjectId.isValid(id)) {
-      query = { _id: new ObjectId(id) };
-      result = await Course.deleteOne(query);
+      // Thử xóa theo kimvanId trước
+      result = await Course.deleteOne({ kimvanId: id });
+      
+      // Nếu không tìm thấy bằng kimvanId, thử xóa bằng _id
+      if (result.deletedCount === 0 && mongoose.Types.ObjectId.isValid(id)) {
+        result = await Course.deleteOne({ _id: new ObjectId(id) });
+      }
     }
     
     if (result.deletedCount === 0) {
       return NextResponse.json({ 
         success: false,
-        message: 'Không tìm thấy khóa học'
+        message: 'Không tìm thấy khóa học' 
       }, { status: 404 });
     }
     
-    return NextResponse.json({ 
-      success: true,
-      message: 'Khóa học đã được xóa thành công'
-    }, { status: 200 });
+    return NextResponse.json(
+      { 
+        success: true,
+        message: 'Khóa học đã được xóa thành công' 
+      }, 
+      { status: 200 }
+    );
   } catch (error) {
-    console.error('❌ Lỗi khi xóa khóa học:', error);
+    console.error('Lỗi khi xóa khóa học:', error);
     return NextResponse.json({ 
       success: false,
       message: 'Đã xảy ra lỗi khi xóa khóa học. Vui lòng kiểm tra kết nối MongoDB.',
@@ -752,41 +565,10 @@ export async function DELETE(request, { params }) {
 // PATCH: Đồng bộ một khóa học từ Kimvan
 export async function PATCH(request, { params }) {
   try {
-    console.log(`🔄 PATCH API - Bắt đầu xử lý request cho khóa học ID: ${params.id}`);
-    console.log(`🔄 Thời gian: ${new Date().toISOString()}`);
-    
     // Đảm bảo params được awaited
     const resolvedParams = await Promise.resolve(params);
     const { id } = resolvedParams;
     
-    // Đảm bảo kết nối đến MongoDB trước khi truy vấn
-    await connectDB();
-    
-    // Lấy thông tin khóa học từ database
-    const courseResult = await getCourseByQuery(id);
-    
-    // Kiểm tra nếu có lỗi
-    if (courseResult.error) {
-      return NextResponse.json({ 
-        success: false,
-        message: courseResult.error
-      }, { status: courseResult.status });
-    }
-    
-    const course = courseResult.course;
-    
-    // Kiểm tra quyền truy cập - chỉ admin mới có thể cập nhật
-    const permissions = await checkCourseAccess(request, course);
-    
-    // PATCH yêu cầu quyền admin
-    if (!permissions.canViewAllCourses || !permissions.user || permissions.user.role !== 'admin') {
-      return NextResponse.json({ 
-        success: false,
-        message: 'Bạn không có quyền đồng bộ khóa học này'
-      }, { status: 403 });
-    }
-    
-    // Tiếp tục với logic PATCH hiện có
     console.log('🔄 [PATCH] Bắt đầu đồng bộ khóa học với ID:', id);
     
     // Lấy body request nếu có
@@ -798,23 +580,737 @@ export async function PATCH(request, { params }) {
       console.log('⚠️ [PATCH] Không có request body hoặc lỗi parse JSON:', e.message);
     }
     
-    // Logic PATCH hiện tại vẫn giữ nguyên...
-    // ...
+    // Kiểm tra chế độ xem trước và các tham số khác
+    const previewMode = requestBody.preview === true;
+    const applyProcessedLinks = requestBody.applyProcessedLinks === true;
+    const manualJson = requestBody.manualJson; // Dữ liệu JSON do người dùng nhập vào
+    
+    // Sửa đổi: Kiểm tra cache trước khi quyết định có sử dụng cache hay không
+    // Nếu đã có dữ liệu trong cache cho ID này, sử dụng nó ngay cả khi không có tham số useCache
+    const hasExistingCache = kimvanDataCache.has(id);
+    const useCache = requestBody.useCache === true || applyProcessedLinks === true || hasExistingCache;
+    
+    console.log(`🔍 [PATCH] Chế độ xem trước: ${previewMode ? 'Bật' : 'Tắt'}`);
+    console.log(`🔗 [PATCH] Áp dụng link đã xử lý: ${applyProcessedLinks ? 'Bật' : 'Tắt'}`);
+    console.log(`💾 [PATCH] Sử dụng dữ liệu đã lưu tạm: ${useCache ? 'Bật' : 'Tắt'}`);
+    console.log(`📄 [PATCH] Sử dụng JSON từ người dùng: ${manualJson ? 'Có' : 'Không'}`);
+    
+    if (hasExistingCache) {
+      console.log(`💾 [PATCH] Đã phát hiện dữ liệu trong bộ nhớ tạm cho ID ${id}`);
+    }
+    
+    // Đảm bảo kết nối đến MongoDB trước khi truy vấn
+    await connectDB();
+    
+    if (!id) {
+      return NextResponse.json(
+        { message: 'Thiếu ID khóa học' },
+        { status: 400 }
+      );
+    }
+    
+    // Kiểm tra xem khóa học có tồn tại không
+    console.log('🔍 [PATCH] Tìm kiếm khóa học trong database với kimvanId:', id);
+    const existingCourse = await Course.findOne({ kimvanId: id }).lean().exec();
+    if (!existingCourse) {
+      console.log('❌ [PATCH] Không tìm thấy khóa học với kimvanId:', id);
+      return NextResponse.json(
+        { 
+          success: false,
+          message: 'Không tìm thấy khóa học để đồng bộ' 
+        },
+        { status: 404 }
+      );
+    }
+    
+    console.log('✅ [PATCH] Đã tìm thấy khóa học:', existingCourse._id.toString());
+    
+    // Kiểm tra dữ liệu originalData
+    console.log('=== THÔNG TIN DỮ LIỆU GỐC ===');
+    const hasOriginalData = !!existingCourse.originalData;
+    console.log('1. Có dữ liệu gốc:', hasOriginalData);
+    
+    if (hasOriginalData) {
+      const sheetCount = existingCourse.originalData.sheets?.length || 0;
+      console.log('2. Số lượng sheets trong dữ liệu gốc:', sheetCount);
+      
+      if (sheetCount > 0) {
+        const sampleSheet = existingCourse.originalData.sheets[0];
+        const rowCount = sampleSheet?.data?.[0]?.rowData?.length || 0;
+        console.log('3. Số lượng hàng trong sheet đầu tiên:', rowCount);
+        
+        // Kiểm tra xem có link đã xử lý trong dữ liệu gốc không
+        let processedLinkCount = 0;
+        if (sampleSheet?.data?.[0]?.rowData) {
+          sampleSheet.data[0].rowData.forEach(row => {
+            if (row.values) {
+              row.values.forEach(cell => {
+                const processedUrl = cell.processedUrl || (cell.processedLinks && cell.processedLinks.url);
+                if (processedUrl) processedLinkCount++;
+              });
+            }
+          });
+        }
+        console.log('4. Số lượng link đã xử lý tìm thấy trong sheet đầu tiên:', processedLinkCount);
+      }
+    }
+    
+    // Tạo bản đồ vị trí từ dữ liệu gốc (chứa cả link đã xử lý)
+    const positionMap = createPositionMap(existingCourse.originalData);
+    console.log(`📊 [PATCH] Đã tạo bản đồ vị trí với ${positionMap.size} vị trí đã xử lý`);
+    
+    // Log chi tiết về positionMap để debug
+    console.log('=== THÔNG TIN CHI TIẾT POSITION MAP ===');
+    const positionKeys = Array.from(positionMap.keys());
+    console.log('1. Số lượng vị trí trong map:', positionKeys.length);
+    
+    if (positionKeys.length > 0) {
+      console.log('2. Mẫu vài vị trí đầu tiên:', positionKeys.slice(0, 5));
+      
+      // Phân tích định dạng key
+      const keySample = positionKeys[0];
+      const keyParts = keySample.split('|');
+      console.log('3. Định dạng key:', {
+        sheet: keyParts[0],
+        row: keyParts[1],
+        col: keyParts[2],
+        full: keySample
+      });
+      
+      // Lấy mẫu giá trị của position đầu tiên
+      const firstPositionValue = positionMap.get(positionKeys[0]);
+      console.log('4. Mẫu dữ liệu tại vị trí đầu tiên:', firstPositionValue);
+    }
+    
+    // Khai báo biến để lưu dữ liệu Kimvan
+    let kimvanData;
+    
+    // Kiểm tra nếu có JSON từ người dùng
+    if (manualJson) {
+      console.log('📄 [PATCH] Sử dụng dữ liệu JSON do người dùng cung cấp');
+      kimvanData = manualJson;
+      
+      // Lưu dữ liệu vào bộ nhớ tạm
+      console.log('💾 [PATCH] Lưu dữ liệu JSON do người dùng cung cấp vào bộ nhớ tạm');
+      kimvanDataCache.set(id, kimvanData);
+      
+      // Thiết lập xóa cache sau 30 phút
+      setTimeout(() => {
+        console.log(`🗑️ [PATCH] Xóa dữ liệu tạm cho khóa học ${id}`);
+        kimvanDataCache.delete(id);
+      }, 30 * 60 * 1000);
+    }
+    // Kiểm tra nếu sử dụng dữ liệu từ bộ nhớ tạm
+    else if (useCache && kimvanDataCache.has(id)) {
+      console.log('💾 [PATCH] Sử dụng dữ liệu đã lưu trong bộ nhớ tạm');
+      kimvanData = kimvanDataCache.get(id);
+    } else {
+      // Gọi API để lấy dữ liệu mới từ Kimvan
+      console.log(`🔄 [PATCH] Đang gọi API kimvan với ID: ${id}`);
+      const kimvanUrl = new URL(request.url);
+      const origin = kimvanUrl.origin;
+      const kimvanApiUrl = `${origin}/api/spreadsheets/${id}`;
+      console.log(`🌐 [PATCH] URL đích: ${kimvanApiUrl}`);
+      
+      // Chuẩn bị options cho fetch request
+      const fetchOptions = {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      };
+      
+      // Nếu có originalPrice, thêm vào body của request
+      if (requestBody.originalPrice) {
+        console.log(`📎 [PATCH] Thêm originalPrice: ${requestBody.originalPrice} vào request`);
+        fetchOptions.method = 'POST';
+        fetchOptions.body = JSON.stringify({
+          originalPrice: requestBody.originalPrice
+        });
+      }
+      
+      const kimvanResponse = await fetch(kimvanApiUrl, fetchOptions);
+      
+      if (!kimvanResponse.ok) {
+        console.log(`❌ [PATCH] Lỗi khi gọi API: ${kimvanResponse.status}`);
+        return NextResponse.json(
+          { 
+            success: false,
+            message: 'Không thể lấy dữ liệu từ Kimvan API',
+            error: `Lỗi: ${kimvanResponse.status}` 
+          },
+          { status: 500 }
+        );
+      }
+      
+      console.log('✅ [PATCH] Đã nhận dữ liệu từ kimvan API thành công!');
+      kimvanData = await kimvanResponse.json();
+      
+      // Lưu dữ liệu vào bộ nhớ tạm dù đang ở chế độ nào - Sửa đổi ở đây
+      console.log('💾 [PATCH] Lưu dữ liệu vào bộ nhớ tạm');
+      kimvanDataCache.set(id, kimvanData);
+      
+      // Thiết lập xóa cache sau 30 phút
+      setTimeout(() => {
+        console.log(`🗑️ [PATCH] Xóa dữ liệu tạm cho khóa học ${id}`);
+        kimvanDataCache.delete(id);
+      }, 30 * 60 * 1000);
+    }
+    
+    // Thêm log để kiểm tra xem kimvanData có chứa thông tin đã xử lý không
+    console.log(`🔍 [PATCH] Kiểm tra dữ liệu trước khi lưu:`);
+    let processedUrlCount = 0;
+    if (kimvanData.sheets && Array.isArray(kimvanData.sheets)) {
+      kimvanData.sheets.forEach(sheet => {
+        if (sheet.data && Array.isArray(sheet.data)) {
+          sheet.data.forEach(sheetData => {
+            if (sheetData.rowData && Array.isArray(sheetData.rowData)) {
+              sheetData.rowData.forEach(row => {
+                if (row.values && Array.isArray(row.values)) {
+                  row.values.forEach(cell => {
+                    if (cell.processedLinks && cell.processedLinks.url) {
+                      processedUrlCount++;
+                    }
+                  });
+                }
+              });
+            }
+          });
+        }
+      });
+    }
+    console.log(`🔢 [PATCH] Số link đã xử lý trong dữ liệu sẽ lưu: ${processedUrlCount}`);
 
-    // Cập nhật permissions trong response
-    return NextResponse.json({ 
-      success: true, 
-      message: 'Đồng bộ khóa học thành công',
-      [PERMISSION_TYPES.ENROLLED]: permissions.isEnrolled,
-      [PERMISSION_TYPES.VIEW_ALL]: permissions.canViewAllCourses,
-      [PERMISSION_TYPES.REQUIRES_ENROLLMENT]: permissions.requiresEnrollment
+    // Đếm số lượng link trong dữ liệu mới
+    let processedLinksInNewData = 0;
+    let totalLinks = 0;
+    
+    console.log(`🔄 [PATCH] Bắt đầu xử lý dữ liệu từ KimVan, kiểm tra khớp với dữ liệu đã xử lý...`);
+    
+    if (kimvanData.sheets && Array.isArray(kimvanData.sheets)) {
+      kimvanData.sheets.forEach((sheet, sheetIndex) => {
+        const sheetTitle = sheet?.properties?.title || `Sheet ${sheetIndex + 1}`;
+        console.log(`🔍 [PATCH] Đang xử lý sheet "${sheetTitle}"`);
+        
+        if (sheet.data && Array.isArray(sheet.data)) {
+          sheet.data.forEach((sheetData, dataIndex) => {
+            if (sheetData.rowData && Array.isArray(sheetData.rowData)) {
+              sheetData.rowData.forEach((row, rowIndex) => {
+                if (row.values && Array.isArray(row.values)) {
+                  row.values.forEach((cell, cellIndex) => {
+                    // Kiểm tra nếu cell có link hoặc đã bị xóa link
+                    const originalUrl = cell.userEnteredFormat?.textFormat?.link?.uri || cell.hyperlink || cell.originalUrl;
+                    const wasLinkRemoved = cell.linkRemoved === true;
+                    
+                    if (originalUrl || wasLinkRemoved) {
+                      totalLinks++;
+                      
+                      // Kiểm tra xem link có được đánh dấu là giả không từ API spreadsheets
+                      const isFakeLink = cell.isFakeLink === true;
+                      
+                      if (isFakeLink || wasLinkRemoved) {
+                        console.log(`🚫 [PATCH] ${wasLinkRemoved ? 'Link giả mạo đã bị xóa' : 'Phát hiện link giả mạo'} tại Sheet ${sheetTitle}, Hàng ${rowIndex + 1}, Cột ${cellIndex + 1}`);
+                      }
+                      
+                      // CHỈ sử dụng vị trí để tìm kiếm, bỏ qua nội dung URL
+                      const positionKey = `${sheetTitle}|${rowIndex}|${cellIndex}`;
+                      
+                      // Tìm kiếm dựa trên vị trí
+                      if (positionMap.has(positionKey)) {
+                        const processedInfo = positionMap.get(positionKey);
+                        
+                        // Kiểm tra xem có originalUrl hay processedUrl không
+                        // Ưu tiên sử dụng processedUrl nếu có, nếu không thì dùng originalUrl
+                        const urlToUse = processedInfo.processedUrl || processedInfo.originalUrl;
+                        
+                        if (urlToUse) {
+                          processedLinksInNewData++;
+                          
+                          // Thêm thông tin về file đã xử lý vào cell - ĐẢM BẢO LƯU VÀO MONGODB
+                          if (!cell.processedLinks) {
+                            cell.processedLinks = {};
+                          }
+                          
+                          // Lưu cả processedUrl và originalUrl để tham chiếu
+                          cell.processedLinks.url = processedInfo.processedUrl || null;
+                          cell.processedLinks.originalUrl = processedInfo.originalUrl;
+                          cell.processedLinks.processedAt = processedInfo.processedAt;
+                          cell.processedLinks.usedOriginalUrl = !processedInfo.processedUrl; // Đánh dấu đã sử dụng URL gốc
+                          
+                          // Thêm thông tin vị trí để dễ truy xuất sau này
+                          cell.processedLinks.position = {
+                            sheet: sheetTitle,
+                            row: rowIndex,
+                            col: cellIndex
+                          };
+                          
+                          // Cách cũ - có thể bị MongoDB bỏ qua
+                          cell.processedUrl = processedInfo.processedUrl;
+                          cell.processedAt = processedInfo.processedAt;
+                          
+                          // QUAN TRỌNG: Đảm bảo URL được thêm vào cấu trúc cell để hiển thị trong UI
+                          // Tạo lại cấu trúc link trong cell
+                          if (!cell.userEnteredFormat) {
+                            cell.userEnteredFormat = {};
+                          }
+                          if (!cell.userEnteredFormat.textFormat) {
+                            cell.userEnteredFormat.textFormat = {};
+                          }
+                          if (!cell.userEnteredFormat.textFormat.link) {
+                            cell.userEnteredFormat.textFormat.link = {};
+                          }
+                          
+                          // Thêm URL vào cả hai vị trí để đảm bảo hiển thị
+                          cell.userEnteredFormat.textFormat.link.uri = urlToUse;
+                          cell.hyperlink = urlToUse;
+                          
+                          // Nếu không có text hiển thị, thêm một text mặc định
+                          if (!cell.formattedValue) {
+                            cell.formattedValue = processedInfo.processedUrl ? "Tài liệu đã xử lý" : "Tài liệu gốc";
+                          }
+                          
+                          console.log(`✅ [PATCH] Sheet ${sheetTitle}, Hàng ${rowIndex + 1}, Cột ${cellIndex + 1}: Đã áp dụng link theo vị trí`);
+                          if (wasLinkRemoved) {
+                            console.log(`   - Link gốc: [Đã xóa link giả mạo]`);
+                          } else {
+                            console.log(`   - Link gốc: ${originalUrl ? originalUrl.substring(0, 50) + '...' : '[Unknown]'}`);
+                          }
+                          
+                          if (processedInfo.processedUrl) {
+                            console.log(`   - Link đã xử lý: ${processedInfo.processedUrl.substring(0, 50)}...`);
+                          } else {
+                            console.log(`   - Sử dụng link gốc (chưa xử lý): ${processedInfo.originalUrl.substring(0, 50)}...`);
+                          }
+                          
+                          console.log(`   - Đã thêm link vào cấu trúc cell để hiển thị trong UI`);
+                        } else if (isFakeLink || wasLinkRemoved) {
+                          // Nếu là link giả đã bị xóa, nhưng không có bản đã xử lý
+                          console.log(`ℹ️ [PATCH] Sheet ${sheetTitle}, Hàng ${rowIndex + 1}, Cột ${cellIndex + 1}: Link giả mạo chưa được xử lý`);
+                        }
+                      } else {
+                        // Không tìm thấy trong positionMap
+                        console.log(`ℹ️ [PATCH] Sheet ${sheetTitle}, Hàng ${rowIndex + 1}, Cột ${cellIndex + 1}: Không tìm thấy link trong bản đồ vị trí`);
+                        
+                        // Nếu là link giả mạo, sử dụng hyperlink thay vì URL giả
+                        if (isFakeLink && cell.hyperlink) {
+                          console.log(`🔄 [PATCH] Sử dụng hyperlink làm dự phòng: ${cell.hyperlink}`);
+                          
+                          // Thêm thông tin về file vào cell
+                          if (!cell.processedLinks) {
+                            cell.processedLinks = {};
+                          }
+                          
+                          cell.processedLinks.url = cell.hyperlink;
+                          cell.processedLinks.originalUrl = originalUrl;
+                          cell.processedLinks.processedAt = new Date();
+                          cell.processedLinks.usedHyperlink = true; // Đánh dấu đã sử dụng hyperlink
+                          
+                          // Thêm thông tin vị trí để dễ truy xuất sau này
+                          cell.processedLinks.position = {
+                            sheet: sheetTitle,
+                            row: rowIndex,
+                            col: cellIndex
+                          };
+                          
+                          // Đảm bảo URL được thêm vào cấu trúc cell để hiển thị trong UI
+                          if (!cell.userEnteredFormat) {
+                            cell.userEnteredFormat = {};
+                          }
+                          if (!cell.userEnteredFormat.textFormat) {
+                            cell.userEnteredFormat.textFormat = {};
+                          }
+                          if (!cell.userEnteredFormat.textFormat.link) {
+                            cell.userEnteredFormat.textFormat.link = {};
+                          }
+                          
+                          // Thêm hyperlink vào các vị trí để đảm bảo hiển thị
+                          cell.userEnteredFormat.textFormat.link.uri = cell.hyperlink;
+                          
+                          // Đánh dấu đã sử dụng hyperlink
+                          processedLinksInNewData++;
+                          
+                          console.log(`✅ [PATCH] Sheet ${sheetTitle}, Hàng ${rowIndex + 1}, Cột ${cellIndex + 1}: Đã sử dụng hyperlink làm dự phòng`);
+                        }
+                      }
+                    }
+                  });
+                }
+              });
+            }
+          });
+        }
+      });
+    }
+    
+    console.log(`📊 [PATCH] Tổng số link trong dữ liệu mới: ${totalLinks}`);
+    console.log(`📊 [PATCH] Số link đã xử lý được áp dụng: ${processedLinksInNewData}`);
+    
+    // Xử lý dữ liệu dựa vào cấu trúc thực tế từ API
+    let courseName = '';
+    
+    // Kiểm tra cấu trúc dữ liệu và lấy tên khóa học
+    if (kimvanData && typeof kimvanData === 'object') {
+      if (kimvanData.name) {
+        courseName = kimvanData.name;
+      } else if (kimvanData.data && kimvanData.data.name) {
+        courseName = kimvanData.data.name;
+      } else if (Array.isArray(kimvanData) && kimvanData.length > 0 && kimvanData[0].name) {
+        courseName = kimvanData[0].name;
+      }
+    }
+    
+    console.log('📝 [PATCH] Tên khóa học được xác định:', courseName || 'Không xác định được tên');
+    
+    // Tạo document mới để thay thế dữ liệu cũ
+    const newCourseData = {
+      _id: existingCourse._id,
+      kimvanId: existingCourse.kimvanId,
+      name: courseName || existingCourse.name,
+      description: courseName 
+        ? `Khóa học ${courseName}` 
+        : existingCourse.description,
+      price: existingCourse.price || 500000,
+      originalPrice: existingCourse.originalPrice || '',  // Giữ nguyên originalPrice
+      status: existingCourse.status || 'active',
+      createdAt: existingCourse.createdAt || new Date(),
+      updatedAt: new Date(),
+      processedDriveFiles: existingCourse.processedDriveFiles || [],
+      originalData: kimvanData
+    };
+    
+    // Thêm log để kiểm tra xem dữ liệu đã xử lý đúng chưa
+    console.log(`💾 [PATCH] Lưu dữ liệu đã xử lý với ${processedLinksInNewData} link đã áp dụng`);
+
+    // Tạo dữ liệu xem trước để trả về client
+    const previewData = {
+      courseInfo: {
+        name: newCourseData.name,
+        description: newCourseData.description,
+        price: newCourseData.price,
+        originalPrice: newCourseData.originalPrice,
+        status: newCourseData.status
+      },
+      stats: {
+        totalLinks,
+        processedLinks: processedLinksInNewData,
+        totalSheets: kimvanData.sheets?.length || 0,
+        preservedProcessedFiles: positionMap.size
+      },
+      sampleSheet: kimvanData.sheets && kimvanData.sheets.length > 0 
+        ? {
+            title: kimvanData.sheets[0]?.properties?.title || 'Sheet 1',
+            rowCount: kimvanData.sheets[0]?.data?.[0]?.rowData?.length || 0,
+            firstFewRows: kimvanData.sheets[0]?.data?.[0]?.rowData?.slice(0, 5) || []
+          }
+        : null,
+      // Thêm danh sách đầy đủ các link
+      allLinks: {
+        processed: [],
+        unprocessed: []
+      },
+      // Thêm danh sách processedLinks để có thể phân tích
+      processedLinks: Array.from(positionMap.entries()).map(([key, value]) => {
+        const parts = key.split('|');
+        return {
+          position: {
+            key,
+            sheet: parts[0],
+            row: parseInt(parts[1]),
+            col: parseInt(parts[2])
+          },
+          originalUrl: value.originalUrl,
+          processedUrl: value.processedUrl,
+          processedAt: value.processedAt
+        };
+      }),
+      // Thêm thông tin về link giả mạo
+      fakeLinksInfo: {
+        detectionEnabled: true,
+        removalEnabled: true,
+        message: "API KimVan trả về các link giả mạo. Các link giả mạo đã bị xóa hoàn toàn khỏi dữ liệu."
+      }
+    };
+    
+    // Thu thập tất cả các link
+    if (kimvanData.sheets && Array.isArray(kimvanData.sheets)) {
+      kimvanData.sheets.forEach((sheet, sheetIndex) => {
+        const sheetTitle = sheet?.properties?.title || `Sheet ${sheetIndex + 1}`;
+        
+        if (sheet.data && Array.isArray(sheet.data)) {
+          sheet.data.forEach((sheetData) => {
+            if (sheetData.rowData && Array.isArray(sheetData.rowData)) {
+              sheetData.rowData.forEach((row, rowIndex) => {
+                if (row.values && Array.isArray(row.values)) {
+                  row.values.forEach((cell, cellIndex) => {
+                    const originalUrl = cell.userEnteredFormat?.textFormat?.link?.uri || cell.hyperlink || cell.originalUrl;
+                    const wasLinkRemoved = cell.linkRemoved === true;
+                    const isFakeLink = cell.isFakeLink === true;
+                    const processedUrl = cell.processedUrl || (cell.processedLinks && cell.processedLinks.url);
+                    
+                    if (originalUrl || wasLinkRemoved) {
+                      const displayText = cell.formattedValue || "Link đã bị xóa";
+                      const position = {
+                        sheet: sheetTitle,
+                        row: rowIndex,
+                        col: cellIndex
+                      };
+                      
+                      // Chuẩn bị thông tin link
+                      const linkInfo = {
+                        originalUrl: originalUrl || "Link đã bị xóa",
+                        displayText,
+                        position,
+                        wasLinkRemoved,
+                        isFakeLink
+                      };
+                      
+                      // Phân loại link
+                      if (processedUrl) {
+                        linkInfo.processedUrl = processedUrl;
+                        linkInfo.processedAt = cell.processedAt || (cell.processedLinks && cell.processedLinks.processedAt);
+                        previewData.allLinks.processed.push(linkInfo);
+                      } else {
+                        previewData.allLinks.unprocessed.push(linkInfo);
+                      }
+                    }
+                  });
+                }
+              });
+            }
+          });
+        }
+      });
+    }
+    
+    console.log(`📊 [PATCH] Số link đã xử lý trong danh sách: ${previewData.allLinks.processed.length}`);
+    console.log(`📊 [PATCH] Số link chưa xử lý trong danh sách: ${previewData.allLinks.unprocessed.length}`);
+    
+    // Nếu ở chế độ xem trước, chỉ trả về dữ liệu xem trước
+    if (previewMode || requestBody.preview === true) {
+      console.log('🔍 [PATCH] Trả về dữ liệu xem trước và không cập nhật database');
+      return NextResponse.json({
+        success: true,
+        message: 'Xem trước dữ liệu đồng bộ - Database chưa được cập nhật',
+        preview: true,
+        previewData
+      });
+    }
+    
+    // Nếu không phải chế độ xem trước, cập nhật database
+    console.log('💾 [PATCH] Cập nhật dữ liệu vào database');
+    
+    // Trước khi cập nhật dữ liệu, đảm bảo giữ lại thông tin processedDriveFiles hiện có
+    newCourseData.processedDriveFiles = existingCourse.processedDriveFiles || [];
+    
+    // Thêm thông tin từ positionMap vào processedDriveFiles nếu chưa có
+    // Việc này giúp lưu trữ thông tin vị trí cho các lần đồng bộ sau
+    if (positionMap.size > 0) {
+      console.log(`📝 [PATCH] Cập nhật thông tin vị trí vào processedDriveFiles`);
+      
+      // Lấy tất cả các entry từ positionMap, kể cả chưa xử lý
+      // Chỉ cần đảm bảo có thông tin vị trí
+      const allEntries = Array.from(positionMap.entries())
+        .map(([key, value]) => {
+          const parts = key.split('|');
+          return {
+            originalUrl: value.originalUrl,
+            processedUrl: value.processedUrl, // Có thể null
+            processedAt: value.processedAt, // Có thể null
+            position: {
+              sheet: parts[0],
+              row: parseInt(parts[1]),
+              col: parseInt(parts[2])
+            }
+          };
+        });
+      
+      // Tạo Map cho các processedDriveFiles hiện có để dễ dàng tìm kiếm
+      const existingFilesByPosition = {};
+      newCourseData.processedDriveFiles.forEach(file => {
+        if (file.position) {
+          const posKey = `${file.position.sheet}|${file.position.row}|${file.position.col}`;
+          existingFilesByPosition[posKey] = file;
+        }
+      });
+      
+      // Thêm hoặc cập nhật các entries
+      allEntries.forEach(entry => {
+        const posKey = `${entry.position.sheet}|${entry.position.row}|${entry.position.col}`;
+        
+        if (existingFilesByPosition[posKey]) {
+          // Vị trí đã tồn tại, kiểm tra xem có cần cập nhật không
+          const existingFile = existingFilesByPosition[posKey];
+          
+          // Chỉ cập nhật nếu có dữ liệu mới
+          if (entry.processedUrl && entry.processedUrl !== existingFile.processedUrl) {
+            existingFile.processedUrl = entry.processedUrl;
+            existingFile.processedAt = entry.processedAt || new Date();
+            console.log(`🔄 [PATCH] Đã cập nhật link đã xử lý cho vị trí ${posKey}`);
+          }
+          
+          // Luôn cập nhật originalUrl mới (URL từ API)
+          existingFile.originalUrl = entry.originalUrl;
+        } 
+        else if (!existingFilesByPosition[posKey]) {
+          // Vị trí chưa tồn tại, thêm mới vào processedDriveFiles
+          newCourseData.processedDriveFiles.push(entry);
+          console.log(`➕ [PATCH] Đã thêm vị trí mới vào processedDriveFiles: ${posKey}`);
+        }
+      });
+      
+      console.log(`📊 [PATCH] processedDriveFiles sau khi cập nhật: ${newCourseData.processedDriveFiles.length} entries`);
+    }
+    
+    // Đảm bảo dữ liệu processed links được lưu đúng cách
+    // Chuyển đổi đối tượng sang chuỗi JSON và ngược lại để bảo toàn tất cả thuộc tính
+    const serializedData = JSON.stringify(kimvanData);
+    const deserializedData = JSON.parse(serializedData);
+    newCourseData.originalData = deserializedData;
+    
+    console.log(`🔧 [PATCH] Dữ liệu đã được serialize để đảm bảo lưu đúng các link đã xử lý`);
+    
+    // Cập nhật thông tin về processedLinks cho previewData
+    if (previewMode) {
+      // Thống kê số lượng link giả mạo
+      let fakeLinksCount = 0;
+      let removedLinksCount = 0;
+      let totalProcessedFakeLinks = 0;
+      let totalProcessedRemovedLinks = 0;
+      
+      // Đếm trong processed links
+      if (previewData.allLinks && previewData.allLinks.processed) {
+        totalProcessedFakeLinks = previewData.allLinks.processed.filter(link => link.isFakeLink).length;
+        totalProcessedRemovedLinks = previewData.allLinks.processed.filter(link => link.wasLinkRemoved).length;
+        fakeLinksCount += totalProcessedFakeLinks;
+        removedLinksCount += totalProcessedRemovedLinks;
+      }
+      
+      // Đếm trong unprocessed links
+      let totalUnprocessedFakeLinks = 0;
+      let totalUnprocessedRemovedLinks = 0;
+      if (previewData.allLinks && previewData.allLinks.unprocessed) {
+        totalUnprocessedFakeLinks = previewData.allLinks.unprocessed.filter(link => link.isFakeLink).length;
+        totalUnprocessedRemovedLinks = previewData.allLinks.unprocessed.filter(link => link.wasLinkRemoved).length;
+        fakeLinksCount += totalUnprocessedFakeLinks;
+        removedLinksCount += totalUnprocessedRemovedLinks;
+      }
+      
+      // Thêm debug info
+      previewData.debug = {
+        positionMapInfo: {
+          totalEntries: positionMap.size,
+          processedEntries: Array.from(positionMap.values()).filter(v => v.isProcessed).length,
+          sampleEntries: Array.from(positionMap.entries()).slice(0, 5).map(([key, value]) => ({
+            key,
+            originalUrl: value.originalUrl ? value.originalUrl.substring(0, 50) + '...' : null,
+            processedUrl: value.processedUrl ? value.processedUrl.substring(0, 50) + '...' : null,
+            isProcessed: value.isProcessed
+          }))
+        },
+        matchingStats: {
+          totalLinks,
+          processedMatches: processedLinksInNewData,
+          totalFakeLinks: fakeLinksCount,
+          totalRemovedLinks: removedLinksCount,
+          processedFakeLinks: totalProcessedFakeLinks,
+          processedRemovedLinks: totalProcessedRemovedLinks,
+          unprocessedFakeLinks: totalUnprocessedFakeLinks,
+          unprocessedRemovedLinks: totalUnprocessedRemovedLinks
+        }
+      };
+      
+      // Thêm thông tin từ processedDriveFiles nếu có
+      if (existingCourse.processedDriveFiles && Array.isArray(existingCourse.processedDriveFiles)) {
+        console.log(`🔍 [PATCH] Đang thêm thông tin từ ${existingCourse.processedDriveFiles.length} processedDriveFiles vào previewData`);
+        
+        // Thêm debug info về processedDriveFiles
+        previewData.debug.processedDriveFilesInfo = {
+          totalFiles: existingCourse.processedDriveFiles.length,
+          filesWithPosition: existingCourse.processedDriveFiles.filter(f => f.position).length,
+          sampleFiles: existingCourse.processedDriveFiles.slice(0, 5).map(f => ({
+            originalUrl: f.originalUrl ? f.originalUrl.substring(0, 50) + '...' : null,
+            processedUrl: f.processedUrl ? f.processedUrl.substring(0, 50) + '...' : null,
+            hasPosition: !!f.position,
+            position: f.position ? `${f.position.sheet}|${f.position.row}|${f.position.col}` : null
+          }))
+        };
+        
+        // Chuyển đổi processedDriveFiles thành dạng phù hợp với previewData.processedLinks
+        const additionalLinks = existingCourse.processedDriveFiles
+          .filter(file => file.position && file.position.sheet && typeof file.position.row === 'number' && typeof file.position.col === 'number')
+          .map(file => ({
+            position: {
+              key: `${file.position.sheet}|${file.position.row}|${file.position.col}`,
+              sheet: file.position.sheet,
+              row: file.position.row,
+              col: file.position.col
+            },
+            originalUrl: file.originalUrl,
+            processedUrl: file.processedUrl,
+            processedAt: file.processedAt || new Date(),
+            fromProcessedDriveFiles: true
+          }));
+        
+        console.log(`✅ [PATCH] Đã tìm thấy ${additionalLinks.length} link có thông tin vị trí trong processedDriveFiles`);
+        
+        // Thêm vào previewData.processedLinks nếu chưa có
+        if (additionalLinks.length > 0) {
+          // Tạo Map từ processedLinks hiện có để dễ dàng kiểm tra trùng lặp
+          const existingPositionKeys = new Set(
+            previewData.processedLinks.map(link => `${link.position.sheet}|${link.position.row}|${link.position.col}`)
+          );
+          
+          // Thêm các link không trùng lặp
+          additionalLinks.forEach(link => {
+            const posKey = `${link.position.sheet}|${link.position.row}|${link.position.col}`;
+            if (!existingPositionKeys.has(posKey)) {
+              previewData.processedLinks.push(link);
+              console.log(`➕ [PATCH] Đã thêm link từ processedDriveFiles vào previewData.processedLinks: ${posKey}`);
+            }
+          });
+          
+          console.log(`📊 [PATCH] Tổng số link trong previewData.processedLinks sau khi cập nhật: ${previewData.processedLinks.length}`);
+        }
+      }
+    }
+    
+    const result = await Course.replaceOne(
+      { kimvanId: id },
+      newCourseData
+    );
+    
+    if (result.modifiedCount === 0) {
+      console.log('⚠️ [PATCH] Không có dữ liệu nào được cập nhật');
+      return NextResponse.json(
+        { 
+          success: false,
+          message: 'Không có dữ liệu nào được cập nhật' 
+        },
+        { status: 400 }
+      );
+    }
+    
+    console.log('✅ [PATCH] Đồng bộ khóa học thành công');
+    return NextResponse.json({
+      success: true,
+      message: 'Đồng bộ khóa học thành công - Dữ liệu đã được làm mới hoàn toàn',
+      stats: {
+        totalLinks,
+        processedLinks: processedLinksInNewData,
+        preservedProcessedFiles: positionMap.size,
+        fakeLinksHandled: true,
+        fakeLinksRemoved: true
+      },
+      updatedFields: Object.keys(newCourseData)
     });
   } catch (error) {
-    console.error('❌ Lỗi khi đồng bộ khóa học:', error);
-    return NextResponse.json({ 
-      success: false,
-      message: 'Đã xảy ra lỗi khi đồng bộ khóa học',
-      error: error.message
-    }, { status: 500 });
+    console.error('❌ [PATCH] Lỗi khi đồng bộ khóa học:', error);
+    return NextResponse.json(
+      { 
+        success: false,
+        message: `Lỗi đồng bộ khóa học: ${error.message}` 
+      },
+      { status: 500 }
+    );
   }
 } 
