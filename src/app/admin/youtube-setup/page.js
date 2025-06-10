@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeftIcon, CheckCircleIcon, ExclamationCircleIcon, ArrowPathIcon, PlusCircleIcon, CloudArrowUpIcon, CloudArrowDownIcon, CheckBadgeIcon } from '@heroicons/react/24/outline';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faChrome, faCookie } from '@fortawesome/free-brands-svg-icons';
+import { faChrome } from '@fortawesome/free-brands-svg-icons';
+import { faCookie } from '@fortawesome/free-solid-svg-icons';
 
 export default function DriveSetupPage() {
   const router = useRouter();
