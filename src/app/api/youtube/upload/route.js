@@ -5,12 +5,9 @@ import { mkdir } from 'fs/promises';
 import { v4 as uuidv4 } from 'uuid';
 import clientPromise from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
-import { autoUploadToYoutube } from './youtube-automation.js';
 
 // Thư mục lưu trữ tạm thời
 const TEMP_DIR = path.join(process.cwd(), 'temp');
-// Đường dẫn lưu cookies
-const COOKIES_PATH = path.join(process.cwd(), 'youtube_cookies.json');
 
 // Đảm bảo thư mục tạm tồn tại
 if (!fs.existsSync(TEMP_DIR)) {
@@ -22,36 +19,11 @@ if (!fs.existsSync(TEMP_DIR)) {
  */
 export async function GET(request) {
   try {
-    // Kiểm tra xem đã cài đặt thư viện chưa
-    let YoutubeUploader;
-    try {
-      // Tải thư viện động để tránh lỗi khi build hoặc deploy
-      // Cách này cho phép loading động khi chạy ứng dụng
-      const uploadModule = await import('node-apiless-youtube-upload');
-      YoutubeUploader = uploadModule.default;
-    } catch (importError) {
-      console.error('Lỗi import thư viện:', importError);
-      return NextResponse.json({
-        success: false,
-        message: 'Lỗi khi tải thư viện YouTube upload. Thư viện đã được cài đặt từ GitHub repository.',
-        error: importError.message
-      }, { status: 500 });
-    }
-    
-    // Tạo đối tượng uploader mới
-    const uploader = new YoutubeUploader();
-    console.log('Đang yêu cầu đăng nhập YouTube...');
-    
-    // Mở cửa sổ trình duyệt để đăng nhập
-    await uploader.promptLoginAndGetCookies();
-    
-    // Lưu cookies
-    await uploader.saveCookiesToDisk(COOKIES_PATH);
-    console.log('Đã lưu cookies YouTube tại:', COOKIES_PATH);
-    
+    // API giả lập - không thực sự đăng nhập YouTube
     return NextResponse.json({
       success: true,
-      message: 'Đăng nhập YouTube thành công'
+      message: 'Tính năng đăng nhập YouTube tạm thời bị vô hiệu hóa',
+      info: 'Chức năng này đang được bảo trì'
     });
   } catch (error) {
     console.error('Lỗi đăng nhập YouTube:', error);
@@ -68,39 +40,12 @@ export async function GET(request) {
  */
 export async function HEAD(request) {
   try {
-    // Kiểm tra file cookies
-    if (!fs.existsSync(COOKIES_PATH)) {
-      return NextResponse.json({
-        success: false,
-        loggedIn: false,
-        message: 'Chưa đăng nhập YouTube'
-      }, { status: 401 });
-    }
-    
-    // Tải thư viện động
-    const uploadModule = await import('node-apiless-youtube-upload');
-    const YoutubeUploader = uploadModule.default;
-    
-    // Tạo đối tượng uploader và tải cookies
-    const uploader = new YoutubeUploader();
-    await uploader.loadCookiesFromDisk(COOKIES_PATH);
-    
-    // Kiểm tra tính hợp lệ của cookies
-    const isValid = await uploader.checkCookiesValidity();
-    
-    if (isValid) {
-      return NextResponse.json({
-        success: true,
-        loggedIn: true,
-        message: 'Đã đăng nhập YouTube'
-      });
-    } else {
-      return NextResponse.json({
-        success: false,
-        loggedIn: false,
-        message: 'Phiên đăng nhập YouTube đã hết hạn'
-      }, { status: 401 });
-    }
+    // API giả lập - không kiểm tra trạng thái
+    return NextResponse.json({
+      success: false,
+      loggedIn: false,
+      message: 'Tính năng đăng nhập YouTube tạm thời bị vô hiệu hóa'
+    });
   } catch (error) {
     console.error('Lỗi kiểm tra đăng nhập YouTube:', error);
     return NextResponse.json({
@@ -151,30 +96,51 @@ export async function POST(request) {
       }, { status: 400 });
     }
     
-    // Chuyển đổi file thành buffer
-    const videoBuffer = Buffer.from(await videoFile.arrayBuffer());
-    let thumbnailBuffer = null;
+    // Giả lập upload - tạo fake YouTube ID
+    const fakeYoutubeId = `YT_${uuidv4().substring(0, 8)}`;
     
-    if (thumbnailFile) {
-      thumbnailBuffer = Buffer.from(await thumbnailFile.arrayBuffer());
-    }
+    // Lưu thông tin vào database
+    const mongoClient = await clientPromise;
+    const db = mongoClient.db('kimvan');
+    const courseObjectId = new ObjectId(courseId);
     
-    // Gọi hàm tải lên YouTube
-    const result = await autoUploadToYoutube({
-      courseId,
-      title,
-      description,
-      videoBuffer,
-      videoName: videoFile.name,
-      thumbnailBuffer,
-      thumbnailName: thumbnailFile ? thumbnailFile.name : null,
-      visibility
-    });
+    const videoData = {
+      courseId: courseObjectId,
+      youtubeId: fakeYoutubeId,
+      title: title,
+      description: description || '',
+      visibility: visibility || 'unlisted',
+      uploadDate: new Date(),
+      fileName: videoFile.name || 'video.mp4',
+      fileSize: Buffer.from(await videoFile.arrayBuffer()).length,
+      uploadType: 'simulated-upload'
+    };
     
+    const insertResult = await db.collection('course_videos').insertOne(videoData);
+    
+    // Cập nhật khóa học
+    await db.collection('courses').updateOne(
+      { _id: courseObjectId },
+      { 
+        $push: { videos: insertResult.insertedId },
+        $set: { updatedAt: new Date() }
+      }
+    );
+    
+    // Trả về kết quả giả lập
     return NextResponse.json({
       success: true,
-      message: `Đã tải video "${title}" lên YouTube thành công`,
-      result
+      message: `Đã giả lập tải video "${title}" lên YouTube (tính năng đang được bảo trì)`,
+      result: {
+        video: {
+          id: fakeYoutubeId,
+          dbId: insertResult.insertedId,
+          title: title,
+          url: `https://youtube.com/watch?v=${fakeYoutubeId}`,
+          embedUrl: `https://www.youtube.com/embed/${fakeYoutubeId}`,
+          visibility: visibility || 'unlisted'
+        }
+      }
     });
     
   } catch (error) {
@@ -248,14 +214,12 @@ export async function DELETE(request) {
       message: 'Đã xóa video thành công',
       videoData: videoData || { youtubeId: videoId }
     });
-    
   } catch (error) {
-    console.error('Lỗi xóa video:', error);
-    
+    console.error('Lỗi khi xóa video:', error);
     return NextResponse.json({
       success: false,
       message: 'Lỗi khi xóa video',
       error: error.message
     }, { status: 500 });
   }
-} 
+}
