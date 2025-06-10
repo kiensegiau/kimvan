@@ -949,7 +949,7 @@ export async function checkDriveLinkStatus(driveUrl) {
 }
 
 // Hàm xử lý folder đệ quy
-export async function processRecursiveFolder(folderIdOrLink, maxDepth = 5, currentDepth = 0, backgroundImage = null, backgroundOpacity = 0.15, courseName = null, skipWatermarkRemoval = false) {
+export async function processRecursiveFolder(folderIdOrLink, maxDepth = 5, currentDepth = 0, backgroundImage = null, backgroundOpacity = 0.15, courseName = null, skipWatermarkRemoval = false, mongoClient = null) {
   if (currentDepth > maxDepth) {
     console.log(`Đã đạt đến độ sâu tối đa (${maxDepth}), dừng đệ quy`);
     return {
@@ -1035,7 +1035,8 @@ export async function processRecursiveFolder(folderIdOrLink, maxDepth = 5, curre
               backgroundImage,
               backgroundOpacity,
               courseName,
-              skipWatermarkRemoval
+              skipWatermarkRemoval,
+              mongoClient
             );
             
             if (subFolderResult.success) {

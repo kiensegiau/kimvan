@@ -139,19 +139,21 @@ if (!isMainThread) {
 
 // Next.js API route handler
 export async function POST(request) {
+  let mongoClient = null;
   let tempDir = null;
   let processedFilePath = null;
   let processingFolders = [];
   
-  // Bắt đầu theo dõi bộ nhớ
-  memoryMonitor.logMemoryStats('Bắt đầu API');
-  
   try {
-    // Kết nối MongoDB ngay từ đầu trong thread chính
-    // để tất cả các worker thread có thể sử dụng lại kết nối này
+    // Bắt đầu đo thời gian
+    const startTime = Date.now();
+    
+    // Log thông tin bộ nhớ
+    memoryMonitor.logMemoryStats('Bắt đầu API');
+    
+    // Kết nối MongoDB ngay từ đầu trong thread chính - CHỈ KẾT NỐI MỘT LẦN
     try {
-      // Sử dụng module kết nối tập trung thay vì clientPromise
-      const mongoClient = await getMongoClient();
+      mongoClient = await getMongoClient();
       console.log('📊 Thiết lập kết nối MongoDB trong thread chính thành công');
     } catch (mongoError) {
       console.error(`📊 Lỗi kết nối MongoDB: ${mongoError.message}`);
@@ -1273,7 +1275,8 @@ async function handleDriveFolder(driveFolderLink, backgroundImage, backgroundOpa
         backgroundImage,
         backgroundOpacity,
         courseName,
-        skipWatermarkRemoval
+        skipWatermarkRemoval,
+        mongoClient // Truyền kết nối MongoDB đã tồn tại vào hàm xử lý đệ quy
       );
       
       if (!recursiveResult.success) {

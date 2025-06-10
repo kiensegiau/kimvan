@@ -30,7 +30,7 @@ export function createConvertWorker(gsPath, pdfPath, pngPath, page, numPages, dp
           page,
           numPages,
           dpi,
-          connectToDB: false // Thêm flag không kết nối đến DB
+          connectToDB: false // Đảm bảo luôn tắt kết nối DB trong worker
         }
       });
       
@@ -131,7 +131,7 @@ export function createProcessWorker(pngPath, page, numPages, config) {
           page,
           numPages,
           config,
-          connectToDB: false // Thêm flag không kết nối đến DB
+          connectToDB: false // Luôn tắt kết nối DB trong worker để tránh quá nhiều kết nối
         }
       });
       
@@ -202,20 +202,17 @@ export function createProcessWorker(pngPath, page, numPages, config) {
                 page,
                 index: page - 1,
                 processedPngPath,
-                warning: `Sử dụng file gốc do worker exit với mã lỗi ${code}`
+                warning: `Sử dụng file gốc do worker kết thúc với mã lỗi ${code}`
               });
               return;
             }
           } catch (copyError) {
-            console.error(`Không thể sao chép file gốc từ worker exit: ${copyError.message}`);
+            console.error(`Không thể sao chép file gốc khi worker exit: ${copyError.message}`);
           }
-          
-          // Nếu không thể sao chép, reject với lỗi
-          reject(new Error(`Worker kết thúc với mã lỗi ${code}`));
         }
       });
-    } catch (workerError) {
-      reject(new Error(`Không thể tạo worker xử lý ảnh: ${workerError.message}`));
+    } catch (error) {
+      reject(error);
     }
   });
 }
