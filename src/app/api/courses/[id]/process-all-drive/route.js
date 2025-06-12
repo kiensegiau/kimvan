@@ -250,14 +250,20 @@ export async function POST(request, { params }) {
           
           // Kiểm tra link đã xử lý còn tồn tại không
           try {
-            const linkStatus = await checkDriveLinkStatus(existingProcessed.processedUrl);
-            
-            if (!linkStatus.exists) {
-              console.log(`Link đã xử lý không còn tồn tại: ${existingProcessed.processedUrl}`);
-              console.log(`Lỗi: ${linkStatus.error}`);
+            // Kiểm tra xem processedUrl có tồn tại không
+            if (!existingProcessed.processedUrl) {
+              console.log(`Link đã xử lý không có URL: ${existingProcessed.originalUrl}`);
               needReprocess = true;
             } else {
-              console.log(`Link đã xử lý vẫn còn tồn tại, bỏ qua xử lý lại`);
+              const linkStatus = await checkDriveLinkStatus(existingProcessed.processedUrl);
+              
+              if (!linkStatus.exists) {
+                console.log(`Link đã xử lý không còn tồn tại: ${existingProcessed.processedUrl}`);
+                console.log(`Lỗi: ${linkStatus.error}`);
+                needReprocess = true;
+              } else {
+                console.log(`Link đã xử lý vẫn còn tồn tại, bỏ qua xử lý lại`);
+              }
             }
           } catch (statusError) {
             console.error(`Lỗi khi kiểm tra trạng thái link: ${statusError.message}`);
