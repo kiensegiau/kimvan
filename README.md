@@ -251,3 +251,89 @@ GET /api/spreadsheets/{id}/{type}/{course}
 GET /api/cache
 GET /api/redirect
 ```
+
+# Google Sheets API Integration
+
+Ứng dụng này cho phép truy cập và hiển thị dữ liệu từ Google Sheets riêng tư thông qua Google Sheets API.
+
+## Cài đặt
+
+1. Clone repository:
+```bash
+git clone <repository-url>
+cd <repository-folder>
+```
+
+2. Cài đặt các dependencies:
+```bash
+npm install
+```
+
+3. Tạo file `.env.local` trong thư mục gốc với nội dung sau:
+```
+# Google Sheets API credentials
+GOOGLE_CLIENT_EMAIL=your-service-account-email@your-project.iam.gserviceaccount.com
+GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYour Private Key Here\n-----END PRIVATE KEY-----\n"
+```
+
+## Cấu hình Google Cloud và Google Sheets API
+
+1. Tạo một dự án trong [Google Cloud Console](https://console.cloud.google.com/)
+2. Bật Google Sheets API và Google Drive API
+3. Tạo Service Account và tải file JSON chứa credentials
+4. Chia sẻ Google Sheet của bạn với email của service account
+
+### Các bước chi tiết:
+
+#### Bật API Access cho dự án
+1. Truy cập [Google Developers Console](https://console.cloud.google.com/) và tạo dự án mới (hoặc chọn dự án hiện có).
+2. Trong ô "Search for APIs and Services", tìm kiếm "Google Drive API" và bật nó.
+3. Trong ô "Search for APIs and Services", tìm kiếm "Google Sheets API" và bật nó.
+
+#### Tạo Service Account
+1. Đi tới "APIs & Services > Credentials" và chọn "Create credentials > Service account key".
+2. Điền thông tin vào form
+3. Nhấp "Create" và "Done".
+4. Nhấn "Manage service accounts" phía trên Service Accounts.
+5. Nhấn vào biểu tượng ⋮ gần service account vừa tạo và chọn "Manage keys", sau đó nhấp vào "ADD KEY > Create new key".
+6. Chọn JSON key type và nhấn "Create".
+
+Bạn sẽ tự động tải về một file JSON chứa credentials. Nó có thể trông như sau:
+
+```json
+{
+    "type": "service_account",
+    "project_id": "api-project-XXX",
+    "private_key_id": "2cd … ba4",
+    "private_key": "-----BEGIN PRIVATE KEY-----\nNrDyLw … jINQh/9\n-----END PRIVATE KEY-----\n",
+    "client_email": "473000000000-yoursisdifferent@developer.gserviceaccount.com",
+    "client_id": "473 … hd.apps.googleusercontent.com",
+    ...
+}
+```
+
+#### Chia sẻ Google Sheet với Service Account
+Quan trọng! Truy cập Google Sheet của bạn và chia sẻ nó với địa chỉ email `client_email` từ file JSON tải về. Nếu không làm điều này, bạn sẽ gặp lỗi khi cố gắng truy cập spreadsheet.
+
+## Chạy ứng dụng
+
+```bash
+npm run dev
+```
+
+Truy cập http://localhost:3000/preview để sử dụng ứng dụng.
+
+## Cách sử dụng
+
+1. Nhập URL của Google Sheet vào ô input (ví dụ: https://docs.google.com/spreadsheets/d/1A-MW6L9JKAmHfaibkB6OTheoOwUwQtAFOXdmMbeZ5Ao/edit)
+2. Nhấn nút "Lấy dữ liệu từ Sheet"
+3. Dữ liệu từ Google Sheet sẽ được hiển thị dưới dạng bảng
+
+## API Endpoints
+
+### GET /api/sheets/[id]
+
+Lấy dữ liệu từ Google Sheet theo ID.
+
+- **URL Params**: `id` - ID của Google Sheet
+- **Response**: Dữ liệu từ Google Sheet hoặc thông báo lỗi

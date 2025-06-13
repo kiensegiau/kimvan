@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { connectDB } from '@/lib/mongodb';
+import connectDB from '@/lib/mongoose';
 import Course from '@/models/Course';
 
 export async function PUT(request, { params }) {
@@ -8,54 +8,50 @@ export async function PUT(request, { params }) {
     const { id } = params;
     const { sheetIndex, rowIndex, cellIndex, cellData } = await request.json();
 
-    console.log('Cập nhật ô:', { id, sheetIndex, rowIndex, cellIndex });
-
-    // Tìm khóa học theo ID
+    // Tìm khóa học trong database
     const course = await Course.findById(id);
     if (!course) {
       return NextResponse.json({ success: false, message: 'Không tìm thấy khóa học' }, { status: 404 });
     }
 
-    // Kiểm tra dữ liệu gốc
-    if (!course.originalData || !course.originalData.sheets || !course.originalData.sheets[sheetIndex]) {
+    // Kiểm tra dữ liệu sheet
+    if (!course.originalData?.sheets || !course.originalData.sheets[sheetIndex]) {
       return NextResponse.json({ success: false, message: 'Không tìm thấy dữ liệu sheet' }, { status: 400 });
     }
 
-    // Kiểm tra tồn tại của hàng
-    if (!course.originalData.sheets[sheetIndex].data[0].rowData[rowIndex]) {
-      return NextResponse.json({ success: false, message: 'Không tìm thấy hàng cần cập nhật' }, { status: 400 });
+    const sheet = course.originalData.sheets[sheetIndex];
+    if (!sheet.data || !sheet.data[0] || !sheet.data[0].rowData || !sheet.data[0].rowData[rowIndex]) {
+      return NextResponse.json({ success: false, message: 'Không tìm thấy dữ liệu hàng cần cập nhật' }, { status: 400 });
     }
 
-    // Kiểm tra tồn tại của mảng values trong hàng
-    if (!course.originalData.sheets[sheetIndex].data[0].rowData[rowIndex].values) {
-      course.originalData.sheets[sheetIndex].data[0].rowData[rowIndex].values = [];
+    // Kiểm tra và tạo mảng values nếu chưa có
+    if (!sheet.data[0].rowData[rowIndex].values) {
+      sheet.data[0].rowData[rowIndex].values = [];
     }
 
-    // Đảm bảo có đủ các ô trong hàng
-    while (course.originalData.sheets[sheetIndex].data[0].rowData[rowIndex].values.length <= cellIndex) {
-      course.originalData.sheets[sheetIndex].data[0].rowData[rowIndex].values.push({ formattedValue: '' });
+    // Đảm bảo mảng values đủ dài để chứa cellIndex
+    while (sheet.data[0].rowData[rowIndex].values.length <= cellIndex) {
+      sheet.data[0].rowData[rowIndex].values.push({ formattedValue: '' });
     }
 
-    // Cập nhật giá trị cho ô
-    course.originalData.sheets[sheetIndex].data[0].rowData[rowIndex].values[cellIndex] = {
-      formattedValue: cellData.formattedValue || '',
-      // Giữ lại các thuộc tính khác nếu có
-      ...(cellData.userEnteredFormat && { userEnteredFormat: cellData.userEnteredFormat }),
-      ...(cellData.hyperlink && { hyperlink: cellData.hyperlink })
-    };
+    // Cập nhật dữ liệu ô
+    sheet.data[0].rowData[rowIndex].values[cellIndex] = cellData;
 
-    // Đánh dấu là đã sửa đổi để Mongoose cập nhật đúng
+    // Đánh dấu là đã sửa đổi để mongoose lưu thay đổi
     course.markModified('originalData');
     
-    // Lưu thay đổi vào database
+    // Lưu lại vào database
     await course.save();
 
     return NextResponse.json({ 
       success: true, 
-      message: 'Cập nhật ô thành công',
+      message: 'Cập nhật ô thành công' 
     });
   } catch (error) {
     console.error('Lỗi khi cập nhật ô:', error);
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+    return NextResponse.json({ 
+      success: false, 
+      message: `Lỗi khi cập nhật ô: ${error.message}` 
+    }, { status: 500 });
   }
 } 

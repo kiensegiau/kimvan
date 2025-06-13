@@ -105,4 +105,34 @@
   border-radius: 4px;
   overflow-x: auto;
   font-size: 0.875rem;
+}
+
+.tableContainer {
+  margin-top: 2rem;
+  overflow-x: auto;
+}
+
+.dataTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.dataTable th,
+.dataTable td {
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  text-align: left;
+}
+
+.dataTable th {
+  background-color: #f5f5f5;
+  font-weight: bold;
+}
+
+.dataTable tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.dataTable tr:hover {
+  background-color: #f1f1f1;
 } 

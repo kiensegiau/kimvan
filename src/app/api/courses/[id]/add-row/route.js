@@ -1,51 +1,78 @@
 import { NextResponse } from 'next/server';
-import { connectDB } from '@/lib/mongodb';
+import connectDB from '@/lib/mongoose';
 import Course from '@/models/Course';
 
 export async function POST(request, { params }) {
   try {
     await connectDB();
     const { id } = params;
-    const { sheetIndex, rowData } = await request.json();
+    const { sheetIndex, rowIndex, rowData } = await request.json();
 
-    console.log('Thêm hàng mới:', { id, sheetIndex });
-
-    // Tìm khóa học theo ID
+    // Tìm khóa học trong database
     const course = await Course.findById(id);
     if (!course) {
       return NextResponse.json({ success: false, message: 'Không tìm thấy khóa học' }, { status: 404 });
     }
 
-    // Kiểm tra dữ liệu gốc
-    if (!course.originalData || !course.originalData.sheets || !course.originalData.sheets[sheetIndex]) {
+    // Kiểm tra dữ liệu sheet
+    if (!course.originalData?.sheets || !course.originalData.sheets[sheetIndex]) {
       return NextResponse.json({ success: false, message: 'Không tìm thấy dữ liệu sheet' }, { status: 400 });
     }
 
-    // Tạo dữ liệu hàng mới
+    // Thêm hàng mới vào vị trí được chỉ định
+    const sheet = course.originalData.sheets[sheetIndex];
+    if (!sheet.data || !sheet.data[0] || !sheet.data[0].rowData) {
+      sheet.data = [{ rowData: [] }];
+    }
+
+    // Tạo object hàng mới với định dạng đúng
     const newRow = {
-      values: rowData.map(item => ({
-        formattedValue: item.formattedValue || '',
-        // Thêm các thuộc tính khác nếu cần
-        ...(item.userEnteredFormat && { userEnteredFormat: item.userEnteredFormat }),
-        ...(item.hyperlink && { hyperlink: item.hyperlink })
-      }))
+      values: rowData
     };
 
-    // Thêm hàng mới vào cuối danh sách
-    course.originalData.sheets[sheetIndex].data[0].rowData.push(newRow);
+    // Chèn hàng mới vào vị trí rowIndex
+    sheet.data[0].rowData.splice(rowIndex, 0, newRow);
 
-    // Đánh dấu là đã sửa đổi để Mongoose cập nhật đúng
+    // Cập nhật STT cho các hàng sau vị trí chèn nếu cần
+    // Tìm header row để xác định cột STT
+    const headerRow = sheet.data[0].rowData[0];
+    if (headerRow && headerRow.values) {
+      const sttColumnIndex = headerRow.values.findIndex(cell => {
+        const headerText = (cell.formattedValue || '').toLowerCase();
+        return headerText.includes('stt') || headerText.includes('số thứ tự') || headerText === '#';
+      });
+
+      // Nếu tìm thấy cột STT, cập nhật STT cho các hàng phía sau
+      if (sttColumnIndex !== -1) {
+        for (let i = rowIndex + 1; i < sheet.data[0].rowData.length; i++) {
+          const row = sheet.data[0].rowData[i];
+          if (row && row.values && row.values[sttColumnIndex]) {
+            const currentStt = row.values[sttColumnIndex].formattedValue;
+            // Chỉ cập nhật nếu STT là số
+            if (currentStt && !isNaN(parseInt(currentStt))) {
+              const newStt = (i).toString();
+              row.values[sttColumnIndex].formattedValue = newStt;
+            }
+          }
+        }
+      }
+    }
+
+    // Đánh dấu là đã sửa đổi để mongoose lưu thay đổi
     course.markModified('originalData');
     
-    // Lưu thay đổi vào database
+    // Lưu lại vào database
     await course.save();
 
     return NextResponse.json({ 
       success: true, 
-      message: 'Thêm hàng mới thành công',
+      message: 'Thêm hàng thành công' 
     });
   } catch (error) {
-    console.error('Lỗi khi thêm hàng mới:', error);
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+    console.error('Lỗi khi thêm hàng:', error);
+    return NextResponse.json({ 
+      success: false, 
+      message: `Lỗi khi thêm hàng: ${error.message}` 
+    }, { status: 500 });
   }
 } 

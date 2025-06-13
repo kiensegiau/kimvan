@@ -6,10 +6,10 @@ import styles from './page.module.css';
 export default function Preview() {
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState(null);
+  const [sheetData, setSheetData] = useState(null);
   const [error, setError] = useState(null);
 
-  const handleTestBrowser = async () => {
+  const handleFetchSheetData = async () => {
     if (!url) {
       setError('Vui lòng nhập URL của Google Sheets');
       return;
@@ -17,19 +17,27 @@ export default function Preview() {
 
     setLoading(true);
     setError(null);
-    setResult(null);
+    setSheetData(null);
 
     try {
-      const response = await fetch(`/api/test-browser?url=${encodeURIComponent(url)}`);
-      const data = await response.json();
-
-      if (response.ok) {
-        setResult(data);
-      } else {
-        setError(data.error || 'Có lỗi xảy ra khi mở trình duyệt');
+      // Trích xuất ID từ URL Google Sheets
+      const matches = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
+      if (!matches || !matches[1]) {
+        throw new Error('URL không hợp lệ. Không tìm thấy ID của Google Sheets');
       }
+      
+      const spreadsheetId = matches[1];
+      const response = await fetch(`/api/sheets/${spreadsheetId}`);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Không thể lấy dữ liệu từ Google Sheets');
+      }
+      
+      const data = await response.json();
+      setSheetData(data);
     } catch (err) {
-      setError(err.message || 'Có lỗi xảy ra');
+      setError(err.message || 'Có lỗi xảy ra khi lấy dữ liệu');
     } finally {
       setLoading(false);
     }
@@ -40,9 +48,38 @@ export default function Preview() {
     setUrl(targetUrl);
   };
 
+  const renderTable = () => {
+    if (!sheetData || !sheetData.values || sheetData.values.length === 0) {
+      return null;
+    }
+
+    return (
+      <div className={styles.tableContainer}>
+        <table className={styles.dataTable}>
+          <thead>
+            <tr>
+              {sheetData.values[0].map((header, index) => (
+                <th key={index}>{header}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {sheetData.values.slice(1).map((row, rowIndex) => (
+              <tr key={rowIndex}>
+                {row.map((cell, cellIndex) => (
+                  <td key={cellIndex}>{cell}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
   return (
     <div className={styles.container}>
-      <h1>Preview Google Sheets</h1>
+      <h1>Google Sheets Data</h1>
       
       <div className={styles.form}>
         <div className={styles.formGroup}>
@@ -59,18 +96,18 @@ export default function Preview() {
 
         <div className={styles.buttonGroup}>
           <button 
-            onClick={handleTestBrowser} 
+            onClick={handleFetchSheetData} 
             disabled={loading}
             className={styles.button}
           >
-            {loading ? 'Đang xử lý...' : 'Mở trình duyệt & xem sheet'}
+            {loading ? 'Đang lấy dữ liệu...' : 'Lấy dữ liệu từ Sheet'}
           </button>
           
           <button
             onClick={handleOpenGoogleSheet}
             className={styles.linkButton}
           >
-            Mở link sheet mẫu
+            Dùng sheet mẫu
           </button>
         </div>
       </div>
@@ -82,12 +119,7 @@ export default function Preview() {
         </div>
       )}
 
-      {result && (
-        <div className={styles.result}>
-          <h3>Kết quả:</h3>
-          <pre>{JSON.stringify(result, null, 2)}</pre>
-        </div>
-      )}
+      {sheetData && renderTable()}
     </div>
   );
 } 
