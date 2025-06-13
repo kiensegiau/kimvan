@@ -315,7 +315,7 @@ export default function Preview() {
         <table className={styles.dataTable}>
           <thead>
             <tr>
-              {sheetData.values[0].map((header, index) => (
+              {sheetData.values[0].slice(1).map((header, index) => (
                 <th key={index}>{header}</th>
               ))}
             </tr>
@@ -327,9 +327,9 @@ export default function Preview() {
               
               return (
                 <tr key={rowIndex}>
-                  {row.map((cell, cellIndex) => {
+                  {row.slice(1).map((cell, cellIndex) => {
                     // Kiểm tra xem có dữ liệu HTML không
-                    const htmlCell = htmlRow[cellIndex];
+                    const htmlCell = htmlRow[cellIndex + 1]; // +1 vì đã bỏ cột đầu tiên
                     const hyperlink = htmlCell?.hyperlink;
                     
                     // Nếu có hyperlink trong dữ liệu HTML
