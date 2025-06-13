@@ -3,6 +3,95 @@ import { google } from 'googleapis';
 import fs from 'fs';
 import path from 'path';
 
+// Hàm làm sạch URL từ Google Sheets
+function cleanGoogleUrl(url) {
+  if (!url) return url;
+  
+  // Xử lý URL chuyển hướng từ Google
+  if (url.startsWith('https://www.google.com/url?q=')) {
+    try {
+      // Trích xuất URL từ tham số q
+      const urlObj = new URL(url);
+      const redirectUrl = urlObj.searchParams.get('q');
+      if (redirectUrl) {
+        // Giải mã URL (Google thường mã hóa URL hai lần)
+        let decodedUrl = redirectUrl;
+        try {
+          decodedUrl = decodeURIComponent(redirectUrl);
+        } catch (e) {
+          console.error('Lỗi khi giải mã URL:', e);
+        }
+        
+        // Xóa các tham số không cần thiết từ Google
+        const cleanUrlObj = new URL(decodedUrl);
+        ['sa', 'source', 'usg', 'ust'].forEach(param => {
+          cleanUrlObj.searchParams.delete(param);
+        });
+        
+        return cleanUrlObj.toString();
+      }
+    } catch (err) {
+      console.error('Lỗi khi xử lý URL chuyển hướng:', err);
+    }
+  }
+  
+  // Xử lý các URL đặc biệt khác
+  try {
+    const urlObj = new URL(url);
+    
+    // Xử lý YouTube
+    if (urlObj.hostname.includes('youtube.com') || urlObj.hostname.includes('youtu.be')) {
+      // Giữ lại chỉ các tham số cần thiết cho YouTube
+      const videoId = urlObj.searchParams.get('v') || 
+                     (urlObj.hostname === 'youtu.be' ? urlObj.pathname.substring(1) : null);
+      
+      if (videoId) {
+        return `https://www.youtube.com/watch?v=${videoId}`;
+      }
+    }
+    
+    // Xử lý Google Drive
+    if (urlObj.hostname.includes('drive.google.com')) {
+      // Làm sạch URL Google Drive
+      let fileId = null;
+      
+      // Trích xuất ID từ URL Google Drive
+      if (url.includes('file/d/')) {
+        const match = url.match(/\/file\/d\/([^/]+)/);
+        if (match && match[1]) fileId = match[1];
+      } else if (url.includes('open?id=')) {
+        fileId = urlObj.searchParams.get('id');
+      }
+      
+      if (fileId) {
+        return `https://drive.google.com/file/d/${fileId}/view`;
+      }
+    }
+  } catch (err) {
+    console.error('Lỗi khi xử lý URL:', err);
+  }
+  
+  return url;
+}
+
+// Hàm xử lý dữ liệu hyperlink từ Google Sheets
+function processHyperlinks(data) {
+  if (!data || !data.htmlData) return data;
+  
+  // Xử lý các hyperlink trong dữ liệu HTML
+  data.htmlData.forEach(row => {
+    if (row && row.values) {
+      row.values.forEach(cell => {
+        if (cell && cell.hyperlink) {
+          cell.hyperlink = cleanGoogleUrl(cell.hyperlink);
+        }
+      });
+    }
+  });
+  
+  return data;
+}
+
 export async function GET(request, { params }) {
   try {
     const { id } = params;
@@ -77,6 +166,9 @@ export async function GET(request, { params }) {
       majorDimension: formulaResponse.data.majorDimension
     };
     
+    // Xử lý các URL trong dữ liệu
+    const processedData = processHyperlinks(combinedData);
+    
     // Thêm thông tin debug nếu được yêu cầu
     if (debug) {
       console.log('Debug info:', {
@@ -91,7 +183,7 @@ export async function GET(request, { params }) {
     }
     
     console.log('Lấy dữ liệu thành công!');
-    return NextResponse.json(combinedData);
+    return NextResponse.json(processedData);
   } catch (error) {
     console.error('Lỗi khi lấy dữ liệu từ Google Sheets:', error);
     return NextResponse.json(

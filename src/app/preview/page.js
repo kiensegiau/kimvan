@@ -72,6 +72,81 @@ export default function Preview() {
     setUrl(targetUrl);
   };
 
+  // Hàm làm sạch URL từ Google Sheets
+  const cleanGoogleUrl = (url) => {
+    if (!url) return url;
+    
+    // Xử lý URL chuyển hướng từ Google
+    if (url.startsWith('https://www.google.com/url?q=')) {
+      try {
+        // Trích xuất URL từ tham số q
+        const urlObj = new URL(url);
+        const redirectUrl = urlObj.searchParams.get('q');
+        if (redirectUrl) {
+          // Giải mã URL (Google thường mã hóa URL hai lần)
+          let decodedUrl = redirectUrl;
+          try {
+            decodedUrl = decodeURIComponent(redirectUrl);
+          } catch (e) {
+            console.error('Lỗi khi giải mã URL:', e);
+          }
+          
+          // Xóa các tham số không cần thiết từ Google
+          try {
+            const cleanUrlObj = new URL(decodedUrl);
+            ['sa', 'source', 'usg', 'ust'].forEach(param => {
+              cleanUrlObj.searchParams.delete(param);
+            });
+            return cleanUrlObj.toString();
+          } catch (e) {
+            console.error('Lỗi khi làm sạch URL:', e);
+            return decodedUrl;
+          }
+        }
+      } catch (err) {
+        console.error('Lỗi khi xử lý URL chuyển hướng:', err, url);
+      }
+    }
+    
+    // Xử lý các URL đặc biệt khác
+    try {
+      const urlObj = new URL(url);
+      
+      // Xử lý YouTube
+      if (urlObj.hostname.includes('youtube.com') || urlObj.hostname.includes('youtu.be')) {
+        // Giữ lại chỉ các tham số cần thiết cho YouTube
+        const videoId = urlObj.searchParams.get('v') || 
+                       (urlObj.hostname === 'youtu.be' ? urlObj.pathname.substring(1) : null);
+        
+        if (videoId) {
+          return `https://www.youtube.com/watch?v=${videoId}`;
+        }
+      }
+      
+      // Xử lý Google Drive
+      if (urlObj.hostname.includes('drive.google.com')) {
+        // Làm sạch URL Google Drive
+        let fileId = null;
+        
+        // Trích xuất ID từ URL Google Drive
+        if (url.includes('file/d/')) {
+          const match = url.match(/\/file\/d\/([^/]+)/);
+          if (match && match[1]) fileId = match[1];
+        } else if (url.includes('open?id=')) {
+          fileId = urlObj.searchParams.get('id');
+        }
+        
+        if (fileId) {
+          return `https://drive.google.com/file/d/${fileId}/view`;
+        }
+      }
+    } catch (err) {
+      console.error('Lỗi khi xử lý URL:', err, url);
+    }
+    
+    return url;
+  };
+
   // Hàm xử lý nội dung cell để phát hiện và chuyển đổi URL thành liên kết
   const renderCellContent = (content) => {
     if (!content) return '';
@@ -81,8 +156,11 @@ export default function Preview() {
     const hyperlinkMatch = typeof content === 'string' ? content.match(hyperlinkRegex) : null;
     
     if (hyperlinkMatch) {
-      const url = hyperlinkMatch[1];
+      let url = hyperlinkMatch[1];
       const displayText = hyperlinkMatch[2] || url;
+      
+      // Làm sạch URL
+      url = cleanGoogleUrl(url);
       
       // Kiểm tra loại link để hiển thị icon phù hợp
       let icon = null;
@@ -132,9 +210,11 @@ export default function Preview() {
     const driveMatch = typeof content === 'string' ? content.match(driveRegex) : null;
     
     if (driveMatch) {
+      // Làm sạch URL
+      const cleanUrl = cleanGoogleUrl(content);
       return (
         <a 
-          href={content} 
+          href={cleanUrl} 
           target="_blank" 
           rel="noopener noreferrer" 
           className={`${styles.cellLink} ${styles.driveLink}`}
@@ -150,25 +230,28 @@ export default function Preview() {
     
     // Nếu nội dung chỉ chứa URL
     if (typeof content === 'string' && urlRegex.test(content) && content.trim().match(urlRegex)[0] === content.trim()) {
+      // Làm sạch URL
+      const cleanUrl = cleanGoogleUrl(content);
+      
       // Xác định loại URL để hiển thị icon phù hợp
       let icon = null;
-      if (content.includes('youtube.com') || content.includes('youtu.be')) {
+      if (cleanUrl.includes('youtube.com') || cleanUrl.includes('youtu.be')) {
         icon = <span className={styles.youtubeIcon} title="YouTube Video">🎬</span>;
-      } else if (content.includes('drive.google.com')) {
+      } else if (cleanUrl.includes('drive.google.com')) {
         icon = <span className={styles.driveIcon} title="Google Drive">📄</span>;
-      } else if (content.includes('docs.google.com/document')) {
+      } else if (cleanUrl.includes('docs.google.com/document')) {
         icon = <span className={styles.docsIcon} title="Google Docs">📝</span>;
       }
       
       return (
         <a 
-          href={content} 
+          href={cleanUrl} 
           target="_blank" 
           rel="noopener noreferrer" 
           className={styles.cellLink}
         >
           {icon && <span className={styles.linkIcon}>{icon}</span>}
-          {content}
+          {cleanUrl}
         </a>
       );
     }
@@ -189,21 +272,23 @@ export default function Preview() {
             }
             // Nếu là URL
             const url = matches[Math.floor(i/2)];
+            // Làm sạch URL
+            const cleanUrl = cleanGoogleUrl(url);
             
             // Xác định loại URL để hiển thị icon phù hợp
             let icon = null;
-            if (url.includes('youtube.com') || url.includes('youtu.be')) {
+            if (cleanUrl.includes('youtube.com') || cleanUrl.includes('youtu.be')) {
               icon = <span className={styles.youtubeIcon} title="YouTube Video">🎬</span>;
-            } else if (url.includes('drive.google.com')) {
+            } else if (cleanUrl.includes('drive.google.com')) {
               icon = <span className={styles.driveIcon} title="Google Drive">📄</span>;
-            } else if (url.includes('docs.google.com/document')) {
+            } else if (cleanUrl.includes('docs.google.com/document')) {
               icon = <span className={styles.docsIcon} title="Google Docs">📝</span>;
             }
             
             return (
               <a 
                 key={i} 
-                href={url} 
+                href={cleanUrl} 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className={styles.cellLink}
@@ -224,9 +309,6 @@ export default function Preview() {
     if (!sheetData || !sheetData.values || sheetData.values.length === 0) {
       return null;
     }
-
-    // Log dữ liệu HTML để debug
-    console.log('HTML Data:', sheetData.htmlData);
 
     return (
       <div className={styles.tableContainer}>
@@ -252,14 +334,31 @@ export default function Preview() {
                     
                     // Nếu có hyperlink trong dữ liệu HTML
                     if (hyperlink) {
+                      // Xác định loại liên kết để hiển thị icon phù hợp
+                      let icon = null;
+                      if (hyperlink.includes('youtube.com') || hyperlink.includes('youtu.be')) {
+                        icon = <span className={styles.youtubeIcon} title="YouTube Video">🎬</span>;
+                      } else if (hyperlink.includes('drive.google.com')) {
+                        icon = <span className={styles.driveIcon} title="Google Drive">📄</span>;
+                      } else if (hyperlink.includes('docs.google.com/document')) {
+                        icon = <span className={styles.docsIcon} title="Google Docs">📝</span>;
+                      }
+                      
                       return (
                         <td key={cellIndex}>
                           <a 
                             href={hyperlink} 
                             target="_blank" 
                             rel="noopener noreferrer" 
-                            className={styles.cellLink}
+                            className={`${styles.cellLink} ${
+                              hyperlink.includes('youtube.com') || hyperlink.includes('youtu.be') 
+                                ? styles.youtubeLink 
+                                : hyperlink.includes('drive.google.com') 
+                                  ? styles.driveLink 
+                                  : ''
+                            }`}
                           >
+                            {icon && <span className={styles.linkIcon}>{icon}</span>}
                             {cell}
                           </a>
                         </td>
