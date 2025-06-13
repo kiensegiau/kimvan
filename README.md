@@ -276,44 +276,44 @@ GOOGLE_CLIENT_EMAIL=your-service-account-email@your-project.iam.gserviceaccount.
 GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYour Private Key Here\n-----END PRIVATE KEY-----\n"
 ```
 
-## Cấu hình Google Cloud và Google Sheets API
+## Hướng dẫn Setup Google Cloud và Google Sheets API
 
-1. Tạo một dự án trong [Google Cloud Console](https://console.cloud.google.com/)
-2. Bật Google Sheets API và Google Drive API
-3. Tạo Service Account và tải file JSON chứa credentials
-4. Chia sẻ Google Sheet của bạn với email của service account
+### 1. Tạo Google Cloud Project
+1. Truy cập [Google Cloud Console](https://console.cloud.google.com/)
+2. Tạo project mới bằng cách nhấp vào dropdown menu ở góc trên bên trái và chọn "New Project"
+3. Đặt tên cho project và nhấp "Create"
 
-### Các bước chi tiết:
+### 2. Bật Google Sheets API
+1. Từ Google Cloud Console, mở menu bên trái và chọn "APIs & Services" > "Library"
+2. Tìm kiếm "Google Sheets API" và chọn nó
+3. Nhấp vào "Enable"
 
-#### Bật API Access cho dự án
-1. Truy cập [Google Developers Console](https://console.cloud.google.com/) và tạo dự án mới (hoặc chọn dự án hiện có).
-2. Trong ô "Search for APIs and Services", tìm kiếm "Google Drive API" và bật nó.
-3. Trong ô "Search for APIs and Services", tìm kiếm "Google Sheets API" và bật nó.
+### 3. Tạo Service Account và Key
+1. Từ Google Cloud Console, mở menu bên trái và chọn "APIs & Services" > "Credentials"
+2. Nhấp vào "Create Credentials" và chọn "Service Account"
+3. Điền thông tin service account (tên, mô tả) và nhấp "Create"
+4. Bạn có thể bỏ qua các bước cấp quyền và nhấp "Done"
+5. Trong danh sách Service Accounts, tìm account vừa tạo và nhấp vào nó
+6. Chọn tab "Keys", nhấp "Add Key" > "Create new key"
+7. Chọn định dạng JSON và nhấp "Create"
+8. File JSON sẽ được tải về máy của bạn
 
-#### Tạo Service Account
-1. Đi tới "APIs & Services > Credentials" và chọn "Create credentials > Service account key".
-2. Điền thông tin vào form
-3. Nhấp "Create" và "Done".
-4. Nhấn "Manage service accounts" phía trên Service Accounts.
-5. Nhấn vào biểu tượng ⋮ gần service account vừa tạo và chọn "Manage keys", sau đó nhấp vào "ADD KEY > Create new key".
-6. Chọn JSON key type và nhấn "Create".
-
-Bạn sẽ tự động tải về một file JSON chứa credentials. Nó có thể trông như sau:
-
-```json
-{
-    "type": "service_account",
-    "project_id": "api-project-XXX",
-    "private_key_id": "2cd … ba4",
-    "private_key": "-----BEGIN PRIVATE KEY-----\nNrDyLw … jINQh/9\n-----END PRIVATE KEY-----\n",
-    "client_email": "473000000000-yoursisdifferent@developer.gserviceaccount.com",
-    "client_id": "473 … hd.apps.googleusercontent.com",
-    ...
-}
+### 4. Cấu hình dự án
+1. Tạo thư mục `config` trong thư mục gốc của dự án
+2. Tạo file `.env.local` trong thư mục gốc với nội dung:
 ```
+GOOGLE_APPLICATION_CREDENTIALS="./config/credentials.json"
+```
+3. Sao chép file JSON credentials vào thư mục `config` và đổi tên thành `credentials.json`
+4. Thêm `/config` vào file `.gitignore` để không đẩy credentials lên git
 
-#### Chia sẻ Google Sheet với Service Account
-Quan trọng! Truy cập Google Sheet của bạn và chia sẻ nó với địa chỉ email `client_email` từ file JSON tải về. Nếu không làm điều này, bạn sẽ gặp lỗi khi cố gắng truy cập spreadsheet.
+### 5. Chia sẻ Google Sheet
+1. Mở Google Sheet bạn muốn truy cập
+2. Nhấp vào nút "Share" ở góc trên bên phải
+3. Thêm email của service account (có trong file JSON, trường `client_email`) với quyền Viewer
+4. Nhấp "Done"
+
+Sau khi hoàn thành các bước trên, API của bạn sẽ có thể truy cập Google Sheets.
 
 ## Chạy ứng dụng
 
