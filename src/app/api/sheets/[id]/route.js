@@ -92,6 +92,119 @@ function processHyperlinks(data) {
   return data;
 }
 
+// Hàm lọc bỏ các hàng giới thiệu
+function filterIntroductoryRows(data) {
+  if (!data || !data.values || data.values.length === 0) return data;
+  
+  // Danh sách các nội dung cần lọc bỏ
+  const introTexts = [
+    'WEBSITE KHÓA HỌC DUY NHẤT: THANHVIENKHOAHOC.NET',
+    'ZALO LIÊN HỆ KHÓA HỌC DUY NHẤT : 0778335643 ( THANHVIENKHOAHOC NET )',
+    'FANPAGE FACEBOOK HỖ TRỢ KHÓA HỌC : BẤM VÀO ĐÂY'
+  ];
+  
+  // Các từ khóa cốt lõi cần lọc
+  const coreKeywords = [
+    'thanhvienkhoahoc',
+    'thanh vien khoa hoc',
+    'thanhvienkhoahocnet',
+    'thanhvien.khoahoc'
+  ];
+  
+  // Thêm các pattern cần lọc
+  const filterPatterns = [
+    'facebook.com/thanhvienkhoahocnet',
+    'thanhvienkhoahoc.net',
+    'thanhvienkhoahocnet',
+    'FANPAGE FACEBOOK',
+    'href="http://thanhvienkhoahoc.net/"'
+  ];
+  
+  // Hàm kiểm tra xem một chuỗi có chứa bất kỳ từ khóa cốt lõi nào không
+  const containsCoreKeyword = (text) => {
+    if (!text) return false;
+    const lowerText = text.toLowerCase();
+    return coreKeywords.some(keyword => lowerText.includes(keyword.toLowerCase()));
+  };
+  
+  // Lọc các hàng có nội dung giới thiệu
+  const filteredValues = data.values.filter(row => {
+    // Kiểm tra xem hàng có chứa bất kỳ nội dung giới thiệu nào không
+    if (!row || row.length === 0) return true;
+    
+    // Chuyển đổi toàn bộ hàng thành chuỗi để kiểm tra
+    const rowString = JSON.stringify(row).toLowerCase();
+    
+    // Kiểm tra cột đầu tiên hoặc toàn bộ hàng
+    const rowText = row[0] ? row[0].toString() : '';
+    const fullRowText = row.join(' ');
+    
+    // Kiểm tra các pattern cần lọc
+    const containsFilterPattern = filterPatterns.some(pattern => 
+      rowString.toLowerCase().includes(pattern.toLowerCase())
+    );
+    
+    // Kiểm tra các text giới thiệu
+    const containsIntroText = introTexts.some(introText => 
+      rowText.includes(introText) || fullRowText.includes(introText)
+    );
+    
+    // Kiểm tra các từ khóa cốt lõi
+    const containsKeyword = containsCoreKeyword(rowString);
+    
+    // Trả về true nếu không chứa bất kỳ pattern nào cần lọc
+    return !containsFilterPattern && !containsIntroText && !containsKeyword;
+  });
+  
+  // Cập nhật dữ liệu values
+  data.values = filteredValues;
+  
+  // Lọc cả trong htmlData nếu có
+  if (data.htmlData && data.htmlData.length > 0) {
+    // Lọc các hàng trong htmlData
+    data.htmlData = data.htmlData.filter((row, index) => {
+      if (!row || !row.values) return true;
+      
+      // Kiểm tra xem hàng có chứa hyperlink hoặc nội dung cần lọc không
+      const containsFilteredContent = row.values.some(cell => {
+        // Kiểm tra hyperlink
+        if (cell && cell.hyperlink) {
+          return containsCoreKeyword(cell.hyperlink);
+        }
+        
+        // Kiểm tra formattedValue
+        if (cell && cell.formattedValue) {
+          return containsCoreKeyword(cell.formattedValue);
+        }
+        
+        // Kiểm tra userEnteredValue nếu có
+        if (cell && cell.userEnteredValue) {
+          return containsCoreKeyword(JSON.stringify(cell.userEnteredValue));
+        }
+        
+        // Kiểm tra effectiveValue nếu có
+        if (cell && cell.effectiveValue) {
+          return containsCoreKeyword(JSON.stringify(cell.effectiveValue));
+        }
+        
+        return false;
+      });
+      
+      // Nếu chứa nội dung cần lọc, loại bỏ hàng này
+      if (containsFilteredContent) return false;
+      
+      // Nếu index vượt quá độ dài của values đã lọc, giữ lại
+      if (index >= data.values.length) return true;
+      
+      // Kiểm tra xem hàng này có tương ứng với hàng đã bị lọc bỏ trong values không
+      const originalIndex = data.values.findIndex((_, i) => i === index);
+      return originalIndex !== -1;
+    });
+  }
+  
+  return data;
+}
+
 export async function GET(request, { params }) {
   try {
     const { id } = params;
@@ -169,6 +282,9 @@ export async function GET(request, { params }) {
     // Xử lý các URL trong dữ liệu
     const processedData = processHyperlinks(combinedData);
     
+    // Lọc bỏ các hàng giới thiệu
+    const filteredData = filterIntroductoryRows(processedData);
+    
     // Thêm thông tin debug nếu được yêu cầu
     if (debug) {
       console.log('Debug info:', {
@@ -183,7 +299,7 @@ export async function GET(request, { params }) {
     }
     
     console.log('Lấy dữ liệu thành công!');
-    return NextResponse.json(processedData);
+    return NextResponse.json(filteredData);
   } catch (error) {
     console.error('Lỗi khi lấy dữ liệu từ Google Sheets:', error);
     return NextResponse.json(
