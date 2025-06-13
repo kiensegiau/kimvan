@@ -110,11 +110,13 @@
 .tableContainer {
   margin-top: 2rem;
   overflow-x: auto;
+  width: 100%;
 }
 
 .dataTable {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
 }
 
 .dataTable th,
@@ -122,6 +124,8 @@
   padding: 0.75rem;
   border: 1px solid #ddd;
   text-align: left;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .dataTable th {
@@ -135,4 +139,58 @@
 
 .dataTable tr:hover {
   background-color: #f1f1f1;
+}
+
+/* Style cho links trong cells */
+.cellLink {
+  color: #1a73e8;
+  text-decoration: none;
+  word-break: break-all;
+  transition: color 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cellLink:hover {
+  color: #174ea6;
+  text-decoration: underline;
+}
+
+/* Style cho icons */
+.linkIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 4px;
+  font-size: 1.1em;
+}
+
+/* Style cho các loại link đặc biệt */
+.youtubeLink {
+  color: #ff0000;
+}
+
+.youtubeLink:hover {
+  color: #cc0000;
+}
+
+.driveLink {
+  color: #0f9d58;
+}
+
+.driveLink:hover {
+  color: #0b8043;
+}
+
+.youtubeIcon {
+  color: #ff0000;
+}
+
+.driveIcon {
+  color: #0f9d58;
+}
+
+.docsIcon {
+  color: #4285f4;
 } 
