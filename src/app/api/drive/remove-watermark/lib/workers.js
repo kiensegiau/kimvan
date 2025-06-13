@@ -31,6 +31,10 @@ export function createConvertWorker(gsPath, pdfPath, pngPath, page, numPages, dp
           numPages,
           dpi,
           connectToDB: false // Đảm bảo luôn tắt kết nối DB trong worker
+        },
+        env: {
+          ...process.env,
+          WORKER_THREAD: 'true' // Đặt biến môi trường để đánh dấu đây là worker thread
         }
       });
       
@@ -132,6 +136,10 @@ export function createProcessWorker(pngPath, page, numPages, config) {
           numPages,
           config,
           connectToDB: false // Luôn tắt kết nối DB trong worker để tránh quá nhiều kết nối
+        },
+        env: {
+          ...process.env,
+          WORKER_THREAD: 'true' // Đặt biến môi trường để đánh dấu đây là worker thread
         }
       });
       

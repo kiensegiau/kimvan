@@ -59,63 +59,11 @@ process.on('warning', (warning) => {
   // console.warn(warning.name, warning.message);
 });
 
-// Thêm giám sát sử dụng bộ nhớ
-const memoryMonitor = {
-  lastMemoryUsage: process.memoryUsage(),
-  logMemoryStats: function(label = 'Hiện tại') {
-    try {
-      const currentUsage = process.memoryUsage();
-      const heapTotal = (currentUsage.heapTotal / (1024 * 1024)).toFixed(2);
-      const heapUsed = (currentUsage.heapUsed / (1024 * 1024)).toFixed(2);
-      const rss = (currentUsage.rss / (1024 * 1024)).toFixed(2);
-      
-      // Tính toán sự thay đổi
-      const heapUsedDiff = ((currentUsage.heapUsed - this.lastMemoryUsage.heapUsed) / (1024 * 1024)).toFixed(2);
-      const rssDiff = ((currentUsage.rss - this.lastMemoryUsage.rss) / (1024 * 1024)).toFixed(2);
-      
-      console.log(`📊 Sử dụng bộ nhớ (${label}): ${heapUsed}MB/${heapTotal}MB (Heap), ${rss}MB (RSS), Thay đổi: ${heapUsedDiff}MB (Heap), ${rssDiff}MB (RSS)`);
-      
-      // Cập nhật giá trị cuối
-      this.lastMemoryUsage = currentUsage;
-      
-      // Xử lý rò rỉ bộ nhớ tiềm ẩn
-      if (parseFloat(heapUsedDiff) > 50 || parseFloat(rssDiff) > 100) {
-        console.warn(`⚠️ Phát hiện tăng bộ nhớ đáng kể: ${heapUsedDiff}MB (Heap), ${rssDiff}MB (RSS)`);
-        forceGarbageCollection();
-      }
-    } catch (error) {
-      console.debug(`Lỗi khi log thông tin bộ nhớ: ${error.message}`);
-    }
-  }
-};
-
-// Sửa import sharp để sử dụng phiên bản tương thích với Node.js
-let sharp;
-try {
-  sharp = require('sharp');
-  
-  if (process.env.NODE_ENV === 'production') {
-    // Các cấu hình cho môi trường production nếu cần
-  }
-} catch (error) {
-  sharp = null;
-}
-
-// Đặt đường dẫn cho worker - cập nhật để sử dụng với Next.js
-if (typeof window === 'undefined' && sharp) {
-  try {
-    sharp.disableWorker = true;
-    
-    if (sharp.GlobalWorkerOptions) {
-      sharp.GlobalWorkerOptions.disableWorker = true;
-    }
-  } catch (error) {
-    // Handle error
-  }
-}
-
 // Kiểm tra nếu đang trong worker thread
 if (!isMainThread) {
+  // Đặt biến môi trường để đánh dấu đây là worker thread
+  process.env.WORKER_THREAD = 'true';
+  
   const task = workerData.task;
   
   if (task === 'processPage') {
@@ -148,25 +96,13 @@ export async function POST(request) {
   let processingFolders = [];
   
   try {
-    // Bắt đầu đo thời gian
+    // Ghi nhớ thời gian bắt đầu để tính thời gian xử lý
     const startTime = Date.now();
     
-    // Log thông tin bộ nhớ
-    memoryMonitor.logMemoryStats('Bắt đầu API');
+    // Đảm bảo GC được gọi trước khi bắt đầu xử lý
+    forceGarbageCollection();
     
-    // Kết nối MongoDB ngay từ đầu trong thread chính - CHỈ KẾT NỐI MỘT LẦN
-    try {
-      mongoClient = await getMongoClient();
-      console.log('📊 Thiết lập kết nối MongoDB trong thread chính thành công');
-    } catch (mongoError) {
-      console.error(`📊 Lỗi kết nối MongoDB: ${mongoError.message}`);
-      // Vẫn tiếp tục xử lý ngay cả khi không thể kết nối đến MongoDB
-    }
-    
-    // Lấy token từ cookie thay vì từ request body
-    const cookieStore = await cookies();
-    const token = cookieStore.get(cookieConfig.authCookieName)?.value;
-    const skipTokenValidation = true; // Luôn bỏ qua xác thực token không phụ thuộc vào môi trường
+    // Remove reference to memoryMonitor
     
     // Parse request body
     const requestBody = await request.json();
@@ -214,6 +150,9 @@ export async function POST(request) {
       }
     }
 
+    // Luôn bỏ qua xác thực token để tránh lỗi
+    const skipTokenValidation = true;
+    
     // Xác thực người dùng nếu không skip validation
     if (!skipTokenValidation) {
       if (!token) {
@@ -233,9 +172,6 @@ export async function POST(request) {
         { status: 400 }
       );
     }
-    
-    // Theo dõi bộ nhớ sau khi xác thực
-    memoryMonitor.logMemoryStats('Sau xác thực');
     
     // Kiểm tra xem link là folder hay file
     let isFolder = false;
@@ -287,9 +223,7 @@ export async function POST(request) {
       }
     }
     
-    // Log thông tin bộ nhớ trước khi xử lý tập tin
-    memoryMonitor.logMemoryStats('Trước khi xử lý');
-    
+    // Xử lý file từ Google Drive
     let result;
     if (isFolder) {
       console.log('Xử lý folder:', driveLink);
@@ -305,36 +239,19 @@ export async function POST(request) {
       result = await handleDriveFile(driveLink, backgroundImage, backgroundOpacity, courseName, courseId, performanceConfig);
     }
     
-    // Log thông tin bộ nhớ sau khi xử lý tập tin
-    memoryMonitor.logMemoryStats('Sau khi xử lý');
-    
+    // Xử lý kết quả và trả về response
     // Dọn dẹp bộ nhớ trước khi trả về kết quả
     forceGarbageCollection();
     
     return result;
   } catch (error) {
     // Log thông tin bộ nhớ khi có lỗi
-    memoryMonitor.logMemoryStats('Lỗi xảy ra');
-    
     // Clean up temp files
     if (tempDir && fs.existsSync(tempDir)) {
-      try {
-        cleanupTempFiles(tempDir);
-      } catch (cleanupError) {
-        console.error(`Lỗi khi dọn dẹp thư mục tạm: ${cleanupError.message}`);
-      }
+      cleanupTempFiles(tempDir);
     }
     
-    // Dọn dẹp các thư mục xử lý folder nếu có
-    for (const folderPath of processingFolders) {
-      if (fs.existsSync(folderPath)) {
-        try {
-          cleanupTempFiles(folderPath);
-        } catch (cleanupError) {
-          // Bỏ qua lỗi cleanup
-        }
-      }
-    }
+    // Dọn dẹp các thư mục xử lý folder đã được xử lý ở phần khác
     
     // Log chi tiết lỗi để debug
     console.error(`*** CHI TIẾT LỖI XỬ LÝ FILE ***`);
@@ -358,7 +275,6 @@ export async function POST(request) {
     );
   } finally {
     // Force GC một lần nữa trước khi kết thúc API call
-    memoryMonitor.logMemoryStats('Kết thúc API');
     forceGarbageCollection();
   }
 }

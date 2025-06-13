@@ -14,7 +14,12 @@ import { countPdfPagesWithGhostscript, addImageToPdf } from './pdf-service.js';
 import { createConvertWorker, createProcessWorker } from './workers.js';
 
 // Đảm bảo không tạo kết nối MongoDB trong các worker thread
-const isWorkerThread = !!(global.process && process.env.WORKER_THREAD === 'true');
+const isWorkerThread = !!(process.env.WORKER_THREAD === 'true');
+
+// Nếu là worker thread, log thông báo và đảm bảo không kết nối đến MongoDB
+if (isWorkerThread) {
+  console.log('🧵 Đang chạy trong worker thread - MongoDB sẽ không được kết nối');
+}
 
 // Tối ưu hàm chính để xóa watermark
 export async function cleanPdf(inputPath, outputPath, config = DEFAULT_CONFIG) {

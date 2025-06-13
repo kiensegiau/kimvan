@@ -15,6 +15,12 @@ if (!global._mongoConnection) {
 // Cờ để đảm bảo chỉ log một lần
 let connectionLoggedOnce = false;
 
+// Kiểm tra nếu đang trong worker thread - không kết nối đến MongoDB trong worker thread
+const isWorkerThread = process.env.WORKER_THREAD === 'true';
+if (isWorkerThread) {
+  console.log('🧵 Worker thread phát hiện - MongoDB sẽ không được kết nối');
+}
+
 // Định cấu hình và hằng số
 const RECONNECT_COOLDOWN = 5000; // 5 giây giữa các lần tái kết nối
 const MONGODB_OPTIONS = {
@@ -38,6 +44,12 @@ if (!process.env.MONGODB_URI) {
  * @returns {Promise<import('mongodb').MongoClient>} MongoDB client
  */
 export const getMongoClient = async () => {
+  // Không kết nối nếu đang trong worker thread
+  if (isWorkerThread) {
+    console.log('⚠️ Bỏ qua kết nối MongoDB trong worker thread');
+    return null;
+  }
+
   const { MongoClient } = await import('mongodb');
 
   // Trả về ngay nếu client đã được tạo và hoạt động
@@ -158,6 +170,12 @@ function setupGracefulShutdown(client) {
  * Kết nối đến MongoDB sử dụng Mongoose và trả về kết nối
  */
 export const connectDB = async () => {
+  // Không kết nối nếu đang trong worker thread
+  if (isWorkerThread) {
+    console.log('⚠️ Bỏ qua kết nối Mongoose trong worker thread');
+    return null;
+  }
+
   // Kiểm tra nếu Mongoose đã kết nối
   if (mongoose.connection.readyState === 1) {
     global._mongoConnection.connectionsCounter++;
