@@ -1,13 +1,16 @@
 import mongoose from 'mongoose';
 
-// Biến lưu trữ kết nối toàn cục
-let cachedConnection = {
-  client: null,
-  mongoosePromise: null,
-  isConnecting: false,
-  connectionsCounter: 0,
-  lastReconnectAttempt: 0
-};
+// Global connection object - make it truly global to ensure it's shared across all imports
+// Use global._mongoConnection instead of module-level variable
+if (!global._mongoConnection) {
+  global._mongoConnection = {
+    client: null,
+    mongoosePromise: null,
+    isConnecting: false,
+    connectionsCounter: 0,
+    lastReconnectAttempt: 0
+  };
+}
 
 // Cờ để đảm bảo chỉ log một lần
 let connectionLoggedOnce = false;
@@ -38,48 +41,48 @@ export const getMongoClient = async () => {
   const { MongoClient } = await import('mongodb');
 
   // Trả về ngay nếu client đã được tạo và hoạt động
-  if (cachedConnection.client) {
-    cachedConnection.connectionsCounter++;
+  if (global._mongoConnection.client) {
+    global._mongoConnection.connectionsCounter++;
     // Chỉ log khi đang ở development và số lần gọi chia hết cho 10
-    if (process.env.NODE_ENV === 'development' && cachedConnection.connectionsCounter % 10 === 0) {
-      console.log(`✅ Sử dụng kết nối MongoDB đã cache (lần ${cachedConnection.connectionsCounter})`);
+    if (process.env.NODE_ENV === 'development' && global._mongoConnection.connectionsCounter % 10 === 0) {
+      console.log(`✅ Sử dụng kết nối MongoDB đã cache (lần ${global._mongoConnection.connectionsCounter})`);
     }
-    return cachedConnection.client;
+    return global._mongoConnection.client;
   }
 
   // Nếu đang trong quá trình kết nối, đợi đến khi hoàn thành
-  if (cachedConnection.isConnecting) {
+  if (global._mongoConnection.isConnecting) {
     // Log khi bắt đầu đợi
     console.log('⏳ Đang đợi kết nối MongoDB hiện tại hoàn thành...');
     
     // Đặt timeout để không đợi vô hạn
     const waitTimeout = setTimeout(() => {
-      cachedConnection.isConnecting = false; // Reset trạng thái nếu đợi quá lâu
+      global._mongoConnection.isConnecting = false; // Reset trạng thái nếu đợi quá lâu
       console.warn('⚠️ Đã hủy đợi kết nối MongoDB sau 10 giây');
     }, 10000);
     
-    while (cachedConnection.isConnecting) {
+    while (global._mongoConnection.isConnecting) {
       await new Promise(resolve => setTimeout(resolve, 100));
     }
     
     clearTimeout(waitTimeout); // Xóa timeout nếu không cần nữa
     
-    if (cachedConnection.client) {
-      return cachedConnection.client;
+    if (global._mongoConnection.client) {
+      return global._mongoConnection.client;
     }
   }
 
   // Kiểm tra thời gian tái kết nối
   const now = Date.now();
-  if (now - cachedConnection.lastReconnectAttempt < RECONNECT_COOLDOWN) {
+  if (now - global._mongoConnection.lastReconnectAttempt < RECONNECT_COOLDOWN) {
     console.log('⏳ Đợi thêm trước khi thử kết nối lại MongoDB...');
     await new Promise(resolve => setTimeout(resolve, RECONNECT_COOLDOWN));
   }
-  cachedConnection.lastReconnectAttempt = now;
+  global._mongoConnection.lastReconnectAttempt = now;
 
   // Khởi tạo quá trình kết nối mới
   try {
-    cachedConnection.isConnecting = true;
+    global._mongoConnection.isConnecting = true;
     const uri = process.env.MONGODB_URI;
     
     if (!uri) {
@@ -96,8 +99,8 @@ export const getMongoClient = async () => {
     await client.connect();
     
     // Lưu client vào cache toàn cục
-    cachedConnection.client = client;
-    cachedConnection.connectionsCounter = 1;
+    global._mongoConnection.client = client;
+    global._mongoConnection.connectionsCounter = 1;
 
     // Thiết lập xử lý khi ứng dụng tắt
     setupGracefulShutdown(client);
@@ -106,10 +109,10 @@ export const getMongoClient = async () => {
     return client;
   } catch (error) {
     console.error('❌ Lỗi kết nối MongoDB:', error.message);
-    cachedConnection.isConnecting = false;
+    global._mongoConnection.isConnecting = false;
     throw error;
   } finally {
-    cachedConnection.isConnecting = false;
+    global._mongoConnection.isConnecting = false;
   }
 };
 
@@ -127,9 +130,9 @@ function setupGracefulShutdown(client) {
       console.log('🔄 Đóng kết nối MongoDB khi tắt ứng dụng...');
       
       // Đóng kết nối MongoDB nếu tồn tại
-      if (cachedConnection.client) {
-        await cachedConnection.client.close();
-        cachedConnection.client = null;
+      if (global._mongoConnection.client) {
+        await global._mongoConnection.client.close();
+        global._mongoConnection.client = null;
       }
       
       // Đóng kết nối Mongoose nếu đang kết nối
@@ -157,25 +160,25 @@ function setupGracefulShutdown(client) {
 export const connectDB = async () => {
   // Kiểm tra nếu Mongoose đã kết nối
   if (mongoose.connection.readyState === 1) {
-    cachedConnection.connectionsCounter++;
+    global._mongoConnection.connectionsCounter++;
     // Chỉ log khi đang ở development và số lần gọi chia hết cho 10
-    if (process.env.NODE_ENV === 'development' && cachedConnection.connectionsCounter % 10 === 0) {
-      console.log(`✅ Sử dụng kết nối Mongoose đã cache (lần ${cachedConnection.connectionsCounter})`);
+    if (process.env.NODE_ENV === 'development' && global._mongoConnection.connectionsCounter % 10 === 0) {
+      console.log(`✅ Sử dụng kết nối Mongoose đã cache (lần ${global._mongoConnection.connectionsCounter})`);
     }
     return mongoose.connection;
   }
 
   // Nếu đang kết nối, đợi đến khi hoàn thành
-  if (cachedConnection.isConnecting) {
+  if (global._mongoConnection.isConnecting) {
     console.log('⏳ Đang đợi kết nối Mongoose hiện tại hoàn thành...');
     
     // Đặt timeout để không đợi vô hạn
     const waitTimeout = setTimeout(() => {
-      cachedConnection.isConnecting = false; // Reset trạng thái nếu đợi quá lâu
+      global._mongoConnection.isConnecting = false; // Reset trạng thái nếu đợi quá lâu
       console.warn('⚠️ Đã hủy đợi kết nối Mongoose sau 10 giây');
     }, 10000);
     
-    while (cachedConnection.isConnecting) {
+    while (global._mongoConnection.isConnecting) {
       await new Promise(resolve => setTimeout(resolve, 100));
     }
     
@@ -188,7 +191,7 @@ export const connectDB = async () => {
 
   // Bắt đầu quá trình kết nối mới
   try {
-    cachedConnection.isConnecting = true;
+    global._mongoConnection.isConnecting = true;
     
     // Lấy URI từ biến môi trường
     const uri = process.env.MONGODB_URI;
@@ -205,23 +208,23 @@ export const connectDB = async () => {
     setupMongooseEventHandlers();
     
     // Tạo Promise kết nối với các tùy chọn tối ưu
-    cachedConnection.mongoosePromise = mongoose.connect(uri, {
+    global._mongoConnection.mongoosePromise = mongoose.connect(uri, {
       bufferCommands: false,
       ...MONGODB_OPTIONS
     });
     
     // Đợi kết nối hoàn tất
-    await cachedConnection.mongoosePromise;
-    cachedConnection.connectionsCounter++;
+    await global._mongoConnection.mongoosePromise;
+    global._mongoConnection.connectionsCounter++;
     
     console.log('✅ Kết nối Mongoose thành công');
     return mongoose.connection;
   } catch (error) {
     console.error('❌ Lỗi kết nối Mongoose:', error.message);
-    cachedConnection.mongoosePromise = null;
+    global._mongoConnection.mongoosePromise = null;
     throw error;
   } finally {
-    cachedConnection.isConnecting = false;
+    global._mongoConnection.isConnecting = false;
   }
 };
 
@@ -243,7 +246,7 @@ function setupMongooseEventHandlers() {
     console.log('❌ Mongoose đã ngắt kết nối từ MongoDB');
     
     // Reset để lần sau sẽ tạo kết nối mới
-    cachedConnection.mongoosePromise = null;
+    global._mongoConnection.mongoosePromise = null;
     connectionLoggedOnce = false;
     
     // Thử kết nối lại sau một khoảng thời gian
@@ -275,22 +278,22 @@ export const getConnectionStats = async () => {
       mongooseStateText: ['disconnected', 'connected', 'connecting', 'disconnecting'][mongoose.connection.readyState],
       
       // Thông tin từ bộ đếm nội bộ
-      cachedConnectionCounter: cachedConnection.connectionsCounter,
+      cachedConnectionCounter: global._mongoConnection.connectionsCounter,
       
       // Có kết nối MongoDB Client không
-      hasMongoClient: cachedConnection.client !== null,
+      hasMongoClient: global._mongoConnection.client !== null,
       
       // Có Promise kết nối Mongoose không
-      hasMongoosePromise: cachedConnection.mongoosePromise !== null,
+      hasMongoosePromise: global._mongoConnection.mongoosePromise !== null,
       
       // Đang trong quá trình kết nối không
-      isConnecting: cachedConnection.isConnecting,
+      isConnecting: global._mongoConnection.isConnecting,
       
       // Thời gian kiểm tra
       checkedAt: new Date().toISOString(),
       
       // Thời gian kể từ lần tái kết nối cuối
-      timeSinceLastReconnect: Date.now() - cachedConnection.lastReconnectAttempt
+      timeSinceLastReconnect: Date.now() - global._mongoConnection.lastReconnectAttempt
     };
   } catch (error) {
     return { error: error.message };

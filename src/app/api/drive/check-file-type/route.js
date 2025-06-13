@@ -53,21 +53,37 @@ function extractGoogleDriveFileId(url) {
 
 export async function POST(request) {
   try {
+    console.log('🔍 API check-file-type: Bắt đầu xử lý request');
+    
     // Lấy token từ cookie thay vì từ request body
     const cookieStore = await cookies();
     const token = cookieStore.get(cookieConfig.authCookieName)?.value;
     const skipTokenValidation = true; // Luôn bỏ qua xác thực token không phụ thuộc vào môi trường
 
     // Parse request body
-    const requestBody = await request.json();
-    let { fileId, driveLink } = requestBody;
+    let requestBody;
+    try {
+      requestBody = await request.json();
+      console.log('✅ Đã parse JSON request body thành công');
+    } catch (jsonError) {
+      console.error('❌ Lỗi parse JSON request body:', jsonError.message);
+      return NextResponse.json(
+        { error: `Lỗi parse JSON request body: ${jsonError.message}` },
+        { status: 400 }
+      );
+    }
+    
+    let { fileId, driveLink } = requestBody || {};
 
     // Hỗ trợ cả fileId và driveLink
     if (!fileId && driveLink) {
       try {
+        console.log(`🔍 Trích xuất fileId từ driveLink: ${driveLink}`);
         const result = extractGoogleDriveFileId(driveLink);
         fileId = result.fileId;
+        console.log(`✅ Đã trích xuất fileId: ${fileId}`);
       } catch (error) {
+        console.error(`❌ Lỗi trích xuất fileId từ driveLink:`, error);
         return NextResponse.json(
           { error: `Không thể trích xuất ID từ link: ${error.message}` },
           { status: 400 }
@@ -77,6 +93,7 @@ export async function POST(request) {
 
     // Validate fileId
     if (!fileId) {
+      console.error('❌ Thiếu fileId trong request');
       return NextResponse.json(
         { error: 'Thiếu file ID.' },
         { status: 400 }
@@ -86,9 +103,12 @@ export async function POST(request) {
     // Trích xuất fileId nếu là URL đầy đủ
     if (typeof fileId === 'string' && fileId.includes('drive.google.com')) {
       try {
+        console.log(`🔍 fileId là URL đầy đủ, trích xuất ID: ${fileId}`);
         const result = extractGoogleDriveFileId(fileId);
         fileId = result.fileId;
+        console.log(`✅ Đã trích xuất fileId từ URL: ${fileId}`);
       } catch (error) {
+        console.error(`❌ Lỗi trích xuất fileId từ URL:`, error);
         return NextResponse.json(
           { error: `Không thể trích xuất ID từ link: ${error.message}` },
           { status: 400 }
@@ -99,6 +119,7 @@ export async function POST(request) {
     // Lấy token Google Drive
     const downloadToken = getTokenByType('download');
     if (!downloadToken) {
+      console.error('❌ Không tìm thấy token Google Drive');
       return NextResponse.json(
         { error: 'Không tìm thấy token Google Drive.' },
         { status: 500 }
@@ -106,6 +127,7 @@ export async function POST(request) {
     }
 
     // Khởi tạo OAuth2 client
+    console.log('🔍 Khởi tạo OAuth2 client');
     const oauth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID,
       process.env.GOOGLE_CLIENT_SECRET,
@@ -124,15 +146,19 @@ export async function POST(request) {
     });
 
     // Khởi tạo Google Drive API
+    console.log(`🔍 Khởi tạo Google Drive API để kiểm tra file: ${fileId}`);
     const drive = google.drive({ version: 'v3', auth: oauth2Client });
 
     // Lấy thông tin file
+    console.log(`🔍 Gọi API Drive để lấy thông tin file: ${fileId}`);
     const fileMetadata = await drive.files.get({
       fileId: fileId,
       supportsAllDrives: true,
       includeItemsFromAllDrives: true,
       fields: 'id,name,mimeType,size,capabilities'
     });
+
+    console.log(`✅ Đã lấy thông tin file thành công: ${fileMetadata.data.name} (${fileMetadata.data.mimeType})`);
 
     // Trả về kết quả
     return NextResponse.json({
@@ -147,10 +173,22 @@ export async function POST(request) {
     });
     
   } catch (error) {
+    console.error(`❌ Lỗi API check-file-type:`, error);
+    
+    // Log chi tiết lỗi để debug
+    console.error(`*** CHI TIẾT LỖI CHECK-FILE-TYPE ***`);
+    console.error(`- Message: ${error.message}`);
+    console.error(`- Stack: ${error.stack}`);
+    if (error.cause) {
+      console.error(`- Cause: ${JSON.stringify(error.cause)}`);
+    }
+    console.error(`********************************`);
+    
     return NextResponse.json(
       { 
         success: false,
-        error: `Không thể kiểm tra loại file: ${error.message}` 
+        error: `Không thể kiểm tra loại file: ${error.message}`,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
       },
       { status: 500 }
     );

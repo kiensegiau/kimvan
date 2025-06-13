@@ -535,8 +535,27 @@ export async function POST(request, { params }) {
             }
             
             console.log(`🔄 Đang đọc dữ liệu JSON từ phản hồi cho ${link.displayName}...`);
-            const data = await response.json();
-            console.log(`✅ Đã đọc xong dữ liệu JSON cho ${link.displayName}`);
+            
+            // Kiểm tra Content-Type trước khi parse JSON
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+              console.error(`⚠️ Phản hồi không phải JSON (${contentType}), đang đọc dữ liệu text...`);
+              const textData = await response.text();
+              console.error(`⚠️ Nội dung phản hồi: ${textData.substring(0, 200)}...`);
+              throw new Error(`API trả về định dạng không hợp lệ: ${contentType || 'không xác định'}`);
+            }
+            
+            // Parse JSON an toàn
+            let data;
+            try {
+              data = await response.json();
+              console.log(`✅ Đã đọc xong dữ liệu JSON cho ${link.displayName}`);
+            } catch (jsonError) {
+              console.error(`❌ Lỗi parse JSON: ${jsonError.message}`);
+              const textData = await response.text().catch(() => 'Không thể đọc nội dung phản hồi');
+              console.error(`❌ Nội dung phản hồi: ${textData.substring(0, 200)}...`);
+              throw new Error(`Không thể parse JSON: ${jsonError.message}`);
+            }
 
             if (!response.ok) {
               throw new Error(data.message || data.error || 'Không thể xử lý file');

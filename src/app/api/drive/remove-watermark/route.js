@@ -135,10 +135,13 @@ if (!isMainThread) {
       parentPort.postMessage({ success: false, error: error.message });
     });
   }
+  // Đảm bảo worker thread không thực hiện code sau đây bằng cách thoát sớm
+  process.exit(0); // Thoát khỏi worker thread sau khi hoàn thành
 }
 
 // Next.js API route handler
 export async function POST(request) {
+  // Tạo một kết nối MongoDB duy nhất cho route handler
   let mongoClient = null;
   let tempDir = null;
   let processedFilePath = null;
