@@ -150,7 +150,57 @@ export default function CourseDetailPage({ params }) {
       
       if (data.success) {
         console.log(`Dữ liệu sheet ${sheetId}:`, data.sheet);
-        setSheetData(prev => ({ ...prev, [sheetId]: data.sheet }));
+        
+        // Xử lý các ô gộp nếu có
+        const processedData = { ...data.sheet };
+        
+        if (processedData.merges && processedData.merges.length > 0) {
+          // Tạo bản đồ các ô đã gộp
+          const mergedCellsMap = {};
+          
+          processedData.merges.forEach(merge => {
+            const startRow = merge.startRowIndex;
+            const endRow = merge.endRowIndex;
+            const startCol = merge.startColumnIndex;
+            const endCol = merge.endColumnIndex;
+            
+            // Tính toán rowSpan và colSpan
+            const rowSpan = endRow - startRow;
+            const colSpan = endCol - startCol;
+            
+            // Đánh dấu ô chính (góc trên bên trái của vùng gộp)
+            if (!processedData.htmlData[startRow]) {
+              processedData.htmlData[startRow] = { values: [] };
+            }
+            
+            if (!processedData.htmlData[startRow].values) {
+              processedData.htmlData[startRow].values = [];
+            }
+            
+            if (!processedData.htmlData[startRow].values[startCol]) {
+              processedData.htmlData[startRow].values[startCol] = {};
+            }
+            
+            processedData.htmlData[startRow].values[startCol].rowSpan = rowSpan;
+            processedData.htmlData[startRow].values[startCol].colSpan = colSpan;
+            
+            // Đánh dấu các ô khác trong vùng gộp để bỏ qua khi render
+            for (let r = startRow; r < endRow; r++) {
+              for (let c = startCol; c < endCol; c++) {
+                // Bỏ qua ô chính
+                if (r === startRow && c === startCol) continue;
+                
+                const key = `${r},${c}`;
+                mergedCellsMap[key] = { mainCell: { row: startRow, col: startCol } };
+              }
+            }
+          });
+          
+          // Lưu bản đồ các ô đã gộp vào data
+          processedData.mergedCellsMap = mergedCellsMap;
+        }
+        
+        setSheetData(prev => ({ ...prev, [sheetId]: processedData }));
       } else {
         console.error(`Lỗi khi lấy dữ liệu sheet ${sheetId}:`, data.error);
       }
@@ -176,8 +226,63 @@ export default function CourseDetailPage({ params }) {
       }
       
       console.log('Dữ liệu khóa học đầy đủ:', result.data);
-      setCourse(result.data);
-      setFormData(result.data);
+      
+      // Xử lý các ô gộp trong dữ liệu gốc nếu có
+      const processedData = { ...result.data };
+      
+      if (processedData.originalData?.sheets) {
+        // Duyệt qua từng sheet
+        processedData.originalData.sheets.forEach((sheet, sheetIndex) => {
+          if (sheet.merges && sheet.merges.length > 0) {
+            // Tạo bản đồ các ô đã gộp
+            if (!processedData.originalData.mergedCellsMap) {
+              processedData.originalData.mergedCellsMap = {};
+            }
+            
+            sheet.merges.forEach(merge => {
+              const startRow = merge.startRowIndex;
+              const endRow = merge.endRowIndex;
+              const startCol = merge.startColumnIndex;
+              const endCol = merge.endColumnIndex;
+              
+              // Tính toán rowSpan và colSpan
+              const rowSpan = endRow - startRow;
+              const colSpan = endCol - startCol;
+              
+              // Đánh dấu ô chính (góc trên bên trái của vùng gộp)
+              if (sheet.data && sheet.data[0] && sheet.data[0].rowData && sheet.data[0].rowData[startRow]) {
+                if (!sheet.data[0].rowData[startRow].values) {
+                  sheet.data[0].rowData[startRow].values = [];
+                }
+                
+                if (!sheet.data[0].rowData[startRow].values[startCol]) {
+                  sheet.data[0].rowData[startRow].values[startCol] = {};
+                }
+                
+                sheet.data[0].rowData[startRow].values[startCol].rowSpan = rowSpan;
+                sheet.data[0].rowData[startRow].values[startCol].colSpan = colSpan;
+              }
+              
+              // Đánh dấu các ô khác trong vùng gộp để bỏ qua khi render
+              for (let r = startRow; r < endRow; r++) {
+                for (let c = startCol; c < endCol; c++) {
+                  // Bỏ qua ô chính
+                  if (r === startRow && c === startCol) continue;
+                  
+                  const key = `${r},${c}`;
+                  processedData.originalData.mergedCellsMap[key] = { 
+                    mainCell: { row: startRow, col: startCol },
+                    sheetIndex: sheetIndex
+                  };
+                }
+              }
+            });
+          }
+        });
+      }
+      
+      setCourse(processedData);
+      setFormData(processedData);
       
       // Hiệu ứng fade-in
       setTimeout(() => {
@@ -1792,6 +1897,50 @@ export default function CourseDetailPage({ params }) {
                       </div>
                     )}
                     
+                    {/* Chọn sheet khi có nhiều sheet */}
+                    {sheetData[sheet._id]?.data?.sheets && sheetData[sheet._id].data.sheets.length > 1 && (
+                      <div className="border-b border-gray-200 px-4 sm:px-6 py-4 bg-gray-50">
+                        <h3 className="text-base font-medium text-gray-800 mb-3">Chọn sheet:</h3>
+                        <div className="flex flex-wrap gap-2 overflow-x-auto pb-2">
+                          {sheetData[sheet._id].data.sheets.map((subSheet, index) => (
+                            <button
+                              key={index}
+                              onClick={() => {
+                                // Lưu chỉ mục sheet đang chọn vào state
+                                setSheetData(prev => ({
+                                  ...prev,
+                                  [sheet._id]: {
+                                    ...prev[sheet._id],
+                                    activeSubSheet: index
+                                  }
+                                }));
+                              }}
+                              className={`
+                                px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap
+                                ${(sheetData[sheet._id].activeSubSheet === index || (!sheetData[sheet._id].activeSubSheet && index === 0)) 
+                                  ? 'bg-blue-600 text-white' 
+                                  : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                                }
+                              `}
+                            >
+                              <div className="flex items-center">
+                                <span>{subSheet?.properties?.title || `Sheet ${index + 1}`}</span>
+                                {subSheet?.data?.[0]?.rowData && (
+                                  <span className={`text-xs ml-2 px-2 py-0.5 rounded-full ${
+                                    (sheetData[sheet._id].activeSubSheet === index || (!sheetData[sheet._id].activeSubSheet && index === 0))
+                                      ? 'bg-blue-500 text-white' 
+                                      : 'bg-gray-100 text-gray-600'
+                                  }`}>
+                                    {(subSheet.data[0].rowData.length - 1) || 0}
+                                  </span>
+                                )}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
                     <div className="px-6 py-4">
                       {loadingSheetData[sheet._id] ? (
                         <div className="flex justify-center items-center py-8">
@@ -1812,24 +1961,73 @@ export default function CourseDetailPage({ params }) {
                       ) : (
                         <div className="overflow-x-auto">
                           {sheetData[sheet._id].data && sheetData[sheet._id].data.values && (
-                            <table className="min-w-full divide-y divide-gray-200">
-                              <thead className="bg-gray-50">
-                                <tr>
-                                  {sheetData[sheet._id].data.values[0] && sheetData[sheet._id].data.values[0].map((header, idx) => (
-                                    <th 
-                                      key={idx} 
-                                      scope="col" 
-                                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                                    >
-                                      {header}
-                                    </th>
-                                  ))}
+                            <table className="min-w-full divide-y divide-gray-200 border-separate border-spacing-0 rounded-lg overflow-hidden shadow-sm">
+                              <thead>
+                                <tr className="bg-gradient-to-r from-blue-600 to-indigo-600">
+                                                                    {sheetData[sheet._id].data.values[0] && sheetData[sheet._id].data.values[0].map((header, idx) => {
+                                    // Bỏ qua cột STT (thường là cột đầu tiên)
+                                    if (idx === 0 && (header === 'STT' || header === '#' || header === 'No.' || 
+                                                   header === 'No' || header === 'Số TT' || header === 'Số thứ tự')) {
+                                      return null;
+                                    }
+                                    
+                                    return (
+                                      <th 
+                                        key={idx} 
+                                        scope="col" 
+                                        className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider"
+                                      >
+                                        <div className="flex items-center">
+                                          {header}
+                                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
+                                          </svg>
+                                        </div>
+                                      </th>
+                                    );
+                                  })}
                                 </tr>
                               </thead>
                               <tbody className="bg-white divide-y divide-gray-200">
-                                {sheetData[sheet._id].data.values.slice(1, 11).map((row, rowIdx) => (
-                                  <tr key={rowIdx} className="hover:bg-gray-50">
+                                {sheetData[sheet._id].data.values.slice(1).map((row, rowIdx) => (
+                                  <tr 
+                                    key={rowIdx} 
+                                    className={`hover:bg-blue-50 transition-colors duration-150 ${rowIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
+                                  >
                                     {row.map((cell, cellIdx) => {
+                                      // Kiểm tra xem ô này có nằm trong vùng gộp không
+                                      // Kiểm tra trực tiếp từ thông tin merges
+                                      const isMerged = sheetData[sheet._id].data.merges?.some(merge => {
+                                        return (
+                                          rowIdx + 1 >= merge.startRowIndex && 
+                                          rowIdx + 1 < merge.endRowIndex && 
+                                          cellIdx >= merge.startColumnIndex && 
+                                          cellIdx < merge.endColumnIndex &&
+                                          // Kiểm tra xem đây có phải là ô chính không
+                                          !(rowIdx + 1 === merge.startRowIndex && cellIdx === merge.startColumnIndex)
+                                        );
+                                      });
+                                      
+                                      if (isMerged) {
+                                        // Nếu ô này đã được gộp và không phải là ô chính, bỏ qua
+                                        return null;
+                                      }
+                                      
+                                      // Bỏ qua cột STT (thường là cột đầu tiên)
+                                      if (cellIdx === 0 && sheetData[sheet._id].data.values[0] && 
+                                         (sheetData[sheet._id].data.values[0][0] === 'STT' || 
+                                          sheetData[sheet._id].data.values[0][0] === '#' || 
+                                          sheetData[sheet._id].data.values[0][0] === 'No.' || 
+                                          sheetData[sheet._id].data.values[0][0] === 'No' || 
+                                          sheetData[sheet._id].data.values[0][0] === 'Số TT' ||
+                                          sheetData[sheet._id].data.values[0][0] === 'Số thứ tự')) {
+                                        return null;
+                                      }
+                                      // Ẩn cột đầu tiên (cột STT)
+                                      if (cellIdx === 0) {
+                                        return null;
+                                      }
+                                      
                                       // Kiểm tra xem cell có phải là hyperlink không
                                       const cellData = sheetData[sheet._id].data.htmlData && 
                                                       sheetData[sheet._id].data.htmlData[rowIdx + 1] && 
@@ -1843,54 +2041,70 @@ export default function CourseDetailPage({ params }) {
                                       const isPdf = isLink && (cellData.hyperlink.includes('.pdf') || (cellData.hyperlink.includes('drive.google.com') && cellData.hyperlink.includes('pdf')));
                                       const isDrive = isLink && cellData.hyperlink.includes('drive.google.com');
                                       
+                                      // Tìm thông tin về merge nếu đây là ô chính của vùng gộp
+                                      const mergeInfo = sheetData[sheet._id].data.merges?.find(merge => 
+                                        rowIdx + 1 === merge.startRowIndex && cellIdx === merge.startColumnIndex
+                                      );
+                                      
+                                      // Xác định rowSpan và colSpan từ thông tin merge
+                                      const rowSpan = mergeInfo ? mergeInfo.endRowIndex - mergeInfo.startRowIndex : 1;
+                                      const colSpan = mergeInfo ? mergeInfo.endColumnIndex - mergeInfo.startColumnIndex : 1;
+                                      
                                       return (
-                                        <td key={cellIdx} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        <td 
+                                          key={cellIdx} 
+                                          className={`px-6 py-4 ${isLink ? 'whitespace-normal' : 'whitespace-nowrap'} text-sm ${isLink ? 'text-gray-800' : 'text-gray-600'} border-b border-gray-100 ${(rowSpan > 1 || colSpan > 1) ? 'bg-blue-50 text-center' : ''}`}
+                                          {...(rowSpan > 1 ? { rowSpan } : {})}
+                                          {...(colSpan > 1 ? { colSpan } : {})}
+                                        >
                                           {isLink ? (
                                             <div className="flex items-center space-x-2">
                                               <a 
                                                 href={cellData.hyperlink} 
                                                 target="_blank" 
                                                 rel="noopener noreferrer"
-                                                className="text-blue-600 hover:text-blue-800 hover:underline flex items-center"
+                                                className="text-blue-600 hover:text-blue-800 hover:underline flex items-center font-medium"
                                               >
-                                                {cell}
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <span className="line-clamp-2">{cell}</span>
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                                                 </svg>
                                               </a>
                                               
-                                              {isYoutube && (
-                                                <button
-                                                  onClick={() => openYoutubeModal(cellData.hyperlink, cell)}
-                                                  className="p-1 bg-red-100 text-red-600 rounded hover:bg-red-200"
-                                                  title="Xem video YouTube"
-                                                >
-                                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
-                                                  </svg>
-                                                </button>
-                                              )}
-                                              
-                                              {isPdf && (
-                                                <button
-                                                  onClick={() => openPdfModal(cellData.hyperlink, cell)}
-                                                  className="p-1 bg-orange-100 text-orange-600 rounded hover:bg-orange-200"
-                                                  title="Xem PDF"
-                                                >
-                                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                                                    <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
-                                                  </svg>
-                                                </button>
-                                              )}
-                                              
-                                              {isDrive && !isPdf && !isYoutube && (
-                                                <span className="p-1 bg-blue-100 text-blue-600 rounded text-xs">
-                                                  Drive
-                                                </span>
-                                              )}
+                                              <div className="flex space-x-1">
+                                                {isYoutube && (
+                                                  <button
+                                                    onClick={() => openYoutubeModal(cellData.hyperlink, cell)}
+                                                    className="p-1.5 bg-red-100 text-red-600 rounded-full hover:bg-red-200 transition-colors duration-150 flex items-center justify-center"
+                                                    title="Xem video YouTube"
+                                                  >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                                                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                                                    </svg>
+                                                  </button>
+                                                )}
+                                                
+                                                {isPdf && (
+                                                  <button
+                                                    onClick={() => openPdfModal(cellData.hyperlink, cell)}
+                                                    className="p-1.5 bg-orange-100 text-orange-600 rounded-full hover:bg-orange-200 transition-colors duration-150 flex items-center justify-center"
+                                                    title="Xem PDF"
+                                                  >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                                                      <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
+                                                    </svg>
+                                                  </button>
+                                                )}
+                                                
+                                                {isDrive && !isPdf && !isYoutube && (
+                                                  <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+                                                    Drive
+                                                  </span>
+                                                )}
+                                              </div>
                                             </div>
                                           ) : (
-                                            <span>{cell}</span>
+                                            <span className="line-clamp-2">{cell}</span>
                                           )}
                                         </td>
                                       );
@@ -1901,19 +2115,7 @@ export default function CourseDetailPage({ params }) {
                             </table>
                           )}
                           
-                          {sheetData[sheet._id].data && sheetData[sheet._id].data.values && sheetData[sheet._id].data.values.length > 11 && (
-                            <div className="text-center py-4 border-t border-gray-200">
-                              <p className="text-sm text-gray-600">
-                                Hiển thị 10 hàng đầu tiên trong tổng số {sheetData[sheet._id].data.values.length - 1} hàng
-                              </p>
-                              <a 
-                                href={`/admin/sheets/${sheet._id}`}
-                                className="inline-flex items-center px-4 py-2 mt-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-                              >
-                                Xem đầy đủ dữ liệu
-                              </a>
-                            </div>
-                          )}
+                          
                         </div>
                       )}
                     </div>
@@ -2055,11 +2257,14 @@ export default function CourseDetailPage({ params }) {
                           <thead>
                             <tr className="bg-gradient-to-r from-blue-600 to-indigo-600">
                               {course.originalData.sheets[activeSheet].data[0].rowData[0]?.values?.map((cell, index) => {
+                                // Bỏ qua cột STT (cột đầu tiên)
+                                if (index === 0) {
+                                  return null;
+                                }
+                                
                                 // Xác định chiều rộng phù hợp cho mỗi cột
                                 let columnWidth = '';
-                                if (index === 0) {
-                                  columnWidth = 'w-12 sm:w-16'; // Cột STT hẹp
-                                } else if (
+                                if (
                                   (cell.formattedValue || '').toLowerCase().includes('video') || 
                                   (cell.formattedValue || '').toLowerCase().includes('link') || 
                                   (cell.formattedValue || '').toLowerCase().includes('tài liệu')
@@ -2072,9 +2277,7 @@ export default function CourseDetailPage({ params }) {
                                 return (
                                   <th 
                                     key={index} 
-                                    className={`px-3 sm:px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider ${
-                                      index === 0 ? 'text-center' : ''
-                                    } ${columnWidth} ${index > 2 ? 'hidden sm:table-cell' : ''}`}
+                                    className={`px-3 sm:px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider ${columnWidth} ${index > 2 ? 'hidden sm:table-cell' : ''}`}
                                   >
                                     <div className="flex items-center">
                                       {cell.formattedValue || ''}
@@ -2100,6 +2303,18 @@ export default function CourseDetailPage({ params }) {
                                 className="group hover:bg-blue-50 transition-colors duration-150"
                               >
                                 {row.values && row.values.map((cell, cellIndex) => {
+                                  // Kiểm tra xem ô này có nằm trong vùng gộp không
+                                  const mergedCellKey = `${rowIndex + 1},${cellIndex}`;
+                                  if (course.originalData.mergedCellsMap && course.originalData.mergedCellsMap[mergedCellKey]) {
+                                    // Nếu ô này đã được gộp và không phải là ô chính, bỏ qua
+                                    return null;
+                                  }
+                                  
+                                  // Bỏ qua cột STT (cột đầu tiên)
+                                  if (cellIndex === 0) {
+                                    return null;
+                                  }
+                                  
                                   // Xác định loại link nếu có
                                   const url = cell.userEnteredFormat?.textFormat?.link?.uri || cell.hyperlink;
                                   const isLink = url ? true : false;
@@ -2112,20 +2327,51 @@ export default function CourseDetailPage({ params }) {
                                           ? 'drive' 
                                           : 'external'
                                     : null;
+                                    
+                                  // Kiểm tra xem cell có nằm trong vùng gộp không
+                                  const isMerged = course.originalData.sheets[activeSheet].merges?.some(merge => {
+                                    return (
+                                      rowIndex + 1 >= merge.startRowIndex && 
+                                      rowIndex + 1 < merge.endRowIndex && 
+                                      cellIndex >= merge.startColumnIndex && 
+                                      cellIndex < merge.endColumnIndex &&
+                                      // Kiểm tra xem đây có phải là ô chính không
+                                      !(rowIndex + 1 === merge.startRowIndex && cellIndex === merge.startColumnIndex)
+                                    );
+                                  });
+                                  
+                                  // Nếu là ô nằm trong vùng gộp (không phải ô chính), bỏ qua
+                                  if (isMerged) {
+                                    console.log(`Skipping merged cell [${rowIndex + 1},${cellIndex}]`);
+                                    return null;
+                                  }
+                                  
+                                  // Tìm thông tin về merge nếu đây là ô chính của vùng gộp
+                                  const mergeInfo = course.originalData.sheets[activeSheet].merges?.find(merge => 
+                                    rowIndex + 1 === merge.startRowIndex && cellIndex === merge.startColumnIndex
+                                  );
+                                  
+                                  // Xác định rowSpan và colSpan từ thông tin merge
+                                  const mergeRowSpan = mergeInfo ? mergeInfo.endRowIndex - mergeInfo.startRowIndex : 1;
+                                  const mergeColSpan = mergeInfo ? mergeInfo.endColumnIndex - mergeInfo.startColumnIndex : 1;
+                                  
+                                  if (mergeInfo) {
+                                    console.log(`Found merge for cell [${rowIndex + 1},${cellIndex}]:`, { 
+                                      rowSpan: mergeRowSpan, 
+                                      colSpan: mergeColSpan, 
+                                      mergeInfo 
+                                    });
+                                  }
                                   
                                   return (
                                     <td 
                                       key={cellIndex} 
-                                      className={`px-3 sm:px-6 py-3 sm:py-4 text-sm ${
-                                        cellIndex === 0 
-                                          ? 'whitespace-nowrap font-medium text-gray-900 text-center' 
-                                          : 'text-gray-700'
-                                      } ${cellIndex > 2 ? 'hidden sm:table-cell' : ''}`}
+                                      className={`px-3 sm:px-6 py-3 sm:py-4 text-sm text-gray-700 ${cellIndex > 2 ? 'hidden sm:table-cell' : ''} ${(mergeRowSpan > 1 || mergeColSpan > 1) ? 'bg-blue-50 text-center' : ''}`}
+                                      {...(mergeRowSpan > 1 ? { rowSpan: mergeRowSpan } : {})}
+                                      {...(mergeColSpan > 1 ? { colSpan: mergeColSpan } : {})}
                                     >
                                       <div className="group relative">
-                                        {cellIndex === 0 
-                                          ? (cell.formattedValue || '')
-                                          : isLink
+                                        {isLink
                                             ? (
                                                 <div>
                                                   <div className="flex items-center">
