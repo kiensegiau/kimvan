@@ -39,6 +39,40 @@ export default function SheetsAdminPage() {
     }
   };
 
+  // Hàm trích xuất ID từ URL Google Sheets
+  const extractSheetId = (url) => {
+    try {
+      // Kiểm tra xem URL có hợp lệ không
+      if (!url || typeof url !== 'string') return null;
+      
+      // Kiểm tra xem đã là ID thuần túy chưa (không chứa dấu / hoặc .)
+      if (/^[a-zA-Z0-9_-]+$/.test(url) && url.length > 20) {
+        return url;
+      }
+      
+      // Trích xuất ID từ URL đầy đủ
+      const regex = /\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/;
+      const match = url.match(regex);
+      
+      if (match && match[1]) {
+        return match[1];
+      }
+      
+      // Kiểm tra định dạng URL rút gọn
+      const shortRegex = /\/([a-zA-Z0-9_-]{20,})\//;
+      const shortMatch = url.match(shortRegex);
+      
+      if (shortMatch && shortMatch[1]) {
+        return shortMatch[1];
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Lỗi khi trích xuất ID sheet:', error);
+      return null;
+    }
+  };
+
   const handleAddSheet = async () => {
     if (!newSheet.name || !newSheet.sheetUrl) {
       alert('Vui lòng nhập tên và URL của Google Sheet');
@@ -47,13 +81,12 @@ export default function SheetsAdminPage() {
 
     setAddingSheet(true);
     try {
-      // Trích xuất ID từ URL Google Sheets
-      const matches = newSheet.sheetUrl.match(/\/d\/([a-zA-Z0-9-_]+)/);
-      if (!matches || !matches[1]) {
-        throw new Error('URL không hợp lệ. Không tìm thấy ID của Google Sheets');
-      }
+      // Trích xuất ID từ URL
+      const sheetId = extractSheetId(newSheet.sheetUrl);
       
-      const spreadsheetId = matches[1];
+      if (!sheetId) {
+        throw new Error('Không thể trích xuất ID từ URL Google Sheet. Vui lòng kiểm tra lại URL.');
+      }
       
       const response = await fetch('/api/sheets', {
         method: 'POST',
@@ -63,7 +96,7 @@ export default function SheetsAdminPage() {
         body: JSON.stringify({
           name: newSheet.name,
           description: newSheet.description,
-          sheetId: spreadsheetId,
+          sheetId: sheetId,
           sheetUrl: newSheet.sheetUrl,
         }),
       });
@@ -73,11 +106,18 @@ export default function SheetsAdminPage() {
         throw new Error(errorData.error || 'Không thể tạo sheet mới');
       }
 
-      const result = await response.json();
-      setSheets([...sheets, result.sheet]);
+      // Làm mới danh sách sheets
+      await fetchSheets();
+      
+      // Reset form và đóng modal
+      setNewSheet({
+        name: '',
+        description: '',
+        sheetUrl: '',
+      });
       setShowAddModal(false);
-      setNewSheet({ name: '', description: '', sheetUrl: '' });
-      alert('Đã thêm sheet thành công!');
+      
+      alert('Đã thêm sheet mới thành công!');
     } catch (error) {
       console.error('Lỗi khi thêm sheet:', error);
       alert(`Lỗi: ${error.message}`);
@@ -100,6 +140,7 @@ export default function SheetsAdminPage() {
         throw new Error('Không thể xóa sheet');
       }
 
+      // Cập nhật danh sách sheets sau khi xóa
       setSheets(sheets.filter(sheet => sheet._id !== id));
       alert('Đã xóa sheet thành công!');
     } catch (error) {
@@ -109,7 +150,7 @@ export default function SheetsAdminPage() {
   };
 
   return (
-    <div className="container mx-auto px-4">
+    <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Quản lý Google Sheets</h1>
         <button
@@ -147,9 +188,11 @@ export default function SheetsAdminPage() {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {sheets.map((sheet) => (
-                <tr key={sheet._id}>
+                <tr key={sheet._id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{sheet.name}</div>
+                    <Link href={`/admin/sheets/${sheet._id}`} className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline">
+                      {sheet.name}
+                    </Link>
                   </td>
                   <td className="px-6 py-4">
                     <div className="text-sm text-gray-500">{sheet.description || 'Không có mô tả'}</div>
@@ -224,6 +267,9 @@ export default function SheetsAdminPage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="https://docs.google.com/spreadsheets/d/..."
                   />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Dán liên kết đến Google Sheet. Đảm bảo sheet đã được chia sẻ công khai hoặc có quyền truy cập.
+                  </p>
                 </div>
               </div>
               
@@ -237,11 +283,18 @@ export default function SheetsAdminPage() {
                 <button
                   onClick={handleAddSheet}
                   disabled={addingSheet}
-                  className={`px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 ${
+                  className={`px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center ${
                     addingSheet ? 'opacity-70 cursor-not-allowed' : ''
                   }`}
                 >
-                  {addingSheet ? 'Đang thêm...' : 'Thêm Sheet'}
+                  {addingSheet ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+                      Đang xử lý...
+                    </>
+                  ) : (
+                    'Thêm Sheet'
+                  )}
                 </button>
               </div>
             </div>

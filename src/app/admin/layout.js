@@ -10,7 +10,10 @@ import {
   ArrowLeftOnRectangleIcon,
   ExclamationCircleIcon,
   VideoCameraIcon,
-  DocumentTextIcon
+  DocumentTextIcon,
+  HomeIcon,
+  TableCellsIcon,
+  UsersIcon
 } from '@heroicons/react/24/outline';
 
 export default function AdminLayout({ children }) {
@@ -78,11 +81,11 @@ export default function AdminLayout({ children }) {
   };
   
   // Các mục menu điều hướng
-  const navigation = [
-    { name: 'Người dùng', href: '/admin/users', icon: UserGroupIcon },
+  const adminNavItems = [
+    { name: 'Dashboard', href: '/admin', icon: HomeIcon },
     { name: 'Khóa học', href: '/admin/courses', icon: BookOpenIcon },
-    { name: 'Sheets', href: '/admin/sheets', icon: DocumentTextIcon },
-    { name: 'YouTube', href: '/admin/youtube-setup', icon: VideoCameraIcon },
+    { name: 'Sheets', href: '/admin/sheets', icon: TableCellsIcon },
+    { name: 'Người dùng', href: '/admin/users', icon: UsersIcon },
     { name: 'Cài đặt', href: '/admin/settings', icon: Cog6ToothIcon },
   ];
   
@@ -124,7 +127,7 @@ export default function AdminLayout({ children }) {
         
         {/* Thanh điều hướng dưới cho tất cả thiết bị */}
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around items-center w-full">
-          {navigation.map((item) => (
+          {adminNavItems.map((item) => (
             <Link
               key={item.name}
               href={item.href}
