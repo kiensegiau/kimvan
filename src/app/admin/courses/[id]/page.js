@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeftIcon, PencilIcon, TrashIcon, CloudArrowDownIcon, ExclamationCircleIcon, XMarkIcon, ArrowPathIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, PencilIcon, TrashIcon, CloudArrowDownIcon, ExclamationCircleIcon, XMarkIcon, ArrowPathIcon, ArrowDownTrayIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { AdjustmentsHorizontalIcon, DocumentArrowUpIcon, DocumentMagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { use } from 'react';
+import CryptoJS from 'crypto-js';
 import YouTubeModal from '../../components/YouTubeModal';
 import PDFModal from '../../components/PDFModal';
 import MediaProcessingModal from '../../components/MediaProcessingModal';
@@ -76,7 +77,17 @@ export default function CourseDetailPage({ params }) {
   const [newRowData, setNewRowData] = useState({});
   const [addingRow, setAddingRow] = useState(false);
   const [insertPosition, setInsertPosition] = useState(null);
-
+  
+  // State cho modal thêm khóa học mới
+  const [showAddCourseModal, setShowAddCourseModal] = useState(false);
+  const [newCourseData, setNewCourseData] = useState({
+    name: '',
+    description: '',
+    price: 0,
+    status: 'active'
+  });
+  const [addingCourse, setAddingCourse] = useState(false);
+  
   // Hàm lấy tiêu đề của sheet
   const getSheetTitle = (index, sheets) => {
     if (!sheets || !sheets[index]) return `Khóa ${index + 1}`;
@@ -188,6 +199,46 @@ export default function CourseDetailPage({ params }) {
     }
   };
 
+  // Hàm thêm khóa học mới
+  const handleAddCourse = async () => {
+    setAddingCourse(true);
+    try {
+      const response = await fetch('/api/courses', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newCourseData),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Lỗi ${response.status}: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      
+      // Nếu API trả về dữ liệu mã hóa
+      if (result._secureData) {
+        alert('Đã tạo khóa học mới thành công!');
+        // Chuyển hướng đến trang chi tiết khóa học vừa tạo
+        const createdCourseData = JSON.parse(CryptoJS.AES.decrypt(result._secureData, 'kimvan-secure-key-2024').toString(CryptoJS.enc.Utf8));
+        router.push(`/admin/courses/${createdCourseData.course._id}`);
+      } else if (result.success) {
+        alert('Đã tạo khóa học mới thành công!');
+        // Chuyển hướng đến trang chi tiết khóa học vừa tạo
+        router.push(`/admin/courses/${result.course._id}`);
+      } else {
+        throw new Error(result.message || 'Không thể tạo khóa học mới');
+      }
+    } catch (error) {
+      console.error('Lỗi khi tạo khóa học mới:', error);
+      alert(`Không thể tạo khóa học mới: ${error.message}`);
+    } finally {
+      setAddingCourse(false);
+      setShowAddCourseModal(false);
+    }
+  };
+  
   // Hàm xóa khóa học
   const handleDelete = async () => {
     if (!course) return;
@@ -1056,6 +1107,14 @@ export default function CourseDetailPage({ params }) {
     });
     setShowQuickEditModal(true);
   };
+  
+  // Hàm xử lý thay đổi dữ liệu khóa học mới
+  const handleNewCourseChange = (field, value) => {
+    setNewCourseData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
 
   // Add new function to update a single cell
   const handleUpdateCell = async () => {
@@ -1323,6 +1382,14 @@ export default function CourseDetailPage({ params }) {
             >
               <TrashIcon className="h-4 w-4 mr-2" />
               Xóa
+            </button>
+            
+            <button
+              onClick={() => setShowAddCourseModal(true)}
+              className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-500 hover:bg-green-600"
+            >
+              <PlusIcon className="h-4 w-4 mr-2" />
+              Thêm khóa học mới
             </button>
           </div>
         </div>
@@ -3561,6 +3628,110 @@ export default function CourseDetailPage({ params }) {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+        
+        {/* Modal thêm khóa học mới */}
+        {showAddCourseModal && (
+          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-lg">
+              <div className="px-4 sm:px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                <h3 className="text-lg font-medium text-gray-900">Thêm khóa học mới</h3>
+                <button
+                  onClick={() => setShowAddCourseModal(false)}
+                  className="text-gray-400 hover:text-gray-500"
+                >
+                  <XMarkIcon className="h-6 w-6" />
+                </button>
+              </div>
+              
+              <div className="p-4 sm:p-6">
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                      Tên khóa học
+                    </label>
+                    <input
+                      type="text"
+                      id="name"
+                      value={newCourseData.name}
+                      onChange={(e) => handleNewCourseChange('name', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                      placeholder="Nhập tên khóa học"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+                      Mô tả
+                    </label>
+                    <textarea
+                      id="description"
+                      value={newCourseData.description}
+                      onChange={(e) => handleNewCourseChange('description', e.target.value)}
+                      rows="3"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                      placeholder="Nhập mô tả khóa học"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">
+                      Giá (VND)
+                    </label>
+                    <input
+                      type="number"
+                      id="price"
+                      value={newCourseData.price}
+                      onChange={(e) => handleNewCourseChange('price', parseInt(e.target.value) || 0)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                      placeholder="Nhập giá khóa học"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
+                      Trạng thái
+                    </label>
+                    <select
+                      id="status"
+                      value={newCourseData.status}
+                      onChange={(e) => handleNewCourseChange('status', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    >
+                      <option value="active">Hoạt động</option>
+                      <option value="inactive">Không hoạt động</option>
+                      <option value="draft">Bản nháp</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="px-4 sm:px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowAddCourseModal(false)}
+                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 mr-3"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="button"
+                  onClick={handleAddCourse}
+                  disabled={addingCourse}
+                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
+                >
+                  {addingCourse ? (
+                    <span className="flex items-center">
+                      <ArrowPathIcon className="animate-spin h-4 w-4 mr-2" />
+                      Đang xử lý...
+                    </span>
+                  ) : (
+                    'Tạo khóa học'
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         )}
