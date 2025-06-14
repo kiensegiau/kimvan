@@ -1,7 +1,8 @@
 /**
  * Các hàm xử lý worker threads
+ * Lưu ý: Tất cả worker threads đều tắt kết nối database để tránh tạo quá nhiều kết nối
  */
-import { Worker } from 'worker_threads';
+import { Worker, isMainThread, parentPort, workerData } from 'worker_threads';
 import { promisify } from 'util';
 import { exec } from 'child_process';
 import fs from 'fs';
@@ -10,9 +11,6 @@ import sharp from 'sharp';
 import { DEFAULT_CONFIG } from './config.js';
 
 const execPromise = promisify(exec);
-
-// Biến để kiểm soát việc kết nối đến database - luôn tắt trong worker threads
-const shouldConnectDB = false;
 
 // Số lượng worker tối đa chạy đồng thời (để tránh tràn RAM)
 const MAX_CONCURRENT_WORKERS = 3;
@@ -30,11 +28,12 @@ export function createConvertWorker(gsPath, pdfPath, pngPath, page, numPages, dp
           page,
           numPages,
           dpi,
-          connectToDB: false // Đảm bảo luôn tắt kết nối DB trong worker
+          DB_DISABLED: true // Đảm bảo luôn tắt kết nối DB trong worker
         },
         env: {
           ...process.env,
-          WORKER_THREAD: 'true' // Đặt biến môi trường để đánh dấu đây là worker thread
+          WORKER_THREAD: 'true', // Đánh dấu đây là worker thread
+          NO_DB: 'true' // Tắt kết nối database
         }
       });
       
@@ -135,11 +134,12 @@ export function createProcessWorker(pngPath, page, numPages, config) {
           page,
           numPages,
           config,
-          connectToDB: false // Luôn tắt kết nối DB trong worker để tránh quá nhiều kết nối
+          DB_DISABLED: true // Tắt hoàn toàn kết nối DB trong worker
         },
         env: {
           ...process.env,
-          WORKER_THREAD: 'true' // Đặt biến môi trường để đánh dấu đây là worker thread
+          WORKER_THREAD: 'true', // Đánh dấu đây là worker thread
+          NO_DB: 'true' // Tắt kết nối database
         }
       });
       
@@ -515,4 +515,75 @@ export async function processPage(data) {
     
     return { success: false, page, error: error.message };
   }
+}
+
+// Hàm kiểm tra xem có nên tắt kết nối database không
+export function shouldDisableDatabase() {
+  // Kiểm tra các điều kiện để tắt kết nối database
+  return (
+    // Đang chạy trong worker thread
+    process.env.WORKER_THREAD === 'true' ||
+    // Biến môi trường chỉ định tắt DB
+    process.env.NO_DB === 'true' ||
+    // Đang chạy trong môi trường test
+    process.env.NODE_ENV === 'test' ||
+    // Đang chạy các tác vụ xử lý tệp tin mà không cần DB
+    process.env.FILE_PROCESSING_ONLY === 'true'
+  );
+}
+
+// Ghi log cảnh báo nếu có kết nối database trong worker thread
+if (process.env.WORKER_THREAD === 'true' && !process.env.NO_DB) {
+  console.warn('CẢNH BÁO: Worker thread không nên kết nối đến database. Đặt NO_DB=true để tắt kết nối.');
+}
+
+// Thêm code xử lý worker thread entry point
+if (!isMainThread) {
+  // Đảm bảo không có kết nối database nào được tạo
+  process.env.NO_DB = 'true';
+  
+  // Ghi đè các biến môi trường liên quan đến database để ngăn kết nối
+  process.env.DATABASE_URL = '';
+  process.env.DB_CONNECTION_STRING = '';
+  process.env.MONGODB_URI = '';
+  process.env.POSTGRES_URL = '';
+  process.env.MYSQL_URL = '';
+  
+  // Xử lý nhiệm vụ được giao
+  const handleTask = async () => {
+    try {
+      if (!workerData || !workerData.task) {
+        throw new Error('Không có nhiệm vụ được giao cho worker');
+      }
+      
+      console.log(`Worker bắt đầu nhiệm vụ: ${workerData.task}`);
+      
+      let result;
+      // Chọn hàm xử lý dựa trên nhiệm vụ
+      switch (workerData.task) {
+        case 'convertPage':
+          result = await convertPage(workerData);
+          break;
+        case 'processPage':
+          result = await processPage(workerData);
+          break;
+        default:
+          throw new Error(`Nhiệm vụ không được hỗ trợ: ${workerData.task}`);
+      }
+      
+      // Gửi kết quả về cho thread chính
+      parentPort.postMessage(result);
+    } catch (error) {
+      console.error(`Lỗi trong worker thread: ${error.message}`);
+      // Gửi thông báo lỗi về cho thread chính
+      parentPort.postMessage({ 
+        success: false, 
+        error: error.message,
+        task: workerData?.task
+      });
+    }
+  };
+  
+  // Bắt đầu xử lý
+  handleTask();
 } 

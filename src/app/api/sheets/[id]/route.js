@@ -276,7 +276,8 @@ export async function GET(request, { params }) {
       values: formulaResponse.data.values,
       htmlData: htmlResponse.data.sheets?.[0]?.data?.[0]?.rowData || [],
       range: formulaResponse.data.range,
-      majorDimension: formulaResponse.data.majorDimension
+      majorDimension: formulaResponse.data.majorDimension,
+      merges: htmlResponse.data.sheets?.[0]?.merges || []
     };
     
     // Xử lý các URL trong dữ liệu

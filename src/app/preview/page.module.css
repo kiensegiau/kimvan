@@ -193,4 +193,23 @@
 
 .docsIcon {
   color: #4285f4;
+}
+
+/* Add styles for merged cells */
+.dataTable td[rowspan],
+.dataTable td[colspan] {
+  text-align: center;
+  vertical-align: middle;
+  background-color: rgba(240, 240, 240, 0.3);
+}
+
+/* Make merged cells more visually distinct */
+.dataTable td[rowspan="2"],
+.dataTable td[colspan="2"] {
+  background-color: rgba(230, 230, 250, 0.3);
+}
+
+.dataTable td[rowspan="3"],
+.dataTable td[colspan="3"] {
+  background-color: rgba(220, 220, 250, 0.3);
 } 

@@ -1835,12 +1835,15 @@ async function handleDriveFolder(driveFolderLink, backgroundImage, backgroundOpa
     console.error(`Lỗi khi xử lý folder: ${error.message}`);
     
     // Dọn dẹp các thư mục tạm nếu còn
-    for (const folderPath of processingFolders) {
-      if (fs.existsSync(folderPath)) {
-        try {
-          cleanupTempFiles(folderPath);
-        } catch (cleanupError) {
-          // Bỏ qua lỗi cleanup
+    if (processingFolders && Array.isArray(processingFolders)) {
+      for (const folderPath of processingFolders) {
+        if (folderPath && fs.existsSync(folderPath)) {
+          try {
+            cleanupTempFiles(folderPath);
+          } catch (cleanupError) {
+            // Bỏ qua lỗi cleanup
+            console.warn(`Không thể dọn dẹp thư mục: ${cleanupError.message}`);
+          }
         }
       }
     }

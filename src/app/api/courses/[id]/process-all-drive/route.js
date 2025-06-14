@@ -503,10 +503,7 @@ export async function POST(request, { params }) {
                   fetchError.name === 'AbortError' || 
                   fetchError.message.includes('timeout') || 
                   fetchError.message.includes('Headers Timeout Error') ||
-                  fetchError.code?.includes('UND_ERR_HEADERS_TIMEOUT') ||
-                  fetchError.code === 'UND_ERR_HEADERS_TIMEOUT' ||
-                  fetchError.message.includes('network') ||
-                  fetchError.message.includes('connection') ||
+                  (typeof fetchError.code === 'string' && fetchError.code.includes('UND_ERR_HEADERS_TIMEOUT')) ||
                   fetchError.message.includes('ECONNREFUSED') ||
                   fetchError.message.includes('ENOTFOUND') ||
                   fetchError.message.includes('fetch failed');
@@ -514,7 +511,7 @@ export async function POST(request, { params }) {
                 // Ghi log chi tiết hơn cho lỗi Headers Timeout
                 if (fetchError.message.includes('Headers Timeout Error') || 
                     fetchError.code === 'UND_ERR_HEADERS_TIMEOUT' ||
-                    fetchError.code?.includes('UND_ERR_HEADERS_TIMEOUT')) {
+                    (typeof fetchError.code === 'string' && fetchError.code.includes('UND_ERR_HEADERS_TIMEOUT'))) {
                   console.log('⚠️ Phát hiện lỗi Headers Timeout Error, sẽ thử lại sau thời gian chờ');
                 }
                 
