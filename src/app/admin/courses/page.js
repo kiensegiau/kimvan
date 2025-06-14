@@ -184,6 +184,10 @@ export default function CoursesPage() {
     }
   };
 
+  const handleCreateFromSheets = () => {
+    router.push('/admin/courses/create');
+  };
+
   const handleSave = async (e) => {
     e.preventDefault();
     
@@ -1457,6 +1461,26 @@ export default function CoursesPage() {
 
   return (
     <div className="space-y-6">
+      <div className="container mx-auto px-4 py-6">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">Quản lý khóa học</h1>
+          <div className="flex space-x-2">
+            <button
+              onClick={handleCreateFromSheets}
+              className="bg-green-600 text-white px-4 py-2 rounded-md flex items-center"
+            >
+              <PlusIcon className="h-5 w-5 mr-2" />
+              Tạo từ Sheets
+            </button>
+            <button
+              onClick={() => setCurrentCourse({ name: '', description: '', price: 0, status: 'active' }) || setShowModal(true)}
+              className="bg-blue-600 text-white px-4 py-2 rounded-md flex items-center"
+            >
+              <PlusIcon className="h-5 w-5 mr-2" />
+              Thêm khóa học
+            </button>
+          </div>
+        </div>
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-gray-900">Quản lý khóa học</h1>
         <div className="flex space-x-4">

@@ -35,6 +35,17 @@ const courseSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.Mixed
   },
   spreadsheetId: String,
+  sheets: [
+    {
+      _id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Sheet'
+      },
+      name: String,
+      sheetId: String,
+      sheetUrl: String
+    }
+  ],
   createdAt: {
     type: Date,
     default: Date.now

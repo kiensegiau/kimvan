@@ -117,6 +117,11 @@ export async function POST(request) {
       updatedAt: new Date(),
     };
     
+    // Thêm sheets vào khóa học nếu có
+    if (body.sheets && Array.isArray(body.sheets) && body.sheets.length > 0) {
+      newCourse.sheets = body.sheets;
+    }
+    
     // Sử dụng Mongoose để tạo khóa học mới
     const createdCourse = await Course.create(newCourse);
     

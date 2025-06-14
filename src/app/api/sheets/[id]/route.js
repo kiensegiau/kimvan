@@ -1,4 +1,8 @@
 import { NextResponse } from 'next/server';
+import { connectToDatabase } from '@/lib/mongodb';
+import { connectDB } from '@/lib/mongodb';
+import Sheet from '@/models/Sheet';
+import { ObjectId } from 'mongodb';
 import { google } from 'googleapis';
 import fs from 'fs';
 import path from 'path';
@@ -205,13 +209,134 @@ function filterIntroductoryRows(data) {
   return data;
 }
 
+// GET /api/sheets/[id] - Lấy chi tiết sheet
 export async function GET(request, { params }) {
   try {
     const { id } = params;
-    const url = new URL(request.url);
-    const debug = url.searchParams.get('debug') === 'true';
+    await connectDB();
     
-    console.log('Bắt đầu lấy dữ liệu từ Google Sheets, ID:', id);
+    // Kiểm tra xem id có phải là MongoDB ObjectId hay không
+    let sheet;
+    if (ObjectId.isValid(id)) {
+      sheet = await Sheet.findById(id);
+    } else {
+      // Nếu không phải ObjectId, giả định đó là sheetId
+      sheet = await Sheet.findOne({ sheetId: id });
+    }
+    
+    if (!sheet) {
+      return NextResponse.json(
+        { success: false, error: 'Không tìm thấy sheet' }, 
+        { status: 404 }
+      );
+    }
+    
+    // Kiểm tra xem có yêu cầu lấy dữ liệu từ Google Sheets không
+    const url = new URL(request.url);
+    const fetchData = url.searchParams.get('fetchData') === 'true';
+    
+    if (fetchData) {
+      // Lấy dữ liệu từ Google Sheets
+      const sheetData = await fetchSheetData(sheet.sheetId);
+      return NextResponse.json({ 
+        success: true, 
+        sheet: {
+          ...sheet.toObject(),
+          data: sheetData
+        }
+      });
+    }
+    
+    return NextResponse.json({ success: true, sheet });
+  } catch (error) {
+    console.error('Lỗi khi lấy chi tiết sheet:', error);
+    return NextResponse.json(
+      { success: false, error: 'Không thể lấy chi tiết sheet' }, 
+      { status: 500 }
+    );
+  }
+}
+
+// PUT /api/sheets/[id] - Cập nhật sheet
+export async function PUT(request, { params }) {
+  try {
+    const { id } = params;
+    await connectDB();
+    const data = await request.json();
+    
+    // Kiểm tra xem sheet có tồn tại không
+    const sheet = await Sheet.findById(id);
+    if (!sheet) {
+      return NextResponse.json(
+        { success: false, error: 'Không tìm thấy sheet' }, 
+        { status: 404 }
+      );
+    }
+    
+    // Cập nhật sheet
+    const updateData = {
+      ...data,
+    };
+    
+    // Không cho phép cập nhật sheetId
+    delete updateData.sheetId;
+    delete updateData._id;
+    
+    const updatedSheet = await Sheet.findByIdAndUpdate(
+      id,
+      updateData,
+      { new: true, runValidators: true }
+    );
+    
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Đã cập nhật sheet thành công', 
+      sheet: updatedSheet 
+    });
+  } catch (error) {
+    console.error('Lỗi khi cập nhật sheet:', error);
+    return NextResponse.json(
+      { success: false, error: 'Không thể cập nhật sheet' }, 
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE /api/sheets/[id] - Xóa sheet
+export async function DELETE(request, { params }) {
+  try {
+    const { id } = params;
+    await connectDB();
+    
+    // Kiểm tra xem sheet có tồn tại không
+    const sheet = await Sheet.findById(id);
+    if (!sheet) {
+      return NextResponse.json(
+        { success: false, error: 'Không tìm thấy sheet' }, 
+        { status: 404 }
+      );
+    }
+    
+    // Xóa sheet
+    await Sheet.findByIdAndDelete(id);
+    
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Đã xóa sheet thành công'
+    });
+  } catch (error) {
+    console.error('Lỗi khi xóa sheet:', error);
+    return NextResponse.json(
+      { success: false, error: 'Không thể xóa sheet' }, 
+      { status: 500 }
+    );
+  }
+}
+
+// Hàm lấy dữ liệu từ Google Sheets
+async function fetchSheetData(sheetId) {
+  try {
+    console.log('Bắt đầu lấy dữ liệu từ Google Sheets, ID:', sheetId);
     
     let auth;
     
@@ -246,7 +371,7 @@ export async function GET(request, { params }) {
     // Lấy thông tin về spreadsheet để biết tên của các sheet
     console.log('Lấy thông tin spreadsheet...');
     const spreadsheet = await sheets.spreadsheets.get({
-      spreadsheetId: id,
+      spreadsheetId: sheetId,
       includeGridData: true
     });
     
@@ -259,14 +384,14 @@ export async function GET(request, { params }) {
     
     // Lấy dữ liệu với định dạng công thức
     const formulaResponse = await sheets.spreadsheets.values.get({
-      spreadsheetId: id,
+      spreadsheetId: sheetId,
       range: firstSheetName,
       valueRenderOption: 'FORMULA', // Lấy công thức thay vì giá trị đã tính toán
     });
     
     // Lấy dữ liệu với định dạng HTML
     const htmlResponse = await sheets.spreadsheets.get({
-      spreadsheetId: id,
+      spreadsheetId: sheetId,
       ranges: [firstSheetName],
       includeGridData: true,
     });
@@ -286,26 +411,10 @@ export async function GET(request, { params }) {
     // Lọc bỏ các hàng giới thiệu
     const filteredData = filterIntroductoryRows(processedData);
     
-    // Thêm thông tin debug nếu được yêu cầu
-    if (debug) {
-      console.log('Debug info:', {
-        spreadsheetId: id,
-        sheetName: firstSheetName,
-        credentialsPath,
-        hasClientEmail: !!process.env.GOOGLE_CLIENT_EMAIL,
-        hasPrivateKey: !!process.env.GOOGLE_PRIVATE_KEY,
-        formulaResponseSample: formulaResponse.data.values?.slice(0, 2),
-        htmlResponseSample: htmlResponse.data.sheets?.[0]?.data?.[0]?.rowData?.slice(0, 2)
-      });
-    }
-    
     console.log('Lấy dữ liệu thành công!');
-    return NextResponse.json(filteredData);
+    return filteredData;
   } catch (error) {
     console.error('Lỗi khi lấy dữ liệu từ Google Sheets:', error);
-    return NextResponse.json(
-      { error: error.message || 'Không thể lấy dữ liệu từ Google Sheets' }, 
-      { status: 500 }
-    );
+    throw new Error('Không thể lấy dữ liệu từ Google Sheets: ' + error.message);
   }
 } 
