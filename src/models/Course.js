@@ -8,7 +8,8 @@ const courseSchema = new mongoose.Schema({
   },
   description: {
     type: String,
-    trim: true
+    trim: true,
+    default: ''
   },
   price: {
     type: Number,
@@ -37,13 +38,8 @@ const courseSchema = new mongoose.Schema({
   spreadsheetId: String,
   sheets: [
     {
-      _id: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Sheet'
-      },
-      name: String,
-      sheetId: String,
-      sheetUrl: String
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Sheet'
     }
   ],
   createdAt: {
@@ -70,6 +66,18 @@ const courseSchema = new mongoose.Schema({
   ]
 }, {
   timestamps: true
+});
+
+// Middleware để tự động cập nhật updatedAt trước khi lưu
+courseSchema.pre('save', function(next) {
+  this.updatedAt = Date.now();
+  next();
+});
+
+// Middleware để tự động cập nhật updatedAt trước khi cập nhật
+courseSchema.pre('findOneAndUpdate', function(next) {
+  this.set({ updatedAt: Date.now() });
+  next();
 });
 
 // Đảm bảo model không được khởi tạo lại nếu đã tồn tại

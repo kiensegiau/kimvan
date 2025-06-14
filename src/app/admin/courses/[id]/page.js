@@ -45,6 +45,8 @@ export default function CourseDetailPage({ params }) {
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [applyingSync, setApplyingSync] = useState(false);
   const [previewActiveTab, setPreviewActiveTab] = useState('sheet');
+  const [linkedSheets, setLinkedSheets] = useState([]);
+  const [loadingSheets, setLoadingSheets] = useState(false);
   
   // State for row editing
   const [showEditRowModal, setShowEditRowModal] = useState(false);
@@ -95,6 +97,35 @@ export default function CourseDetailPage({ params }) {
     return sheet?.properties?.title || `Khóa ${index + 1}`;
   };
 
+  // Hàm lấy danh sách sheets liên kết với khóa học
+  const fetchLinkedSheets = async () => {
+    if (!id) return;
+    
+    setLoadingSheets(true);
+    try {
+      const response = await fetch(`/api/courses/${id}/sheets`);
+      
+      if (!response.ok) {
+        throw new Error(`Lỗi ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        console.log('Danh sách sheets liên kết:', data.sheets);
+        setLinkedSheets(data.sheets || []);
+      } else {
+        console.error('Lỗi khi lấy danh sách sheets:', data.error);
+        setLinkedSheets([]);
+      }
+    } catch (error) {
+      console.error('Lỗi khi lấy danh sách sheets liên kết:', error);
+      setLinkedSheets([]);
+    } finally {
+      setLoadingSheets(false);
+    }
+  };
+
   // Hàm lấy thông tin chi tiết của khóa học
   const fetchCourseDetail = async () => {
     setLoading(true);
@@ -117,6 +148,9 @@ export default function CourseDetailPage({ params }) {
       setTimeout(() => {
         setIsLoaded(true);
       }, 100);
+      
+      // Tải danh sách sheets liên kết
+      fetchLinkedSheets();
       
       setLoading(false);
     } catch (error) {
@@ -142,6 +176,10 @@ export default function CourseDetailPage({ params }) {
       console.log('Dữ liệu khóa học đã được làm mới:', result.data);
       setCourse(result.data);
       setFormData(result.data);
+      
+      // Tải lại danh sách sheets liên kết
+      fetchLinkedSheets();
+      
       alert('Đã làm mới dữ liệu khóa học thành công!');
     } catch (error) {
       console.error("Lỗi khi làm mới dữ liệu:", error);
@@ -1621,6 +1659,105 @@ export default function CourseDetailPage({ params }) {
                 </div>
               )}
             </dl>
+          </div>
+        </div>
+        
+        {/* Phần sheets liên kết */}
+        <div className="mt-6 bg-white rounded-lg border border-gray-200 overflow-hidden w-full">
+          <div className="px-4 sm:px-6 py-4 border-b border-gray-200 bg-gray-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <h3 className="text-lg font-medium text-gray-900">Sheets liên kết</h3>
+            <div className="flex flex-wrap gap-2">
+              <a
+                href={`/admin/sheets?course=${id}`}
+                className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Thêm sheet mới
+              </a>
+              
+              <button
+                onClick={fetchLinkedSheets}
+                className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-700 bg-gray-100 hover:bg-gray-200"
+              >
+                <ArrowPathIcon className={`h-4 w-4 mr-1 ${loadingSheets ? 'animate-spin' : ''}`} />
+                Làm mới
+              </button>
+            </div>
+          </div>
+          
+          <div className="px-4 sm:px-6 py-4">
+            {loadingSheets ? (
+              <div className="flex justify-center items-center py-8">
+                <ArrowPathIcon className="h-8 w-8 animate-spin text-blue-500" />
+                <span className="ml-2 text-gray-600">Đang tải dữ liệu sheets...</span>
+              </div>
+            ) : linkedSheets.length === 0 ? (
+              <div className="bg-gray-50 p-6 rounded-lg text-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <p className="text-gray-600 mb-4">Chưa có sheet nào được liên kết với khóa học này.</p>
+                <a
+                  href={`/admin/sheets?course=${id}`}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  Thêm sheet mới
+                </a>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên sheet</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mô tả</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sheet ID</th>
+                      <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {linkedSheets.map((sheet) => (
+                      <tr key={sheet._id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <a 
+                            href={`/admin/sheets/${sheet._id}`}
+                            className="text-blue-600 hover:text-blue-900 hover:underline font-medium"
+                          >
+                            {sheet.name}
+                          </a>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-gray-900 line-clamp-2">{sheet.description || 'Không có mô tả'}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {sheet.sheetId}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <a 
+                            href={`/admin/sheets/${sheet._id}`}
+                            className="text-indigo-600 hover:text-indigo-900 mr-4"
+                          >
+                            Xem chi tiết
+                          </a>
+                          <a 
+                            href={sheet.sheetUrl || `https://docs.google.com/spreadsheets/d/${sheet.sheetId}`} 
+                            target="_blank"
+                            className="text-green-600 hover:text-green-900"
+                          >
+                            Mở Google Sheet
+                          </a>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
         

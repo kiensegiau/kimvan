@@ -1481,6 +1481,8 @@ export default function CoursesPage() {
             </button>
           </div>
         </div>
+      </div>
+      
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-gray-900">Quản lý khóa học</h1>
         <div className="flex space-x-4">
