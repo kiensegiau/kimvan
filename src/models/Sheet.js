@@ -12,16 +12,38 @@ const SheetSchema = new mongoose.Schema({
     trim: true,
     default: ''
   },
+  // Sheet ID chính
   sheetId: {
     type: String,
     required: [true, 'ID sheet là bắt buộc'],
     unique: true,
     trim: true
   },
+  // URL chính của sheet
   sheetUrl: {
     type: String,
     trim: true
   },
+  // Danh sách các sheet liên quan
+  relatedSheets: [{
+    name: {
+      type: String,
+      trim: true
+    },
+    sheetId: {
+      type: String,
+      trim: true
+    },
+    sheetUrl: {
+      type: String,
+      trim: true
+    },
+    description: {
+      type: String,
+      trim: true,
+      default: ''
+    }
+  }],
   createdAt: {
     type: Date,
     default: Date.now

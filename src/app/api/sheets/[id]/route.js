@@ -302,11 +302,12 @@ export async function PUT(request, { params }) {
   }
 }
 
-// DELETE /api/sheets/[id] - Xóa sheet
-export async function DELETE(request, { params }) {
+// POST /api/sheets/[id]/related - Thêm sheet liên quan
+export async function POST(request, { params }) {
   try {
     const { id } = params;
     await connectDB();
+    const data = await request.json();
     
     // Kiểm tra xem sheet có tồn tại không
     const sheet = await Sheet.findById(id);
@@ -317,17 +318,108 @@ export async function DELETE(request, { params }) {
       );
     }
     
-    // Xóa sheet
-    await Sheet.findByIdAndDelete(id);
+    // Kiểm tra dữ liệu đầu vào
+    if (!data.name || !data.sheetId || !data.sheetUrl) {
+      return NextResponse.json(
+        { success: false, error: 'Thiếu thông tin bắt buộc (tên, ID hoặc URL sheet)' }, 
+        { status: 400 }
+      );
+    }
+    
+    // Thêm sheet liên quan
+    const relatedSheet = {
+      name: data.name,
+      sheetId: data.sheetId,
+      sheetUrl: data.sheetUrl,
+      description: data.description || ''
+    };
+    
+    // Khởi tạo mảng relatedSheets nếu chưa có
+    if (!sheet.relatedSheets) {
+      sheet.relatedSheets = [];
+    }
+    
+    // Thêm vào mảng
+    sheet.relatedSheets.push(relatedSheet);
+    
+    // Lưu thay đổi
+    await sheet.save();
     
     return NextResponse.json({ 
       success: true, 
-      message: 'Đã xóa sheet thành công'
+      message: 'Đã thêm sheet liên quan thành công', 
+      sheet: sheet 
     });
   } catch (error) {
-    console.error('Lỗi khi xóa sheet:', error);
+    console.error('Lỗi khi thêm sheet liên quan:', error);
     return NextResponse.json(
-      { success: false, error: 'Không thể xóa sheet' }, 
+      { success: false, error: 'Không thể thêm sheet liên quan' }, 
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE /api/sheets/[id]/related/[relatedId] - Xóa sheet liên quan
+export async function DELETE(request, { params, nextUrl }) {
+  try {
+    const { id } = params;
+    await connectDB();
+    
+    // Lấy relatedId từ URL
+    const url = new URL(request.url);
+    const relatedId = url.searchParams.get('relatedId');
+    
+    if (!relatedId) {
+      return NextResponse.json(
+        { success: false, error: 'Thiếu ID của sheet liên quan' }, 
+        { status: 400 }
+      );
+    }
+    
+    // Kiểm tra xem sheet có tồn tại không
+    const sheet = await Sheet.findById(id);
+    if (!sheet) {
+      return NextResponse.json(
+        { success: false, error: 'Không tìm thấy sheet' }, 
+        { status: 404 }
+      );
+    }
+    
+    // Kiểm tra xem relatedSheets có tồn tại không
+    if (!sheet.relatedSheets || sheet.relatedSheets.length === 0) {
+      return NextResponse.json(
+        { success: false, error: 'Sheet này không có sheet liên quan nào' }, 
+        { status: 404 }
+      );
+    }
+    
+    // Tìm và xóa sheet liên quan
+    const relatedIndex = sheet.relatedSheets.findIndex(
+      related => related._id.toString() === relatedId
+    );
+    
+    if (relatedIndex === -1) {
+      return NextResponse.json(
+        { success: false, error: 'Không tìm thấy sheet liên quan với ID đã cho' }, 
+        { status: 404 }
+      );
+    }
+    
+    // Xóa sheet liên quan
+    sheet.relatedSheets.splice(relatedIndex, 1);
+    
+    // Lưu thay đổi
+    await sheet.save();
+    
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Đã xóa sheet liên quan thành công',
+      sheet: sheet
+    });
+  } catch (error) {
+    console.error('Lỗi khi xóa sheet liên quan:', error);
+    return NextResponse.json(
+      { success: false, error: 'Không thể xóa sheet liên quan' }, 
       { status: 500 }
     );
   }

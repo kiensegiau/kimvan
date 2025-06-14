@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeftIcon, PencilIcon, TrashIcon, ArrowPathIcon, DocumentArrowDownIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, PlusIcon, PencilIcon, TrashIcon, ArrowPathIcon, DocumentArrowDownIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 
 export default function SheetDetailPage({ params }) {
@@ -15,14 +15,29 @@ export default function SheetDetailPage({ params }) {
   const [loadingData, setLoadingData] = useState(false);
   const [error, setError] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showAddRelatedModal, setShowAddRelatedModal] = useState(false);
   const [editForm, setEditForm] = useState({
     name: '',
     description: '',
   });
+  const [relatedSheet, setRelatedSheet] = useState({
+    name: '',
+    description: '',
+    sheetUrl: '',
+  });
+  const [addingRelated, setAddingRelated] = useState(false);
 
   useEffect(() => {
     fetchSheetDetail();
   }, [id]);
+
+  // Tự động tải dữ liệu sheet khi có thông tin sheet
+  useEffect(() => {
+    if (sheet && sheet.sheetId) {
+      console.log('Tự động tải dữ liệu sheet:', sheet.name);
+      fetchSheetData();
+    }
+  }, [sheet]);
 
   const fetchSheetDetail = async () => {
     setLoading(true);
@@ -50,12 +65,48 @@ export default function SheetDetailPage({ params }) {
     }
   };
 
-  const fetchSheetData = async () => {
-    if (!sheet) return;
+  // Hàm trích xuất ID từ URL Google Sheets
+  const extractSheetId = (url) => {
+    try {
+      // Kiểm tra xem URL có hợp lệ không
+      if (!url || typeof url !== 'string') return null;
+      
+      // Kiểm tra xem đã là ID thuần túy chưa (không chứa dấu / hoặc .)
+      if (/^[a-zA-Z0-9_-]+$/.test(url) && url.length > 20) {
+        return url;
+      }
+      
+      // Trích xuất ID từ URL đầy đủ
+      const regex = /\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/;
+      const match = url.match(regex);
+      
+      if (match && match[1]) {
+        return match[1];
+      }
+      
+      // Kiểm tra định dạng URL rút gọn
+      const shortRegex = /\/([a-zA-Z0-9_-]{20,})\//;
+      const shortMatch = url.match(shortRegex);
+      
+      if (shortMatch && shortMatch[1]) {
+        return shortMatch[1];
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Lỗi khi trích xuất ID sheet:', error);
+      return null;
+    }
+  };
+
+  const fetchSheetData = async (sheetId = null) => {
+    if (!sheet && !sheetId) return;
+    
+    const targetId = sheetId || id;
     
     setLoadingData(true);
     try {
-      const response = await fetch(`/api/sheets/${id}?fetchData=true`);
+      const response = await fetch(`/api/sheets/${targetId}?fetchData=true`);
       if (!response.ok) {
         throw new Error(`Lỗi ${response.status}: ${response.statusText}`);
       }
@@ -99,6 +150,82 @@ export default function SheetDetailPage({ params }) {
     }
   };
 
+  const handleAddRelatedSheet = async () => {
+    if (!relatedSheet.name || !relatedSheet.sheetUrl) {
+      alert('Vui lòng nhập tên và URL của Google Sheet liên quan');
+      return;
+    }
+
+    setAddingRelated(true);
+    try {
+      // Trích xuất ID từ URL
+      const sheetId = extractSheetId(relatedSheet.sheetUrl);
+      
+      if (!sheetId) {
+        throw new Error('Không thể trích xuất ID từ URL Google Sheet. Vui lòng kiểm tra lại URL.');
+      }
+      
+      const response = await fetch(`/api/sheets/${id}/related`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: relatedSheet.name,
+          description: relatedSheet.description,
+          sheetId: sheetId,
+          sheetUrl: relatedSheet.sheetUrl,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Không thể thêm sheet liên quan');
+      }
+
+      const result = await response.json();
+      setSheet(result.sheet);
+      
+      // Reset form và đóng modal
+      setRelatedSheet({
+        name: '',
+        description: '',
+        sheetUrl: '',
+      });
+      setShowAddRelatedModal(false);
+      
+      alert('Đã thêm sheet liên quan thành công!');
+    } catch (error) {
+      console.error('Lỗi khi thêm sheet liên quan:', error);
+      alert(`Lỗi: ${error.message}`);
+    } finally {
+      setAddingRelated(false);
+    }
+  };
+
+  const handleDeleteRelatedSheet = async (relatedId) => {
+    if (!confirm('Bạn có chắc chắn muốn xóa sheet liên quan này?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/sheets/${id}/related?relatedId=${relatedId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Không thể xóa sheet liên quan');
+      }
+
+      const result = await response.json();
+      setSheet(result.sheet);
+      alert('Đã xóa sheet liên quan thành công!');
+    } catch (error) {
+      console.error('Lỗi khi xóa sheet liên quan:', error);
+      alert(`Lỗi: ${error.message}`);
+    }
+  };
+
   const handleDeleteSheet = async () => {
     if (!confirm('Bạn có chắc chắn muốn xóa sheet này?')) {
       return;
@@ -121,9 +248,10 @@ export default function SheetDetailPage({ params }) {
     }
   };
 
-  const handleOpenGoogleSheet = () => {
-    if (!sheet || !sheet.sheetUrl) return;
-    window.open(sheet.sheetUrl, '_blank');
+  const handleOpenGoogleSheet = (url = null) => {
+    const sheetUrl = url || (sheet && sheet.sheetUrl);
+    if (!sheetUrl) return;
+    window.open(sheetUrl, '_blank');
   };
 
   const handleExportData = () => {
@@ -343,13 +471,13 @@ export default function SheetDetailPage({ params }) {
                 <h2 className="text-lg font-semibold mb-2">Thao tác</h2>
                 <div className="space-y-2">
                   <button
-                    onClick={handleOpenGoogleSheet}
+                    onClick={() => handleOpenGoogleSheet()}
                     className="bg-green-600 text-white px-4 py-2 rounded-md w-full"
                   >
                     Mở Google Sheet
                   </button>
                   <button
-                    onClick={fetchSheetData}
+                    onClick={() => fetchSheetData()}
                     disabled={loadingData}
                     className={`bg-blue-600 text-white px-4 py-2 rounded-md w-full flex items-center justify-center ${
                       loadingData ? 'opacity-70 cursor-not-allowed' : ''
@@ -379,6 +507,74 @@ export default function SheetDetailPage({ params }) {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Phần Sheet liên quan */}
+          <div className="bg-white shadow-md rounded-lg p-6 mb-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold">Sheet liên quan</h2>
+              <button
+                onClick={() => setShowAddRelatedModal(true)}
+                className="bg-blue-600 text-white px-3 py-1 rounded-md flex items-center"
+              >
+                <PlusIcon className="h-4 w-4 mr-1" />
+                Thêm Sheet liên quan
+              </button>
+            </div>
+            
+            {!sheet.relatedSheets || sheet.relatedSheets.length === 0 ? (
+              <div className="bg-gray-100 p-4 rounded-lg text-center">
+                <p className="text-gray-600">Chưa có sheet liên quan nào.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mô tả</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID Sheet</th>
+                      <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {sheet.relatedSheets.map((related) => (
+                      <tr key={related._id} className="hover:bg-gray-50">
+                        <td className="px-4 py-2 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">{related.name}</div>
+                        </td>
+                        <td className="px-4 py-2">
+                          <div className="text-sm text-gray-500">{related.description || 'Không có mô tả'}</div>
+                        </td>
+                        <td className="px-4 py-2 whitespace-nowrap">
+                          <div className="text-sm text-gray-500">{related.sheetId}</div>
+                        </td>
+                        <td className="px-4 py-2 whitespace-nowrap text-right text-sm font-medium">
+                          <div className="flex justify-end space-x-2">
+                            <button
+                              onClick={() => handleOpenGoogleSheet(related.sheetUrl)}
+                              className="text-green-600 hover:text-green-900"
+                              title="Mở Google Sheet"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => handleDeleteRelatedSheet(related._id)}
+                              className="text-red-600 hover:text-red-900"
+                              title="Xóa"
+                            >
+                              <TrashIcon className="h-5 w-5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
 
           {sheetData ? (
@@ -439,6 +635,80 @@ export default function SheetDetailPage({ params }) {
                   className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
                 >
                   Lưu thay đổi
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal thêm sheet liên quan */}
+      {showAddRelatedModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <h2 className="text-xl font-semibold mb-4">Thêm Sheet liên quan</h2>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Tên Sheet</label>
+                  <input
+                    type="text"
+                    value={relatedSheet.name}
+                    onChange={(e) => setRelatedSheet({ ...relatedSheet, name: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Nhập tên sheet liên quan"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Mô tả (tùy chọn)</label>
+                  <textarea
+                    value={relatedSheet.description}
+                    onChange={(e) => setRelatedSheet({ ...relatedSheet, description: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Nhập mô tả cho sheet liên quan"
+                    rows="3"
+                  ></textarea>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">URL Google Sheet</label>
+                  <input
+                    type="text"
+                    value={relatedSheet.sheetUrl}
+                    onChange={(e) => setRelatedSheet({ ...relatedSheet, sheetUrl: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="https://docs.google.com/spreadsheets/d/..."
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Dán liên kết đến Google Sheet. Đảm bảo sheet đã được chia sẻ công khai hoặc có quyền truy cập.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="mt-6 flex justify-end space-x-3">
+                <button
+                  onClick={() => setShowAddRelatedModal(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={handleAddRelatedSheet}
+                  disabled={addingRelated}
+                  className={`px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center ${
+                    addingRelated ? 'opacity-70 cursor-not-allowed' : ''
+                  }`}
+                >
+                  {addingRelated ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+                      Đang xử lý...
+                    </>
+                  ) : (
+                    'Thêm Sheet liên quan'
+                  )}
                 </button>
               </div>
             </div>
