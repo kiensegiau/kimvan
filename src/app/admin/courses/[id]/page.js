@@ -47,6 +47,8 @@ export default function CourseDetailPage({ params }) {
   const [previewActiveTab, setPreviewActiveTab] = useState('sheet');
   const [linkedSheets, setLinkedSheets] = useState([]);
   const [loadingSheets, setLoadingSheets] = useState(false);
+  const [sheetData, setSheetData] = useState({});
+  const [loadingSheetData, setLoadingSheetData] = useState({});
   
   // State for row editing
   const [showEditRowModal, setShowEditRowModal] = useState(false);
@@ -114,6 +116,12 @@ export default function CourseDetailPage({ params }) {
       if (data.success) {
         console.log('Danh sách sheets liên kết:', data.sheets);
         setLinkedSheets(data.sheets || []);
+        
+        // Tải dữ liệu cho mỗi sheet
+        const sheets = data.sheets || [];
+        for (const sheet of sheets) {
+          fetchSheetData(sheet._id);
+        }
       } else {
         console.error('Lỗi khi lấy danh sách sheets:', data.error);
         setLinkedSheets([]);
@@ -123,6 +131,33 @@ export default function CourseDetailPage({ params }) {
       setLinkedSheets([]);
     } finally {
       setLoadingSheets(false);
+    }
+  };
+  
+  // Hàm lấy dữ liệu của sheet
+  const fetchSheetData = async (sheetId) => {
+    if (!sheetId) return;
+    
+    setLoadingSheetData(prev => ({ ...prev, [sheetId]: true }));
+    try {
+      const response = await fetch(`/api/sheets/${sheetId}?fetchData=true`);
+      
+      if (!response.ok) {
+        throw new Error(`Lỗi ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        console.log(`Dữ liệu sheet ${sheetId}:`, data.sheet);
+        setSheetData(prev => ({ ...prev, [sheetId]: data.sheet }));
+      } else {
+        console.error(`Lỗi khi lấy dữ liệu sheet ${sheetId}:`, data.error);
+      }
+    } catch (error) {
+      console.error(`Lỗi khi lấy dữ liệu sheet ${sheetId}:`, error);
+    } finally {
+      setLoadingSheetData(prev => ({ ...prev, [sheetId]: false }));
     }
   };
 
@@ -1710,52 +1745,180 @@ export default function CourseDetailPage({ params }) {
                 </a>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên sheet</th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mô tả</th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sheet ID</th>
-                      <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {linkedSheets.map((sheet) => (
-                      <tr key={sheet._id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <a 
-                            href={`/admin/sheets/${sheet._id}`}
-                            className="text-blue-600 hover:text-blue-900 hover:underline font-medium"
+              <div>
+                {linkedSheets.map((sheet) => (
+                  <div key={sheet._id} className="mb-8 bg-white border border-gray-200 rounded-lg overflow-hidden">
+                    <div className="px-6 py-4 bg-gray-50 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center">
+                      <div className="flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <h3 className="text-lg font-medium text-gray-900">{sheet.name}</h3>
+                      </div>
+                      <div className="mt-2 sm:mt-0 flex flex-wrap gap-2">
+                        <a 
+                          href={`/admin/sheets/${sheet._id}`}
+                          className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-indigo-600 bg-indigo-50 hover:bg-indigo-100"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                          Chi tiết
+                        </a>
+                        <a 
+                          href={sheet.sheetUrl || `https://docs.google.com/spreadsheets/d/${sheet.sheetId}`} 
+                          target="_blank"
+                          className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-green-600 bg-green-50 hover:bg-green-100"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                          Mở Google Sheet
+                        </a>
+                        <button 
+                          onClick={() => fetchSheetData(sheet._id)}
+                          className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-blue-600 bg-blue-50 hover:bg-blue-100"
+                        >
+                          <ArrowPathIcon className={`h-4 w-4 mr-1 ${loadingSheetData[sheet._id] ? 'animate-spin' : ''}`} />
+                          Làm mới dữ liệu
+                        </button>
+                      </div>
+                    </div>
+                    
+                    {sheet.description && (
+                      <div className="px-6 py-3 bg-gray-50 border-b border-gray-200">
+                        <p className="text-sm text-gray-600">{sheet.description}</p>
+                      </div>
+                    )}
+                    
+                    <div className="px-6 py-4">
+                      {loadingSheetData[sheet._id] ? (
+                        <div className="flex justify-center items-center py-8">
+                          <ArrowPathIcon className="h-8 w-8 animate-spin text-blue-500" />
+                          <span className="ml-2 text-gray-600">Đang tải dữ liệu sheet...</span>
+                        </div>
+                      ) : !sheetData[sheet._id] ? (
+                        <div className="text-center py-8">
+                          <p className="text-gray-600 mb-4">Chưa có dữ liệu sheet. Nhấn "Làm mới dữ liệu" để tải.</p>
+                          <button 
+                            onClick={() => fetchSheetData(sheet._id)}
+                            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
                           >
-                            {sheet.name}
-                          </a>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm text-gray-900 line-clamp-2">{sheet.description || 'Không có mô tả'}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {sheet.sheetId}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <a 
-                            href={`/admin/sheets/${sheet._id}`}
-                            className="text-indigo-600 hover:text-indigo-900 mr-4"
-                          >
-                            Xem chi tiết
-                          </a>
-                          <a 
-                            href={sheet.sheetUrl || `https://docs.google.com/spreadsheets/d/${sheet.sheetId}`} 
-                            target="_blank"
-                            className="text-green-600 hover:text-green-900"
-                          >
-                            Mở Google Sheet
-                          </a>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                            <ArrowPathIcon className="h-5 w-5 mr-2" />
+                            Tải dữ liệu sheet
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="overflow-x-auto">
+                          {sheetData[sheet._id].data && sheetData[sheet._id].data.values && (
+                            <table className="min-w-full divide-y divide-gray-200">
+                              <thead className="bg-gray-50">
+                                <tr>
+                                  {sheetData[sheet._id].data.values[0] && sheetData[sheet._id].data.values[0].map((header, idx) => (
+                                    <th 
+                                      key={idx} 
+                                      scope="col" 
+                                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                    >
+                                      {header}
+                                    </th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody className="bg-white divide-y divide-gray-200">
+                                {sheetData[sheet._id].data.values.slice(1, 11).map((row, rowIdx) => (
+                                  <tr key={rowIdx} className="hover:bg-gray-50">
+                                    {row.map((cell, cellIdx) => {
+                                      // Kiểm tra xem cell có phải là hyperlink không
+                                      const cellData = sheetData[sheet._id].data.htmlData && 
+                                                      sheetData[sheet._id].data.htmlData[rowIdx + 1] && 
+                                                      sheetData[sheet._id].data.htmlData[rowIdx + 1].values && 
+                                                      sheetData[sheet._id].data.htmlData[rowIdx + 1].values[cellIdx];
+                                      
+                                      const isLink = cellData && cellData.hyperlink;
+                                      
+                                      // Kiểm tra loại link
+                                      const isYoutube = isLink && (cellData.hyperlink.includes('youtube.com') || cellData.hyperlink.includes('youtu.be'));
+                                      const isPdf = isLink && (cellData.hyperlink.includes('.pdf') || (cellData.hyperlink.includes('drive.google.com') && cellData.hyperlink.includes('pdf')));
+                                      const isDrive = isLink && cellData.hyperlink.includes('drive.google.com');
+                                      
+                                      return (
+                                        <td key={cellIdx} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                          {isLink ? (
+                                            <div className="flex items-center space-x-2">
+                                              <a 
+                                                href={cellData.hyperlink} 
+                                                target="_blank" 
+                                                rel="noopener noreferrer"
+                                                className="text-blue-600 hover:text-blue-800 hover:underline flex items-center"
+                                              >
+                                                {cell}
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                                </svg>
+                                              </a>
+                                              
+                                              {isYoutube && (
+                                                <button
+                                                  onClick={() => openYoutubeModal(cellData.hyperlink, cell)}
+                                                  className="p-1 bg-red-100 text-red-600 rounded hover:bg-red-200"
+                                                  title="Xem video YouTube"
+                                                >
+                                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                                                  </svg>
+                                                </button>
+                                              )}
+                                              
+                                              {isPdf && (
+                                                <button
+                                                  onClick={() => openPdfModal(cellData.hyperlink, cell)}
+                                                  className="p-1 bg-orange-100 text-orange-600 rounded hover:bg-orange-200"
+                                                  title="Xem PDF"
+                                                >
+                                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
+                                                  </svg>
+                                                </button>
+                                              )}
+                                              
+                                              {isDrive && !isPdf && !isYoutube && (
+                                                <span className="p-1 bg-blue-100 text-blue-600 rounded text-xs">
+                                                  Drive
+                                                </span>
+                                              )}
+                                            </div>
+                                          ) : (
+                                            <span>{cell}</span>
+                                          )}
+                                        </td>
+                                      );
+                                    })}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          )}
+                          
+                          {sheetData[sheet._id].data && sheetData[sheet._id].data.values && sheetData[sheet._id].data.values.length > 11 && (
+                            <div className="text-center py-4 border-t border-gray-200">
+                              <p className="text-sm text-gray-600">
+                                Hiển thị 10 hàng đầu tiên trong tổng số {sheetData[sheet._id].data.values.length - 1} hàng
+                              </p>
+                              <a 
+                                href={`/admin/sheets/${sheet._id}`}
+                                className="inline-flex items-center px-4 py-2 mt-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                              >
+                                Xem đầy đủ dữ liệu
+                              </a>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
