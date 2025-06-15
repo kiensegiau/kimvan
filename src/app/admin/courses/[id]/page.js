@@ -337,19 +337,7 @@ export default function CourseDetailPage({ params }) {
         />
         
         {/* API Sheet Data section - New */}
-        <ApiSheetData
-          apiSheetData={apiSheetData}
-          loadingApiSheet={loadingApiSheet}
-          apiSheetError={apiSheetError}
-          activeApiSheet={activeApiSheet}
-          setActiveApiSheet={setActiveApiSheet}
-          fetchApiSheetData={fetchApiSheetData}
-          fetchSheetDetail={fetchSheetDetail}
-          handleQuickEdit={handleQuickEdit}
-          setShowAddRowModal={modalState.setShowAddRowModal}
-          handleOpenEditRowModal={handleOpenEditRowModal}
-          handleInsertRow={handleInsertRow}
-        />
+        {/* Removed to avoid duplication with LinkedSheets */}
         
         {/* Original data section - Hide or remove this section if not needed */}
         {/*
