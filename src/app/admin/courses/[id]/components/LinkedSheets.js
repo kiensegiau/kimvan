@@ -254,9 +254,8 @@ function SheetTable({ sheetData }) {
           <thead>
             <tr className="bg-gradient-to-r from-indigo-600 to-purple-600">
               {sheetData.data.values[0] && sheetData.data.values[0].map((header, idx) => {
-                // Bỏ qua cột STT (thường là cột đầu tiên)
-                if (idx === 0 && (header === 'STT' || header === '#' || header === 'No.' || 
-                              header === 'No' || header === 'Số TT' || header === 'Số thứ tự')) {
+                // Bỏ qua cột đầu tiên
+                if (idx === 0) {
                   return null;
                 }
                 
@@ -284,6 +283,11 @@ function SheetTable({ sheetData }) {
                 className={`border-b ${rowIdx % 2 === 0 ? 'bg-white' : 'bg-indigo-50'} hover:bg-indigo-100 transition-colors duration-150`}
               >
                 {row.map((cell, cellIdx) => {
+                  // Bỏ qua cột đầu tiên
+                  if (cellIdx === 0) {
+                    return null;
+                  }
+                  
                   // Kiểm tra xem ô này có nằm trong vùng gộp không
                   const isMerged = sheetData.data.merges?.some(merge => {
                     return (
@@ -298,17 +302,6 @@ function SheetTable({ sheetData }) {
                   
                   if (isMerged) {
                     // Nếu ô này đã được gộp và không phải là ô chính, bỏ qua
-                    return null;
-                  }
-                  
-                  // Bỏ qua cột STT (thường là cột đầu tiên)
-                  if (cellIdx === 0 && sheetData.data.values[0] && 
-                    (sheetData.data.values[0][0] === 'STT' || 
-                    sheetData.data.values[0][0] === '#' || 
-                    sheetData.data.values[0][0] === 'No.' || 
-                    sheetData.data.values[0][0] === 'No' || 
-                    sheetData.data.values[0][0] === 'Số TT' ||
-                    sheetData.data.values[0][0] === 'Số thứ tự')) {
                     return null;
                   }
                   
