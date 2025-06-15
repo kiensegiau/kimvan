@@ -131,79 +131,19 @@ function filterIntroductoryRows(data) {
     return coreKeywords.some(keyword => lowerText.includes(keyword.toLowerCase()));
   };
   
-  // Lọc các hàng có nội dung giới thiệu
-  const filteredValues = data.values.filter(row => {
-    // Kiểm tra xem hàng có chứa bất kỳ nội dung giới thiệu nào không
-    if (!row || row.length === 0) return true;
-    
-    // Chuyển đổi toàn bộ hàng thành chuỗi để kiểm tra
-    const rowString = JSON.stringify(row).toLowerCase();
-    
-    // Kiểm tra cột đầu tiên hoặc toàn bộ hàng
-    const rowText = row[0] ? row[0].toString() : '';
-    const fullRowText = row.join(' ');
-    
-    // Kiểm tra các pattern cần lọc
-    const containsFilterPattern = filterPatterns.some(pattern => 
-      rowString.toLowerCase().includes(pattern.toLowerCase())
-    );
-    
-    // Kiểm tra các text giới thiệu
-    const containsIntroText = introTexts.some(introText => 
-      rowText.includes(introText) || fullRowText.includes(introText)
-    );
-    
-    // Kiểm tra các từ khóa cốt lõi
-    const containsKeyword = containsCoreKeyword(rowString);
-    
-    // Trả về true nếu không chứa bất kỳ pattern nào cần lọc
-    return !containsFilterPattern && !containsIntroText && !containsKeyword;
-  });
+  // Không lọc các hàng để hiển thị đầy đủ dữ liệu
+  const filteredValues = data.values;
+  
+  // Log thông tin về số lượng hàng
+  console.log(`Số lượng hàng trước khi lọc: ${data.values ? data.values.length : 0}`);
+  console.log(`Số lượng hàng sau khi lọc: ${filteredValues ? filteredValues.length : 0}`);
   
   // Cập nhật dữ liệu values
   data.values = filteredValues;
   
-  // Lọc cả trong htmlData nếu có
+  // Không lọc htmlData để giữ nguyên dữ liệu
   if (data.htmlData && data.htmlData.length > 0) {
-    // Lọc các hàng trong htmlData
-    data.htmlData = data.htmlData.filter((row, index) => {
-      if (!row || !row.values) return true;
-      
-      // Kiểm tra xem hàng có chứa hyperlink hoặc nội dung cần lọc không
-      const containsFilteredContent = row.values.some(cell => {
-        // Kiểm tra hyperlink
-        if (cell && cell.hyperlink) {
-          return containsCoreKeyword(cell.hyperlink);
-        }
-        
-        // Kiểm tra formattedValue
-        if (cell && cell.formattedValue) {
-          return containsCoreKeyword(cell.formattedValue);
-        }
-        
-        // Kiểm tra userEnteredValue nếu có
-        if (cell && cell.userEnteredValue) {
-          return containsCoreKeyword(JSON.stringify(cell.userEnteredValue));
-        }
-        
-        // Kiểm tra effectiveValue nếu có
-        if (cell && cell.effectiveValue) {
-          return containsCoreKeyword(JSON.stringify(cell.effectiveValue));
-        }
-        
-        return false;
-      });
-      
-      // Nếu chứa nội dung cần lọc, loại bỏ hàng này
-      if (containsFilteredContent) return false;
-      
-      // Nếu index vượt quá độ dài của values đã lọc, giữ lại
-      if (index >= data.values.length) return true;
-      
-      // Kiểm tra xem hàng này có tương ứng với hàng đã bị lọc bỏ trong values không
-      const originalIndex = data.values.findIndex((_, i) => i === index);
-      return originalIndex !== -1;
-    });
+    console.log(`Số lượng hàng trong htmlData: ${data.htmlData.length}`);
   }
   
   return data;
@@ -497,11 +437,19 @@ async function fetchSheetData(sheetId) {
       merges: htmlResponse.data.sheets?.[0]?.merges || []
     };
     
+    // Log thông tin về số lượng hàng
+    console.log(`Số lượng hàng trong values: ${formulaResponse.data.values?.length || 0}`);
+    console.log(`Số lượng hàng trong htmlData: ${htmlResponse.data.sheets?.[0]?.data?.[0]?.rowData?.length || 0}`);
+    
     // Xử lý các URL trong dữ liệu
     const processedData = processHyperlinks(combinedData);
     
     // Lọc bỏ các hàng giới thiệu
     const filteredData = filterIntroductoryRows(processedData);
+    
+    // Kiểm tra dữ liệu sau khi lọc
+    console.log(`Sau khi lọc - Số lượng hàng trong values: ${filteredData.values?.length || 0}`);
+    console.log(`Sau khi lọc - Số lượng hàng trong htmlData: ${filteredData.htmlData?.length || 0}`);
     
     console.log('Lấy dữ liệu thành công!');
     return filteredData;

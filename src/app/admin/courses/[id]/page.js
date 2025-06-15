@@ -314,8 +314,77 @@ export default function CourseDetailPage({ params }) {
       }
       
       console.log('Dữ liệu khóa học đã được làm mới:', result.data);
-      setCourse(result.data);
-      setFormData(result.data);
+      
+      // Kiểm tra cấu trúc dữ liệu
+      if (result.data && result.data.originalData && result.data.originalData.sheets) {
+        const sheets = result.data.originalData.sheets;
+        console.log(`Số lượng sheets: ${sheets.length}`);
+        
+        sheets.forEach((sheet, idx) => {
+          if (sheet.data && sheet.data[0] && sheet.data[0].rowData) {
+            console.log(`Sheet ${idx}: ${sheet.data[0].rowData.length} hàng`);
+          } else {
+            console.log(`Sheet ${idx}: Không có dữ liệu hàng`);
+          }
+        });
+      }
+      
+      // Xử lý các ô gộp trong dữ liệu gốc nếu có
+      const processedData = { ...result.data };
+      
+      if (processedData.originalData?.sheets) {
+        // Duyệt qua từng sheet
+        processedData.originalData.sheets.forEach((sheet, sheetIndex) => {
+          if (sheet.merges && sheet.merges.length > 0) {
+            // Tạo bản đồ các ô đã gộp
+            if (!processedData.originalData.mergedCellsMap) {
+              processedData.originalData.mergedCellsMap = {};
+            }
+            
+            sheet.merges.forEach(merge => {
+              const startRow = merge.startRowIndex;
+              const endRow = merge.endRowIndex;
+              const startCol = merge.startColumnIndex;
+              const endCol = merge.endColumnIndex;
+              
+              // Tính toán rowSpan và colSpan
+              const rowSpan = endRow - startRow;
+              const colSpan = endCol - startCol;
+              
+              // Đánh dấu ô chính (góc trên bên trái của vùng gộp)
+              if (sheet.data && sheet.data[0] && sheet.data[0].rowData && sheet.data[0].rowData[startRow]) {
+                if (!sheet.data[0].rowData[startRow].values) {
+                  sheet.data[0].rowData[startRow].values = [];
+                }
+                
+                if (!sheet.data[0].rowData[startRow].values[startCol]) {
+                  sheet.data[0].rowData[startRow].values[startCol] = {};
+                }
+                
+                sheet.data[0].rowData[startRow].values[startCol].rowSpan = rowSpan;
+                sheet.data[0].rowData[startRow].values[startCol].colSpan = colSpan;
+              }
+              
+              // Đánh dấu các ô khác trong vùng gộp để bỏ qua khi render
+              for (let r = startRow; r < endRow; r++) {
+                for (let c = startCol; c < endCol; c++) {
+                  // Bỏ qua ô chính
+                  if (r === startRow && c === startCol) continue;
+                  
+                  const key = `${r},${c}`;
+                  processedData.originalData.mergedCellsMap[key] = { 
+                    mainCell: { row: startRow, col: startCol },
+                    sheetIndex: sheetIndex
+                  };
+                }
+              }
+            });
+          }
+        });
+      }
+      
+      setCourse(processedData);
+      setFormData(processedData);
       
       // Tải lại danh sách sheets liên kết
       fetchLinkedSheets();
@@ -1961,7 +2030,7 @@ export default function CourseDetailPage({ params }) {
                       ) : (
                         <div className="overflow-x-auto">
                           {sheetData[sheet._id].data && sheetData[sheet._id].data.values && (
-                            <table className="min-w-full divide-y divide-gray-200 border-separate border-spacing-0 rounded-lg overflow-hidden shadow-sm">
+                            <table className="min-w-full border-collapse border border-gray-300 shadow-lg rounded-lg overflow-hidden">
                               <thead>
                                 <tr className="bg-gradient-to-r from-blue-600 to-indigo-600">
                                                                     {sheetData[sheet._id].data.values[0] && sheetData[sheet._id].data.values[0].map((header, idx) => {
@@ -1975,7 +2044,7 @@ export default function CourseDetailPage({ params }) {
                                       <th 
                                         key={idx} 
                                         scope="col" 
-                                        className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider"
+                                        className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider border border-indigo-500"
                                       >
                                         <div className="flex items-center">
                                           {header}
@@ -1988,11 +2057,11 @@ export default function CourseDetailPage({ params }) {
                                   })}
                                 </tr>
                               </thead>
-                              <tbody className="bg-white divide-y divide-gray-200">
+                                                              <tbody className="bg-white">
                                 {sheetData[sheet._id].data.values.slice(1).map((row, rowIdx) => (
                                   <tr 
                                     key={rowIdx} 
-                                    className={`hover:bg-blue-50 transition-colors duration-150 ${rowIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
+                                    className="hover:bg-blue-50 transition-colors duration-150 bg-white"
                                   >
                                     {row.map((cell, cellIdx) => {
                                       // Kiểm tra xem ô này có nằm trong vùng gộp không
@@ -2013,20 +2082,20 @@ export default function CourseDetailPage({ params }) {
                                         return null;
                                       }
                                       
-                                      // Bỏ qua cột STT (thường là cột đầu tiên)
-                                      if (cellIdx === 0 && sheetData[sheet._id].data.values[0] && 
-                                         (sheetData[sheet._id].data.values[0][0] === 'STT' || 
-                                          sheetData[sheet._id].data.values[0][0] === '#' || 
-                                          sheetData[sheet._id].data.values[0][0] === 'No.' || 
-                                          sheetData[sheet._id].data.values[0][0] === 'No' || 
-                                          sheetData[sheet._id].data.values[0][0] === 'Số TT' ||
-                                          sheetData[sheet._id].data.values[0][0] === 'Số thứ tự')) {
-                                        return null;
-                                      }
-                                      // Ẩn cột đầu tiên (cột STT)
-                                      if (cellIdx === 0) {
-                                        return null;
-                                      }
+                                                                        // Bỏ qua cột STT (thường là cột đầu tiên)
+                                  if (cellIdx === 0 && sheetData[sheet._id].data.values[0] && 
+                                     (sheetData[sheet._id].data.values[0][0] === 'STT' || 
+                                      sheetData[sheet._id].data.values[0][0] === '#' || 
+                                      sheetData[sheet._id].data.values[0][0] === 'No.' || 
+                                      sheetData[sheet._id].data.values[0][0] === 'No' || 
+                                      sheetData[sheet._id].data.values[0][0] === 'Số TT' ||
+                                      sheetData[sheet._id].data.values[0][0] === 'Số thứ tự')) {
+                                    return null;
+                                  }
+                                  // Ẩn cột đầu tiên (cột STT) - đã được bỏ qua ở trên, không cần kiểm tra lại
+                                  // if (cellIdx === 0) {
+                                  //   return null;
+                                  // }
                                       
                                       // Kiểm tra xem cell có phải là hyperlink không
                                       const cellData = sheetData[sheet._id].data.htmlData && 
@@ -2053,7 +2122,7 @@ export default function CourseDetailPage({ params }) {
                                       return (
                                         <td 
                                           key={cellIdx} 
-                                          className={`px-6 py-4 ${isLink ? 'whitespace-normal' : 'whitespace-nowrap'} text-sm ${isLink ? 'text-gray-800' : 'text-gray-600'} border-b border-gray-100 ${(rowSpan > 1 || colSpan > 1) ? 'bg-blue-50 text-center' : ''}`}
+                                          className={`px-6 py-4 ${isLink ? 'whitespace-normal' : 'whitespace-nowrap'} text-sm ${isLink ? 'text-gray-800' : 'text-gray-600'} text-left border border-gray-200 ${(rowSpan > 1 || colSpan > 1) ? 'bg-white' : ''}`}
                                           {...(rowSpan > 1 ? { rowSpan } : {})}
                                           {...(colSpan > 1 ? { colSpan } : {})}
                                         >
@@ -2065,7 +2134,7 @@ export default function CourseDetailPage({ params }) {
                                                 rel="noopener noreferrer"
                                                 className="text-blue-600 hover:text-blue-800 hover:underline flex items-center font-medium"
                                               >
-                                                <span className="line-clamp-2">{cell}</span>
+                                                <span className="line-clamp-2 text-left">{cell}</span>
                                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                                                 </svg>
@@ -2104,7 +2173,7 @@ export default function CourseDetailPage({ params }) {
                                               </div>
                                             </div>
                                           ) : (
-                                            <span className="line-clamp-2">{cell}</span>
+                                            <span className="line-clamp-2 text-left">{cell}</span>
                                           )}
                                         </td>
                                       );
@@ -2253,12 +2322,12 @@ export default function CourseDetailPage({ params }) {
                       </div>
                       
                       <div className="overflow-x-auto">
-                        <table className="min-w-full w-full table-fixed divide-y divide-gray-200">
+                        <table className="min-w-full w-full table-fixed border-collapse border border-gray-300 shadow-lg rounded-lg overflow-hidden">
                           <thead>
                             <tr className="bg-gradient-to-r from-blue-600 to-indigo-600">
                               {course.originalData.sheets[activeSheet].data[0].rowData[0]?.values?.map((cell, index) => {
-                                // Bỏ qua cột STT (cột đầu tiên)
-                                if (index === 0) {
+                                // Không bỏ qua cột nào để hiển thị đầy đủ
+                                if (false && index === 0) {
                                   return null;
                                 }
                                 
@@ -2277,7 +2346,7 @@ export default function CourseDetailPage({ params }) {
                                 return (
                                   <th 
                                     key={index} 
-                                    className={`px-3 sm:px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider ${columnWidth} ${index > 2 ? 'hidden sm:table-cell' : ''}`}
+                                    className={`px-3 sm:px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider border border-indigo-500 ${columnWidth} ${index > 2 ? 'hidden sm:table-cell' : ''}`}
                                   >
                                     <div className="flex items-center">
                                       {cell.formattedValue || ''}
@@ -2291,16 +2360,18 @@ export default function CourseDetailPage({ params }) {
                                 );
                               })}
                               {/* Thêm cột cho actions */}
-                              <th className="px-3 sm:px-6 py-3 text-right text-xs font-medium text-white uppercase tracking-wider">
+                              <th className="px-3 sm:px-6 py-3 text-center text-xs font-medium text-white uppercase tracking-wider border border-indigo-500">
                                 Thao tác
                               </th>
                             </tr>
                           </thead>
-                          <tbody className="bg-white divide-y divide-gray-200">
-                            {course.originalData.sheets[activeSheet].data[0].rowData.slice(1).map((row, rowIndex) => (
+                          <tbody className="bg-white">
+                            {course.originalData.sheets[activeSheet].data[0].rowData
+                              .filter(row => row && row.values)
+                              .map((row, rowIndex) => (
                               <tr 
                                 key={rowIndex} 
-                                className="group hover:bg-blue-50 transition-colors duration-150"
+                                className="group hover:bg-blue-50 transition-colors duration-150 bg-white"
                               >
                                 {row.values && row.values.map((cell, cellIndex) => {
                                   // Kiểm tra xem ô này có nằm trong vùng gộp không
@@ -2310,8 +2381,13 @@ export default function CourseDetailPage({ params }) {
                                     return null;
                                   }
                                   
-                                  // Bỏ qua cột STT (cột đầu tiên)
-                                  if (cellIndex === 0) {
+                                  // Hiển thị tất cả các cột, kể cả cột STT
+                                  if (false && cellIndex === 0) {
+                                    return null;
+                                  }
+                                  
+                                  // Bỏ qua nếu không có cell
+                                  if (!cell) {
                                     return null;
                                   }
                                   
@@ -2342,7 +2418,7 @@ export default function CourseDetailPage({ params }) {
                                   
                                   // Nếu là ô nằm trong vùng gộp (không phải ô chính), bỏ qua
                                   if (isMerged) {
-                                    console.log(`Skipping merged cell [${rowIndex + 1},${cellIndex}]`);
+                                    // console.log(`Skipping merged cell [${rowIndex + 1},${cellIndex}]`);
                                     return null;
                                   }
                                   
@@ -2356,17 +2432,17 @@ export default function CourseDetailPage({ params }) {
                                   const mergeColSpan = mergeInfo ? mergeInfo.endColumnIndex - mergeInfo.startColumnIndex : 1;
                                   
                                   if (mergeInfo) {
-                                    console.log(`Found merge for cell [${rowIndex + 1},${cellIndex}]:`, { 
-                                      rowSpan: mergeRowSpan, 
-                                      colSpan: mergeColSpan, 
-                                      mergeInfo 
-                                    });
+                                    // console.log(`Found merge for cell [${rowIndex + 1},${cellIndex}]:`, { 
+                                    //   rowSpan: mergeRowSpan, 
+                                    //   colSpan: mergeColSpan, 
+                                    //   mergeInfo 
+                                    // });
                                   }
                                   
                                   return (
                                     <td 
                                       key={cellIndex} 
-                                      className={`px-3 sm:px-6 py-3 sm:py-4 text-sm text-gray-700 ${cellIndex > 2 ? 'hidden sm:table-cell' : ''} ${(mergeRowSpan > 1 || mergeColSpan > 1) ? 'bg-blue-50 text-center' : ''}`}
+                                      className={`px-3 sm:px-6 py-3 sm:py-4 text-sm text-gray-700 text-left border border-gray-200 ${cellIndex > 2 ? 'hidden sm:table-cell' : ''} ${(mergeRowSpan > 1 || mergeColSpan > 1) ? 'bg-white' : ''}`}
                                       {...(mergeRowSpan > 1 ? { rowSpan: mergeRowSpan } : {})}
                                       {...(mergeColSpan > 1 ? { colSpan: mergeColSpan } : {})}
                                     >
@@ -2417,7 +2493,7 @@ export default function CourseDetailPage({ params }) {
                                                         })()
                                                       }`}
                                                     >
-                                                      <span className="break-words line-clamp-2 sm:line-clamp-none">
+                                                      <span className="break-words line-clamp-2 sm:line-clamp-none text-left">
                                                         {cell.formattedValue || (linkType === 'youtube' ? 'Xem video' : linkType === 'pdf' ? 'Xem PDF' : 'Xem tài liệu')}
                                                         {(() => {
                                                           // Kiểm tra xem URL có hợp lệ không
