@@ -121,8 +121,9 @@ export default function UsersPage() {
       console.log("Danh sách người dùng từ API:", data.data);
       console.log("Email CTV hiện tại:", currentCtvEmail);
       
-      // Lọc người dùng theo phoneNumber hoặc createdBy
+      // Lọc người dùng theo createdBy - chỉ lấy những người dùng được tạo bởi CTV hiện tại
       const filteredData = data.data ? data.data.filter(user => {
+        // Tương thích với dữ liệu cũ (nơi email CTV lưu trong phoneNumber) và mới (lưu trong createdBy)
         const matchPhoneNumber = user.phoneNumber === currentCtvEmail;
         const matchCreatedBy = user.createdBy === currentCtvEmail;
         console.log(`Kiểm tra người dùng ${user.email}: phoneNumber=${user.phoneNumber}, createdBy=${user.createdBy}, match=${matchPhoneNumber || matchCreatedBy}`);
@@ -275,13 +276,18 @@ export default function UsersPage() {
       let response;
       let requestBody = {
         displayName: currentUser.displayName,
-        phoneNumber: currentCtvEmail, // Luôn dùng email của CTV hiện tại, không cho phép thay đổi
+        createdBy: currentCtvEmail, // Lưu email của CTV hiện tại vào trường createdBy
         role: currentUser.role,
         status: currentUser.status,
         additionalInfo: currentUser.additionalInfo,
         accountType: currentUser.accountType,
         canViewAllCourses: currentUser.accountType === 'trial' ? true : currentUser.canViewAllCourses, // Đảm bảo tài khoản dùng thử luôn có quyền xem tất cả khóa học
       };
+      
+      // Nếu có số điện thoại và không phải là email, thêm vào request
+      if (currentUser.phoneNumber && !currentUser.phoneNumber.includes('@')) {
+        requestBody.phoneNumber = currentUser.phoneNumber;
+      }
       
       // Nếu là tài khoản dùng thử, thêm thời gian hết hạn
       if (currentUser.accountType === 'trial') {
@@ -308,9 +314,14 @@ export default function UsersPage() {
           email: currentUser.email,
           password: currentUser.password,
           accountType: currentUser.accountType,
-          phoneNumber: currentCtvEmail, // Lưu email của CTV vào trường phoneNumber
+          createdBy: currentCtvEmail, // Lưu email của CTV vào trường createdBy
           canViewAllCourses: currentUser.accountType === 'trial' ? true : false, // Tài khoản dùng thử luôn có quyền xem tất cả khóa học
         };
+        
+        // Nếu có số điện thoại và không phải là email, thêm vào request
+        if (currentUser.phoneNumber && !currentUser.phoneNumber.includes('@')) {
+          requestBody.phoneNumber = currentUser.phoneNumber;
+        }
         
         // Nếu là tài khoản dùng thử, thêm thời gian hết hạn
         if (currentUser.accountType === 'trial') {
@@ -907,7 +918,9 @@ export default function UsersPage() {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {filteredUsers.length > 0 ? (
                       filteredUsers.map((user) => (
-                        <tr key={user.id} className="hover:bg-gray-50">
+                        <tr key={user.id} className={`hover:bg-gray-50 ${
+                          (user.createdBy === currentCtvEmail || user.phoneNumber === currentCtvEmail) ? 'bg-red-50' : ''
+                        }`}>
                           <td className="px-6 py-4 whitespace-nowrap hidden">
                             <div className="flex items-center">
                               <div className="flex-shrink-0 h-10 w-10">
@@ -948,9 +961,15 @@ export default function UsersPage() {
                               {/* Hiển thị thông tin người phụ trách */}
                               <div className="mt-1 flex items-center text-xs text-indigo-600">
                                 <UserIcon className="h-3 w-3 mr-1" />
-                                <span>Người phụ trách: {user.phoneNumber}</span>
+                                <span>Người phụ trách: {user.createdBy || user.phoneNumber}</span>
+                                {(user.createdBy === currentCtvEmail || user.phoneNumber === currentCtvEmail) && (
+                                  <span className="ml-1 px-1.5 py-0.5 bg-red-100 text-red-800 rounded-full text-xs font-medium">
+                                    Của bạn
+                                  </span>
+                                )}
                               </div>
                               
+                              {/* Hiển thị thời gian dùng thử còn lại nếu là tài khoản dùng thử */}
                               {user.accountType === 'trial' && user.trialEndsAt && (
                                 <div className="mt-1 flex items-center text-xs">
                                   <ClockIcon className="h-3 w-3 mr-1 text-orange-500" />
@@ -961,6 +980,16 @@ export default function UsersPage() {
                                   }`}>
                                     {formatRemainingTime(user.trialEndsAt)}
                                   </span>
+                                </div>
+                              )}
+                              
+                              {/* Hiển thị số điện thoại nếu có */}
+                              {user.phoneNumber && !user.phoneNumber.includes('@') && (
+                                <div className="mt-1 flex items-center text-xs text-gray-600">
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                                  </svg>
+                                  <span>SĐT: {user.phoneNumber}</span>
                                 </div>
                               )}
                             </div>
@@ -1102,7 +1131,11 @@ export default function UsersPage() {
                 {filteredUsers.length > 0 ? (
                   <div className="grid grid-cols-1 gap-4">
                     {filteredUsers.map((user) => (
-                      <div key={user.id} className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
+                      <div key={user.id} className={`bg-white rounded-lg border border-gray-200 shadow-sm p-4 ${
+                        (user.createdBy === currentCtvEmail || user.phoneNumber === currentCtvEmail) 
+                          ? 'bg-red-50 border-red-200' 
+                          : ''
+                      }`}>
                         <div className="mb-2">
                           <div className="text-sm font-medium text-gray-900">{user.email}</div>
                           <div className="text-xs text-gray-500">
@@ -1121,9 +1154,15 @@ export default function UsersPage() {
                             {/* Hiển thị thông tin người phụ trách trên mobile */}
                             <div className="mt-1 flex items-center text-xs text-indigo-600">
                               <UserIcon className="h-3 w-3 mr-1" />
-                              <span>Người phụ trách: {user.phoneNumber}</span>
+                              <span>Người phụ trách: {user.createdBy || user.phoneNumber}</span>
+                              {(user.createdBy === currentCtvEmail || user.phoneNumber === currentCtvEmail) && (
+                                <span className="ml-1 px-1.5 py-0.5 bg-red-100 text-red-800 rounded-full text-xs font-medium">
+                                  Của bạn
+                                </span>
+                              )}
                             </div>
                             
+                            {/* Hiển thị thời gian dùng thử còn lại nếu là tài khoản dùng thử */}
                             {user.accountType === 'trial' && user.trialEndsAt && (
                               <div className="mt-1 flex items-center text-xs">
                                 <ClockIcon className="h-3 w-3 mr-1 text-orange-500" />
@@ -1134,6 +1173,16 @@ export default function UsersPage() {
                                 }`}>
                                   {formatRemainingTime(user.trialEndsAt)}
                                 </span>
+                              </div>
+                            )}
+                            
+                            {/* Hiển thị số điện thoại nếu có */}
+                            {user.phoneNumber && !user.phoneNumber.includes('@') && (
+                              <div className="mt-1 flex items-center text-xs text-gray-600">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                                </svg>
+                                <span>SĐT: {user.phoneNumber}</span>
                               </div>
                             )}
                           </div>
@@ -1451,6 +1500,35 @@ export default function UsersPage() {
                       <div className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-50 text-sm text-gray-700">
                         {currentCtvEmail || 'Chưa có thông tin'}
                       </div>
+                    </div>
+                    
+                    {/* Số điện thoại người dùng */}
+                    <div>
+                      <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700">
+                        Số điện thoại
+                      </label>
+                      <input
+                        type="text"
+                        id="phoneNumber"
+                        value={currentUser.phoneNumber || ''}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          setCurrentUser({...currentUser, phoneNumber: value});
+                        }}
+                        autoComplete="tel"
+                        className={`mt-1 block w-full rounded-md ${
+                          currentUser.phoneNumber && currentUser.phoneNumber.includes('@') 
+                            ? 'border-red-300 focus:border-red-500 focus:ring-red-500' 
+                            : 'border-gray-300 focus:border-indigo-500 focus:ring-indigo-500'
+                        } shadow-sm sm:text-sm text-gray-900`}
+                        placeholder="Nhập số điện thoại"
+                      />
+                      <p className={`mt-1 text-xs ${currentUser.phoneNumber && currentUser.phoneNumber.includes('@') ? 'text-red-500' : 'text-gray-500'}`}>
+                        {currentUser.phoneNumber && currentUser.phoneNumber.includes('@') 
+                          ? 'Vui lòng nhập số điện thoại thực, không nhập email'
+                          : 'Nhập số điện thoại (chỉ nhập số, không nhập email)'
+                        }
+                      </p>
                     </div>
                     
                     {/* Vai trò */}
