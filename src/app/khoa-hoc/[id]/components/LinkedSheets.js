@@ -14,7 +14,7 @@ export default function LinkedSheets({
 }) {
   const [activeSheetId, setActiveSheetId] = useState(null);
 
-  // Tự động chọn sheet đầu tiên khi tải xong danh sách sheets
+  // Auto-select first sheet when sheets list is loaded
   useEffect(() => {
     if (linkedSheets && linkedSheets.length > 0 && !loadingSheets) {
       const firstSheet = linkedSheets[0];
@@ -37,6 +37,7 @@ export default function LinkedSheets({
         <h2 className="text-xl font-semibold text-gray-800">Chọn khóa học:</h2>
       </div>
       
+      {/* Sheet selection buttons */}
       <div className="flex flex-wrap gap-3 mb-6">
         {loadingSheets ? (
           <div className="w-full flex justify-center items-center py-8">
@@ -88,7 +89,7 @@ export default function LinkedSheets({
         </button>
       </div>
       
-      {/* Hiển thị sheet đã chọn */}
+      {/* Display selected sheet */}
       {linkedSheets.map((sheet) => (
         sheetData[sheet._id] && activeSheetId === sheet._id && (
           <div key={`content-${sheet._id}`} className="mb-8 bg-white rounded-lg border border-gray-200 overflow-hidden shadow-md">
@@ -121,7 +122,7 @@ export default function LinkedSheets({
               </div>
             )}
             
-            {/* Chọn sheet khi có nhiều sheet */}
+            {/* Subsheet selection when multiple sheets exist */}
             {sheetData[sheet._id]?.data?.sheets && sheetData[sheet._id].data.sheets.length > 1 && (
               <div className="border-b border-gray-200 px-4 sm:px-6 py-4 bg-indigo-50">
                 <h3 className="text-base font-medium text-indigo-900 mb-3">Chọn sheet:</h3>
@@ -130,7 +131,7 @@ export default function LinkedSheets({
                     <button
                       key={index}
                       onClick={() => {
-                        // Lưu chỉ mục sheet đang chọn vào state
+                        // Save selected sheet index in state
                         setSheetData(prev => ({
                           ...prev,
                           [sheet._id]: {
@@ -171,7 +172,7 @@ export default function LinkedSheets({
                   <ArrowPathIcon className="h-8 w-8 animate-spin text-indigo-500" />
                   <span className="ml-2 text-gray-600">Đang tải dữ liệu sheet...</span>
                 </div>
-              ) : !sheetData[sheet._id].data?.values ? (
+              ) : !sheetData[sheet._id].data?.values && !sheetData[sheet._id].data?.sheets ? (
                 <div className="text-center py-8">
                   <p className="text-gray-600 mb-4">Chưa có dữ liệu sheet. Nhấn "Làm mới dữ liệu" để tải.</p>
                   <button 
@@ -195,9 +196,11 @@ export default function LinkedSheets({
   );
 }
 
+// Add SheetTable component
 function SheetTable({ sheetData, handleLinkClick }) {
   const [expandedCells, setExpandedCells] = useState({});
 
+  // Function to toggle cell expansion for long content
   const toggleCellExpansion = (rowIdx, cellIdx) => {
     const key = `${rowIdx}-${cellIdx}`;
     setExpandedCells(prev => ({
@@ -260,22 +263,25 @@ function SheetTable({ sheetData, handleLinkClick }) {
     return String(cell);
   };
 
+  // Function to check if URL is YouTube link
   const isYoutubeLink = (url) => {
     if (!url) return false;
     return url.includes('youtube.com') || url.includes('youtu.be');
   };
   
+  // Function to check if URL is PDF link
   const isPdfLink = (url) => {
     if (!url) return false;
     return url.toLowerCase().endsWith('.pdf');
   };
   
+  // Function to check if URL is Google Drive link
   const isGoogleDriveLink = (url) => {
     if (!url) return false;
     return url.includes('drive.google.com') || url.includes('docs.google.com');
   };
 
-  // Xác định loại link
+  // Determine link type
   const getLinkType = (url) => {
     if (!url) return null;
     if (isYoutubeLink(url)) return 'youtube';
@@ -284,17 +290,17 @@ function SheetTable({ sheetData, handleLinkClick }) {
     return 'external';
   };
   
-  // Cải thiện hàm phát hiện URL
+  // Function to find URLs in text
   const findUrls = (text) => {
     if (!text || typeof text !== 'string') return null;
     
-    // Regex để tìm URL trong văn bản - cải tiến để bắt nhiều mẫu URL hơn
+    // Improved regex to catch more URL patterns
     const urlRegex = /(https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|www\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9]+\.[^\s]{2,}|www\.[a-zA-Z0-9]+\.[^\s]{2,})/gi;
     
     const matches = text.match(urlRegex);
     
     if (matches && matches.length > 0) {
-      // Đảm bảo URL bắt đầu bằng http:// hoặc https://
+      // Ensure URL starts with http:// or https://
       let url = matches[0];
       if (url.startsWith('www.')) {
         url = 'https://' + url;
@@ -317,7 +323,7 @@ function SheetTable({ sheetData, handleLinkClick }) {
       </div>
     );
   }
-
+  
   // Handle different data formats - support both values and htmlData formats
   let headers = [];
   let rows = [];
@@ -342,7 +348,7 @@ function SheetTable({ sheetData, handleLinkClick }) {
         // Extract data rows
         rows = rowData.slice(1).map(row => {
           if (row && row.values) {
-            return row.values.map(cell => getCellValue(cell));
+            return row.values.map(cell => cell); // Keep complex objects for later processing
           }
           return [];
         });
@@ -386,7 +392,7 @@ function SheetTable({ sheetData, handleLinkClick }) {
           <thead>
             <tr className="bg-gradient-to-r from-indigo-600 to-purple-600">
               {headers.map((header, idx) => {
-                // Bỏ qua cột đầu tiên
+                // Skip the first column if needed
                 if (idx === 0) {
                   return null;
                 }
@@ -422,7 +428,7 @@ function SheetTable({ sheetData, handleLinkClick }) {
                   className={`border-b ${rowIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-indigo-50 transition-colors duration-150`}
                 >
                   {row.map((cell, cellIdx) => {
-                    // Bỏ qua cột đầu tiên
+                    // Skip the first column if needed
                     if (cellIdx === 0) {
                       return null;
                     }
@@ -430,24 +436,24 @@ function SheetTable({ sheetData, handleLinkClick }) {
                     // Extract cell value
                     const cellValue = getCellValue(cell);
                     
-                    // Kiểm tra xem ô này có nằm trong vùng gộp không
+                    // Check if this cell is part of a merge region
                     const isMerged = sheetData.data.merges?.some(merge => {
                       return (
                         rowIdx + 1 >= merge.startRowIndex && 
                         rowIdx + 1 < merge.endRowIndex && 
                         cellIdx >= merge.startColumnIndex && 
                         cellIdx < merge.endColumnIndex &&
-                        // Kiểm tra xem đây có phải là ô chính không
+                        // Check if this is not the primary cell
                         !(rowIdx + 1 === merge.startRowIndex && cellIdx === merge.startColumnIndex)
                       );
                     });
                     
                     if (isMerged) {
-                      // Nếu ô này đã được gộp và không phải là ô chính, bỏ qua
+                      // If this cell is merged and not the primary cell, skip it
                       return null;
                     }
                     
-                    // Lấy thông tin rowSpan và colSpan từ merges
+                    // Get rowSpan and colSpan info from merges
                     const mergeInfo = sheetData.data.merges?.find(merge => 
                       rowIdx + 1 === merge.startRowIndex && 
                       cellIdx === merge.startColumnIndex
@@ -456,7 +462,7 @@ function SheetTable({ sheetData, handleLinkClick }) {
                     const rowSpan = mergeInfo ? mergeInfo.endRowIndex - mergeInfo.startRowIndex : 1;
                     const colSpan = mergeInfo ? mergeInfo.endColumnIndex - mergeInfo.startColumnIndex : 1;
                     
-                    // Xác định nếu ô có link
+                    // Check if cell has a link
                     const cellText = cellValue || '';
                     
                     // Check for hyperlink in cell object
@@ -465,7 +471,7 @@ function SheetTable({ sheetData, handleLinkClick }) {
                       if (cell.hyperlink) {
                         url = cell.hyperlink;
                       } else if (cell.userEnteredValue && cell.userEnteredValue.formulaValue && 
-                                cell.userEnteredValue.formulaValue.includes('HYPERLINK')) {
+                                 cell.userEnteredValue.formulaValue.includes('HYPERLINK')) {
                         // Try to extract URL from HYPERLINK formula
                         const formula = cell.userEnteredValue.formulaValue;
                         const urlMatch = formula.match(/HYPERLINK\("([^"]+)"/);
@@ -483,14 +489,14 @@ function SheetTable({ sheetData, handleLinkClick }) {
                     const hasLink = !!url;
                     const linkType = getLinkType(url);
                     
-                    // Chuẩn bị nội dung hiển thị
+                    // Prepare display text
                     let displayText = cellText;
                     if (hasLink && cellText.trim() === url) {
-                      // Nếu cell chỉ chứa URL, hiển thị "Mở liên kết" thay vì URL đầy đủ
+                      // If the cell only contains a URL, show "Open link" instead of the full URL
                       displayText = "Mở liên kết";
                     }
                     
-                    // Kiểm tra xem nội dung có dài không
+                    // Check if content is long
                     const content = hasLink && cellText.trim() === url ? displayText : cellText;
                     const isLongContent = typeof content === 'string' && content.length > 50;
                     const key = `${rowIdx}-${cellIdx}`;
@@ -557,7 +563,7 @@ function SheetTable({ sheetData, handleLinkClick }) {
                             )}
                           </div>
                           
-                          {/* Nút xem thêm/rút gọn */}
+                          {/* Show/hide button for long content */}
                           {isLongContent && (
                             <button
                               onClick={() => toggleCellExpansion(rowIdx, cellIdx)}
@@ -578,4 +584,4 @@ function SheetTable({ sheetData, handleLinkClick }) {
       </div>
     </div>
   );
-} 
+}
