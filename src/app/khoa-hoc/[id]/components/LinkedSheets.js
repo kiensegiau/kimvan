@@ -206,6 +206,60 @@ function SheetTable({ sheetData, handleLinkClick }) {
     }));
   };
 
+  // Function to extract cell value from different formats
+  const getCellValue = (cell) => {
+    // If cell is null or undefined
+    if (cell === null || cell === undefined) {
+      return '';
+    }
+    
+    // If cell is a string, return it directly
+    if (typeof cell === 'string') {
+      return cell;
+    }
+    
+    // If cell is an object with formatted value
+    if (typeof cell === 'object') {
+      // Google Sheets API can return different formats
+      if (cell.formattedValue !== undefined) {
+        return cell.formattedValue;
+      }
+      
+      // Check for userEnteredValue
+      if (cell.userEnteredValue) {
+        const userValue = cell.userEnteredValue;
+        if (userValue.stringValue !== undefined) return userValue.stringValue;
+        if (userValue.numberValue !== undefined) return String(userValue.numberValue);
+        if (userValue.boolValue !== undefined) return String(userValue.boolValue);
+        if (userValue.formulaValue !== undefined) return userValue.formulaValue;
+      }
+      
+      // Check for effectiveValue
+      if (cell.effectiveValue) {
+        const effValue = cell.effectiveValue;
+        if (effValue.stringValue !== undefined) return effValue.stringValue;
+        if (effValue.numberValue !== undefined) return String(effValue.numberValue);
+        if (effValue.boolValue !== undefined) return String(effValue.boolValue);
+      }
+      
+      // Check for hyperlink
+      if (cell.hyperlink) {
+        return cell.hyperlink;
+      }
+      
+      // Last resort - try JSON stringify
+      try {
+        return JSON.stringify(cell);
+      } catch (e) {
+        console.error("Failed to stringify cell:", e);
+        return "[Complex cell data]";
+      }
+    }
+    
+    // Default fallback
+    return String(cell);
+  };
+
   const isYoutubeLink = (url) => {
     if (!url) return false;
     return url.includes('youtube.com') || url.includes('youtu.be');
@@ -229,6 +283,101 @@ function SheetTable({ sheetData, handleLinkClick }) {
     if (isGoogleDriveLink(url)) return 'drive';
     return 'external';
   };
+  
+  // Cải thiện hàm phát hiện URL
+  const findUrls = (text) => {
+    if (!text || typeof text !== 'string') return null;
+    
+    // Regex để tìm URL trong văn bản - cải tiến để bắt nhiều mẫu URL hơn
+    const urlRegex = /(https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|www\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9]+\.[^\s]{2,}|www\.[a-zA-Z0-9]+\.[^\s]{2,})/gi;
+    
+    const matches = text.match(urlRegex);
+    
+    if (matches && matches.length > 0) {
+      // Đảm bảo URL bắt đầu bằng http:// hoặc https://
+      let url = matches[0];
+      if (url.startsWith('www.')) {
+        url = 'https://' + url;
+      }
+      return url;
+    }
+    
+    return null;
+  };
+
+  // Check if data is available and in the expected format
+  if (!sheetData || !sheetData.data) {
+    console.error("Invalid sheet data:", sheetData);
+    return (
+      <div className="p-4 bg-red-50 border border-red-200 rounded-md">
+        <p className="text-red-600">Lỗi: Dữ liệu không hợp lệ</p>
+        <pre className="mt-2 text-xs overflow-auto max-h-40 bg-white p-2 rounded border">
+          {JSON.stringify(sheetData, null, 2)}
+        </pre>
+      </div>
+    );
+  }
+
+  // Handle different data formats - support both values and htmlData formats
+  let headers = [];
+  let rows = [];
+
+  try {
+    if (sheetData.data.values) {
+      // Format 1: Direct values array
+      headers = sheetData.data.values[0] || [];
+      rows = sheetData.data.values.slice(1) || [];
+    } else if (sheetData.data.sheets && sheetData.activeSubSheet !== undefined) {
+      // Format 2: Complex sheet format with selected subsheet
+      const activeSheet = sheetData.data.sheets[sheetData.activeSubSheet];
+      if (activeSheet && activeSheet.data && activeSheet.data[0] && activeSheet.data[0].rowData) {
+        // Extract headers and rows from the complex format
+        const rowData = activeSheet.data[0].rowData;
+        
+        // Extract headers from first row
+        if (rowData[0] && rowData[0].values) {
+          headers = rowData[0].values.map(cell => getCellValue(cell));
+        }
+        
+        // Extract data rows
+        rows = rowData.slice(1).map(row => {
+          if (row && row.values) {
+            return row.values.map(cell => getCellValue(cell));
+          }
+          return [];
+        });
+      }
+    } else {
+      console.error("Unsupported data format:", sheetData.data);
+      return (
+        <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+          <p className="text-yellow-700">Định dạng dữ liệu không được hỗ trợ</p>
+          <pre className="mt-2 text-xs overflow-auto max-h-40 bg-white p-2 rounded border">
+            {JSON.stringify(sheetData.data, null, 2)}
+          </pre>
+        </div>
+      );
+    }
+  } catch (error) {
+    console.error("Error processing sheet data:", error);
+    return (
+      <div className="p-4 bg-red-50 border border-red-200 rounded-md">
+        <p className="text-red-600">Lỗi khi xử lý dữ liệu: {error.message}</p>
+        <pre className="mt-2 text-xs overflow-auto max-h-40 bg-white p-2 rounded border">
+          {JSON.stringify(sheetData, null, 2)}
+        </pre>
+      </div>
+    );
+  }
+
+  // If no data after processing, show empty state
+  if (!headers.length || !rows.length) {
+    return (
+      <div className="p-4 bg-gray-50 border border-gray-200 rounded-md text-center">
+        <p className="text-gray-600">Không có dữ liệu để hiển thị</p>
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-lg overflow-hidden border border-gray-200 shadow-md">
@@ -236,7 +385,7 @@ function SheetTable({ sheetData, handleLinkClick }) {
         <table className="min-w-full">
           <thead>
             <tr className="bg-gradient-to-r from-indigo-600 to-purple-600">
-              {sheetData.data.values[0] && sheetData.data.values[0].map((header, idx) => {
+              {headers.map((header, idx) => {
                 // Bỏ qua cột đầu tiên
                 if (idx === 0) {
                   return null;
@@ -260,135 +409,170 @@ function SheetTable({ sheetData, handleLinkClick }) {
             </tr>
           </thead>
           <tbody>
-            {sheetData.data.values.slice(1).map((row, rowIdx) => (
-              <tr 
-                key={rowIdx} 
-                className={`border-b ${rowIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-indigo-50 transition-colors duration-150`}
-              >
-                {row.map((cell, cellIdx) => {
-                  // Bỏ qua cột đầu tiên
-                  if (cellIdx === 0) {
-                    return null;
-                  }
-                  
-                  // Kiểm tra xem ô này có nằm trong vùng gộp không
-                  const isMerged = sheetData.data.merges?.some(merge => {
-                    return (
-                      rowIdx + 1 >= merge.startRowIndex && 
-                      rowIdx + 1 < merge.endRowIndex && 
-                      cellIdx >= merge.startColumnIndex && 
-                      cellIdx < merge.endColumnIndex &&
-                      // Kiểm tra xem đây có phải là ô chính không
-                      !(rowIdx + 1 === merge.startRowIndex && cellIdx === merge.startColumnIndex)
+            {rows.map((row, rowIdx) => {
+              // Skip empty rows or invalid row format
+              if (!row || !Array.isArray(row) || row.length === 0) {
+                console.warn("Skipping invalid row:", row);
+                return null;
+              }
+              
+              return (
+                <tr 
+                  key={rowIdx} 
+                  className={`border-b ${rowIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-indigo-50 transition-colors duration-150`}
+                >
+                  {row.map((cell, cellIdx) => {
+                    // Bỏ qua cột đầu tiên
+                    if (cellIdx === 0) {
+                      return null;
+                    }
+                    
+                    // Extract cell value
+                    const cellValue = getCellValue(cell);
+                    
+                    // Kiểm tra xem ô này có nằm trong vùng gộp không
+                    const isMerged = sheetData.data.merges?.some(merge => {
+                      return (
+                        rowIdx + 1 >= merge.startRowIndex && 
+                        rowIdx + 1 < merge.endRowIndex && 
+                        cellIdx >= merge.startColumnIndex && 
+                        cellIdx < merge.endColumnIndex &&
+                        // Kiểm tra xem đây có phải là ô chính không
+                        !(rowIdx + 1 === merge.startRowIndex && cellIdx === merge.startColumnIndex)
+                      );
+                    });
+                    
+                    if (isMerged) {
+                      // Nếu ô này đã được gộp và không phải là ô chính, bỏ qua
+                      return null;
+                    }
+                    
+                    // Lấy thông tin rowSpan và colSpan từ merges
+                    const mergeInfo = sheetData.data.merges?.find(merge => 
+                      rowIdx + 1 === merge.startRowIndex && 
+                      cellIdx === merge.startColumnIndex
                     );
-                  });
-                  
-                  if (isMerged) {
-                    // Nếu ô này đã được gộp và không phải là ô chính, bỏ qua
-                    return null;
-                  }
-                  
-                  // Lấy thông tin rowSpan và colSpan từ merges
-                  const mergeInfo = sheetData.data.merges?.find(merge => 
-                    rowIdx + 1 === merge.startRowIndex && 
-                    cellIdx === merge.startColumnIndex
-                  );
-                  
-                  const rowSpan = mergeInfo ? mergeInfo.endRowIndex - mergeInfo.startRowIndex : 1;
-                  const colSpan = mergeInfo ? mergeInfo.endColumnIndex - mergeInfo.startColumnIndex : 1;
-                  
-                  // Xác định nếu ô có link
-                  const urlRegex = /https?:\/\/[^\s]+/;
-                  const cellText = cell || '';
-                  const url = typeof cellText === 'string' && urlRegex.test(cellText) 
-                    ? cellText.match(urlRegex)[0] 
-                    : null;
-                  const hasLink = !!url;
-                  const linkType = getLinkType(url);
-                  
-                  // Kiểm tra xem nội dung có dài không
-                  const content = cell || '';
-                  const isLongContent = typeof content === 'string' && content.length > 50;
-                  const key = `${rowIdx}-${cellIdx}`;
-                  const isExpanded = expandedCells[key] || false;
-                  
-                  return (
-                    <td 
-                      key={cellIdx}
-                      className={`px-6 py-4 text-sm border-r last:border-r-0 ${hasLink ? 'text-indigo-600' : 'text-gray-800'}`}
-                      rowSpan={rowSpan}
-                      colSpan={colSpan}
-                    >
-                      <div className="relative group">
-                        <div className={`${isLongContent && !isExpanded ? 'line-clamp-2' : ''}`}>
-                          {hasLink ? (
-                            <div className="flex items-start">
-                              {linkType === 'youtube' && (
-                                <span className="mr-2 text-red-600 flex-shrink-0">
-                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/>
-                                  </svg>
-                                </span>
-                              )}
-                              {linkType === 'pdf' && (
-                                <span className="mr-2 text-red-600 flex-shrink-0">
-                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M11.363 2c4.155 0 2.637 6 2.637 6s6-1.65 6 2.457v11.543h-16v-20h7.363zm.826-2h-10.189v24h20v-14.386c0-2.391-6.648-9.614-9.811-9.614z"/>
-                                  </svg>
-                                </span>
-                              )}
-                              {linkType === 'drive' && (
-                                <span className="mr-2 text-blue-600 flex-shrink-0">
-                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M7.71 3.52L1.15 15l3.42 5.99 6.56-11.47L7.71 3.52zm-.46 10.42l-1.66 2.91H15.1l1.66-2.91H7.25zm8.79-8.71L13.04 10h5.43l3.1-5.42c-.34-.61-.67-1.24-1.85-1.24h-8.76l-.91 1.59h5.99zm5.9 6.32l-3.89 6.84-.01.01h.01C18.97 19.07 20 17.9 20 16.37v-6.76l-1.94 3.38z"/>
-                                  </svg>
-                                </span>
-                              )}
-                              {linkType === 'external' && (
-                                <span className="mr-2 text-blue-600 flex-shrink-0">
-                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    
+                    const rowSpan = mergeInfo ? mergeInfo.endRowIndex - mergeInfo.startRowIndex : 1;
+                    const colSpan = mergeInfo ? mergeInfo.endColumnIndex - mergeInfo.startColumnIndex : 1;
+                    
+                    // Xác định nếu ô có link
+                    const cellText = cellValue || '';
+                    
+                    // Check for hyperlink in cell object
+                    let url = null;
+                    if (typeof cell === 'object' && cell !== null) {
+                      if (cell.hyperlink) {
+                        url = cell.hyperlink;
+                      } else if (cell.userEnteredValue && cell.userEnteredValue.formulaValue && 
+                                cell.userEnteredValue.formulaValue.includes('HYPERLINK')) {
+                        // Try to extract URL from HYPERLINK formula
+                        const formula = cell.userEnteredValue.formulaValue;
+                        const urlMatch = formula.match(/HYPERLINK\("([^"]+)"/);
+                        if (urlMatch && urlMatch[1]) {
+                          url = urlMatch[1];
+                        }
+                      }
+                    }
+                    
+                    // If no hyperlink found in cell object, try to find URL in text
+                    if (!url) {
+                      url = findUrls(cellText);
+                    }
+                    
+                    const hasLink = !!url;
+                    const linkType = getLinkType(url);
+                    
+                    // Chuẩn bị nội dung hiển thị
+                    let displayText = cellText;
+                    if (hasLink && cellText.trim() === url) {
+                      // Nếu cell chỉ chứa URL, hiển thị "Mở liên kết" thay vì URL đầy đủ
+                      displayText = "Mở liên kết";
+                    }
+                    
+                    // Kiểm tra xem nội dung có dài không
+                    const content = hasLink && cellText.trim() === url ? displayText : cellText;
+                    const isLongContent = typeof content === 'string' && content.length > 50;
+                    const key = `${rowIdx}-${cellIdx}`;
+                    const isExpanded = expandedCells[key] || false;
+                    
+                    return (
+                      <td 
+                        key={cellIdx}
+                        className={`px-6 py-4 text-sm border-r last:border-r-0 ${hasLink ? 'text-indigo-600' : 'text-gray-800'}`}
+                        rowSpan={rowSpan}
+                        colSpan={colSpan}
+                      >
+                        <div className="relative group">
+                          <div className={`${isLongContent && !isExpanded ? 'line-clamp-2' : ''}`}>
+                            {hasLink ? (
+                              <div className="flex items-start">
+                                {linkType === 'youtube' && (
+                                  <span className="mr-2 text-red-600 flex-shrink-0">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                                      <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/>
+                                    </svg>
+                                  </span>
+                                )}
+                                {linkType === 'pdf' && (
+                                  <span className="mr-2 text-red-600 flex-shrink-0">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                                      <path d="M11.363 2c4.155 0 2.637 6 2.637 6s6-1.65 6 2.457v11.543h-16v-20h7.363zm.826-2h-10.189v24h20v-14.386c0-2.391-6.648-9.614-9.811-9.614z"/>
+                                    </svg>
+                                  </span>
+                                )}
+                                {linkType === 'drive' && (
+                                  <span className="mr-2 text-blue-600 flex-shrink-0">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                                      <path d="M7.71 3.52L1.15 15l3.42 5.99 6.56-11.47L7.71 3.52zm-.46 10.42l-1.66 2.91H15.1l1.66-2.91H7.25zm8.79-8.71L13.04 10h5.43l3.1-5.42c-.34-.61-.67-1.24-1.85-1.24h-8.76l-.91 1.59h5.99zm5.9 6.32l-3.89 6.84-.01.01h.01C18.97 19.07 20 17.9 20 16.37v-6.76l-1.94 3.38z"/>
+                                    </svg>
+                                  </span>
+                                )}
+                                {linkType === 'external' && (
+                                  <span className="mr-2 text-blue-600 flex-shrink-0">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                    </svg>
+                                  </span>
+                                )}
+                                <button 
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    if (handleLinkClick) {
+                                      handleLinkClick(url, cellText);
+                                    } else {
+                                      window.open(url, '_blank');
+                                    }
+                                  }}
+                                  className="hover:underline text-indigo-600 hover:text-indigo-800 flex items-center cursor-pointer bg-transparent border-0 p-0 font-normal"
+                                >
+                                  <span className="flex-1">{content}</span>
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                                   </svg>
-                                </span>
-                              )}
-                              <a 
-                                href="#" 
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  if (handleLinkClick) {
-                                    handleLinkClick(url, content);
-                                  } else {
-                                    window.open(url, '_blank');
-                                  }
-                                }}
-                                className="hover:underline cursor-pointer text-indigo-600 hover:text-indigo-800 flex items-center group"
-                              >
-                                <span>{content || url}</span>
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                </svg>
-                              </a>
-                            </div>
-                          ) : (
-                            <span>{content || <em className="text-gray-400">Trống</em>}</span>
+                                </button>
+                              </div>
+                            ) : (
+                              <span>{content || <em className="text-gray-400">Trống</em>}</span>
+                            )}
+                          </div>
+                          
+                          {/* Nút xem thêm/rút gọn */}
+                          {isLongContent && (
+                            <button
+                              onClick={() => toggleCellExpansion(rowIdx, cellIdx)}
+                              className="mt-1 text-xs font-medium text-indigo-600 hover:text-indigo-800 hover:underline"
+                            >
+                              {isExpanded ? 'Thu gọn' : 'Xem thêm...'}
+                            </button>
                           )}
                         </div>
-                        
-                        {/* Nút xem thêm/rút gọn */}
-                        {isLongContent && (
-                          <button
-                            onClick={() => toggleCellExpansion(rowIdx, cellIdx)}
-                            className="mt-1 text-xs font-medium text-indigo-600 hover:text-indigo-800 hover:underline"
-                          >
-                            {isExpanded ? 'Thu gọn' : 'Xem thêm...'}
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
