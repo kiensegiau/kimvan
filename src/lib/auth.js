@@ -125,6 +125,11 @@ export async function checkAuthAndRole(req, requiredRole = 'user') {
   // Nếu role là admin, cho phép truy cập mọi nơi
   if (user.role === 'admin') return true;
   
+  // Hỗ trợ kiểm tra nhiều vai trò
+  if (Array.isArray(requiredRole)) {
+    return requiredRole.includes(user.role);
+  }
+  
   // Nếu role là staff, cho phép truy cập quyền staff và user
   if (user.role === 'staff' && requiredRole === 'user') return true;
   

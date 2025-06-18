@@ -161,13 +161,14 @@ export async function POST(request) {
     
     // Lấy dữ liệu từ request
     const body = await request.json();
-    const { email, password, accountType, trialEndsAt, canViewAllCourses, phoneNumber } = body;
+    const { email, password, accountType, trialEndsAt, canViewAllCourses, phoneNumber, createdBy } = body;
     
     // Log thông tin để debug
     console.log('🔧 API Users POST - Dữ liệu nhận được:', { 
       email, 
       accountType, 
       phoneNumber,
+      createdBy,
       canViewAllCourses
     });
     
@@ -208,7 +209,7 @@ export async function POST(request) {
         firebaseId: userRecord.uid,
         email,
         displayName: null,
-        phoneNumber: phoneNumber || null,  // Lưu email của CTV vào trường phoneNumber
+        phoneNumber: phoneNumber || null,  // Lưu số điện thoại thực của người dùng
         role: 'user',
         status: 'active',
         emailVerified: false,
@@ -218,18 +219,23 @@ export async function POST(request) {
         canViewAllCourses: userCanViewAllCourses, // Đảm bảo tài khoản dùng thử luôn có quyền xem tất cả khóa học
         createdAt: new Date(),
         updatedAt: new Date(),
-        createdBy: phoneNumber || null  // Thêm trường này để lưu email của CTV tạo ra user
+        createdBy: createdBy || null  // Lưu email của CTV tạo ra user vào trường createdBy
       });
       
       console.log('✅ API Users POST - Đã tạo người dùng:', {
         id: userRecord.uid,
         email,
-        phoneNumber: phoneNumber || null
+        phoneNumber: phoneNumber || null,
+        createdBy: createdBy || null
       });
       
       return NextResponse.json({ 
         success: true,
-        data: { id: userRecord.uid }
+        user: {
+          id: userRecord.uid,
+          email,
+          createdBy: createdBy || null
+        }
       });
     } catch (firebaseError) {
       const { message, status } = handleFirebaseError(firebaseError);
@@ -272,7 +278,17 @@ export async function PATCH(request) {
     
     // Lấy dữ liệu từ request
     const body = await request.json();
-    const { displayName, phoneNumber, role, status, additionalInfo, canViewAllCourses, accountType, trialEndsAt } = body;
+    const { displayName, phoneNumber, role, status, additionalInfo, canViewAllCourses, accountType, trialEndsAt, createdBy } = body;
+    
+    // Log thông tin để debug
+    console.log('🔧 API Users PATCH - Dữ liệu nhận được:', { 
+      id,
+      displayName,
+      phoneNumber,
+      createdBy,
+      accountType,
+      canViewAllCourses
+    });
     
     // Kết nối đến MongoDB
     const client = await clientPromise;
@@ -292,11 +308,14 @@ export async function PATCH(request) {
           // Kiểm tra định dạng E.164
           if (phoneNumber.startsWith('+') && phoneNumber.length >= 8) {
             updateData.phoneNumber = phoneNumber;
+          } else if (!phoneNumber.includes('@')) {
+            // Nếu không phải là email, lưu vào MongoDB (không cần định dạng E.164)
+            // Không thêm vào updateData của Firebase
           } else {
-            // Nếu số điện thoại không đúng định dạng, trả về lỗi
+            // Nếu là email, không lưu vào phoneNumber
             return NextResponse.json({
               success: false,
-              error: 'Số điện thoại phải theo định dạng E.164 (ví dụ: +84xxxxxxxxx)'
+              error: 'Số điện thoại không được chứa ký tự @'
             }, { status: 400 });
           }
         }
@@ -316,6 +335,7 @@ export async function PATCH(request) {
       
       if (displayName !== undefined) mongoUpdateData.displayName = displayName;
       if (phoneNumber !== undefined) mongoUpdateData.phoneNumber = phoneNumber;
+      if (createdBy !== undefined) mongoUpdateData.createdBy = createdBy;
       if (role !== undefined) mongoUpdateData.role = role;
       if (status !== undefined) mongoUpdateData.status = status;
       if (additionalInfo !== undefined) mongoUpdateData.additionalInfo = additionalInfo;
@@ -381,6 +401,7 @@ export async function PATCH(request) {
           accountType: newUserAccountType,
           trialEndsAt: trialEndsAt ? new Date(trialEndsAt) : null,
           canViewAllCourses: newUserCanViewAllCourses,
+          createdBy: createdBy || null, // Lưu thông tin người tạo
           createdAt: new Date(),
           updatedAt: new Date()
         });
@@ -388,7 +409,11 @@ export async function PATCH(request) {
       
       return NextResponse.json({ 
         success: true,
-        data: { id }
+        user: { 
+          id,
+          email: existingUser ? existingUser.email : null,
+          createdBy: mongoUpdateData.createdBy || existingUser?.createdBy || null
+        }
       });
     } catch (error) {
       console.error('Firebase error:', error);

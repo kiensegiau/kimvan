@@ -522,14 +522,16 @@ export default function UsersPage() {
         toast.success('Đã khởi tạo thông tin người dùng thành công');
       }
       
-      // Thiết lập cookie admin_access tạm thời
-      document.cookie = "admin_access=true; path=/; max-age=60";
+      // Thiết lập cookie ctv_access và ctv_email tạm thời
+      document.cookie = "ctv_access=true; path=/; max-age=300"; // Tăng thời gian lên 5 phút
+      document.cookie = `ctv_email=${encodeURIComponent(currentCtvEmail)}; path=/; max-age=300`;
       
       // Lấy danh sách khóa học đã đăng ký của người dùng
-      const enrollmentsResponse = await fetch(`/api/admin/enrollments?userId=${user.firebaseId}`);
+      const enrollmentsResponse = await fetch(`/api/admin/enrollments?userId=${user.firebaseId}&ctvEmail=${encodeURIComponent(currentCtvEmail)}`);
       
       if (!enrollmentsResponse.ok) {
-        throw new Error('Không thể lấy danh sách khóa học đã đăng ký');
+        const errorData = await enrollmentsResponse.json();
+        throw new Error(errorData.message || 'Không thể lấy danh sách khóa học đã đăng ký');
       }
       
       const enrollmentsData = await enrollmentsResponse.json();
@@ -539,7 +541,8 @@ export default function UsersPage() {
       const coursesResponse = await fetch('/api/admin/courses');
       
       if (!coursesResponse.ok) {
-        throw new Error('Không thể lấy danh sách khóa học');
+        const errorData = await coursesResponse.json();
+        throw new Error(errorData.error || 'Không thể lấy danh sách khóa học');
       }
       
       const coursesData = await coursesResponse.json();
@@ -570,8 +573,9 @@ export default function UsersPage() {
     setCourseError(null);
     
     try {
-      // Thiết lập cookie admin_access tạm thời
-      document.cookie = "admin_access=true; path=/; max-age=60";
+      // Thiết lập cookie ctv_access và ctv_email tạm thời
+      document.cookie = "ctv_access=true; path=/; max-age=300"; // Tăng thời gian lên 5 phút
+      document.cookie = `ctv_email=${encodeURIComponent(currentCtvEmail)}; path=/; max-age=300`;
       
       // Gọi API để thêm khóa học cho người dùng
       const response = await fetch('/api/admin/enrollments', {
@@ -581,7 +585,8 @@ export default function UsersPage() {
         },
         body: JSON.stringify({
           userId: currentUser.firebaseId,
-          courseId: selectedCourseId
+          courseId: selectedCourseId,
+          ctvEmail: currentCtvEmail
         }),
       });
       
@@ -611,18 +616,19 @@ export default function UsersPage() {
     }
     
     try {
-      // Thiết lập cookie admin_access tạm thời
-      document.cookie = "admin_access=true; path=/; max-age=60";
+      // Thiết lập cookie ctv_access và ctv_email tạm thời
+      document.cookie = "ctv_access=true; path=/; max-age=300"; // Tăng thời gian lên 5 phút
+      document.cookie = `ctv_email=${encodeURIComponent(currentCtvEmail)}; path=/; max-age=300`;
       
       // Gọi API để xóa khóa học
-      const response = await fetch(`/api/admin/enrollments?id=${enrollmentId}`, {
+      const response = await fetch(`/api/admin/enrollments?id=${enrollmentId}&ctvEmail=${encodeURIComponent(currentCtvEmail)}`, {
         method: 'DELETE',
       });
       
       const data = await response.json();
       
       if (!response.ok) {
-        throw new Error(data.error || 'Không thể xóa khóa học');
+        throw new Error(data.error || data.message || 'Không thể xóa khóa học');
       }
       
       // Cập nhật danh sách khóa học
@@ -707,8 +713,15 @@ export default function UsersPage() {
               background: '#3b82f6',
               color: '#fff',
             },
+            duration: 5000, // Hiển thị lâu hơn để người dùng có thời gian đọc
           });
         }
+        
+        // Hiển thị thông báo đang xóa
+        const deleteToastId = showToast ? toast.loading(`Đang xóa ${expiredUsers.length} tài khoản hết hạn...`) : null;
+        
+        let deletedCount = 0;
+        let errorCount = 0;
         
         // Xóa từng tài khoản hết hạn
         for (const user of expiredUsers) {
@@ -723,11 +736,24 @@ export default function UsersPage() {
             
             if (response.ok) {
               console.log(`Đã xóa tài khoản dùng thử hết hạn: ${user.email}`, responseData);
+              deletedCount++;
             } else {
               console.error(`Lỗi khi xóa tài khoản dùng thử hết hạn ${user.email}:`, responseData);
+              errorCount++;
             }
           } catch (err) {
             console.error(`Lỗi khi xóa tài khoản dùng thử hết hạn ${user.email}:`, err);
+            errorCount++;
+          }
+        }
+        
+        // Cập nhật thông báo kết quả
+        if (showToast) {
+          toast.dismiss(deleteToastId);
+          if (deletedCount > 0) {
+            toast.success(`Đã xóa ${deletedCount} tài khoản hết hạn thành công${errorCount > 0 ? `, ${errorCount} lỗi` : ''}`);
+          } else if (errorCount > 0) {
+            toast.error(`Không thể xóa ${errorCount} tài khoản hết hạn`);
           }
         }
         
@@ -1386,6 +1412,34 @@ export default function UsersPage() {
                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm text-gray-900"
                     />
                     <p className="mt-1 text-xs text-gray-500">Mật khẩu phải có ít nhất 6 ký tự</p>
+                  </div>
+                )}
+                
+                {/* Số điện thoại - chỉ hiển thị khi thêm mới */}
+                {!currentUser.id && (
+                  <div>
+                    <label htmlFor="user_phone_field" className="block text-sm font-medium text-gray-700">
+                      Số điện thoại
+                    </label>
+                    <input
+                      type="text"
+                      id="user_phone_field"
+                      name="user_phone_field"
+                      value={currentUser.phoneNumber || ''}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        // Kiểm tra xem có phải là email không
+                        if (value.includes('@')) {
+                          setApiError('Vui lòng nhập số điện thoại, không nhập email vào trường này');
+                        } else {
+                          setApiError(null);
+                          setCurrentUser({...currentUser, phoneNumber: value});
+                        }
+                      }}
+                      autoComplete="tel"
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm text-gray-900"
+                    />
+                    <p className="mt-1 text-xs text-gray-500">Nhập số điện thoại của người dùng (không bắt buộc)</p>
                   </div>
                 )}
                 

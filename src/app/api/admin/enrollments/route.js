@@ -9,17 +9,18 @@ import { cookies } from 'next/headers';
 // GET: Lấy danh sách đăng ký khóa học của người dùng cụ thể
 export async function GET(request) {
   try {
-    // Kiểm tra quyền admin
+    // Kiểm tra quyền admin hoặc CTV
     const cookieStore = await cookies();
     const adminAccess = cookieStore.get('admin_access');
+    const ctvAccess = cookieStore.get('ctv_access');
     
-    // Nếu có cookie admin_access, cho phép truy cập
-    if (!(adminAccess && adminAccess.value === 'true')) {
-      // Kiểm tra xác thực người dùng và quyền admin
-      const hasAccess = await checkAuthAndRole(request, 'admin');
+    // Nếu có cookie admin_access hoặc ctv_access, cho phép truy cập
+    if (!((adminAccess && adminAccess.value === 'true') || (ctvAccess && ctvAccess.value === 'true'))) {
+      // Kiểm tra xác thực người dùng và quyền admin/ctv
+      const hasAccess = await checkAuthAndRole(request, ['admin', 'ctv']);
       
       if (!hasAccess) {
-        console.log('❌ Admin API - Không có quyền admin');
+        console.log('❌ Admin/CTV API - Không có quyền truy cập');
         return NextResponse.json({ 
           success: false,
           message: 'Bạn không có quyền thực hiện hành động này' 
@@ -70,20 +71,21 @@ export async function GET(request) {
   }
 }
 
-// POST: Admin thêm khóa học cho người dùng
+// POST: Admin/CTV thêm khóa học cho người dùng
 export async function POST(request) {
   try {
-    // Kiểm tra quyền admin
+    // Kiểm tra quyền admin hoặc CTV
     const cookieStore = await cookies();
     const adminAccess = cookieStore.get('admin_access');
+    const ctvAccess = cookieStore.get('ctv_access');
     
-    // Nếu có cookie admin_access, cho phép truy cập
-    if (!(adminAccess && adminAccess.value === 'true')) {
-      // Kiểm tra xác thực người dùng và quyền admin
-      const hasAccess = await checkAuthAndRole(request, 'admin');
+    // Nếu có cookie admin_access hoặc ctv_access, cho phép truy cập
+    if (!((adminAccess && adminAccess.value === 'true') || (ctvAccess && ctvAccess.value === 'true'))) {
+      // Kiểm tra xác thực người dùng và quyền admin/ctv
+      const hasAccess = await checkAuthAndRole(request, ['admin', 'ctv']);
       
       if (!hasAccess) {
-        console.log('❌ Admin API - Không có quyền admin');
+        console.log('❌ Admin/CTV API - Không có quyền truy cập');
         return NextResponse.json({ 
           success: false,
           message: 'Bạn không có quyền thực hiện hành động này' 
@@ -93,7 +95,7 @@ export async function POST(request) {
     
     // Lấy dữ liệu từ request
     const body = await request.json();
-    const { userId, courseId } = body;
+    const { userId, courseId, ctvEmail } = body;
     
     // Kiểm tra dữ liệu đầu vào
     if (!userId) {
@@ -141,7 +143,8 @@ export async function POST(request) {
       courseId,
       enrolledAt: new Date(),
       lastAccessedAt: new Date(),
-      status: 'active'
+      status: 'active',
+      createdBy: ctvEmail || null // Lưu thông tin CTV đã thêm khóa học
     });
     
     // Lưu đăng ký vào database
@@ -170,20 +173,21 @@ export async function POST(request) {
   }
 }
 
-// DELETE: Admin xóa đăng ký khóa học
+// DELETE: Admin/CTV xóa đăng ký khóa học
 export async function DELETE(request) {
   try {
-    // Kiểm tra quyền admin
+    // Kiểm tra quyền admin hoặc CTV
     const cookieStore = await cookies();
     const adminAccess = cookieStore.get('admin_access');
+    const ctvAccess = cookieStore.get('ctv_access');
     
-    // Nếu có cookie admin_access, cho phép truy cập
-    if (!(adminAccess && adminAccess.value === 'true')) {
-      // Kiểm tra xác thực người dùng và quyền admin
-      const hasAccess = await checkAuthAndRole(request, 'admin');
+    // Nếu có cookie admin_access hoặc ctv_access, cho phép truy cập
+    if (!((adminAccess && adminAccess.value === 'true') || (ctvAccess && ctvAccess.value === 'true'))) {
+      // Kiểm tra xác thực người dùng và quyền admin/ctv
+      const hasAccess = await checkAuthAndRole(request, ['admin', 'ctv']);
       
       if (!hasAccess) {
-        console.log('❌ Admin API - Không có quyền admin');
+        console.log('❌ Admin/CTV API - Không có quyền truy cập');
         return NextResponse.json({ 
           success: false,
           message: 'Bạn không có quyền thực hiện hành động này' 
@@ -194,6 +198,7 @@ export async function DELETE(request) {
     // Lấy ID đăng ký từ URL
     const { searchParams } = new URL(request.url);
     const enrollmentId = searchParams.get('id');
+    const ctvEmail = searchParams.get('ctvEmail');
     
     // Kiểm tra ID đăng ký
     if (!enrollmentId || !mongoose.Types.ObjectId.isValid(enrollmentId)) {
