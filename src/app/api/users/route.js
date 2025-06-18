@@ -112,7 +112,7 @@ export async function GET(request) {
         email: firebaseUser.email,
         displayName: firebaseUser.displayName || '',
         phoneNumber: mongoUser.phoneNumber || firebaseUser.phoneNumber || '',
-        createdBy: mongoUser.createdBy || mongoUser.phoneNumber || '',  // Lấy thông tin người tạo
+        createdBy: mongoUser.createdBy || '',  // Chỉ lấy thông tin createdBy từ MongoDB
         photoURL: firebaseUser.photoURL || '',
         emailVerified: firebaseUser.emailVerified,
         disabled: firebaseUser.disabled,
@@ -161,13 +161,14 @@ export async function POST(request) {
     
     // Lấy dữ liệu từ request
     const body = await request.json();
-    const { email, password, accountType, trialEndsAt, canViewAllCourses, phoneNumber } = body;
+    const { email, password, accountType, trialEndsAt, canViewAllCourses, phoneNumber, createdBy } = body;
     
     // Log thông tin để debug
     console.log('🔧 API Users POST - Dữ liệu nhận được:', { 
       email, 
       accountType, 
       phoneNumber,
+      createdBy,
       canViewAllCourses
     });
     
@@ -208,7 +209,7 @@ export async function POST(request) {
         firebaseId: userRecord.uid,
         email,
         displayName: null,
-        phoneNumber: phoneNumber || null,  // Lưu email của CTV vào trường phoneNumber
+        phoneNumber: phoneNumber || null,  // Lưu số điện thoại thực của người dùng
         role: 'user',
         status: 'active',
         emailVerified: false,
@@ -218,13 +219,14 @@ export async function POST(request) {
         canViewAllCourses: userCanViewAllCourses, // Đảm bảo tài khoản dùng thử luôn có quyền xem tất cả khóa học
         createdAt: new Date(),
         updatedAt: new Date(),
-        createdBy: phoneNumber || null  // Thêm trường này để lưu email của CTV tạo ra user
+        createdBy: createdBy || null  // Lưu email của CTV tạo ra user
       });
       
       console.log('✅ API Users POST - Đã tạo người dùng:', {
         id: userRecord.uid,
         email,
-        phoneNumber: phoneNumber || null
+        phoneNumber: phoneNumber || null,
+        createdBy: createdBy || null
       });
       
       return NextResponse.json({ 
@@ -248,9 +250,78 @@ export async function POST(request) {
   }
 }
 
-// PATCH /api/users/[id] - Cập nhật thông tin người dùng
+// PATCH /api/users?action=migrate-data - Di chuyển dữ liệu từ phoneNumber sang createdBy
+async function migratePhoneNumberToCreatedBy() {
+  try {
+    // Kết nối đến MongoDB
+    const client = await clientPromise;
+    const db = client.db(process.env.MONGODB_DB || 'kimvan');
+    
+    // Tìm tất cả các bản ghi có phoneNumber chứa @ (có thể là email) và không có createdBy
+    const usersToUpdate = await db.collection('users').find({
+      phoneNumber: { $regex: '@' },
+      $or: [
+        { createdBy: null },
+        { createdBy: { $exists: false } }
+      ]
+    }).toArray();
+    
+    console.log(`🔄 Tìm thấy ${usersToUpdate.length} bản ghi cần di chuyển dữ liệu`);
+    
+    // Di chuyển dữ liệu từ phoneNumber sang createdBy
+    let updatedCount = 0;
+    for (const user of usersToUpdate) {
+      // Chỉ di chuyển nếu phoneNumber có vẻ như là email
+      if (user.phoneNumber && user.phoneNumber.includes('@')) {
+        await db.collection('users').updateOne(
+          { _id: user._id },
+          { 
+            $set: { 
+              createdBy: user.phoneNumber,
+              // Đặt phoneNumber thành null nếu nó là email
+              phoneNumber: null
+            } 
+          }
+        );
+        updatedCount++;
+      }
+    }
+    
+    return {
+      success: true,
+      message: `Đã di chuyển dữ liệu cho ${updatedCount}/${usersToUpdate.length} bản ghi`,
+      updatedCount
+    };
+  } catch (error) {
+    console.error('Lỗi khi di chuyển dữ liệu:', error);
+    return {
+      success: false,
+      error: 'Lỗi khi di chuyển dữ liệu: ' + error.message
+    };
+  }
+}
+
+// Mở rộng hàm PATCH để xử lý yêu cầu di chuyển dữ liệu
 export async function PATCH(request) {
   try {
+    const url = new URL(request.url);
+    const action = url.searchParams.get('action');
+    
+    // Xử lý yêu cầu di chuyển dữ liệu
+    if (action === 'migrate-data') {
+      // Chỉ cho phép admin thực hiện hành động này
+      if (!(await checkAdminPermission(request))) {
+        return NextResponse.json({ 
+          success: false, 
+          error: 'Không có quyền truy cập' 
+        }, { status: 403 });
+      }
+      
+      const result = await migratePhoneNumberToCreatedBy();
+      return NextResponse.json(result, { status: result.success ? 200 : 500 });
+    }
+    
+    // Xử lý các yêu cầu PATCH thông thường
     // Kiểm tra quyền admin (bỏ comment nếu muốn bật)
     // if (!(await checkAdminPermission(request))) {
     //   return NextResponse.json({ 
@@ -260,7 +331,6 @@ export async function PATCH(request) {
     // }
     
     // Lấy id từ query parameter
-    const url = new URL(request.url);
     const id = url.searchParams.get('id');
     
     if (!id) {

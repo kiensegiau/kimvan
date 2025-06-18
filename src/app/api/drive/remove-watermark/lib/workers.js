@@ -11,9 +11,6 @@ import { DEFAULT_CONFIG } from './config.js';
 
 const execPromise = promisify(exec);
 
-// Biến để kiểm soát việc kết nối đến database
-let shouldConnectDB = false;
-
 // Số lượng worker tối đa chạy đồng thời (để tránh tràn RAM)
 const MAX_CONCURRENT_WORKERS = 3;
 

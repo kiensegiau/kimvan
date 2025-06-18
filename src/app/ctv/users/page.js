@@ -308,7 +308,8 @@ export default function UsersPage() {
           email: currentUser.email,
           password: currentUser.password,
           accountType: currentUser.accountType,
-          phoneNumber: currentCtvEmail, // Lưu email của CTV vào trường phoneNumber
+          phoneNumber: currentUser.phoneNumber || '', // Để trống nếu không có số điện thoại
+          createdBy: currentCtvEmail, // Lưu email của CTV vào trường createdBy
           canViewAllCourses: currentUser.accountType === 'trial' ? true : false, // Tài khoản dùng thử luôn có quyền xem tất cả khóa học
         };
         
@@ -948,8 +949,18 @@ export default function UsersPage() {
                               {/* Hiển thị thông tin người phụ trách */}
                               <div className="mt-1 flex items-center text-xs text-indigo-600">
                                 <UserIcon className="h-3 w-3 mr-1" />
-                                <span>Người phụ trách: {user.phoneNumber}</span>
+                                <span>Người phụ trách: {user.createdBy || user.phoneNumber}</span>
                               </div>
+                              
+                              {/* Hiển thị số điện thoại nếu có */}
+                              {user.phoneNumber && !user.phoneNumber.includes('@') && (
+                                <div className="mt-1 flex items-center text-xs text-gray-600">
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                                  </svg>
+                                  <span>SĐT: {user.phoneNumber}</span>
+                                </div>
+                              )}
                               
                               {user.accountType === 'trial' && user.trialEndsAt && (
                                 <div className="mt-1 flex items-center text-xs">
@@ -1121,8 +1132,18 @@ export default function UsersPage() {
                             {/* Hiển thị thông tin người phụ trách trên mobile */}
                             <div className="mt-1 flex items-center text-xs text-indigo-600">
                               <UserIcon className="h-3 w-3 mr-1" />
-                              <span>Người phụ trách: {user.phoneNumber}</span>
+                              <span>Người phụ trách: {user.createdBy || user.phoneNumber}</span>
                             </div>
+                            
+                            {/* Hiển thị số điện thoại nếu có */}
+                            {user.phoneNumber && !user.phoneNumber.includes('@') && (
+                              <div className="mt-1 flex items-center text-xs text-gray-600">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                                </svg>
+                                <span>SĐT: {user.phoneNumber}</span>
+                              </div>
+                            )}
                             
                             {user.accountType === 'trial' && user.trialEndsAt && (
                               <div className="mt-1 flex items-center text-xs">
@@ -1302,6 +1323,34 @@ export default function UsersPage() {
                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm text-gray-900"
                     />
                     <p className="mt-1 text-xs text-gray-500">Mật khẩu phải có ít nhất 6 ký tự</p>
+                  </div>
+                )}
+                
+                {/* Số điện thoại - chỉ hiển thị khi thêm mới */}
+                {!currentUser.id && (
+                  <div>
+                    <label htmlFor="user_phone_field" className="block text-sm font-medium text-gray-700">
+                      Số điện thoại
+                    </label>
+                    <input
+                      type="text"
+                      id="user_phone_field"
+                      name="user_phone_field"
+                      value={currentUser.phoneNumber || ''}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        // Kiểm tra xem có phải là email không
+                        if (value.includes('@')) {
+                          setApiError('Vui lòng nhập số điện thoại, không nhập email vào trường này');
+                        } else {
+                          setApiError(null);
+                          setCurrentUser({...currentUser, phoneNumber: value});
+                        }
+                      }}
+                      autoComplete="tel"
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm text-gray-900"
+                    />
+                    <p className="mt-1 text-xs text-gray-500">Nhập số điện thoại của người dùng (không bắt buộc)</p>
                   </div>
                 )}
                 
