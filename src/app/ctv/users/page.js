@@ -470,11 +470,12 @@ export default function UsersPage() {
         toast.success('Đã khởi tạo thông tin người dùng thành công');
       }
       
-      // Thiết lập cookie ctv_access tạm thời
+      // Thiết lập cookie ctv_access và ctv_email tạm thời
       document.cookie = "ctv_access=true; path=/; max-age=300"; // Tăng thời gian lên 5 phút
+      document.cookie = `ctv_email=${encodeURIComponent(currentCtvEmail)}; path=/; max-age=300`;
       
       // Lấy danh sách khóa học đã đăng ký của người dùng
-      const enrollmentsResponse = await fetch(`/api/admin/enrollments?userId=${user.firebaseId}`);
+      const enrollmentsResponse = await fetch(`/api/admin/enrollments?userId=${user.firebaseId}&ctvEmail=${encodeURIComponent(currentCtvEmail)}`);
       
       if (!enrollmentsResponse.ok) {
         const errorData = await enrollmentsResponse.json();
@@ -520,8 +521,9 @@ export default function UsersPage() {
     setCourseError(null);
     
     try {
-      // Thiết lập cookie ctv_access tạm thời
+      // Thiết lập cookie ctv_access và ctv_email tạm thời
       document.cookie = "ctv_access=true; path=/; max-age=300"; // Tăng thời gian lên 5 phút
+      document.cookie = `ctv_email=${encodeURIComponent(currentCtvEmail)}; path=/; max-age=300`;
       
       // Gọi API để thêm khóa học cho người dùng
       const response = await fetch('/api/admin/enrollments', {
@@ -561,8 +563,9 @@ export default function UsersPage() {
     }
     
     try {
-      // Thiết lập cookie ctv_access tạm thời
+      // Thiết lập cookie ctv_access và ctv_email tạm thời
       document.cookie = "ctv_access=true; path=/; max-age=300"; // Tăng thời gian lên 5 phút
+      document.cookie = `ctv_email=${encodeURIComponent(currentCtvEmail)}; path=/; max-age=300`;
       
       // Gọi API để xóa khóa học
       const response = await fetch(`/api/admin/enrollments?id=${enrollmentId}`, {

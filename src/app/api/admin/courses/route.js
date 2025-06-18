@@ -9,33 +9,38 @@ import { cookies } from 'next/headers';
 // GET: Lấy tất cả khóa học cho admin và CTV (không mã hóa)
 export async function GET(request) {
   try {
-    console.log('🔒 API - Kiểm tra quyền truy cập');
+    console.log('🔒 API Courses - Kiểm tra quyền truy cập');
     
     // Kiểm tra quyền admin hoặc CTV từ cookie
     const cookieStore = cookies();
     const adminAccess = cookieStore.get('admin_access');
     const ctvAccess = cookieStore.get('ctv_access');
     
+    console.log('Cookie admin_access:', adminAccess ? adminAccess.value : 'không có');
+    console.log('Cookie ctv_access:', ctvAccess ? ctvAccess.value : 'không có');
+    
     // Kiểm tra quyền admin từ header 
     const headersList = headers();
     const userRole = headersList.get('x-user-role');
+    console.log('Header x-user-role:', userRole || 'không có');
     
     // Cho phép truy cập nếu là admin hoặc CTV
     if (userRole === 'admin' || userRole === 'ctv' || 
         (adminAccess && adminAccess.value === 'true') || 
         (ctvAccess && ctvAccess.value === 'true')) {
-      console.log('🔒 API - Người dùng có quyền truy cập, cho phép truy cập');
+      console.log('🔒 API Courses - Người dùng có quyền truy cập, cho phép truy cập');
       
       // Kết nối đến MongoDB
       await connectDB();
       
       // Lấy tất cả khóa học
       const courses = await Course.find({}).sort({ createdAt: -1 }).lean();
+      console.log(`🔒 API Courses - Đã tìm thấy ${courses.length} khóa học`);
       
       // Trả về thông tin khóa học
       return NextResponse.json({ courses });
     } else {
-      console.log('⚠️ API - Không có quyền truy cập, từ chối truy cập');
+      console.log('⚠️ API Courses - Không có quyền truy cập, từ chối truy cập');
       return NextResponse.json(
         { error: 'Không có quyền truy cập' },
         { status: 403 }
