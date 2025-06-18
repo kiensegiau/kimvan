@@ -121,16 +121,13 @@ export default function UsersPage() {
       console.log("Danh sách người dùng từ API:", data.data);
       console.log("Email CTV hiện tại:", currentCtvEmail);
       
-      // Lọc người dùng theo phoneNumber hoặc createdBy
-      const filteredData = data.data ? data.data.filter(user => {
-        const matchPhoneNumber = user.phoneNumber === currentCtvEmail;
-        const matchCreatedBy = user.createdBy === currentCtvEmail;
-        console.log(`Kiểm tra người dùng ${user.email}: phoneNumber=${user.phoneNumber}, createdBy=${user.createdBy}, match=${matchPhoneNumber || matchCreatedBy}`);
-        return matchPhoneNumber || matchCreatedBy;
-      }) : [];
+      // Lọc người dùng để chỉ lấy những người có createdBy là CTV hiện tại
+      const filteredData = data.data ? data.data.filter(user => 
+        user.createdBy === currentCtvEmail
+      ) : [];
       
       console.log("Số lượng người dùng sau khi lọc:", filteredData.length);
-      setUsers(filteredData || []);
+      setUsers(filteredData);
       setHasMongoConnection(true);
       
       // Thông báo thành công nếu là làm mới
@@ -163,7 +160,8 @@ export default function UsersPage() {
   // Kiểm tra tài khoản hết hạn khi component được tạo và sau mỗi lần fetch users
   useEffect(() => {
     if (isAuthorized && !authChecking && users.length > 0 && !loading) {
-      checkExpiredTrialAccounts();
+      // Chỉ tự động kiểm tra khi lần đầu load trang
+      checkExpiredTrialAccounts(false); // Không hiển thị toast khi tự động kiểm tra
     }
   }, [users, loading, isAuthorized, authChecking]);
 
@@ -172,18 +170,13 @@ export default function UsersPage() {
     // Chỉ thiết lập interval nếu đã xác thực
     if (!isAuthorized || authChecking) return;
     
-    // Kiểm tra ngay khi component được tạo
-    if (users.length > 0) {
-      checkExpiredTrialAccounts();
-    }
-    
     console.log('Thiết lập kiểm tra tài khoản hết hạn mỗi phút');
     
     // Thiết lập kiểm tra định kỳ mỗi phút
     const intervalId = setInterval(() => {
       console.log('Đang chạy kiểm tra định kỳ tài khoản hết hạn...');
       if (users.length > 0) {
-        checkExpiredTrialAccounts();
+        checkExpiredTrialAccounts(false); // Không hiển thị toast khi tự động kiểm tra
       }
     }, 60 * 1000); // 60 giây = 1 phút
     
@@ -275,7 +268,7 @@ export default function UsersPage() {
       let response;
       let requestBody = {
         displayName: currentUser.displayName,
-        phoneNumber: currentCtvEmail, // Luôn dùng email của CTV hiện tại, không cho phép thay đổi
+        // Không gán email CTV vào phoneNumber để tránh lỗi định dạng
         role: currentUser.role,
         status: currentUser.status,
         additionalInfo: currentUser.additionalInfo,
@@ -477,14 +470,15 @@ export default function UsersPage() {
         toast.success('Đã khởi tạo thông tin người dùng thành công');
       }
       
-      // Thiết lập cookie admin_access tạm thời
-      document.cookie = "admin_access=true; path=/; max-age=60";
+      // Thiết lập cookie ctv_access tạm thời
+      document.cookie = "ctv_access=true; path=/; max-age=300"; // Tăng thời gian lên 5 phút
       
       // Lấy danh sách khóa học đã đăng ký của người dùng
       const enrollmentsResponse = await fetch(`/api/admin/enrollments?userId=${user.firebaseId}`);
       
       if (!enrollmentsResponse.ok) {
-        throw new Error('Không thể lấy danh sách khóa học đã đăng ký');
+        const errorData = await enrollmentsResponse.json();
+        throw new Error(errorData.message || 'Không thể lấy danh sách khóa học đã đăng ký');
       }
       
       const enrollmentsData = await enrollmentsResponse.json();
@@ -494,7 +488,8 @@ export default function UsersPage() {
       const coursesResponse = await fetch('/api/admin/courses');
       
       if (!coursesResponse.ok) {
-        throw new Error('Không thể lấy danh sách khóa học');
+        const errorData = await coursesResponse.json();
+        throw new Error(errorData.error || 'Không thể lấy danh sách khóa học');
       }
       
       const coursesData = await coursesResponse.json();
@@ -525,8 +520,8 @@ export default function UsersPage() {
     setCourseError(null);
     
     try {
-      // Thiết lập cookie admin_access tạm thời
-      document.cookie = "admin_access=true; path=/; max-age=60";
+      // Thiết lập cookie ctv_access tạm thời
+      document.cookie = "ctv_access=true; path=/; max-age=300"; // Tăng thời gian lên 5 phút
       
       // Gọi API để thêm khóa học cho người dùng
       const response = await fetch('/api/admin/enrollments', {
@@ -566,8 +561,8 @@ export default function UsersPage() {
     }
     
     try {
-      // Thiết lập cookie admin_access tạm thời
-      document.cookie = "admin_access=true; path=/; max-age=60";
+      // Thiết lập cookie ctv_access tạm thời
+      document.cookie = "ctv_access=true; path=/; max-age=300"; // Tăng thời gian lên 5 phút
       
       // Gọi API để xóa khóa học
       const response = await fetch(`/api/admin/enrollments?id=${enrollmentId}`, {
@@ -577,7 +572,7 @@ export default function UsersPage() {
       const data = await response.json();
       
       if (!response.ok) {
-        throw new Error(data.error || 'Không thể xóa khóa học');
+        throw new Error(data.error || data.message || 'Không thể xóa khóa học');
       }
       
       // Cập nhật danh sách khóa học
@@ -662,8 +657,15 @@ export default function UsersPage() {
               background: '#3b82f6',
               color: '#fff',
             },
+            duration: 5000, // Hiển thị lâu hơn để người dùng có thời gian đọc
           });
         }
+        
+        // Hiển thị thông báo đang xóa
+        const deleteToastId = showToast ? toast.loading(`Đang xóa ${expiredUsers.length} tài khoản hết hạn...`) : null;
+        
+        let deletedCount = 0;
+        let errorCount = 0;
         
         // Xóa từng tài khoản hết hạn
         for (const user of expiredUsers) {
@@ -678,11 +680,24 @@ export default function UsersPage() {
             
             if (response.ok) {
               console.log(`Đã xóa tài khoản dùng thử hết hạn: ${user.email}`, responseData);
+              deletedCount++;
             } else {
               console.error(`Lỗi khi xóa tài khoản dùng thử hết hạn ${user.email}:`, responseData);
+              errorCount++;
             }
           } catch (err) {
             console.error(`Lỗi khi xóa tài khoản dùng thử hết hạn ${user.email}:`, err);
+            errorCount++;
+          }
+        }
+        
+        // Cập nhật thông báo kết quả
+        if (showToast) {
+          toast.dismiss(deleteToastId);
+          if (deletedCount > 0) {
+            toast.success(`Đã xóa ${deletedCount} tài khoản hết hạn thành công${errorCount > 0 ? `, ${errorCount} lỗi` : ''}`);
+          } else if (errorCount > 0) {
+            toast.error(`Không thể xóa ${errorCount} tài khoản hết hạn`);
           }
         }
         
@@ -703,7 +718,7 @@ export default function UsersPage() {
 
   // Hàm kiểm tra tài khoản hết hạn thủ công
   const handleCheckExpiredAccounts = () => {
-    checkExpiredTrialAccounts(true);
+    checkExpiredTrialAccounts(true); // Hiển thị toast khi kiểm tra thủ công
   };
 
   // Định dạng thời gian còn lại của tài khoản dùng thử
@@ -946,11 +961,13 @@ export default function UsersPage() {
                                   </button>
                                 </span>}
                               
-                              {/* Hiển thị thông tin người phụ trách */}
-                              <div className="mt-1 flex items-center text-xs text-indigo-600">
-                                <UserIcon className="h-3 w-3 mr-1" />
-                                <span>Người phụ trách: {user.createdBy || user.phoneNumber}</span>
-                              </div>
+                              {/* Hiển thị thông tin người phụ trách nếu có */}
+                              {user.createdBy && (
+                                <div className="mt-1 flex items-center text-xs text-red-600 font-medium">
+                                  <UserIcon className="h-3 w-3 mr-1" />
+                                  <span>CTV: {user.createdBy}</span>
+                                </div>
+                              )}
                               
                               {/* Hiển thị số điện thoại nếu có */}
                               {user.phoneNumber && !user.phoneNumber.includes('@') && (
@@ -1129,11 +1146,13 @@ export default function UsersPage() {
                                 </button>
                               </span>}
                             
-                            {/* Hiển thị thông tin người phụ trách trên mobile */}
-                            <div className="mt-1 flex items-center text-xs text-indigo-600">
-                              <UserIcon className="h-3 w-3 mr-1" />
-                              <span>Người phụ trách: {user.createdBy || user.phoneNumber}</span>
-                            </div>
+                            {/* Hiển thị thông tin người phụ trách trên mobile nếu có */}
+                            {user.createdBy && (
+                              <div className="mt-1 flex items-center text-xs text-red-600 font-medium">
+                                <UserIcon className="h-3 w-3 mr-1" />
+                                <span>CTV: {user.createdBy}</span>
+                              </div>
+                            )}
                             
                             {/* Hiển thị số điện thoại nếu có */}
                             {user.phoneNumber && !user.phoneNumber.includes('@') && (

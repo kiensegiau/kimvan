@@ -99,9 +99,20 @@ export async function GET(request) {
     
     // Lấy thông tin bổ sung từ MongoDB
     const userIds = users.map(user => user.uid);
-    const userDetails = await db.collection('users').find({
-      firebaseId: { $in: userIds }
-    }).toArray();
+    
+    // Tạo query để lấy thông tin bổ sung từ MongoDB
+    let mongoQuery = { firebaseId: { $in: userIds } };
+    
+    // Nếu có ctvEmail, lọc theo createdBy
+    if (ctvEmail) {
+      mongoQuery = { 
+        firebaseId: { $in: userIds },
+        createdBy: ctvEmail
+      };
+      console.log('🔍 API Users GET - Đang lọc theo createdBy:', ctvEmail);
+    }
+    
+    const userDetails = await db.collection('users').find(mongoQuery).toArray();
     
     // Kết hợp dữ liệu từ cả hai nguồn
     const combinedUsers = users.map(firebaseUser => {
@@ -133,8 +144,7 @@ export async function GET(request) {
       phoneNumber: u.phoneNumber || 'N/A',
       createdBy: u.createdBy || 'N/A'
     }));
-    console.log('🔍 Users phoneNumber/createdBy info:', phoneInfo);
-    
+  
     return NextResponse.json({ 
       success: true,
       data: combinedUsers
@@ -359,16 +369,12 @@ export async function PATCH(request) {
           // Nếu phoneNumber là null hoặc chuỗi rỗng, không thêm vào updateData
           // Firebase không chấp nhận null/empty cho phoneNumber
         } else {
-          // Kiểm tra định dạng E.164
+          // Chỉ cập nhật phoneNumber trong Firebase nếu đúng định dạng E.164
           if (phoneNumber.startsWith('+') && phoneNumber.length >= 8) {
             updateData.phoneNumber = phoneNumber;
-          } else {
-            // Nếu số điện thoại không đúng định dạng, trả về lỗi
-            return NextResponse.json({
-              success: false,
-              error: 'Số điện thoại phải theo định dạng E.164 (ví dụ: +84xxxxxxxxx)'
-            }, { status: 400 });
           }
+          // Không trả về lỗi nếu định dạng không đúng, chỉ bỏ qua việc cập nhật trong Firebase
+          // nhưng vẫn cập nhật trong MongoDB
         }
       }
       

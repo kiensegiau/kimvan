@@ -9,17 +9,51 @@ import { cookies } from 'next/headers';
 // GET: Lấy danh sách đăng ký khóa học của người dùng cụ thể
 export async function GET(request) {
   try {
-    // Kiểm tra quyền admin
+    // Kiểm tra quyền admin hoặc CTV
     const cookieStore = await cookies();
     const adminAccess = cookieStore.get('admin_access');
+    const ctvAccess = cookieStore.get('ctv_access');
     
-    // Nếu có cookie admin_access, cho phép truy cập
-    if (!(adminAccess && adminAccess.value === 'true')) {
+    let isAdmin = false;
+    let isCTV = false;
+    let currentUserEmail = '';
+    
+    // Nếu có cookie admin_access, cho phép truy cập admin
+    if (adminAccess && adminAccess.value === 'true') {
+      isAdmin = true;
+    } else {
       // Kiểm tra xác thực người dùng và quyền admin
-      const hasAccess = await checkAuthAndRole(request, 'admin');
+      const hasAdminAccess = await checkAuthAndRole(request, 'admin');
       
-      if (!hasAccess) {
-        console.log('❌ Admin API - Không có quyền admin');
+      if (hasAdminAccess) {
+        isAdmin = true;
+      } else if (ctvAccess && ctvAccess.value === 'true') {
+        // Nếu có cookie ctv_access, cho phép truy cập CTV
+        isCTV = true;
+        
+        // Lấy thông tin người dùng hiện tại
+        const authResult = await authMiddleware(request);
+        if (authResult && authResult.user && authResult.user.email) {
+          currentUserEmail = authResult.user.email;
+        }
+      } else {
+        // Kiểm tra xác thực người dùng và quyền CTV
+        const hasCTVAccess = await checkAuthAndRole(request, 'ctv');
+        
+        if (hasCTVAccess) {
+          isCTV = true;
+          
+          // Lấy thông tin người dùng hiện tại
+          const authResult = await authMiddleware(request);
+          if (authResult && authResult.user && authResult.user.email) {
+            currentUserEmail = authResult.user.email;
+          }
+        }
+      }
+      
+      // Nếu không phải admin hoặc CTV, từ chối truy cập
+      if (!isAdmin && !isCTV) {
+        console.log('❌ API - Không có quyền truy cập');
         return NextResponse.json({ 
           success: false,
           message: 'Bạn không có quyền thực hiện hành động này' 
@@ -40,6 +74,36 @@ export async function GET(request) {
     
     // Kết nối đến MongoDB
     await connectDB();
+    
+    // Nếu là CTV, kiểm tra xem người dùng có thuộc quản lý của CTV không
+    if (isCTV && currentUserEmail) {
+      const db = mongoose.connection.db;
+      const user = await db.collection('users').findOne({ 
+        $or: [
+          { uid: userId },
+          { firebaseId: userId }
+        ]
+      });
+      
+      if (!user) {
+        return NextResponse.json({ 
+          success: false,
+          message: 'Không tìm thấy người dùng' 
+        }, { status: 404 });
+      }
+      
+      // Kiểm tra xem người dùng có thuộc quản lý của CTV không
+      const isUserManagedByCTV = 
+        (user.createdBy === currentUserEmail) || 
+        (user.phoneNumber === currentUserEmail);
+      
+      if (!isUserManagedByCTV) {
+        return NextResponse.json({ 
+          success: false,
+          message: 'Bạn không có quyền quản lý người dùng này' 
+        }, { status: 403 });
+      }
+    }
     
     // Lấy danh sách đăng ký khóa học của người dùng
     const enrollments = await Enrollment.find({ userId })
@@ -70,20 +134,54 @@ export async function GET(request) {
   }
 }
 
-// POST: Admin thêm khóa học cho người dùng
+// POST: Admin hoặc CTV thêm khóa học cho người dùng
 export async function POST(request) {
   try {
-    // Kiểm tra quyền admin
+    // Kiểm tra quyền admin hoặc CTV
     const cookieStore = await cookies();
     const adminAccess = cookieStore.get('admin_access');
+    const ctvAccess = cookieStore.get('ctv_access');
     
-    // Nếu có cookie admin_access, cho phép truy cập
-    if (!(adminAccess && adminAccess.value === 'true')) {
+    let isAdmin = false;
+    let isCTV = false;
+    let currentUserEmail = '';
+    
+    // Nếu có cookie admin_access, cho phép truy cập admin
+    if (adminAccess && adminAccess.value === 'true') {
+      isAdmin = true;
+    } else {
       // Kiểm tra xác thực người dùng và quyền admin
-      const hasAccess = await checkAuthAndRole(request, 'admin');
+      const hasAdminAccess = await checkAuthAndRole(request, 'admin');
       
-      if (!hasAccess) {
-        console.log('❌ Admin API - Không có quyền admin');
+      if (hasAdminAccess) {
+        isAdmin = true;
+      } else if (ctvAccess && ctvAccess.value === 'true') {
+        // Nếu có cookie ctv_access, cho phép truy cập CTV
+        isCTV = true;
+        
+        // Lấy thông tin người dùng hiện tại
+        const authResult = await authMiddleware(request);
+        if (authResult && authResult.user && authResult.user.email) {
+          currentUserEmail = authResult.user.email;
+        }
+      } else {
+        // Kiểm tra xác thực người dùng và quyền CTV
+        const hasCTVAccess = await checkAuthAndRole(request, 'ctv');
+        
+        if (hasCTVAccess) {
+          isCTV = true;
+          
+          // Lấy thông tin người dùng hiện tại
+          const authResult = await authMiddleware(request);
+          if (authResult && authResult.user && authResult.user.email) {
+            currentUserEmail = authResult.user.email;
+          }
+        }
+      }
+      
+      // Nếu không phải admin hoặc CTV, từ chối truy cập
+      if (!isAdmin && !isCTV) {
+        console.log('❌ API - Không có quyền truy cập');
         return NextResponse.json({ 
           success: false,
           message: 'Bạn không có quyền thực hiện hành động này' 
@@ -112,6 +210,36 @@ export async function POST(request) {
     
     // Kết nối đến MongoDB
     await connectDB();
+    
+    // Nếu là CTV, kiểm tra xem người dùng có thuộc quản lý của CTV không
+    if (isCTV && currentUserEmail) {
+      const db = mongoose.connection.db;
+      const user = await db.collection('users').findOne({ 
+        $or: [
+          { uid: userId },
+          { firebaseId: userId }
+        ]
+      });
+      
+      if (!user) {
+        return NextResponse.json({ 
+          success: false,
+          message: 'Không tìm thấy người dùng' 
+        }, { status: 404 });
+      }
+      
+      // Kiểm tra xem người dùng có thuộc quản lý của CTV không
+      const isUserManagedByCTV = 
+        (user.createdBy === currentUserEmail) || 
+        (user.phoneNumber === currentUserEmail);
+      
+      if (!isUserManagedByCTV) {
+        return NextResponse.json({ 
+          success: false,
+          message: 'Bạn không có quyền quản lý người dùng này' 
+        }, { status: 403 });
+      }
+    }
     
     // Kiểm tra khóa học tồn tại
     const course = await Course.findById(courseId).lean().exec();
@@ -170,20 +298,54 @@ export async function POST(request) {
   }
 }
 
-// DELETE: Admin xóa đăng ký khóa học
+// DELETE: Admin hoặc CTV xóa đăng ký khóa học
 export async function DELETE(request) {
   try {
-    // Kiểm tra quyền admin
+    // Kiểm tra quyền admin hoặc CTV
     const cookieStore = await cookies();
     const adminAccess = cookieStore.get('admin_access');
+    const ctvAccess = cookieStore.get('ctv_access');
     
-    // Nếu có cookie admin_access, cho phép truy cập
-    if (!(adminAccess && adminAccess.value === 'true')) {
+    let isAdmin = false;
+    let isCTV = false;
+    let currentUserEmail = '';
+    
+    // Nếu có cookie admin_access, cho phép truy cập admin
+    if (adminAccess && adminAccess.value === 'true') {
+      isAdmin = true;
+    } else {
       // Kiểm tra xác thực người dùng và quyền admin
-      const hasAccess = await checkAuthAndRole(request, 'admin');
+      const hasAdminAccess = await checkAuthAndRole(request, 'admin');
       
-      if (!hasAccess) {
-        console.log('❌ Admin API - Không có quyền admin');
+      if (hasAdminAccess) {
+        isAdmin = true;
+      } else if (ctvAccess && ctvAccess.value === 'true') {
+        // Nếu có cookie ctv_access, cho phép truy cập CTV
+        isCTV = true;
+        
+        // Lấy thông tin người dùng hiện tại
+        const authResult = await authMiddleware(request);
+        if (authResult && authResult.user && authResult.user.email) {
+          currentUserEmail = authResult.user.email;
+        }
+      } else {
+        // Kiểm tra xác thực người dùng và quyền CTV
+        const hasCTVAccess = await checkAuthAndRole(request, 'ctv');
+        
+        if (hasCTVAccess) {
+          isCTV = true;
+          
+          // Lấy thông tin người dùng hiện tại
+          const authResult = await authMiddleware(request);
+          if (authResult && authResult.user && authResult.user.email) {
+            currentUserEmail = authResult.user.email;
+          }
+        }
+      }
+      
+      // Nếu không phải admin hoặc CTV, từ chối truy cập
+      if (!isAdmin && !isCTV) {
+        console.log('❌ API - Không có quyền truy cập');
         return NextResponse.json({ 
           success: false,
           message: 'Bạn không có quyền thực hiện hành động này' 
@@ -206,7 +368,47 @@ export async function DELETE(request) {
     // Kết nối đến MongoDB
     await connectDB();
     
-    // Tìm và xóa đăng ký
+    // Tìm thông tin đăng ký
+    const enrollment = await Enrollment.findById(enrollmentId).lean().exec();
+    
+    if (!enrollment) {
+      return NextResponse.json({ 
+        success: false,
+        message: 'Không tìm thấy đăng ký khóa học' 
+      }, { status: 404 });
+    }
+    
+    // Nếu là CTV, kiểm tra xem người dùng có thuộc quản lý của CTV không
+    if (isCTV && currentUserEmail) {
+      const db = mongoose.connection.db;
+      const user = await db.collection('users').findOne({ 
+        $or: [
+          { uid: enrollment.userId },
+          { firebaseId: enrollment.userId }
+        ]
+      });
+      
+      if (!user) {
+        return NextResponse.json({ 
+          success: false,
+          message: 'Không tìm thấy người dùng' 
+        }, { status: 404 });
+      }
+      
+      // Kiểm tra xem người dùng có thuộc quản lý của CTV không
+      const isUserManagedByCTV = 
+        (user.createdBy === currentUserEmail) || 
+        (user.phoneNumber === currentUserEmail);
+      
+      if (!isUserManagedByCTV) {
+        return NextResponse.json({ 
+          success: false,
+          message: 'Bạn không có quyền quản lý người dùng này' 
+        }, { status: 403 });
+      }
+    }
+    
+    // Xóa đăng ký
     const result = await Enrollment.findByIdAndDelete(enrollmentId);
     
     // Kiểm tra kết quả
