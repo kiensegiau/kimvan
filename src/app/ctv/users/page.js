@@ -111,7 +111,8 @@ export default function UsersPage() {
     
     try {
       // Lấy danh sách người dùng và chỉ lọc những người do CTV hiện tại tạo
-      const response = await fetch(`/api/users?ctvEmail=${encodeURIComponent(currentCtvEmail)}`);
+      console.log(`Đang fetching users với CTV email: ${currentCtvEmail}`);
+      const response = await fetch(`/api/users?ctvEmail=${encodeURIComponent(currentCtvEmail)}&timestamp=${new Date().getTime()}`);
       const data = await response.json();
       
       if (!response.ok) {
@@ -123,10 +124,15 @@ export default function UsersPage() {
       
       // Lọc người dùng theo createdBy - chỉ lấy những người dùng được tạo bởi CTV hiện tại
       const filteredData = data.data ? data.data.filter(user => {
+        if (!user) return false;
+        
         // Tương thích với dữ liệu cũ (nơi email CTV lưu trong phoneNumber) và mới (lưu trong createdBy)
         const matchPhoneNumber = user.phoneNumber === currentCtvEmail;
         const matchCreatedBy = user.createdBy === currentCtvEmail;
-        console.log(`Kiểm tra người dùng ${user.email}: phoneNumber=${user.phoneNumber}, createdBy=${user.createdBy}, match=${matchPhoneNumber || matchCreatedBy}`);
+        
+        console.log(`Kiểm tra người dùng ${user.email || 'không có email'}: phoneNumber=${user.phoneNumber || 'không có'}, createdBy=${user.createdBy || 'không có'}, match=${matchPhoneNumber || matchCreatedBy}`);
+        
+        // Đảm bảo trả về true nếu user được tạo bởi CTV hiện tại
         return matchPhoneNumber || matchCreatedBy;
       }) : [];
       
@@ -346,15 +352,44 @@ export default function UsersPage() {
         throw new Error(data.error || 'Lỗi khi lưu thông tin người dùng');
       }
       
-      // Đóng modal và làm mới danh sách
+      // Debug thông tin người dùng vừa tạo/cập nhật
+      console.log("Thông tin người dùng đã lưu:", data);
+      if (data.user) {
+        console.log("ID người dùng:", data.user.id);
+        console.log("Email người dùng:", data.user.email);
+        console.log("createdBy:", data.user.createdBy);
+      }
+      
+      // Lấy thông tin người dùng mới
+      const newUser = data.user || {};
+      
+      // Đóng modal
       setShowModal(false);
       setCurrentUser(null);
-      fetchUsers();
       
       // Hiển thị thông báo thành công
       toast.success(currentUser.id 
         ? 'Cập nhật người dùng thành công' 
         : 'Tạo người dùng mới thành công');
+      
+      // Nếu là tạo mới người dùng, thêm trực tiếp vào state để hiển thị ngay
+      if (!currentUser.id && newUser && newUser.id) {
+        console.log("Thêm người dùng mới vào danh sách:", newUser);
+        // Đảm bảo người dùng mới có trường createdBy
+        const userWithCreatedBy = {
+          ...newUser,
+          createdBy: newUser.createdBy || currentCtvEmail 
+        };
+        
+        // Thêm vào đầu danh sách
+        setUsers(prevUsers => [userWithCreatedBy, ...prevUsers]);
+      }
+      
+      // Làm mới danh sách sau đó để cập nhật dữ liệu từ server
+      setTimeout(() => {
+        console.log("Đang làm mới danh sách người dùng sau khi lưu...");
+        fetchUsers();
+      }, 1000);
       
     } catch (err) {
       console.error('Lỗi khi lưu thông tin người dùng:', err);
