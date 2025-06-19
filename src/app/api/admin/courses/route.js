@@ -12,21 +12,24 @@ export async function GET(request) {
     
     // Kiểm tra quyền từ cookie
     const cookieStore = cookies();
-    // Đọc cookies trực tiếp từ cookieStore mà không sử dụng .get()
+    // Sử dụng phương thức truy cập cookie an toàn
     let adminAccess = false;
     let ctvAccess = false;
     
-    // Lặp qua tất cả cookie để tìm cookie cần thiết
-    for (const cookie of cookieStore.getAll()) {
-      if (cookie.name === 'admin_access' && cookie.value === 'true') {
-        adminAccess = true;
-      }
-      if (cookie.name === 'ctv_access' && cookie.value === 'true') {
-        ctvAccess = true;
-      }
+    try {
+      // Truy cập cookies một cách an toàn
+      const cookieList = await Promise.all([
+        cookieStore.has('admin_access'),
+        cookieStore.has('ctv_access')
+      ]);
+      
+      adminAccess = cookieList[0];
+      ctvAccess = cookieList[1];
+      
+      console.log(`🔑 Cookie check - adminAccess: ${adminAccess}, ctvAccess: ${ctvAccess}`);
+    } catch (cookieError) {
+      console.error('Error accessing cookies:', cookieError);
     }
-    
-    console.log(`🔑 Cookie check - adminAccess: ${adminAccess}, ctvAccess: ${ctvAccess}`);
     
     // Kiểm tra quyền admin từ header 
     const headersList = headers();
@@ -94,15 +97,15 @@ export async function POST(request) {
     
     // Kiểm tra quyền admin từ cookie
     const cookieStore = cookies();
-    // Đọc cookies trực tiếp từ cookieStore mà không sử dụng .get()
+    // Sử dụng phương thức truy cập cookie an toàn
     let adminAccess = false;
     
-    // Lặp qua tất cả cookie để tìm cookie cần thiết
-    for (const cookie of cookieStore.getAll()) {
-      if (cookie.name === 'admin_access' && cookie.value === 'true') {
-        adminAccess = true;
-        break;
-      }
+    try {
+      // Truy cập cookies một cách an toàn
+      adminAccess = await cookieStore.has('admin_access');
+      console.log(`🔑 Cookie check - adminAccess: ${adminAccess}`);
+    } catch (cookieError) {
+      console.error('Error accessing cookies:', cookieError);
     }
     
     // Kiểm tra quyền admin từ header 

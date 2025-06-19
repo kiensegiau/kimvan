@@ -18,25 +18,31 @@ export async function GET(request) {
     
     // Kiểm tra quyền admin hoặc CTV
     const cookieStore = cookies();
-    // Đọc cookies trực tiếp từ cookieStore mà không sử dụng .get()
+    // Sử dụng phương thức truy cập cookie an toàn
     let adminAccess = false;
     let ctvAccess = false;
-    let ctvEmailCookie = null;
+    let ctvEmailValue = null;
     
-    // Lặp qua tất cả cookie để tìm cookie cần thiết
-    for (const cookie of cookieStore.getAll()) {
-      if (cookie.name === 'admin_access' && cookie.value === 'true') {
-        adminAccess = true;
+    try {
+      // Truy cập cookies một cách an toàn
+      const cookieList = await Promise.all([
+        cookieStore.has('admin_access'),
+        cookieStore.has('ctv_access'),
+        cookieStore.has('ctv_email') ? cookieStore.get('ctv_email') : null
+      ]);
+      
+      adminAccess = cookieList[0];
+      ctvAccess = cookieList[1];
+      const ctvEmailCookie = cookieList[2];
+      
+      if (ctvEmailCookie) {
+        ctvEmailValue = ctvEmailCookie.value;
       }
-      if (cookie.name === 'ctv_access' && cookie.value === 'true') {
-        ctvAccess = true;
-      }
-      if (cookie.name === 'ctv_email') {
-        ctvEmailCookie = cookie;
-      }
+      
+      console.log(`🔑 Cookie check - adminAccess: ${adminAccess}, ctvAccess: ${ctvAccess}`);
+    } catch (cookieError) {
+      console.error('Error accessing cookies:', cookieError);
     }
-    
-    console.log(`🔑 Cookie check - adminAccess: ${adminAccess}, ctvAccess: ${ctvAccess}`);
     
     // Nếu có cookie admin_access hoặc ctv_access, cho phép truy cập
     let hasAccess = adminAccess || ctvAccess;
@@ -48,13 +54,13 @@ export async function GET(request) {
       
       if (!hasAccess) {
         // Nếu có ctvEmail trong query và đã thiết lập cookie ctv_email, cho phép
-        if (ctvEmail && ctvEmailCookie && decodeURIComponent(ctvEmailCookie.value) === ctvEmail) {
+        if (ctvEmail && ctvEmailValue && decodeURIComponent(ctvEmailValue) === ctvEmail) {
           console.log('✅ Access granted through ctv_email cookie match with query param');
           hasAccess = true;
         } else {
           console.log('⚠️ ctv_email cookie check failed', {
             queryCtvEmail: ctvEmail,
-            cookieCtvEmail: ctvEmailCookie ? decodeURIComponent(ctvEmailCookie.value) : null
+            cookieCtvEmail: ctvEmailValue ? decodeURIComponent(ctvEmailValue) : null
           });
         }
       }
@@ -120,25 +126,31 @@ export async function POST(request) {
     
     // Kiểm tra quyền admin hoặc CTV
     const cookieStore = cookies();
-    // Đọc cookies trực tiếp từ cookieStore mà không sử dụng .get()
+    // Sử dụng phương thức truy cập cookie an toàn
     let adminAccess = false;
     let ctvAccess = false;
-    let ctvEmailCookie = null;
+    let ctvEmailValue = null;
     
-    // Lặp qua tất cả cookie để tìm cookie cần thiết
-    for (const cookie of cookieStore.getAll()) {
-      if (cookie.name === 'admin_access' && cookie.value === 'true') {
-        adminAccess = true;
+    try {
+      // Truy cập cookies một cách an toàn
+      const cookieList = await Promise.all([
+        cookieStore.has('admin_access'),
+        cookieStore.has('ctv_access'),
+        cookieStore.has('ctv_email') ? cookieStore.get('ctv_email') : null
+      ]);
+      
+      adminAccess = cookieList[0];
+      ctvAccess = cookieList[1];
+      const ctvEmailCookie = cookieList[2];
+      
+      if (ctvEmailCookie) {
+        ctvEmailValue = ctvEmailCookie.value;
       }
-      if (cookie.name === 'ctv_access' && cookie.value === 'true') {
-        ctvAccess = true;
-      }
-      if (cookie.name === 'ctv_email') {
-        ctvEmailCookie = cookie;
-      }
+      
+      console.log(`🔑 Cookie check - adminAccess: ${adminAccess}, ctvAccess: ${ctvAccess}`);
+    } catch (cookieError) {
+      console.error('Error accessing cookies:', cookieError);
     }
-    
-    console.log(`🔑 Cookie check - adminAccess: ${adminAccess}, ctvAccess: ${ctvAccess}`);
     
     // Nếu có cookie admin_access hoặc ctv_access, cho phép truy cập
     let hasAccess = adminAccess || ctvAccess;
@@ -150,13 +162,13 @@ export async function POST(request) {
       
       if (!hasAccess) {
         // Nếu có ctvEmail trong body và đã thiết lập cookie ctv_email, cho phép
-        if (ctvEmail && ctvEmailCookie && decodeURIComponent(ctvEmailCookie.value) === ctvEmail) {
+        if (ctvEmail && ctvEmailValue && decodeURIComponent(ctvEmailValue) === ctvEmail) {
           console.log('✅ Access granted through ctv_email cookie match with body param');
           hasAccess = true;
         } else {
           console.log('⚠️ ctv_email cookie check failed', {
             bodyCtvEmail: ctvEmail,
-            cookieCtvEmail: ctvEmailCookie ? decodeURIComponent(ctvEmailCookie.value) : null
+            cookieCtvEmail: ctvEmailValue ? decodeURIComponent(ctvEmailValue) : null
           });
         }
       }
@@ -260,25 +272,31 @@ export async function DELETE(request) {
     
     // Kiểm tra quyền admin hoặc CTV
     const cookieStore = cookies();
-    // Đọc cookies trực tiếp từ cookieStore mà không sử dụng .get()
+    // Sử dụng phương thức truy cập cookie an toàn
     let adminAccess = false;
     let ctvAccess = false;
-    let ctvEmailCookie = null;
+    let ctvEmailValue = null;
     
-    // Lặp qua tất cả cookie để tìm cookie cần thiết
-    for (const cookie of cookieStore.getAll()) {
-      if (cookie.name === 'admin_access' && cookie.value === 'true') {
-        adminAccess = true;
+    try {
+      // Truy cập cookies một cách an toàn
+      const cookieList = await Promise.all([
+        cookieStore.has('admin_access'),
+        cookieStore.has('ctv_access'),
+        cookieStore.has('ctv_email') ? cookieStore.get('ctv_email') : null
+      ]);
+      
+      adminAccess = cookieList[0];
+      ctvAccess = cookieList[1];
+      const ctvEmailCookie = cookieList[2];
+      
+      if (ctvEmailCookie) {
+        ctvEmailValue = ctvEmailCookie.value;
       }
-      if (cookie.name === 'ctv_access' && cookie.value === 'true') {
-        ctvAccess = true;
-      }
-      if (cookie.name === 'ctv_email') {
-        ctvEmailCookie = cookie;
-      }
+      
+      console.log(`🔑 Cookie check - adminAccess: ${adminAccess}, ctvAccess: ${ctvAccess}`);
+    } catch (cookieError) {
+      console.error('Error accessing cookies:', cookieError);
     }
-    
-    console.log(`🔑 Cookie check - adminAccess: ${adminAccess}, ctvAccess: ${ctvAccess}`);
     
     // Nếu có cookie admin_access hoặc ctv_access, cho phép truy cập
     let hasAccess = adminAccess || ctvAccess;
@@ -290,13 +308,13 @@ export async function DELETE(request) {
       
       if (!hasAccess) {
         // Nếu có ctvEmail trong query và đã thiết lập cookie ctv_email, cho phép
-        if (ctvEmail && ctvEmailCookie && decodeURIComponent(ctvEmailCookie.value) === ctvEmail) {
+        if (ctvEmail && ctvEmailValue && decodeURIComponent(ctvEmailValue) === ctvEmail) {
           console.log('✅ Access granted through ctv_email cookie match with query param');
           hasAccess = true;
         } else {
           console.log('⚠️ ctv_email cookie check failed', {
             queryCtvEmail: ctvEmail,
-            cookieCtvEmail: ctvEmailCookie ? decodeURIComponent(ctvEmailCookie.value) : null
+            cookieCtvEmail: ctvEmailValue ? decodeURIComponent(ctvEmailValue) : null
           });
         }
       }

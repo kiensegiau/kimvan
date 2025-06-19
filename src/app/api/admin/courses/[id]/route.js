@@ -14,10 +14,25 @@ export async function GET(request, { params }) {
     
     // Kiểm tra cookie admin_access
     const cookieStore = await cookies();
-    const adminAccess = cookieStore.get('admin_access');
+    let hasAdminAccess = false;
+    
+    try {
+      // Kiểm tra cookie admin_access tồn tại
+      const adminAccessExists = await cookieStore.has('admin_access');
+      if (adminAccessExists) {
+        const adminAccessCookie = await cookieStore.get('admin_access');
+        if (adminAccessCookie && adminAccessCookie.value === 'true') {
+          hasAdminAccess = true;
+        }
+      }
+      
+      console.log('🔑 Cookie check - adminAccess:', hasAdminAccess);
+    } catch (cookieError) {
+      console.error('Error accessing cookies:', cookieError);
+    }
     
     // Nếu có cookie admin_access, cho phép truy cập
-    if (adminAccess && adminAccess.value === 'true') {
+    if (hasAdminAccess) {
       console.log('🔒 Admin API - Đã có cookie admin_access, cho phép truy cập');
       
       // Đảm bảo kết nối đến MongoDB trước khi truy vấn
@@ -98,10 +113,25 @@ export async function PUT(request, { params }) {
     
     // Kiểm tra cookie admin_access
     const cookieStore = await cookies();
-    const adminAccess = cookieStore.get('admin_access');
+    let hasAdminAccess = false;
+    
+    try {
+      // Kiểm tra cookie admin_access tồn tại
+      const adminAccessExists = await cookieStore.has('admin_access');
+      if (adminAccessExists) {
+        const adminAccessCookie = await cookieStore.get('admin_access');
+        if (adminAccessCookie && adminAccessCookie.value === 'true') {
+          hasAdminAccess = true;
+        }
+      }
+      
+      console.log('🔑 Cookie check - adminAccess:', hasAdminAccess);
+    } catch (cookieError) {
+      console.error('Error accessing cookies:', cookieError);
+    }
     
     // Nếu có cookie admin_access, cho phép truy cập
-    if (adminAccess && adminAccess.value === 'true') {
+    if (hasAdminAccess) {
       console.log('🔒 Admin API - Đã có cookie admin_access, cho phép truy cập');
       
       const body = await request.json();
@@ -206,10 +236,25 @@ export async function DELETE(request, { params }) {
     
     // Kiểm tra cookie admin_access
     const cookieStore = await cookies();
-    const adminAccess = cookieStore.get('admin_access');
+    let hasAdminAccess = false;
+    
+    try {
+      // Kiểm tra cookie admin_access tồn tại
+      const adminAccessExists = await cookieStore.has('admin_access');
+      if (adminAccessExists) {
+        const adminAccessCookie = await cookieStore.get('admin_access');
+        if (adminAccessCookie && adminAccessCookie.value === 'true') {
+          hasAdminAccess = true;
+        }
+      }
+      
+      console.log('🔑 Cookie check - adminAccess:', hasAdminAccess);
+    } catch (cookieError) {
+      console.error('Error accessing cookies:', cookieError);
+    }
     
     // Nếu có cookie admin_access, cho phép truy cập
-    if (adminAccess && adminAccess.value === 'true') {
+    if (hasAdminAccess) {
       console.log('🔒 Admin API - Đã có cookie admin_access, cho phép truy cập');
       
       // Đảm bảo kết nối đến MongoDB trước khi truy vấn

@@ -16,9 +16,21 @@ export async function POST(request) {
     const { token: tokenFromBody, rememberMe } = body;
     
     // Lấy token hiện tại từ cookie hoặc request body
-    const cookieStore = cookies();
-    const authCookie = cookieStore.get(cookieConfig.authCookieName);
-    const tokenFromCookie = authCookie?.value;
+    const cookieStore = await cookies();
+    
+    // Kiểm tra cookie auth một cách an toàn
+    let tokenFromCookie = null;
+    try {
+      const authCookieExists = await cookieStore.has(cookieConfig.authCookieName);
+      if (authCookieExists) {
+        const authCookie = await cookieStore.get(cookieConfig.authCookieName);
+        if (authCookie) {
+          tokenFromCookie = authCookie.value;
+        }
+      }
+    } catch (cookieError) {
+      console.error('Error accessing auth cookie:', cookieError);
+    }
     
     // Ưu tiên sử dụng token từ body nếu có
     const currentToken = tokenFromBody || tokenFromCookie;
