@@ -310,8 +310,56 @@ export async function middleware(request) {
     if (pathname.startsWith('/api/admin') || pathname.startsWith('/api/courses/raw')) {
       console.log('🔒 Middleware - Kiểm tra quyền truy cập API admin cho:', pathname);
       
-      // Kiểm tra user có quyền admin không - sử dụng userRole
-      if (!userRole || userRole !== 'admin') {
+      // Kiểm tra các API đặc biệt mà CTV được phép truy cập
+      if (pathname.startsWith('/api/admin/enrollments') || pathname.startsWith('/api/admin/courses')) {
+        console.log('🔒 Middleware - Đây là API admin mà CTV cũng có thể truy cập');
+        
+        // Kiểm tra user có quyền admin hoặc ctv không
+        if (userRole === 'admin' || userRole === 'ctv') {
+          console.log(`✅ Middleware - Có quyền ${userRole}, cho phép truy cập API ${pathname}`);
+          
+          // Thiết lập cookie phù hợp dựa trên vai trò
+          if (userRole === 'admin') {
+            response.cookies.set('admin_access', 'true', {
+              httpOnly: true,
+              secure: cookieConfig.secure,
+              sameSite: cookieConfig.sameSite,
+              maxAge: 60 * 60 * 2, // 2 giờ
+              path: '/',
+            });
+          } else if (userRole === 'ctv') {
+            // Đặt cookie ctv_access và thêm email CTV vào cookie để API có thể sử dụng
+            response.cookies.set('ctv_access', 'true', {
+              httpOnly: true,
+              secure: cookieConfig.secure,
+              sameSite: cookieConfig.sameSite,
+              maxAge: 60 * 60 * 2, // 2 giờ
+              path: '/',
+            });
+            
+            // Thêm email của CTV vào cookie để API có thể lấy
+            response.cookies.set('ctv_email', user.email, {
+              httpOnly: true,
+              secure: cookieConfig.secure,
+              sameSite: cookieConfig.sameSite,
+              maxAge: 60 * 60 * 2, // 2 giờ
+              path: '/',
+            });
+          }
+          
+          return addSecurityHeaders(response);
+        } else {
+          console.log(`⚠️ Middleware - Không phải admin hoặc ctv, từ chối truy cập API ${pathname}`);
+          return NextResponse.json(
+            { error: 'Không có quyền truy cập API này' },
+            { status: 403 }
+          );
+        }
+      }
+      
+      // Các API admin khác (không phải /api/admin/enrollments hoặc /api/admin/courses)
+      // chỉ cho phép admin truy cập
+      if (userRole !== 'admin') {
         console.log('⚠️ Middleware - Không phải là admin, từ chối truy cập API');
         return NextResponse.json(
           { error: 'Không có quyền truy cập API admin' },
