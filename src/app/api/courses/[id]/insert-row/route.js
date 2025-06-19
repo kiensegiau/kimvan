@@ -6,9 +6,9 @@ export async function POST(request, { params }) {
   try {
     await connectDB();
     const { id } = params;
-    const { sheetIndex, rowData } = await request.json();
+    const { sheetIndex, rowIndex, rowData } = await request.json();
 
-    console.log('Thêm hàng mới:', { id, sheetIndex });
+    console.log('Chèn hàng mới:', { id, sheetIndex, rowIndex });
 
     // Tìm khóa học theo ID
     const course = await Course.findById(id);
@@ -21,13 +21,22 @@ export async function POST(request, { params }) {
       return NextResponse.json({ success: false, message: 'Không tìm thấy dữ liệu sheet' }, { status: 400 });
     }
 
-    // Tạo dữ liệu hàng mới theo định dạng từ frontend
+    // Kiểm tra rowIndex có hợp lệ
+    if (rowIndex < 0 || rowIndex > course.originalData.sheets[sheetIndex].data[0].rowData.length) {
+      return NextResponse.json({ 
+        success: false, 
+        message: 'Vị trí chèn hàng không hợp lệ',
+        currentLength: course.originalData.sheets[sheetIndex].data[0].rowData.length
+      }, { status: 400 });
+    }
+
+    // Tạo dữ liệu hàng mới
     const newRow = {
       values: rowData.values
     };
 
-    // Thêm hàng mới vào cuối danh sách
-    course.originalData.sheets[sheetIndex].data[0].rowData.push(newRow);
+    // Chèn hàng mới vào vị trí chỉ định
+    course.originalData.sheets[sheetIndex].data[0].rowData.splice(rowIndex, 0, newRow);
 
     // Đánh dấu là đã sửa đổi để Mongoose cập nhật đúng
     course.markModified('originalData');
@@ -37,11 +46,11 @@ export async function POST(request, { params }) {
 
     return NextResponse.json({ 
       success: true, 
-      message: 'Thêm hàng mới thành công',
+      message: 'Chèn hàng mới thành công',
       newLength: course.originalData.sheets[sheetIndex].data[0].rowData.length
     });
   } catch (error) {
-    console.error('Lỗi khi thêm hàng mới:', error);
+    console.error('Lỗi khi chèn hàng mới:', error);
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
 } 
