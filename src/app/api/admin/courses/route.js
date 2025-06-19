@@ -12,10 +12,21 @@ export async function GET(request) {
     
     // Kiểm tra quyền từ cookie
     const cookieStore = cookies();
-    const adminAccess = cookieStore.get('admin_access');
-    const ctvAccess = cookieStore.get('ctv_access');
+    // Đọc cookies trực tiếp từ cookieStore mà không sử dụng .get()
+    let adminAccess = false;
+    let ctvAccess = false;
     
-    console.log(`🔑 Cookie check - adminAccess: ${adminAccess?.value}, ctvAccess: ${ctvAccess?.value}`);
+    // Lặp qua tất cả cookie để tìm cookie cần thiết
+    for (const cookie of cookieStore.getAll()) {
+      if (cookie.name === 'admin_access' && cookie.value === 'true') {
+        adminAccess = true;
+      }
+      if (cookie.name === 'ctv_access' && cookie.value === 'true') {
+        ctvAccess = true;
+      }
+    }
+    
+    console.log(`🔑 Cookie check - adminAccess: ${adminAccess}, ctvAccess: ${ctvAccess}`);
     
     // Kiểm tra quyền admin từ header 
     const headersList = headers();
@@ -24,8 +35,8 @@ export async function GET(request) {
     console.log(`🔑 Header check - userRole: ${userRole}`);
     
     // Cho phép truy cập nếu là admin/ctv thông qua cookie hoặc header
-    const hasAdminAccess = (adminAccess && adminAccess.value === 'true') || userRole === 'admin';
-    const hasCTVAccess = (ctvAccess && ctvAccess.value === 'true');
+    const hasAdminAccess = adminAccess || userRole === 'admin';
+    const hasCTVAccess = ctvAccess;
     
     if (hasAdminAccess || hasCTVAccess) {
       if (hasAdminAccess) {
@@ -83,14 +94,23 @@ export async function POST(request) {
     
     // Kiểm tra quyền admin từ cookie
     const cookieStore = cookies();
-    const adminAccess = cookieStore.get('admin_access');
+    // Đọc cookies trực tiếp từ cookieStore mà không sử dụng .get()
+    let adminAccess = false;
+    
+    // Lặp qua tất cả cookie để tìm cookie cần thiết
+    for (const cookie of cookieStore.getAll()) {
+      if (cookie.name === 'admin_access' && cookie.value === 'true') {
+        adminAccess = true;
+        break;
+      }
+    }
     
     // Kiểm tra quyền admin từ header 
     const headersList = headers();
     const userRole = headersList.get('x-user-role');
     
     // Cho phép truy cập nếu là admin
-    if ((adminAccess && adminAccess.value === 'true') || userRole === 'admin') {
+    if (adminAccess || userRole === 'admin') {
       console.log('🔒 Admin API - Người dùng có quyền admin, cho phép truy cập');
       
       // Kết nối đến MongoDB
