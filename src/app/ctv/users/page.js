@@ -110,9 +110,9 @@ export default function UsersPage() {
     setError(null);
     
     try {
-      // Lấy danh sách người dùng và chỉ lọc những người do CTV hiện tại tạo
-      console.log(`Đang fetching users với CTV email: ${currentCtvEmail}`);
-      const response = await fetch(`/api/users?ctvEmail=${encodeURIComponent(currentCtvEmail)}&timestamp=${new Date().getTime()}`);
+      // Lấy danh sách tất cả người dùng không lọc theo CTV
+      console.log(`Đang fetching tất cả users`);
+      const response = await fetch(`/api/users?timestamp=${new Date().getTime()}`);
       const data = await response.json();
       
       if (!response.ok) {
@@ -122,22 +122,8 @@ export default function UsersPage() {
       console.log("Danh sách người dùng từ API:", data.data);
       console.log("Email CTV hiện tại:", currentCtvEmail);
       
-      // Lọc người dùng theo createdBy - chỉ lấy những người dùng được tạo bởi CTV hiện tại
-      const filteredData = data.data ? data.data.filter(user => {
-        if (!user) return false;
-        
-        // Tương thích với dữ liệu cũ (nơi email CTV lưu trong phoneNumber) và mới (lưu trong createdBy)
-        const matchPhoneNumber = user.phoneNumber === currentCtvEmail;
-        const matchCreatedBy = user.createdBy === currentCtvEmail;
-        
-        console.log(`Kiểm tra người dùng ${user.email || 'không có email'}: phoneNumber=${user.phoneNumber || 'không có'}, createdBy=${user.createdBy || 'không có'}, match=${matchPhoneNumber || matchCreatedBy}`);
-        
-        // Đảm bảo trả về true nếu user được tạo bởi CTV hiện tại
-        return matchPhoneNumber || matchCreatedBy;
-      }) : [];
-      
-      console.log("Số lượng người dùng sau khi lọc:", filteredData.length);
-      setUsers(filteredData || []);
+      // Không lọc người dùng theo createdBy - hiển thị tất cả người dùng
+      setUsers(data.data || []);
       setHasMongoConnection(true);
       
       // Thông báo thành công nếu là làm mới
@@ -776,6 +762,16 @@ export default function UsersPage() {
   const handleCheckExpiredAccounts = () => {
     checkExpiredTrialAccounts(true);
   };
+  
+  // Thông báo cho người dùng biết đã thay đổi quyền xem
+  useEffect(() => {
+    if (isAuthorized && !authChecking) {
+      toast.success('Bạn đã được cấp quyền xem tất cả người dùng trong hệ thống', {
+        duration: 5000,
+        icon: '🔓',
+      });
+    }
+  }, [isAuthorized, authChecking]);
 
   // Định dạng thời gian còn lại của tài khoản dùng thử
   const formatRemainingTime = (trialEndsAt) => {
@@ -864,7 +860,7 @@ export default function UsersPage() {
       `}</style>
       
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-2xl font-semibold text-gray-900">Quản lý người dùng của bạn</h1>
+        <h1 className="text-2xl font-semibold text-gray-900">Quản lý tất cả người dùng</h1>
         <div className="flex flex-wrap gap-2">
           <button
             onClick={handleRefresh}
@@ -952,7 +948,7 @@ export default function UsersPage() {
           {/* Hiển thị số lượng người dùng */}
           <div className="flex justify-between items-center mb-4">
             <p className="text-sm text-gray-600">
-              Hiển thị {filteredUsers.length} trong tổng số {users.length} người dùng do bạn quản lý
+              Hiển thị {filteredUsers.length} trong tổng số {users.length} người dùng trong hệ thống
             </p>
           </div>
 
