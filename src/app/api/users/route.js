@@ -133,7 +133,6 @@ export async function GET(request) {
       phoneNumber: u.phoneNumber || 'N/A',
       createdBy: u.createdBy || 'N/A'
     }));
-    console.log('🔍 Users phoneNumber/createdBy info:', phoneInfo);
     
     return NextResponse.json({ 
       success: true,
