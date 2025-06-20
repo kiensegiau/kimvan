@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ArrowPathIcon } from '@heroicons/react/24/outline';
+import YouTubeModal from './YouTubeModal';
+import PDFModal from './PDFModal';
 
 export default function ApiSheetData({ 
   apiSheetData, 
@@ -10,6 +12,10 @@ export default function ApiSheetData({
   fetchApiSheetData,
   fetchSheetDetail
 }) {
+  const [selectedVideo, setSelectedVideo] = useState(null);
+  const [selectedPDF, setSelectedPDF] = useState(null);
+  const [pdfTitle, setPdfTitle] = useState('');
+
   // Kiểm tra và tải chi tiết sheet nếu cần
   useEffect(() => {
     if (apiSheetData && apiSheetData.sheets && apiSheetData.sheets.length > 0) {
@@ -103,6 +109,39 @@ export default function ApiSheetData({
     }
     
     return content;
+  };
+
+  // Hàm lấy video ID từ URL YouTube
+  const getYoutubeVideoId = (url) => {
+    if (!url) return null;
+    
+    // Xử lý các định dạng URL YouTube khác nhau
+    let videoId = null;
+    
+    // Format: https://www.youtube.com/watch?v=VIDEO_ID
+    const watchMatch = url.match(/(?:\?v=|&v=|youtu\.be\/|\/v\/|\/embed\/)([^&\n?#]+)/);
+    if (watchMatch) {
+      videoId = watchMatch[1];
+    }
+    
+    return videoId;
+  };
+
+  const handleYoutubeClick = (e, url) => {
+    e.preventDefault();
+    const videoId = getYoutubeVideoId(url);
+    if (videoId) {
+      setSelectedVideo(videoId);
+    } else {
+      // Nếu không lấy được video ID, mở link trong tab mới
+      window.open(url, '_blank');
+    }
+  };
+
+  const handlePdfClick = (e, url, title = '') => {
+    e.preventDefault();
+    setSelectedPDF(url);
+    setPdfTitle(title);
   };
 
   // Không cần kiểm tra lỗi và trạng thái loading vì đã được xử lý ở component cha
@@ -207,6 +246,21 @@ export default function ApiSheetData({
 
   return (
     <div className="bg-white shadow rounded-lg overflow-hidden">
+      {/* YouTube Modal */}
+      <YouTubeModal
+        isOpen={!!selectedVideo}
+        videoId={selectedVideo}
+        onClose={() => setSelectedVideo(null)}
+      />
+      
+      {/* PDF Modal */}
+      <PDFModal
+        isOpen={!!selectedPDF}
+        fileUrl={selectedPDF}
+        title={pdfTitle}
+        onClose={() => setSelectedPDF(null)}
+      />
+      
       <div className="px-4 sm:px-6 py-4 border-b border-gray-200 bg-gray-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <h3 className="text-lg font-medium text-gray-900">Dữ liệu khóa học</h3>
         <div className="flex flex-wrap gap-2">
@@ -324,6 +378,13 @@ export default function ApiSheetData({
                                   target="_blank" 
                                   rel="noopener noreferrer" 
                                   className="text-blue-600 hover:underline"
+                                  onClick={(e) => {
+                                    if (isYoutubeLink(hyperlink)) {
+                                      handleYoutubeClick(e, hyperlink);
+                                    } else if (isPdfLink(hyperlink)) {
+                                      handlePdfClick(e, hyperlink, cellContent);
+                                    }
+                                  }}
                                 >
                                   {icon}{cellContent}
                                 </a>
