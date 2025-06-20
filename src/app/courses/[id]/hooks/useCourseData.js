@@ -42,11 +42,11 @@ export function useCourseData(id) {
           fetchSheetData(sheet._id);
         }
       } else {
-        console.error('Lỗi khi lấy danh sách sheets:', data.error);
+        setError(`Không thể tải danh sách sheets: ${data.error || 'Lỗi không xác định'}`);
         setLinkedSheets([]);
       }
     } catch (error) {
-      console.error('Lỗi khi lấy danh sách sheets liên kết:', error);
+      setError(`Lỗi khi tải danh sách sheets: ${error.message}`);
       setLinkedSheets([]);
     } finally {
       setLoadingSheets(false);
@@ -119,10 +119,10 @@ export function useCourseData(id) {
         
         setSheetData(prev => ({ ...prev, [sheetId]: processedData }));
       } else {
-        console.error(`Lỗi khi lấy dữ liệu sheet ${sheetId}:`, data.error);
+        setError(`Không thể tải dữ liệu sheet: ${data.error || 'Lỗi không xác định'}`);
       }
     } catch (error) {
-      console.error(`Lỗi khi lấy dữ liệu sheet ${sheetId}:`, error);
+      setError(`Lỗi khi tải dữ liệu sheet: ${error.message}`);
     } finally {
       setLoadingSheetData(prev => ({ ...prev, [sheetId]: false }));
     }
@@ -133,6 +133,8 @@ export function useCourseData(id) {
     if (!id) return;
     
     setLoading(true);
+    setError(null);
+    
     try {
       const response = await fetch(`/api/courses/raw/${id}?type=_id`);
       if (!response.ok) {
@@ -208,17 +210,18 @@ export function useCourseData(id) {
       
       // Tải danh sách sheets liên kết
       fetchLinkedSheets();
-      
-      setLoading(false);
     } catch (error) {
-      console.error("Lỗi khi lấy thông tin khóa học:", error);
-      setError(`Không thể lấy thông tin khóa học: ${error.message}`);
+      setError(`Không thể tải thông tin khóa học: ${error.message}`);
+    } finally {
       setLoading(false);
     }
   };
 
   // Hàm làm mới dữ liệu khóa học
   const refreshCourseData = async () => {
+    setLoading(true);
+    setError(null);
+    
     try {
       const response = await fetch(`/api/courses/raw/${id}?type=_id`);
       if (!response.ok) {
@@ -235,7 +238,9 @@ export function useCourseData(id) {
       // Làm mới danh sách sheets liên kết
       fetchLinkedSheets();
     } catch (error) {
-      console.error("Lỗi khi làm mới dữ liệu khóa học:", error);
+      setError(`Không thể làm mới dữ liệu khóa học: ${error.message}`);
+    } finally {
+      setLoading(false);
     }
   };
 

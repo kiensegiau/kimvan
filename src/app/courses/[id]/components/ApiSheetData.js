@@ -115,38 +115,20 @@ export default function ApiSheetData({
     return content;
   };
 
-  if (apiSheetError) {
-    return (
-      <div className="mt-6 bg-white rounded-lg border border-red-200 overflow-hidden w-full p-4">
-        <div className="bg-red-50 p-4 rounded text-red-700">
-          <p className="font-medium">Lỗi khi tải dữ liệu sheet</p>
-          <p>{apiSheetError}</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (loadingApiSheet) {
-    return (
-      <div className="mt-6 bg-white rounded-lg border border-gray-200 overflow-hidden w-full p-8">
-        <div className="flex justify-center items-center">
-          <ArrowPathIcon className="h-8 w-8 animate-spin text-blue-500" />
-          <span className="ml-2 text-gray-600">Đang tải dữ liệu sheets...</span>
-        </div>
-      </div>
-    );
-  }
-
+  // Không cần kiểm tra lỗi và trạng thái loading vì đã được xử lý ở component cha
   if (!apiSheetData || !apiSheetData.sheets || apiSheetData.sheets.length === 0) {
     return (
-      <div className="mt-6 bg-white rounded-lg border border-gray-200 overflow-hidden w-full p-8">
+      <div className="bg-white shadow rounded-lg overflow-hidden">
+        <div className="px-4 py-5 border-b border-gray-200 bg-gray-50">
+          <h3 className="text-lg font-medium text-gray-900">Dữ liệu khóa học</h3>
+        </div>
         <div className="text-center p-8">
           <div className="inline-block p-4 rounded-full bg-gray-100 mb-4">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
             </svg>
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Không có sheets liên kết</h3>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Không có dữ liệu khóa học</h3>
           <p className="text-gray-600 max-w-md mx-auto mb-4">
             Khóa học này chưa có sheets nào được liên kết.
           </p>
@@ -168,17 +150,25 @@ export default function ApiSheetData({
   // Kiểm tra xem currentSheet có tồn tại không
   if (!currentSheet) {
     return (
-      <div className="mt-6 bg-white rounded-lg border border-red-200 overflow-hidden w-full p-4">
-        <div className="bg-red-50 p-4 rounded text-red-700">
-          <p className="font-medium">Lỗi hiển thị sheet</p>
-          <p>Không tìm thấy sheet đang chọn (index: {activeApiSheet})</p>
-          <button
-            onClick={fetchApiSheetData}
-            className="mt-3 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700"
-          >
-            <ArrowPathIcon className="h-4 w-4 mr-2" />
-            Làm mới dữ liệu
-          </button>
+      <div className="bg-white shadow rounded-lg overflow-hidden">
+        <div className="px-4 py-5 border-b border-gray-200 bg-gray-50">
+          <h3 className="text-lg font-medium text-gray-900">Dữ liệu khóa học</h3>
+        </div>
+        <div className="p-6 text-center">
+          <div className="bg-yellow-50 p-4 rounded-lg inline-block">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-yellow-400 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <p className="text-yellow-800 mb-2 font-medium">Không tìm thấy dữ liệu</p>
+            <p className="text-yellow-700 mb-4">Không tìm thấy sheet đang chọn (index: {activeApiSheet})</p>
+            <button
+              onClick={fetchApiSheetData}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-yellow-600 hover:bg-yellow-700"
+            >
+              <ArrowPathIcon className="h-4 w-4 mr-2" />
+              Làm mới dữ liệu
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -189,7 +179,7 @@ export default function ApiSheetData({
   // Kiểm tra chi tiết sheet
   if (!sheetDetail) {
     return (
-      <div className="mt-6 bg-white rounded-lg border border-gray-200 overflow-hidden w-full">
+      <div className="bg-white shadow rounded-lg overflow-hidden">
         <div className="px-4 sm:px-6 py-4 border-b border-gray-200 bg-gray-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <h3 className="text-lg font-medium text-gray-900">Dữ liệu khóa học</h3>
           <div className="flex flex-wrap gap-2">
@@ -226,7 +216,7 @@ export default function ApiSheetData({
   }
 
   return (
-    <div className="mt-6 bg-white rounded-lg border border-gray-200 overflow-hidden w-full">
+    <div className="bg-white shadow rounded-lg overflow-hidden">
       <div className="px-4 sm:px-6 py-4 border-b border-gray-200 bg-gray-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <h3 className="text-lg font-medium text-gray-900">Dữ liệu khóa học</h3>
         <div className="flex flex-wrap gap-2">

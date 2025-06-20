@@ -1,6 +1,5 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { use } from 'react';
 
@@ -35,7 +34,7 @@ export default function CourseDetailPage({ params }) {
     fetchSheetDetail
   } = useApiSheetData(id);
 
-  // Thêm hàm refresh để tải lại dữ liệu nếu cần
+  // Hàm refresh để tải lại dữ liệu
   const handleRefreshData = () => {
     fetchApiSheetData();
   };
@@ -91,34 +90,33 @@ export default function CourseDetailPage({ params }) {
   return (
     <div className={`min-h-screen bg-gray-100 p-4 sm:p-6 transition-opacity duration-500 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}>
       <div className="max-w-6xl mx-auto">
-        <div className="mb-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <h1 className="text-2xl font-bold text-gray-900">{course?.title || 'Chi tiết khóa học'}</h1>
-            <div className="flex gap-2">
-              <button
-                onClick={handleRefreshData}
-                className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-              >
-                <svg className="h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                Làm mới dữ liệu
-              </button>
-              <button
-                onClick={() => router.back()}
-                className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
-              >
-                <svg className="-ml-0.5 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
-                </svg>
-                Quay lại
-              </button>
-            </div>
+        {/* Header và nút điều hướng */}
+        <div className="bg-white shadow-sm rounded-lg p-4 mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <h1 className="text-2xl font-bold text-gray-900">{course?.title || 'Chi tiết khóa học'}</h1>
+          <div className="flex gap-2">
+            <button
+              onClick={handleRefreshData}
+              className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+            >
+              <svg className="h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Làm mới dữ liệu
+            </button>
+            <button
+              onClick={() => router.back()}
+              className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
+            >
+              <svg className="-ml-0.5 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+              </svg>
+              Quay lại
+            </button>
           </div>
         </div>
 
         {/* Thông tin khóa học */}
-        <div className="bg-white shadow overflow-hidden sm:rounded-lg mb-6">
+        <div className="bg-white shadow rounded-lg mb-6 overflow-hidden">
           <div className="px-4 py-5 sm:px-6 bg-gradient-to-r from-indigo-600 to-purple-600">
             <h3 className="text-lg leading-6 font-medium text-white">
               Thông tin khóa học
@@ -126,7 +124,7 @@ export default function CourseDetailPage({ params }) {
           </div>
           <div className="border-t border-gray-200">
             <dl>
-              <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+              <div className="bg-gray-50 px-4 py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt className="text-sm font-medium text-gray-500">
                   Tên khóa học
                 </dt>
@@ -134,7 +132,7 @@ export default function CourseDetailPage({ params }) {
                   {course?.title || 'N/A'}
                 </dd>
               </div>
-              <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+              <div className="bg-white px-4 py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt className="text-sm font-medium text-gray-500">
                   Mô tả
                 </dt>
@@ -143,7 +141,7 @@ export default function CourseDetailPage({ params }) {
                 </dd>
               </div>
               {course?.originalId && (
-                <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <div className="bg-gray-50 px-4 py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                   <dt className="text-sm font-medium text-gray-500">
                     ID gốc
                   </dt>
@@ -153,7 +151,7 @@ export default function CourseDetailPage({ params }) {
                 </div>
               )}
               {course?.kimvanId && (
-                <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <div className="bg-white px-4 py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                   <dt className="text-sm font-medium text-gray-500">
                     KimVan ID
                   </dt>
@@ -166,33 +164,31 @@ export default function CourseDetailPage({ params }) {
           </div>
         </div>
 
-        {/* Hiển thị trạng thái loading nếu đang tải */}
-        {loadingApiSheet && (
+        {/* Dữ liệu sheets - Chỉ hiển thị 1 trong 3 trạng thái: loading, error hoặc data */}
+        {loadingApiSheet ? (
           <div className="bg-white shadow rounded-lg p-6 mb-6">
             <div className="flex justify-center items-center py-8">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-600 mb-2 mr-3"></div>
               <p className="text-gray-600">Đang tải dữ liệu sheet...</p>
             </div>
           </div>
-        )}
-
-        {/* Hiển thị lỗi nếu có */}
-        {apiSheetError && (
+        ) : apiSheetError ? (
           <div className="bg-white shadow rounded-lg p-6 mb-6">
             <div className="bg-red-50 p-4 rounded-md">
-              <p className="text-red-700">{apiSheetError}</p>
+              <p className="text-red-700 font-medium mb-2">Lỗi khi tải dữ liệu</p>
+              <p className="text-red-600 mb-4">{apiSheetError}</p>
               <button 
                 onClick={handleRefreshData}
-                className="mt-2 inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-700"
+                className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-700"
               >
+                <svg className="h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
                 Thử lại
               </button>
             </div>
           </div>
-        )}
-
-        {/* Dữ liệu sheets */}
-        {!loadingApiSheet && !apiSheetError && (
+        ) : (
           <ApiSheetData
             apiSheetData={apiSheetData}
             loadingApiSheet={loadingApiSheet}
@@ -202,19 +198,6 @@ export default function CourseDetailPage({ params }) {
             fetchApiSheetData={fetchApiSheetData}
             fetchSheetDetail={fetchSheetDetail}
           />
-        )}
-
-        {/* Debug info */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="mt-8 bg-gray-800 text-white p-4 rounded-md">
-            <h3 className="text-lg font-medium mb-2">Debug Info</h3>
-            <pre className="text-xs overflow-auto">
-              apiSheetData: {apiSheetData ? `Có dữ liệu (${apiSheetData.sheets?.length || 0} sheets)` : 'Không có dữ liệu'}
-              {apiSheetData?.sheets?.map((sheet, index) => (
-                `\n- Sheet ${index}: ${sheet.name} (${sheet._id}) ${sheet.detail ? '✓ có chi tiết' : '✗ không có chi tiết'}`
-              ))}
-            </pre>
-          </div>
         )}
       </div>
     </div>

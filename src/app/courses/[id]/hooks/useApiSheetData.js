@@ -32,11 +32,9 @@ export function useApiSheetData(courseId) {
         
         setApiSheetData(result);
       } else {
-        console.error("API trả về lỗi:", result.message);
         setApiSheetError(result.message || 'Không thể lấy dữ liệu sheet từ API');
       }
     } catch (error) {
-      console.error('Lỗi khi lấy dữ liệu sheet từ API:', error);
       setApiSheetError(error.message || 'Đã xảy ra lỗi khi lấy dữ liệu sheet');
     } finally {
       setLoadingApiSheet(false);
@@ -46,16 +44,17 @@ export function useApiSheetData(courseId) {
   // Hàm lấy chi tiết của một sheet
   const fetchSheetDetail = async (sheetId) => {
     if (!sheetId) {
-      console.error("fetchSheetDetail: Không có sheetId");
+      setApiSheetError('Không thể tải chi tiết: ID sheet không hợp lệ');
       return null;
     }
+    
+    setLoadingApiSheet(true);
     
     try {
       // Sử dụng tham số fetchData=true để lấy đầy đủ dữ liệu bao gồm cả HTML
       const response = await fetch(`/api/sheets/${sheetId}?fetchData=true`);
       
       if (!response.ok) {
-        console.error(`Lỗi HTTP khi lấy chi tiết sheet: ${response.status}`);
         throw new Error(`Lỗi ${response.status}: ${response.statusText}`);
       }
       
@@ -76,14 +75,17 @@ export function useApiSheetData(courseId) {
           return { ...prevData, sheets: updatedSheets };
         });
         
+        setApiSheetError(null);
         return result.sheet;
       } else {
-        console.error(`Không thể lấy chi tiết sheet ${sheetId}:`, result.message);
+        setApiSheetError(result.message || `Không thể lấy chi tiết sheet`);
         return null;
       }
     } catch (error) {
-      console.error(`Lỗi khi lấy chi tiết sheet ${sheetId}:`, error);
+      setApiSheetError(`Lỗi khi tải chi tiết sheet: ${error.message}`);
       return null;
+    } finally {
+      setLoadingApiSheet(false);
     }
   };
   
@@ -100,7 +102,7 @@ export function useApiSheetData(courseId) {
         await fetchSheetDetail(sheet._id);
       }
     } else {
-      console.warn("Không thể chuyển sheet: Không tìm thấy dữ liệu sheet hoặc index không hợp lệ");
+      setApiSheetError("Không thể chuyển sheet: Không tìm thấy dữ liệu sheet hoặc index không hợp lệ");
     }
   };
   
