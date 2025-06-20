@@ -92,7 +92,7 @@ export default function CourseDetailPage({ params }) {
       <div className="mx-auto">
         {/* Header và nút điều hướng */}
         <div className="bg-white shadow-sm rounded-lg p-4 mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <h1 className="text-2xl font-bold text-gray-900">{course?.title || 'Chi tiết khóa học'}</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{course?.name || 'Chi tiết khóa học'}</h1>
           <div className="flex gap-2">
             <button
               onClick={handleRefreshData}
@@ -129,7 +129,7 @@ export default function CourseDetailPage({ params }) {
                   Tên khóa học
                 </dt>
                 <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                  {course?.title || 'N/A'}
+                  {course?.name || 'N/A'}
                 </dd>
               </div>
               <div className="bg-white px-4 py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -147,16 +147,6 @@ export default function CourseDetailPage({ params }) {
                   </dt>
                   <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
                     {course.originalId}
-                  </dd>
-                </div>
-              )}
-              {course?.kimvanId && (
-                <div className="bg-white px-4 py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                  <dt className="text-sm font-medium text-gray-500">
-                    KimVan ID
-                  </dt>
-                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                    {course.kimvanId}
                   </dd>
                 </div>
               )}
