@@ -149,6 +149,25 @@ function filterIntroductoryRows(data) {
   return data;
 }
 
+// Hàm loại bỏ cột STT
+function removeFirstColumn(data) {
+  if (!data || !data.values || data.values.length === 0) return data;
+  
+  // Loại bỏ cột đầu tiên từ mỗi hàng trong values
+  data.values = data.values.map(row => row.slice(1));
+  
+  // Loại bỏ cột đầu tiên từ mỗi hàng trong htmlData
+  if (data.htmlData && data.htmlData.length > 0) {
+    data.htmlData.forEach(row => {
+      if (row && row.values) {
+        row.values = row.values.slice(1);
+      }
+    });
+  }
+  
+  return data;
+}
+
 // GET /api/sheets/[id] - Lấy chi tiết sheet
 export async function GET(request, { params }) {
   try {
@@ -447,12 +466,15 @@ async function fetchSheetData(sheetId) {
     // Lọc bỏ các hàng giới thiệu
     const filteredData = filterIntroductoryRows(processedData);
     
+    // Loại bỏ cột STT
+    const finalData = removeFirstColumn(filteredData);
+    
     // Kiểm tra dữ liệu sau khi lọc
-    console.log(`Sau khi lọc - Số lượng hàng trong values: ${filteredData.values?.length || 0}`);
-    console.log(`Sau khi lọc - Số lượng hàng trong htmlData: ${filteredData.htmlData?.length || 0}`);
+    console.log(`Sau khi lọc - Số lượng hàng trong values: ${finalData.values?.length || 0}`);
+    console.log(`Sau khi lọc - Số lượng hàng trong htmlData: ${finalData.htmlData?.length || 0}`);
     
     console.log('Lấy dữ liệu thành công!');
-    return filteredData;
+    return finalData;
   } catch (error) {
     console.error('Lỗi khi lấy dữ liệu từ Google Sheets:', error);
     throw new Error('Không thể lấy dữ liệu từ Google Sheets: ' + error.message);
