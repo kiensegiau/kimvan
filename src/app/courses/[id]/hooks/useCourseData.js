@@ -28,7 +28,9 @@ export function useCourseData(id) {
       const response = await fetch(`/api/courses/${id}/sheets`);
       
       if (!response.ok) {
-        throw new Error(`Lỗi ${response.status}: ${response.statusText}`);
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.error || `Lỗi ${response.status}: ${response.statusText}`;
+        throw new Error(errorMessage);
       }
       
       const data = await response.json();
@@ -46,6 +48,7 @@ export function useCourseData(id) {
         setLinkedSheets([]);
       }
     } catch (error) {
+      console.error('Lỗi khi lấy danh sách sheets:', error);
       setError(`Lỗi khi tải danh sách sheets: ${error.message}`);
       setLinkedSheets([]);
     } finally {
@@ -136,7 +139,11 @@ export function useCourseData(id) {
     setError(null);
     
     try {
-      const response = await fetch(`/api/courses/raw/${id}?type=_id`);
+      // Check if the ID is likely a MongoDB ObjectID (24 hex characters)
+      const isMongoId = /^[0-9a-fA-F]{24}$/.test(id);
+      const idType = isMongoId ? '_id' : 'kimvanId';
+      
+      const response = await fetch(`/api/courses/raw/${id}?type=${idType}`);
       if (!response.ok) {
         throw new Error(`Lỗi ${response.status}: ${response.statusText}`);
       }
@@ -223,7 +230,11 @@ export function useCourseData(id) {
     setError(null);
     
     try {
-      const response = await fetch(`/api/courses/raw/${id}?type=_id`);
+      // Check if the ID is likely a MongoDB ObjectID (24 hex characters)
+      const isMongoId = /^[0-9a-fA-F]{24}$/.test(id);
+      const idType = isMongoId ? '_id' : 'kimvanId';
+      
+      const response = await fetch(`/api/courses/raw/${id}?type=${idType}`);
       if (!response.ok) {
         throw new Error(`Lỗi ${response.status}: ${response.statusText}`);
       }

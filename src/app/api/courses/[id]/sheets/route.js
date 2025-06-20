@@ -3,6 +3,7 @@ import { connectDB } from '@/lib/mongodb';
 import Course from '@/models/Course';
 import Sheet from '@/models/Sheet';
 import { ObjectId } from 'mongodb';
+import mongoose from 'mongoose';
 
 // POST /api/courses/[id]/sheets - Liên kết sheet với khóa học
 export async function POST(request, { params }) {
@@ -77,11 +78,24 @@ export async function POST(request, { params }) {
 // GET /api/courses/[id]/sheets - Lấy danh sách sheets của khóa học
 export async function GET(request, { params }) {
   try {
-    const { id } = params;
+    // Đảm bảo params được awaited
+    const resolvedParams = await Promise.resolve(params);
+    const { id } = resolvedParams;
     await connectDB();
     
+    // Tạo query dựa trên loại ID
+    let query = {};
+    
+    // Kiểm tra xem id có phải là MongoDB ObjectId hợp lệ không
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      query = { _id: new ObjectId(id) };
+    } else {
+      // Nếu không phải ObjectId, tìm theo kimvanId
+      query = { kimvanId: id };
+    }
+    
     // Kiểm tra xem khóa học có tồn tại không
-    const course = await Course.findById(id).populate('sheets');
+    const course = await Course.findOne(query).populate('sheets');
     if (!course) {
       return NextResponse.json(
         { success: false, error: 'Không tìm thấy khóa học' }, 

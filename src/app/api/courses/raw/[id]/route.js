@@ -39,6 +39,8 @@ export async function GET(request, { params }) {
           }, { status: 400 });
         }
         course = await Course.findById(id).lean().exec();
+      } else if (type === 'kimvanId') {
+        course = await Course.findOne({ kimvanId: id }).lean().exec();
       } else {
         course = await Course.findOne({ slug: id }).lean().exec();
       }
@@ -96,6 +98,8 @@ export async function GET(request, { params }) {
         }, { status: 400 });
       }
       course = await Course.findById(id).lean().exec();
+    } else if (type === 'kimvanId') {
+      course = await Course.findOne({ kimvanId: id }).lean().exec();
     } else {
       course = await Course.findOne({ slug: id }).lean().exec();
     }

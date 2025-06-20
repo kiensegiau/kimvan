@@ -14,10 +14,13 @@ export function useApiSheetData(courseId) {
     setApiSheetError(null);
     
     try {
+      // The API endpoint handles both MongoDB ObjectIDs and kimvanIds
       const response = await fetch(`/api/courses/${courseId}/sheets`);
       
       if (!response.ok) {
-        throw new Error(`Lỗi ${response.status}: ${response.statusText}`);
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.error || `Lỗi ${response.status}: ${response.statusText}`;
+        throw new Error(errorMessage);
       }
       
       const result = await response.json();
@@ -32,9 +35,10 @@ export function useApiSheetData(courseId) {
         
         setApiSheetData(result);
       } else {
-        setApiSheetError(result.message || 'Không thể lấy dữ liệu sheet từ API');
+        setApiSheetError(result.error || result.message || 'Không thể lấy dữ liệu sheet từ API');
       }
     } catch (error) {
+      console.error('Lỗi khi lấy dữ liệu sheet từ API:', error);
       setApiSheetError(error.message || 'Đã xảy ra lỗi khi lấy dữ liệu sheet');
     } finally {
       setLoadingApiSheet(false);
@@ -55,7 +59,9 @@ export function useApiSheetData(courseId) {
       const response = await fetch(`/api/sheets/${sheetId}?fetchData=true`);
       
       if (!response.ok) {
-        throw new Error(`Lỗi ${response.status}: ${response.statusText}`);
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.error || `Lỗi ${response.status}: ${response.statusText}`;
+        throw new Error(errorMessage);
       }
       
       const result = await response.json();
@@ -78,10 +84,11 @@ export function useApiSheetData(courseId) {
         setApiSheetError(null);
         return result.sheet;
       } else {
-        setApiSheetError(result.message || `Không thể lấy chi tiết sheet`);
+        setApiSheetError(result.error || result.message || `Không thể lấy chi tiết sheet`);
         return null;
       }
     } catch (error) {
+      console.error('Lỗi khi tải chi tiết sheet:', error);
       setApiSheetError(`Lỗi khi tải chi tiết sheet: ${error.message}`);
       return null;
     } finally {
