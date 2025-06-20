@@ -61,6 +61,7 @@ export function useApiSheetData(courseId) {
     console.log(`Bắt đầu tải chi tiết sheet ${sheetId}`);
     
     try {
+      // Sử dụng tham số fetchData=true để lấy đầy đủ dữ liệu bao gồm cả HTML
       const response = await fetch(`/api/sheets/${sheetId}?fetchData=true`);
       
       if (!response.ok) {
@@ -78,6 +79,13 @@ export function useApiSheetData(courseId) {
           console.warn(`Sheet ${sheetId} không có dữ liệu values!`);
         } else {
           console.log(`Sheet ${sheetId} có ${result.sheet.data.values.length} hàng dữ liệu`);
+          
+          // Kiểm tra có dữ liệu HTML cho hyperlink không
+          if (result.sheet.data.htmlData) {
+            console.log(`Sheet ${sheetId} có dữ liệu HTML cho hyperlink`);
+          } else {
+            console.log(`Sheet ${sheetId} không có dữ liệu HTML cho hyperlink`);
+          }
         }
         
         // Cập nhật dữ liệu sheet trong state
