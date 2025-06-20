@@ -51,6 +51,7 @@ export default function SheetDetailPage({ params }) {
   const [processingLinks, setProcessingLinks] = useState(false);
   const [processLinksResult, setProcessLinksResult] = useState(null);
   const [showProcessLinksModal, setShowProcessLinksModal] = useState(false);
+  const [testDriveLink, setTestDriveLink] = useState('');
 
   useEffect(() => {
     fetchSheetDetail();
@@ -695,12 +696,17 @@ export default function SheetDetailPage({ params }) {
       setProcessLinksResult(null);
       setShowProcessLinksModal(true);
       
+      const requestBody = {};
+      if (testDriveLink) {
+        requestBody.testDriveLink = testDriveLink;
+      }
+      
       const response = await fetch(`/api/sheets/${id}/process-all-links`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({}),
+        body: JSON.stringify(requestBody),
       });
       
       if (!response.ok) {
@@ -1474,6 +1480,20 @@ export default function SheetDetailPage({ params }) {
                     <p className="text-sm text-gray-500 mt-2">
                       Quá trình này sẽ tải xuống từng file, xử lý và tải lên lại Drive với bản đã xử lý.
                     </p>
+                    
+                    <div className="mt-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-1 text-left">Link test (tùy chọn)</label>
+                      <input
+                        type="text"
+                        value={testDriveLink}
+                        onChange={(e) => setTestDriveLink(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        placeholder="https://drive.google.com/file/d/..."
+                      />
+                      <p className="text-sm text-gray-500 mt-1 text-left">
+                        Nếu không tìm thấy link nào trong sheet, hệ thống sẽ sử dụng link này để test.
+                      </p>
+                    </div>
                   </div>
                 )}
               </div>

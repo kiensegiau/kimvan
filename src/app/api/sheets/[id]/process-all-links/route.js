@@ -32,30 +32,28 @@ function getStoredToken(tokenPath) {
 function extractDriveFileId(url) {
   if (!url) return null;
   
+  console.log('Extracting Drive ID from URL:', url);
+  
+  // Mẫu URL Google Drive
   const patterns = [
-    /\/d\/([a-zA-Z0-9-_]+)/,
-    /id=([a-zA-Z0-9-_]+)/,
-    /drive\.google\.com\/file\/d\/([a-zA-Z0-9-_]+)/,
-    /^([a-zA-Z0-9-_]+)$/
+    /\/d\/([a-zA-Z0-9-_]+)/,                // Format: /d/FILE_ID
+    /id=([a-zA-Z0-9-_]+)/,                  // Format: id=FILE_ID
+    /drive\.google\.com\/file\/d\/([a-zA-Z0-9-_]+)/,  // Format: drive.google.com/file/d/FILE_ID
+    /drive\.google\.com\/open\?id=([a-zA-Z0-9-_]+)/,  // Format: drive.google.com/open?id=FILE_ID
+    /docs\.google\.com\/(?:document|presentation|spreadsheets)\/d\/([a-zA-Z0-9-_]+)/, // Google Docs/Slides/Sheets
+    /^([a-zA-Z0-9-_]+)$/                    // Direct ID
   ];
   
   for (const pattern of patterns) {
     const match = url.match(pattern);
     if (match && match[1]) {
+      console.log('Found Drive ID:', match[1], 'using pattern:', pattern);
       return match[1];
     }
   }
   
+  console.log('No Drive ID found in URL');
   return null;
-}
-
-// Check if a URL is a Google Drive URL
-function isDriveUrl(url) {
-  if (!url || typeof url !== 'string') return false;
-  
-  return url.includes('drive.google.com') || 
-         url.includes('docs.google.com') || 
-         extractDriveFileId(url) !== null;
 }
 
 // Extract URL from cell content
@@ -70,13 +68,35 @@ function extractUrlFromCell(cell) {
   }
   
   // Check if cell content is a URL
-  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const urlRegex = /(https?:\/\/[^\s"]+)/g;
   const urlMatch = cell.match(urlRegex);
   if (urlMatch) {
     return urlMatch[0];
   }
   
   return null;
+}
+
+// Check if a URL is a Google Drive URL
+function isDriveUrl(url) {
+  if (!url || typeof url !== 'string') return false;
+  
+  const driveDomains = [
+    'drive.google.com',
+    'docs.google.com',
+    'sheets.google.com',
+    'slides.google.com'
+  ];
+  
+  // Check if URL contains any of the Google domains
+  const containsDriveDomain = driveDomains.some(domain => url.includes(domain));
+  
+  // Check if URL contains file ID pattern
+  const hasFileIdPattern = url.includes('/d/') || 
+                          url.includes('id=') || 
+                          url.match(/\/file\/d\/([a-zA-Z0-9-_]+)/);
+  
+  return containsDriveDomain || hasFileIdPattern;
 }
 
 // Create HYPERLINK formula with the same text but new URL
@@ -106,8 +126,10 @@ export async function POST(request, { params }) {
   
   try {
     await connectDB();
-    const { id } = params;
+    const { id } = await params;
     const requestBody = await request.json();
+    
+    console.log('ID sheet:', id);
     
     // Find the sheet in the database
     let sheet;
@@ -124,6 +146,8 @@ export async function POST(request, { params }) {
         { status: 404 }
       );
     }
+    
+    console.log('Tìm thấy sheet:', sheet.name, 'với ID:', sheet.sheetId);
     
     // Lấy dữ liệu sheet từ Google Sheets API
     let auth;
@@ -157,17 +181,69 @@ export async function POST(request, { params }) {
     const sheets = google.sheets({ version: 'v4', auth });
     
     // Lấy dữ liệu sheet
-    const response = await sheets.spreadsheets.values.get({
-      spreadsheetId: sheet.sheetId,
-      range: 'Sheet1'
-    });
+    let values;
+    let htmlData;
+    let firstSheetName;
+    let actualSheetId = 0;
     
-    const values = response.data.values;
-    
-    if (!values || values.length === 0) {
+    try {
+      // First try to get spreadsheet metadata to find sheet names
+      const spreadsheetInfo = await sheets.spreadsheets.get({
+        spreadsheetId: sheet.sheetId
+      });
+      
+      // Get the first sheet name or default to 'Sheet1'
+      firstSheetName = spreadsheetInfo.data.sheets[0]?.properties?.title || 'Sheet1';
+      // Lấy sheetId thực tế của sheet đầu tiên
+      actualSheetId = spreadsheetInfo.data.sheets[0]?.properties?.sheetId || 0;
+      console.log(`Tên sheet đầu tiên: ${firstSheetName}, SheetId: ${actualSheetId}`);
+      
+      // Now get the values using the actual sheet name
+      const response = await sheets.spreadsheets.values.get({
+        spreadsheetId: sheet.sheetId,
+        range: `${firstSheetName}!A:Z`  // Use the actual sheet name
+      });
+      
+      values = response.data.values;
+      
+      // Lấy thêm dữ liệu HTML để phát hiện hyperlink
+      try {
+        const htmlResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/spreadsheets/${sheet.sheetId}`, {
+          headers: {
+            'Cookie': request.headers.get('cookie') || ''
+          }
+        });
+        
+        if (htmlResponse.ok) {
+          const htmlResult = await htmlResponse.json();
+          if (htmlResult.success && htmlResult.data) {
+            htmlData = htmlResult.data;
+            console.log('Đã lấy được dữ liệu HTML của sheet');
+          }
+        }
+      } catch (htmlError) {
+        console.error('Lỗi khi lấy dữ liệu HTML:', htmlError);
+        // Không throw error, chỉ log và tiếp tục
+      }
+      
+      console.log('Dữ liệu sheet:', {
+        totalRows: values?.length || 0,
+        sampleFirstRow: values && values.length > 0 ? values[0] : 'không có dữ liệu',
+        sampleSecondRow: values && values.length > 1 ? values[1] : 'không có dữ liệu',
+        hasHtmlData: !!htmlData
+      });
+      
+      if (!values || values.length === 0) {
+        return NextResponse.json(
+          { success: false, error: 'Sheet không có dữ liệu' }, 
+          { status: 404 }
+        );
+      }
+    } catch (error) {
+      console.error('Lỗi khi lấy dữ liệu từ Google Sheets:', error);
       return NextResponse.json(
-        { success: false, error: 'Sheet không có dữ liệu' }, 
-        { status: 404 }
+        { success: false, error: `Lỗi khi lấy dữ liệu từ Google Sheets: ${error.message}` }, 
+        { status: 500 }
       );
     }
     
@@ -175,11 +251,31 @@ export async function POST(request, { params }) {
     const cellsToProcess = [];
     
     for (let rowIndex = 1; rowIndex < values.length; rowIndex++) {
-      const row = values[rowIndex];
+      const row = values[rowIndex] || [];
       
-      for (let colIndex = 0; colIndex < row.length; colIndex++) {
+      // Lấy dữ liệu HTML tương ứng nếu có
+      const htmlRow = htmlData?.values?.[rowIndex]?.values || [];
+      
+      for (let colIndex = 0; colIndex < (row.length || 0); colIndex++) {
         const cell = row[colIndex];
-        const url = extractUrlFromCell(cell);
+        if (!cell) continue;
+        
+        // Kiểm tra xem có dữ liệu HTML không
+        const htmlCell = htmlRow[colIndex];
+        const hyperlink = htmlCell?.hyperlink;
+        
+        // Ưu tiên lấy hyperlink từ dữ liệu HTML
+        let url = hyperlink;
+        
+        // Nếu không có hyperlink từ HTML, thử trích xuất từ nội dung cell
+        if (!url) {
+          url = extractUrlFromCell(cell);
+        }
+        
+        console.log(`Kiểm tra ô [${rowIndex + 1}:${colIndex + 1}]:`, cell, 
+          '-> HTML hyperlink:', hyperlink,
+          '-> Extracted URL:', url ? url : 'không có',
+          '-> Là Drive URL:', url ? isDriveUrl(url) : false);
         
         if (url && isDriveUrl(url)) {
           cellsToProcess.push({
@@ -194,6 +290,17 @@ export async function POST(request, { params }) {
     
     console.log(`Tìm thấy ${cellsToProcess.length} ô chứa link Google Drive cần xử lý`);
     
+    // If no links found, add a test link from the request body if provided
+    if (cellsToProcess.length === 0 && requestBody.testDriveLink) {
+      console.log('Không tìm thấy link nào trong sheet, sử dụng link test:', requestBody.testDriveLink);
+      cellsToProcess.push({
+        rowIndex: 1,
+        colIndex: 0,
+        cell: requestBody.testDriveLink,
+        url: requestBody.testDriveLink
+      });
+    }
+    
     // Xử lý từng link
     const processedCells = [];
     const errors = [];
@@ -202,8 +309,13 @@ export async function POST(request, { params }) {
       try {
         console.log(`Đang xử lý ô [${cellInfo.rowIndex + 1}:${cellInfo.colIndex + 1}]: ${cellInfo.url}`);
         
+        // Determine the base URL for API calls
+        const protocol = request.headers.get('x-forwarded-proto') || 'http';
+        const host = request.headers.get('host');
+        const baseUrl = `${protocol}://${host}`;
+        
         // Gọi API xử lý và thay thế file
-        const processResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/drive/process-and-replace`, {
+        const processResponse = await fetch(`${baseUrl}/api/drive/process-and-replace`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -227,17 +339,58 @@ export async function POST(request, { params }) {
         
         // Tạo giá trị mới cho ô
         const newUrl = processResult.processedFile.link;
-        const newCellValue = createHyperlinkFormula(cellInfo.cell, newUrl);
         
-        // Cập nhật vào Google Sheets
-        await sheets.spreadsheets.values.update({
-          spreadsheetId: sheet.sheetId,
-          range: `Sheet1!${String.fromCharCode(65 + cellInfo.colIndex)}${cellInfo.rowIndex + 1}`,
-          valueInputOption: 'USER_ENTERED',
-          requestBody: {
-            values: [[newCellValue]]
-          }
-        });
+        try {
+          // Sử dụng batchUpdate để cập nhật cả giá trị và định dạng hyperlink
+          await sheets.spreadsheets.batchUpdate({
+            spreadsheetId: sheet.sheetId,
+            requestBody: {
+              requests: [
+                {
+                  updateCells: {
+                    range: {
+                      sheetId: actualSheetId, // Sử dụng sheetId thực tế
+                      startRowIndex: cellInfo.rowIndex,
+                      endRowIndex: cellInfo.rowIndex + 1,
+                      startColumnIndex: cellInfo.colIndex,
+                      endColumnIndex: cellInfo.colIndex + 1
+                    },
+                    rows: [
+                      {
+                        values: [
+                          {
+                            userEnteredValue: {
+                              stringValue: cellInfo.cell // Giữ nguyên text hiển thị
+                            },
+                            userEnteredFormat: {
+                              textFormat: {
+                                link: { uri: newUrl }
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    ],
+                    fields: 'userEnteredValue,userEnteredFormat.textFormat.link'
+                  }
+                }
+              ]
+            }
+          });
+        } catch (batchUpdateError) {
+          console.error('Lỗi khi sử dụng batchUpdate, thử phương pháp thay thế:', batchUpdateError);
+          
+          // Phương pháp thay thế sử dụng values.update
+          const newCellValue = createHyperlinkFormula(cellInfo.cell, newUrl);
+          await sheets.spreadsheets.values.update({
+            spreadsheetId: sheet.sheetId,
+            range: `${firstSheetName}!${String.fromCharCode(65 + cellInfo.colIndex)}${cellInfo.rowIndex + 1}`,
+            valueInputOption: 'USER_ENTERED',
+            requestBody: {
+              values: [[newCellValue]]
+            }
+          });
+        }
         
         processedCells.push({
           rowIndex: cellInfo.rowIndex,
