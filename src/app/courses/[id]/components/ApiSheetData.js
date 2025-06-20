@@ -10,8 +10,6 @@ export default function ApiSheetData({
   fetchApiSheetData,
   fetchSheetDetail
 }) {
-  const [expandedCells, setExpandedCells] = useState({});
-
   // Kiểm tra và tải chi tiết sheet nếu cần
   useEffect(() => {
     if (apiSheetData && apiSheetData.sheets && apiSheetData.sheets.length > 0) {
@@ -23,14 +21,6 @@ export default function ApiSheetData({
       }
     }
   }, [apiSheetData, activeApiSheet, loadingApiSheet, fetchSheetDetail]);
-
-  const toggleCellExpansion = (rowIndex, cellIndex) => {
-    const key = `${rowIndex}-${cellIndex}`;
-    setExpandedCells(prev => ({
-      ...prev,
-      [key]: !prev[key]
-    }));
-  };
 
   const isYoutubeLink = (url) => {
     if (!url) return false;
@@ -284,13 +274,13 @@ export default function ApiSheetData({
       <div className="px-4 sm:px-6 py-4">
         {sheetDetail?.data?.values && sheetDetail.data.values.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
+            <table className="min-w-full divide-y divide-gray-200 border-collapse">
               <thead className="bg-gray-50">
                 <tr>
                   {sheetDetail.data.values[0].map((header, index) => (
                     <th 
                       key={index} 
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200 last:border-r-0"
                     >
                       {header}
                     </th>
@@ -324,45 +314,19 @@ export default function ApiSheetData({
                           }
                           
                           const key = `${rowIndex}-${cellIndex}`;
-                          const isExpanded = expandedCells[key];
                           const cellContent = cell || hyperlink;
                           
                           return (
-                            <td key={cellIndex} className="px-6 py-4">
-                              <div className={`${cellContent.length > 50 && !isExpanded ? 'cursor-pointer' : ''}`}>
-                                {cellContent.length > 50 && !isExpanded ? (
-                                  <div onClick={() => toggleCellExpansion(rowIndex, cellIndex)}>
-                                    <a 
-                                      href={hyperlink} 
-                                      target="_blank" 
-                                      rel="noopener noreferrer" 
-                                      className="text-blue-600 hover:underline"
-                                      onClick={(e) => e.stopPropagation()}
-                                    >
-                                      {icon}{cellContent.substring(0, 50)}...
-                                    </a>
-                                    <span className="text-xs text-blue-500 ml-1">(click để xem thêm)</span>
-                                  </div>
-                                ) : (
-                                  <div>
-                                    <a 
-                                      href={hyperlink} 
-                                      target="_blank" 
-                                      rel="noopener noreferrer" 
-                                      className="text-blue-600 hover:underline"
-                                    >
-                                      {icon}{cellContent}
-                                    </a>
-                                    {cellContent.length > 50 && (
-                                      <button 
-                                        className="text-xs text-blue-500 ml-1"
-                                        onClick={() => toggleCellExpansion(rowIndex, cellIndex)}
-                                      >
-                                        (thu gọn)
-                                      </button>
-                                    )}
-                                  </div>
-                                )}
+                            <td key={cellIndex} className="px-6 py-4 border-r border-gray-200 last:border-r-0">
+                              <div>
+                                <a 
+                                  href={hyperlink} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer" 
+                                  className="text-blue-600 hover:underline"
+                                >
+                                  {icon}{cellContent}
+                                </a>
                               </div>
                             </td>
                           );
@@ -370,32 +334,12 @@ export default function ApiSheetData({
                         
                         // Xử lý các cell thông thường
                         const key = `${rowIndex}-${cellIndex}`;
-                        const isExpanded = expandedCells[key];
                         const cellContent = cell || '';
                         
-                        if (cellContent.length > 50 && !isExpanded) {
-                          return (
-                            <td key={cellIndex} className="px-6 py-4 cursor-pointer" onClick={() => toggleCellExpansion(rowIndex, cellIndex)}>
-                              <div>
-                                {renderCellContent(cellContent.substring(0, 50))}
-                                <span className="text-xs text-blue-500 ml-1">(click để xem thêm)</span>
-                              </div>
-                            </td>
-                          );
-                        }
-                        
                         return (
-                          <td key={cellIndex} className="px-6 py-4">
+                          <td key={cellIndex} className="px-6 py-4 border-r border-gray-200 last:border-r-0">
                             <div>
                               {renderCellContent(cellContent)}
-                              {cellContent.length > 50 && isExpanded && (
-                                <button 
-                                  className="text-xs text-blue-500 ml-1"
-                                  onClick={() => toggleCellExpansion(rowIndex, cellIndex)}
-                                >
-                                  (thu gọn)
-                                </button>
-                              )}
                             </div>
                           </td>
                         );

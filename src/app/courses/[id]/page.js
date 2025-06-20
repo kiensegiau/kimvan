@@ -89,7 +89,7 @@ export default function CourseDetailPage({ params }) {
 
   return (
     <div className={`min-h-screen bg-gray-100 p-4 sm:p-6 transition-opacity duration-500 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}>
-      <div className="max-w-6xl mx-auto">
+      <div className="mx-auto">
         {/* Header và nút điều hướng */}
         <div className="bg-white shadow-sm rounded-lg p-4 mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <h1 className="text-2xl font-bold text-gray-900">{course?.title || 'Chi tiết khóa học'}</h1>
