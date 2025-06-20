@@ -35,17 +35,6 @@ export default function CourseDetailPage({ params }) {
     fetchSheetDetail
   } = useApiSheetData(id);
 
-  // Thêm log để debug
-  useEffect(() => {
-    if (apiSheetData) {
-      console.log("apiSheetData trong page:", apiSheetData);
-      if (apiSheetData.sheets && apiSheetData.sheets.length > 0) {
-        console.log("Sheet đầu tiên:", apiSheetData.sheets[0]);
-        console.log("Chi tiết sheet đầu tiên:", apiSheetData.sheets[0]?.detail);
-      }
-    }
-  }, [apiSheetData]);
-
   // Thêm hàm refresh để tải lại dữ liệu nếu cần
   const handleRefreshData = () => {
     fetchApiSheetData();

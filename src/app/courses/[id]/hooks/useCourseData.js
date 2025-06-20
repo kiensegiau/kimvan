@@ -34,7 +34,6 @@ export function useCourseData(id) {
       const data = await response.json();
       
       if (data.success) {
-        console.log('Danh sách sheets liên kết:', data.sheets);
         setLinkedSheets(data.sheets || []);
         
         // Tải dữ liệu cho mỗi sheet
@@ -69,8 +68,6 @@ export function useCourseData(id) {
       const data = await response.json();
       
       if (data.success) {
-        console.log(`Dữ liệu sheet ${sheetId}:`, data.sheet);
-        
         // Xử lý các ô gộp nếu có
         const processedData = { ...data.sheet };
         
@@ -146,8 +143,6 @@ export function useCourseData(id) {
       if (!result.success) {
         throw new Error(result.message || 'Có lỗi xảy ra khi lấy dữ liệu');
       }
-      
-      console.log('Dữ liệu khóa học đầy đủ:', result.data);
       
       // Xử lý các ô gộp trong dữ liệu gốc nếu có
       const processedData = { ...result.data };
@@ -235,90 +230,21 @@ export function useCourseData(id) {
         throw new Error(result.message || 'Có lỗi xảy ra khi lấy dữ liệu');
       }
       
-      console.log('Dữ liệu khóa học đã được làm mới:', result.data);
+      setCourse(result.data);
       
-      // Kiểm tra cấu trúc dữ liệu
-      if (result.data && result.data.originalData && result.data.originalData.sheets) {
-        const sheets = result.data.originalData.sheets;
-        console.log(`Số lượng sheets: ${sheets.length}`);
-        
-        sheets.forEach((sheet, idx) => {
-          if (sheet.data && sheet.data[0] && sheet.data[0].rowData) {
-            console.log(`Sheet ${idx}: ${sheet.data[0].rowData.length} hàng`);
-          } else {
-            console.log(`Sheet ${idx}: Không có dữ liệu hàng`);
-          }
-        });
-      }
-      
-      // Xử lý các ô gộp trong dữ liệu gốc nếu có
-      const processedData = { ...result.data };
-      
-      if (processedData.originalData?.sheets) {
-        // Duyệt qua từng sheet
-        processedData.originalData.sheets.forEach((sheet, sheetIndex) => {
-          if (sheet.merges && sheet.merges.length > 0) {
-            // Tạo bản đồ các ô đã gộp
-            if (!processedData.originalData.mergedCellsMap) {
-              processedData.originalData.mergedCellsMap = {};
-            }
-            
-            sheet.merges.forEach(merge => {
-              const startRow = merge.startRowIndex;
-              const endRow = merge.endRowIndex;
-              const startCol = merge.startColumnIndex;
-              const endCol = merge.endColumnIndex;
-              
-              // Tính toán rowSpan và colSpan
-              const rowSpan = endRow - startRow;
-              const colSpan = endCol - startCol;
-              
-              // Đánh dấu ô chính (góc trên bên trái của vùng gộp)
-              if (sheet.data && sheet.data[0] && sheet.data[0].rowData && sheet.data[0].rowData[startRow]) {
-                if (!sheet.data[0].rowData[startRow].values) {
-                  sheet.data[0].rowData[startRow].values = [];
-                }
-                
-                if (!sheet.data[0].rowData[startRow].values[startCol]) {
-                  sheet.data[0].rowData[startRow].values[startCol] = {};
-                }
-                
-                sheet.data[0].rowData[startRow].values[startCol].rowSpan = rowSpan;
-                sheet.data[0].rowData[startRow].values[startCol].colSpan = colSpan;
-              }
-              
-              // Đánh dấu các ô khác trong vùng gộp để bỏ qua khi render
-              for (let r = startRow; r < endRow; r++) {
-                for (let c = startCol; c < endCol; c++) {
-                  // Bỏ qua ô chính
-                  if (r === startRow && c === startCol) continue;
-                  
-                  const key = `${r},${c}`;
-                  processedData.originalData.mergedCellsMap[key] = { 
-                    mainCell: { row: startRow, col: startCol },
-                    sheetIndex: sheetIndex
-                  };
-                }
-              }
-            });
-          }
-        });
-      }
-      
-      setCourse(processedData);
-      setFormData(processedData);
-      
-      // Tải lại danh sách sheets liên kết
+      // Làm mới danh sách sheets liên kết
       fetchLinkedSheets();
-      
-      alert('Đã làm mới dữ liệu khóa học thành công!');
     } catch (error) {
-      console.error("Lỗi khi làm mới dữ liệu:", error);
-      alert(`Không thể làm mới dữ liệu: ${error.message}`);
+      console.error("Lỗi khi làm mới dữ liệu khóa học:", error);
     }
   };
 
-  // Kiểm tra xem item có ID course không và tải dữ liệu ban đầu
+  // Hàm thay đổi sheet đang active
+  const handleChangeSheet = (index) => {
+    setActiveSheet(index);
+  };
+
+  // Sử dụng useEffect để tải dữ liệu khi component được mount
   useEffect(() => {
     if (id) {
       fetchCourseDetail();
@@ -327,23 +253,17 @@ export function useCourseData(id) {
 
   return {
     course,
-    setCourse,
     loading,
     error,
     formData,
-    setFormData,
     isLoaded,
     activeSheet,
-    setActiveSheet,
-    getSheetTitle,
     linkedSheets,
     loadingSheets,
     sheetData,
     loadingSheetData,
-    fetchLinkedSheets,
-    fetchSheetData,
-    fetchCourseDetail,
-    refreshCourseData,
-    setSheetData
+    getSheetTitle,
+    setActiveSheet: handleChangeSheet,
+    refreshCourseData
   };
 } 

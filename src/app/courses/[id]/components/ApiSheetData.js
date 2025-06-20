@@ -11,32 +11,14 @@ export default function ApiSheetData({
   fetchSheetDetail
 }) {
   const [expandedCells, setExpandedCells] = useState({});
-  const [debugInfo, setDebugInfo] = useState({});
 
-  // Debug useEffect để kiểm tra dữ liệu sheet
+  // Kiểm tra và tải chi tiết sheet nếu cần
   useEffect(() => {
     if (apiSheetData && apiSheetData.sheets && apiSheetData.sheets.length > 0) {
       const currentSheet = apiSheetData.sheets[activeApiSheet];
-      const sheetDetail = currentSheet?.detail;
-      
-      console.log('ApiSheetData component - apiSheetData:', apiSheetData);
-      console.log('ApiSheetData component - currentSheet:', currentSheet);
-      console.log('ApiSheetData component - sheetDetail:', sheetDetail);
-      
-      // Lưu thông tin debug
-      setDebugInfo({
-        hasSheets: apiSheetData.sheets.length > 0,
-        activeSheetIndex: activeApiSheet,
-        activeSheetId: currentSheet?._id,
-        hasDetail: !!sheetDetail,
-        hasValues: sheetDetail?.data?.values?.length > 0,
-        valueCount: sheetDetail?.data?.values?.length || 0,
-        htmlDataCount: sheetDetail?.data?.htmlData?.length || 0
-      });
       
       // Nếu có sheet nhưng không có chi tiết, tải chi tiết
       if (currentSheet && !currentSheet.detail && !loadingApiSheet) {
-        console.log('Tự động tải chi tiết sheet:', currentSheet._id);
         fetchSheetDetail(currentSheet._id);
       }
     }
@@ -198,13 +180,6 @@ export default function ApiSheetData({
             Làm mới dữ liệu
           </button>
         </div>
-        
-        {/* Debug info */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="mt-4 bg-gray-800 text-gray-200 p-3 rounded text-xs">
-            <pre>{JSON.stringify(debugInfo, null, 2)}</pre>
-          </div>
-        )}
       </div>
     );
   }
@@ -246,156 +221,9 @@ export default function ApiSheetData({
             Tải dữ liệu chi tiết
           </button>
         </div>
-        
-        {/* Debug info */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="m-4 bg-gray-800 text-gray-200 p-3 rounded text-xs">
-            <pre>{JSON.stringify(debugInfo, null, 2)}</pre>
-          </div>
-        )}
       </div>
     );
   }
-
-  // Thay thế phần renderTable trong component return để hỗ trợ hiển thị URL
-  const renderTable = () => {
-    if (!sheetDetail?.data?.values || sheetDetail.data.values.length <= 1) {
-      return (
-        <div className="p-6 text-center bg-gray-50 rounded-lg my-4">
-          <p className="text-gray-500">Không có dữ liệu để hiển thị.</p>
-        </div>
-      );
-    }
-
-    const values = sheetDetail.data.values;
-    const htmlData = sheetDetail.data.htmlData || [];
-
-    return (
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              {values[0].map((header, index) => (
-                <th 
-                  key={index} 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  {header}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {values.slice(1).map((row, rowIndex) => {
-              // Lấy dữ liệu HTML tương ứng nếu có
-              const htmlRow = htmlData[rowIndex + 1]?.values || [];
-              
-              return (
-                <tr key={rowIndex} className="hover:bg-gray-50">
-                  {row.map((cell, cellIndex) => {
-                    // Kiểm tra xem có dữ liệu HTML không
-                    const htmlCell = htmlRow[cellIndex];
-                    const hyperlink = htmlCell?.hyperlink;
-                    
-                    // Nếu có hyperlink trong dữ liệu HTML
-                    if (hyperlink) {
-                      // Xác định loại liên kết để hiển thị icon phù hợp
-                      let icon = null;
-                      if (isYoutubeLink(hyperlink)) {
-                        icon = <span className="text-red-500 mr-1" title="YouTube Video">🎬</span>;
-                      } else if (isGoogleDriveLink(hyperlink)) {
-                        icon = <span className="text-blue-500 mr-1" title="Google Drive">📄</span>;
-                      } else if (hyperlink.includes('docs.google.com/document')) {
-                        icon = <span className="text-green-500 mr-1" title="Google Docs">📝</span>;
-                      } else if (isPdfLink(hyperlink)) {
-                        icon = <span className="text-red-500 mr-1" title="PDF">📕</span>;
-                      }
-                      
-                      const key = `${rowIndex}-${cellIndex}`;
-                      const isExpanded = expandedCells[key];
-                      const cellContent = cell || hyperlink;
-                      
-                      return (
-                        <td key={cellIndex} className="px-6 py-4">
-                          <div className={`${cellContent.length > 50 && !isExpanded ? 'cursor-pointer' : ''}`}>
-                            {cellContent.length > 50 && !isExpanded ? (
-                              <div onClick={() => toggleCellExpansion(rowIndex, cellIndex)}>
-                                <a 
-                                  href={hyperlink} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer" 
-                                  className="text-blue-600 hover:underline"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  {icon}{cellContent.substring(0, 50)}...
-                                </a>
-                                <span className="text-xs text-blue-500 ml-1">(click để xem thêm)</span>
-                              </div>
-                            ) : (
-                              <div>
-                                <a 
-                                  href={hyperlink} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer" 
-                                  className="text-blue-600 hover:underline"
-                                >
-                                  {icon}{cellContent}
-                                </a>
-                                {cellContent.length > 50 && (
-                                  <button 
-                                    className="text-xs text-blue-500 ml-1"
-                                    onClick={() => toggleCellExpansion(rowIndex, cellIndex)}
-                                  >
-                                    (thu gọn)
-                                  </button>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                      );
-                    }
-                    
-                    // Xử lý các cell thông thường
-                    const key = `${rowIndex}-${cellIndex}`;
-                    const isExpanded = expandedCells[key];
-                    const cellContent = cell || '';
-                    
-                    if (cellContent.length > 50 && !isExpanded) {
-                      return (
-                        <td key={cellIndex} className="px-6 py-4 cursor-pointer" onClick={() => toggleCellExpansion(rowIndex, cellIndex)}>
-                          <div>
-                            {renderCellContent(cellContent.substring(0, 50))}
-                            <span className="text-xs text-blue-500 ml-1">(click để xem thêm)</span>
-                          </div>
-                        </td>
-                      );
-                    }
-                    
-                    return (
-                      <td key={cellIndex} className="px-6 py-4">
-                        <div>
-                          {renderCellContent(cellContent)}
-                          {cellContent.length > 50 && isExpanded && (
-                            <button 
-                              className="text-xs text-blue-500 ml-1"
-                              onClick={() => toggleCellExpansion(rowIndex, cellIndex)}
-                            >
-                              (thu gọn)
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    );
-                  })}
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    );
-  };
 
   return (
     <div className="mt-6 bg-white rounded-lg border border-gray-200 overflow-hidden w-full">
@@ -456,19 +284,9 @@ export default function ApiSheetData({
         <div className="flex items-center gap-2">
           {sheetDetail?.data?.values && (
             <div className="text-sm text-gray-600">
-              Số dòng: <span className="font-medium text-blue-600">
-                {(sheetDetail.data.values.length - 1) || 0}
-              </span>
+              {sheetDetail.data.values.length - 1} dòng dữ liệu
             </div>
           )}
-          
-          <button 
-            onClick={() => fetchSheetDetail(currentSheet._id)}
-            className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-blue-600 bg-blue-50 hover:bg-blue-100"
-          >
-            <ArrowPathIcon className="h-4 w-4 mr-1" />
-            Làm mới dữ liệu
-          </button>
         </div>
       </div>
 
@@ -604,13 +422,6 @@ export default function ApiSheetData({
           </div>
         )}
       </div>
-      
-      {/* Debug info */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="m-4 bg-gray-800 text-gray-200 p-3 rounded text-xs">
-          <pre>{JSON.stringify(debugInfo, null, 2)}</pre>
-        </div>
-      )}
     </div>
   );
 } 
