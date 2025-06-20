@@ -39,11 +39,6 @@ export default function CourseDetailPage({ params }) {
     clearCache: clearSheetCache,
   } = useApiSheetData(id);
 
-  // Hàm refresh để tải lại dữ liệu
-  const handleRefreshData = () => {
-    fetchApiSheetData();
-  };
-  
   // Hàm làm mới tất cả cache
   const handleRefreshAll = () => {
     clearCourseCache();
@@ -136,16 +131,7 @@ export default function CourseDetailPage({ params }) {
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
-              Làm mới tất cả
-            </button>
-            <button
-              onClick={handleRefreshData}
-              className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-            >
-              <svg className="h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              Làm mới sheets
+              Làm mới dữ liệu
             </button>
             <button
               onClick={() => router.back()}
@@ -212,7 +198,7 @@ export default function CourseDetailPage({ params }) {
               <p className="text-red-700 font-medium mb-2">Lỗi khi tải dữ liệu</p>
               <p className="text-red-600 mb-4">{apiSheetError}</p>
               <button 
-                onClick={handleRefreshData}
+                onClick={handleRefreshAll}
                 className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-700"
               >
                 <svg className="h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
