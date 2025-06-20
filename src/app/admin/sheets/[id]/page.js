@@ -36,6 +36,14 @@ export default function SheetDetailPage({ params }) {
   const [linkedCourses, setLinkedCourses] = useState([]);
   const [loadingLinkedCourses, setLoadingLinkedCourses] = useState(false);
   const [coursesError, setCoursesError] = useState(null);
+  const [showCellEditModal, setShowCellEditModal] = useState(false);
+  const [cellEditData, setCellEditData] = useState({
+    rowIndex: 0,
+    columnIndex: 0,
+    value: '',
+    url: '',
+  });
+  const [updatingCell, setUpdatingCell] = useState(false);
 
   useEffect(() => {
     fetchSheetDetail();
@@ -435,6 +443,99 @@ export default function SheetDetailPage({ params }) {
     return content;
   };
 
+  const handleUpdateCell = async () => {
+    if (!sheet || !sheet._id) return;
+    
+    try {
+      setUpdatingCell(true);
+      
+      // Call API to update the cell
+      const response = await fetch(`/api/sheets/${id}/update-cell`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          rowIndex: cellEditData.rowIndex,
+          columnIndex: cellEditData.columnIndex,
+          value: cellEditData.value,
+          url: cellEditData.url,
+        }),
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Không thể cập nhật ô');
+      }
+      
+      // Refresh sheet data to show updated values
+      await fetchSheetData();
+      
+      // Close modal
+      setShowCellEditModal(false);
+      
+      // Success notification
+      alert('Đã cập nhật ô thành công!');
+      
+    } catch (error) {
+      console.error('Lỗi khi cập nhật ô:', error);
+      alert(`Lỗi: ${error.message}`);
+    } finally {
+      setUpdatingCell(false);
+    }
+  };
+
+  const handleEditCell = (rowIndex, columnIndex, value, url = null) => {
+    setCellEditData({
+      rowIndex,
+      columnIndex,
+      value: value || '',
+      url: url || '',
+    });
+    setShowCellEditModal(true);
+  };
+
+  const extractUrlFromCell = (cell) => {
+    if (typeof cell === 'string') {
+      // Check for HYPERLINK formula
+      const hyperlinkRegex = /=HYPERLINK\("([^"]+)"(?:,\s*"([^"]+)")?\)/i;
+      const hyperlinkMatch = cell.match(hyperlinkRegex);
+      if (hyperlinkMatch) {
+        return hyperlinkMatch[1];
+      }
+      
+      // Check if cell content is a URL
+      const urlRegex = /(https?:\/\/[^\s]+)/g;
+      const urlMatch = cell.match(urlRegex);
+      if (urlMatch) {
+        return urlMatch[0];
+      }
+    }
+    return null;
+  };
+
+  // Extract Sheet ID from Google Sheet URL
+  const extractSheetId = (url) => {
+    if (!url) return null;
+    
+    // Pattern for Google Sheets URLs
+    const patterns = [
+      /\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/, // Standard format
+      /\/spreadsheets\/u\/\d+\/d\/([a-zA-Z0-9-_]+)/, // User-specific format
+      /^([a-zA-Z0-9-_]+)$/ // Direct ID
+    ];
+    
+    for (const pattern of patterns) {
+      const match = url.match(pattern);
+      if (match && match[1]) {
+        return match[1];
+      }
+    }
+    
+    return null;
+  };
+
   const renderTable = () => {
     if (!sheetData || !sheetData.values || sheetData.values.length === 0) {
       return (
@@ -484,22 +585,40 @@ export default function SheetDetailPage({ params }) {
                       }
                       
                       return (
-                        <td key={cellIndex} className="px-6 py-4 whitespace-nowrap">
-                          <a 
-                            href={hyperlink} 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
-                            className="text-blue-600 hover:underline"
-                          >
-                            {icon}{cell}
-                          </a>
+                        <td key={cellIndex} className="px-6 py-4 whitespace-nowrap group relative">
+                          <div className="flex items-center justify-between">
+                            <a 
+                              href={hyperlink} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              className="text-blue-600 hover:underline"
+                            >
+                              {icon}{cell}
+                            </a>
+                            <button
+                              onClick={() => handleEditCell(rowIndex + 1, cellIndex, cell, hyperlink)}
+                              className="ml-2 text-gray-400 hover:text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                              title={`Sửa ô ${String.fromCharCode(65 + cellIndex)}${rowIndex + 2}`}
+                            >
+                              <PencilIcon className="h-4 w-4" />
+                            </button>
+                          </div>
                         </td>
                       );
                     }
                     
                     return (
-                      <td key={cellIndex} className="px-6 py-4 whitespace-nowrap">
-                        {renderCellContent(cell)}
+                      <td key={cellIndex} className="px-6 py-4 whitespace-nowrap group relative">
+                        <div className="flex items-center justify-between">
+                          <span>{renderCellContent(cell)}</span>
+                          <button
+                            onClick={() => handleEditCell(rowIndex + 1, cellIndex, cell, extractUrlFromCell(cell))}
+                            className="ml-2 text-gray-400 hover:text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                            title={`Sửa ô ${String.fromCharCode(65 + cellIndex)}${rowIndex + 2}`}
+                          >
+                            <PencilIcon className="h-4 w-4" />
+                          </button>
+                        </div>
                       </td>
                     );
                   })}
@@ -961,6 +1080,71 @@ export default function SheetDetailPage({ params }) {
                     </>
                   ) : (
                     'Liên kết'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal chỉnh sửa cell */}
+      {showCellEditModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <h2 className="text-xl font-semibold mb-4">
+                Chỉnh sửa ô {String.fromCharCode(65 + cellEditData.columnIndex)}{cellEditData.rowIndex}
+              </h2>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Giá trị</label>
+                  <textarea
+                    value={cellEditData.value}
+                    onChange={(e) => setCellEditData({ ...cellEditData, value: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Nhập giá trị cho ô"
+                    rows="3"
+                  ></textarea>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">URL (tùy chọn)</label>
+                  <input
+                    type="text"
+                    value={cellEditData.url}
+                    onChange={(e) => setCellEditData({ ...cellEditData, url: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="https://..."
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Để trống nếu không muốn thêm liên kết
+                  </p>
+                </div>
+              </div>
+              
+              <div className="mt-6 flex justify-end space-x-3">
+                <button
+                  onClick={() => setShowCellEditModal(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={handleUpdateCell}
+                  disabled={updatingCell}
+                  className={`px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center ${
+                    updatingCell ? 'opacity-70 cursor-not-allowed' : ''
+                  }`}
+                >
+                  {updatingCell ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+                      Đang cập nhật...
+                    </>
+                  ) : (
+                    'Lưu thay đổi'
                   )}
                 </button>
               </div>
