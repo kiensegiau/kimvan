@@ -21,6 +21,9 @@ export default function CourseDetailPage({ params }) {
     loading,
     error, 
     isLoaded,
+    cacheStatus: courseCacheStatus,
+    clearCache: clearCourseCache,
+    refreshCourseData,
   } = useCourseData(id);
   
   // Sử dụng API Sheet
@@ -29,14 +32,26 @@ export default function CourseDetailPage({ params }) {
     loadingApiSheet,
     apiSheetError,
     activeApiSheet,
+    cacheStatus: sheetCacheStatus,
     setActiveApiSheet,
     fetchApiSheetData,
-    fetchSheetDetail
+    fetchSheetDetail,
+    clearCache: clearSheetCache,
   } = useApiSheetData(id);
 
   // Hàm refresh để tải lại dữ liệu
   const handleRefreshData = () => {
     fetchApiSheetData();
+  };
+  
+  // Hàm làm mới tất cả cache
+  const handleRefreshAll = () => {
+    clearCourseCache();
+    clearSheetCache();
+    refreshCourseData();
+    setTimeout(() => {
+      fetchApiSheetData();
+    }, 500); // Delay nhỏ để tránh các yêu cầu đồng thời
   };
 
   if (loading) {
@@ -87,13 +102,42 @@ export default function CourseDetailPage({ params }) {
     );
   }
 
+  // Hiển thị trạng thái cache
+  const getCacheStatusBadge = (status) => {
+    if (status === 'hit' || status?.startsWith('hit')) {
+      return <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-0.5 rounded-full">Đã tải từ cache</span>;
+    } else if (status === 'saved' || status?.startsWith('saved')) {
+      return <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-0.5 rounded-full">Đã lưu vào cache</span>;
+    } else if (status === 'cleared' || status?.startsWith('cleared')) {
+      return <span className="bg-red-100 text-red-800 text-xs font-medium px-2 py-0.5 rounded-full">Đã xóa cache</span>;
+    } else if (status === 'expired' || status?.startsWith('expired')) {
+      return <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2 py-0.5 rounded-full">Cache hết hạn</span>;
+    }
+    return null;
+  };
+
   return (
     <div className={`min-h-screen bg-gray-100 p-4 sm:p-6 transition-opacity duration-500 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}>
       <div className="mx-auto">
         {/* Header và nút điều hướng */}
         <div className="bg-white shadow-sm rounded-lg p-4 mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <h1 className="text-2xl font-bold text-gray-900">{course?.name || 'Chi tiết khóa học'}</h1>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">{course?.name || 'Chi tiết khóa học'}</h1>
+            <div className="flex items-center gap-2 mt-1">
+              {getCacheStatusBadge(courseCacheStatus)}
+              {getCacheStatusBadge(sheetCacheStatus)}
+            </div>
+          </div>
           <div className="flex gap-2">
+            <button
+              onClick={handleRefreshAll}
+              className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Làm mới tất cả
+            </button>
             <button
               onClick={handleRefreshData}
               className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
@@ -101,7 +145,7 @@ export default function CourseDetailPage({ params }) {
               <svg className="h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
-              Làm mới dữ liệu
+              Làm mới sheets
             </button>
             <button
               onClick={() => router.back()}
@@ -192,4 +236,4 @@ export default function CourseDetailPage({ params }) {
       </div>
     </div>
   );
-} 
+}
