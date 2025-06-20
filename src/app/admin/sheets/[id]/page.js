@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeftIcon, PlusIcon, PencilIcon, TrashIcon, ArrowPathIcon, DocumentArrowDownIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, PlusIcon, PencilIcon, TrashIcon, ArrowPathIcon, DocumentArrowDownIcon, DocumentTextIcon, LinkIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { use } from 'react';
 
@@ -44,6 +44,13 @@ export default function SheetDetailPage({ params }) {
     url: '',
   });
   const [updatingCell, setUpdatingCell] = useState(false);
+  const [processingPdf, setProcessingPdf] = useState(false);
+  const [processingPdfResult, setProcessingPdfResult] = useState(null);
+  const [showProcessPdfModal, setShowProcessPdfModal] = useState(false);
+  const [selectedPdfUrl, setSelectedPdfUrl] = useState('');
+  const [processingLinks, setProcessingLinks] = useState(false);
+  const [processLinksResult, setProcessLinksResult] = useState(null);
+  const [showProcessLinksModal, setShowProcessLinksModal] = useState(false);
 
   useEffect(() => {
     fetchSheetDetail();
@@ -631,6 +638,95 @@ export default function SheetDetailPage({ params }) {
     );
   };
 
+  // Hàm xử lý PDF từ Google Drive
+  const handleProcessPdf = async () => {
+    if (!selectedPdfUrl) {
+      alert('Vui lòng nhập URL của file PDF từ Google Drive');
+      return;
+    }
+
+    try {
+      setProcessingPdf(true);
+      setProcessingPdfResult(null);
+      
+      const response = await fetch('/api/drive/process-and-replace', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          driveLink: selectedPdfUrl
+        }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Không thể xử lý file PDF');
+      }
+      
+      const result = await response.json();
+      setProcessingPdfResult(result);
+      
+      // Đóng modal sau khi xử lý thành công
+      setTimeout(() => {
+        setShowProcessPdfModal(false);
+      }, 3000);
+      
+    } catch (error) {
+      console.error('Lỗi khi xử lý PDF:', error);
+      alert(`Lỗi: ${error.message}`);
+      setProcessingPdfResult({
+        success: false,
+        error: error.message
+      });
+    } finally {
+      setProcessingPdf(false);
+    }
+  };
+
+  // Hàm xử lý tất cả link trong sheet
+  const handleProcessAllLinks = async () => {
+    if (!confirm('Bạn có chắc chắn muốn xử lý tất cả link Google Drive trong sheet này? Quá trình này có thể mất nhiều thời gian.')) {
+      return;
+    }
+
+    try {
+      setProcessingLinks(true);
+      setProcessLinksResult(null);
+      setShowProcessLinksModal(true);
+      
+      const response = await fetch(`/api/sheets/${id}/process-all-links`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Không thể xử lý các link trong sheet');
+      }
+      
+      const result = await response.json();
+      setProcessLinksResult(result);
+      
+      // Tải lại dữ liệu sheet sau khi xử lý xong
+      if (result.success && result.processed > 0) {
+        await fetchSheetData();
+      }
+      
+    } catch (error) {
+      console.error('Lỗi khi xử lý tất cả link:', error);
+      setProcessLinksResult({
+        success: false,
+        error: error.message
+      });
+    } finally {
+      setProcessingLinks(false);
+    }
+  };
+
   return (
     <div className="container mx-auto px-4">
       <div className="flex items-center mb-6">
@@ -720,6 +816,23 @@ export default function SheetDetailPage({ params }) {
                   >
                     <PlusIcon className="h-5 w-5 mr-2" />
                     Liên kết với khóa học
+                  </button>
+                  <button
+                    onClick={() => setShowProcessPdfModal(true)}
+                    className="bg-red-500 text-white px-4 py-2 rounded-md w-full flex items-center justify-center"
+                  >
+                    <DocumentTextIcon className="h-5 w-5 mr-2" />
+                    Xử lý file PDF từ Drive
+                  </button>
+                  <button
+                    onClick={handleProcessAllLinks}
+                    disabled={!sheetData || processingLinks}
+                    className={`bg-indigo-600 text-white px-4 py-2 rounded-md w-full flex items-center justify-center ${
+                      (!sheetData || processingLinks) ? 'opacity-70 cursor-not-allowed' : ''
+                    }`}
+                  >
+                    <LinkIcon className="h-5 w-5 mr-2" />
+                    Xử lý tất cả link Drive
                   </button>
                 </div>
               </div>
@@ -1147,6 +1260,258 @@ export default function SheetDetailPage({ params }) {
                     'Lưu thay đổi'
                   )}
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal xử lý PDF */}
+      {showProcessPdfModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <h2 className="text-xl font-semibold mb-4">
+                Xử lý file PDF từ Google Drive
+              </h2>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">URL Google Drive</label>
+                  <input
+                    type="text"
+                    value={selectedPdfUrl}
+                    onChange={(e) => setSelectedPdfUrl(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="https://drive.google.com/file/d/..."
+                    disabled={processingPdf}
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Nhập URL của file PDF từ Google Drive cần xử lý
+                  </p>
+                </div>
+                
+                {processingPdfResult && (
+                  <div className={`p-4 rounded-md ${processingPdfResult.success ? 'bg-green-50' : 'bg-red-50'}`}>
+                    {processingPdfResult.success ? (
+                      <div>
+                        <p className="font-medium text-green-800">Xử lý thành công!</p>
+                        <p className="text-sm text-green-700 mt-1">File đã được xử lý và tải lên Drive.</p>
+                        <a 
+                          href={processingPdfResult.processedFile.link} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline mt-2 inline-block"
+                        >
+                          Mở file đã xử lý
+                        </a>
+                      </div>
+                    ) : (
+                      <div>
+                        <p className="font-medium text-red-800">Xử lý thất bại</p>
+                        <p className="text-sm text-red-700 mt-1">{processingPdfResult.error}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              
+              <div className="mt-6 flex justify-end space-x-3">
+                <button
+                  onClick={() => setShowProcessPdfModal(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                  disabled={processingPdf}
+                >
+                  Đóng
+                </button>
+                <button
+                  onClick={handleProcessPdf}
+                  disabled={processingPdf || !selectedPdfUrl}
+                  className={`px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 flex items-center ${
+                    (processingPdf || !selectedPdfUrl) ? 'opacity-70 cursor-not-allowed' : ''
+                  }`}
+                >
+                  {processingPdf ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+                      Đang xử lý...
+                    </>
+                  ) : (
+                    'Xử lý PDF'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal xử lý tất cả link */}
+      {showProcessLinksModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full">
+            <div className="p-6">
+              <h2 className="text-xl font-semibold mb-4">
+                Xử lý tất cả link Google Drive trong sheet
+              </h2>
+              
+              <div className="space-y-4">
+                {processingLinks ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                    <p className="text-lg">Đang xử lý các link trong sheet...</p>
+                    <p className="text-sm text-gray-500 mt-2">Quá trình này có thể mất vài phút tùy thuộc vào số lượng link.</p>
+                  </div>
+                ) : processLinksResult ? (
+                  <div>
+                    {processLinksResult.success ? (
+                      <div>
+                        <div className="bg-green-50 p-4 rounded-md mb-4">
+                          <p className="text-green-800 font-medium">Xử lý hoàn tất!</p>
+                          <p className="text-green-700 mt-1">
+                            Đã xử lý {processLinksResult.processed} / {processLinksResult.totalLinks} link.
+                            {processLinksResult.failed > 0 && ` (${processLinksResult.failed} link thất bại)`}
+                          </p>
+                        </div>
+                        
+                        {processLinksResult.processed > 0 && (
+                          <div className="mt-4">
+                            <h3 className="font-medium text-gray-900 mb-2">Link đã xử lý:</h3>
+                            <div className="max-h-60 overflow-y-auto bg-gray-50 rounded-md p-3">
+                              <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-100">
+                                  <tr>
+                                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Vị trí</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Link gốc</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Link mới</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-200">
+                                  {processLinksResult.processedCells.map((cell, index) => (
+                                    <tr key={index} className="hover:bg-gray-50">
+                                      <td className="px-3 py-2 whitespace-nowrap text-sm">
+                                        {String.fromCharCode(65 + cell.colIndex)}{cell.rowIndex + 1}
+                                      </td>
+                                      <td className="px-3 py-2 text-sm">
+                                        <a 
+                                          href={cell.originalUrl} 
+                                          target="_blank" 
+                                          rel="noopener noreferrer" 
+                                          className="text-blue-600 hover:underline truncate block max-w-xs"
+                                        >
+                                          {cell.originalUrl}
+                                        </a>
+                                      </td>
+                                      <td className="px-3 py-2 text-sm">
+                                        <a 
+                                          href={cell.newUrl} 
+                                          target="_blank" 
+                                          rel="noopener noreferrer" 
+                                          className="text-green-600 hover:underline truncate block max-w-xs"
+                                        >
+                                          {cell.newUrl}
+                                        </a>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {processLinksResult.failed > 0 && (
+                          <div className="mt-4">
+                            <h3 className="font-medium text-gray-900 mb-2">Link lỗi:</h3>
+                            <div className="max-h-40 overflow-y-auto bg-red-50 rounded-md p-3">
+                              <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-red-100">
+                                  <tr>
+                                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-700">Vị trí</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-700">Link</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-700">Lỗi</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-200">
+                                  {processLinksResult.errors.map((error, index) => (
+                                    <tr key={index} className="hover:bg-red-100">
+                                      <td className="px-3 py-2 whitespace-nowrap text-sm">
+                                        {String.fromCharCode(65 + error.colIndex)}{error.rowIndex + 1}
+                                      </td>
+                                      <td className="px-3 py-2 text-sm">
+                                        <a 
+                                          href={error.url} 
+                                          target="_blank" 
+                                          rel="noopener noreferrer" 
+                                          className="text-blue-600 hover:underline truncate block max-w-xs"
+                                        >
+                                          {error.url}
+                                        </a>
+                                      </td>
+                                      <td className="px-3 py-2 text-sm text-red-600">
+                                        {error.error}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="bg-red-50 p-4 rounded-md">
+                        <p className="text-red-800 font-medium">Xử lý thất bại</p>
+                        <p className="text-red-700 mt-1">{processLinksResult.error}</p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-6">
+                    <p className="text-gray-600">
+                      Nhấn nút "Bắt đầu xử lý" để tìm và xử lý tất cả link Google Drive trong sheet.
+                    </p>
+                    <p className="text-sm text-gray-500 mt-2">
+                      Quá trình này sẽ tải xuống từng file, xử lý và tải lên lại Drive với bản đã xử lý.
+                    </p>
+                  </div>
+                )}
+              </div>
+              
+              <div className="mt-6 flex justify-end space-x-3">
+                <button
+                  onClick={() => setShowProcessLinksModal(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                  disabled={processingLinks}
+                >
+                  {processLinksResult ? 'Đóng' : 'Hủy'}
+                </button>
+                {!processLinksResult && (
+                  <button
+                    onClick={handleProcessAllLinks}
+                    disabled={processingLinks}
+                    className={`px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 flex items-center ${
+                      processingLinks ? 'opacity-70 cursor-not-allowed' : ''
+                    }`}
+                  >
+                    {processingLinks ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+                        Đang xử lý...
+                      </>
+                    ) : (
+                      'Bắt đầu xử lý'
+                    )}
+                  </button>
+                )}
+                {processLinksResult && processLinksResult.success && (
+                  <button
+                    onClick={() => fetchSheetData()}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  >
+                    Tải lại dữ liệu sheet
+                  </button>
+                )}
               </div>
             </div>
           </div>

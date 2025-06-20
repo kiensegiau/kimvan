@@ -73,6 +73,7 @@ async function downloadFromGoogleDrive(fileId) {
     if (!storedToken) {
       throw new Error('Không tìm thấy token Google Drive. Vui lòng cấu hình API trong cài đặt.');
     }
+    console.log('Sử dụng token tải xuống (drive_token_download.json)');
     
     // Tạo OAuth2 client và Drive API
     const oauth2Client = new google.auth.OAuth2(
@@ -188,10 +189,11 @@ async function uploadToGoogleDrive(filePath, fileName, mimeType, folderId = null
   
   try {
     // Lấy token đã lưu
-    const storedToken = getStoredToken(0); // Sử dụng token tải lên (index 0)
+    const storedToken = getStoredToken(0); // Sử dụng token tải lên (index 0 - drive_token_upload.json)
     if (!storedToken) {
       throw new Error('Không tìm thấy token Google Drive. Vui lòng cấu hình API trong cài đặt.');
     }
+    console.log('Sử dụng token tải lên (drive_token_upload.json)');
     
     // Tạo OAuth2 client và Drive API
     const oauth2Client = new google.auth.OAuth2(
@@ -211,9 +213,16 @@ async function uploadToGoogleDrive(filePath, fileName, mimeType, folderId = null
       mimeType: mimeType
     };
     
-    // Nếu có folder ID, thêm vào parent
+    // Folder mặc định "tài liệu sheet" nếu không có folderId
+    const defaultFolderId = "1Qs4Oi8OGZ-t2HKGX5PUH4-FMVcVYdI9N"; // ID của folder "tài liệu sheet"
+    
+    // Nếu có folder ID, thêm vào parent, nếu không dùng folder mặc định
     if (folderId) {
       fileMetadata.parents = [folderId];
+      console.log(`Tải lên vào folder được chỉ định: ${folderId}`);
+    } else {
+      fileMetadata.parents = [defaultFolderId];
+      console.log(`Tải lên vào folder mặc định "tài liệu sheet": ${defaultFolderId}`);
     }
     
     // Tạo media cho file
@@ -260,7 +269,7 @@ export async function POST(request) {
     
     console.log('Thông tin request:', {
       driveLink: driveLink || 'không có',
-      folderId: folderId || 'không có'
+      folderId: folderId || 'sẽ dùng folder mặc định "tài liệu sheet"'
     });
     
     // Validate drive link
