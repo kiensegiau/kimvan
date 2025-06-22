@@ -10,6 +10,8 @@ import {
   checkAndDeleteDuplicates 
 } from '@/utils/drive-utils';
 import { processPDF } from '@/app/api/drive/remove-watermark/lib/drive-fix-blockdown.js';
+import axios from 'axios';
+import FormData from 'form-data';
 
 // Tải xuống file từ Google Drive
 async function downloadFromGoogleDrive(fileId) {
@@ -216,7 +218,7 @@ async function downloadFromGoogleDrive(fileId) {
 }
 
 // Xử lý file (ví dụ: loại bỏ watermark)
-async function processFile(filePath, mimeType) {
+async function processFile(filePath, mimeType, apiKey) {
   console.log(`Đang xử lý file: ${filePath}`);
   
   // Tạo đường dẫn cho file đã xử lý
@@ -228,9 +230,21 @@ async function processFile(filePath, mimeType) {
   try {
     // Xác định loại file và áp dụng xử lý phù hợp
     if (mimeType.includes('pdf')) {
-      // Xử lý file PDF - hiện tại chỉ sao chép
-      console.log('Đang xử lý file PDF...');
-      fs.copyFileSync(filePath, processedPath);
+      // Xử lý file PDF - sử dụng API techhk.aoscdn.com để xóa watermark
+      console.log('Đang xử lý file PDF với API xóa watermark...');
+      
+      // API Key mặc định
+      const DEFAULT_API_KEY = process.env.TECHHK_API_KEY || 'wxu5s7wu6c4hfc0di';
+      
+      try {
+        // Gọi API xóa watermark với apiKey được truyền vào hoặc dùng mặc định
+        const apiKeyToUse = apiKey || DEFAULT_API_KEY;
+        await processPDFWatermark(filePath, processedPath, apiKeyToUse);
+        console.log(`PDF đã được xử lý thành công với API xóa watermark`);
+      } catch (watermarkError) {
+        console.error(`Lỗi khi xóa watermark: ${watermarkError.message}. Sẽ sao chép file gốc.`);
+        fs.copyFileSync(filePath, processedPath);
+      }
     } else if (mimeType.includes('image')) {
       // Xử lý file hình ảnh - hiện tại chỉ sao chép
       console.log('Đang xử lý file hình ảnh...');
@@ -266,6 +280,170 @@ async function processFile(filePath, mimeType) {
   } catch (error) {
     console.error('Lỗi khi xử lý file:', error);
     throw new Error(`Không thể xử lý file: ${error.message}`);
+  }
+}
+
+// Thêm các hàm cần thiết để xử lý watermark PDF
+// Cấu hình API
+const API_ENDPOINT = {
+  CREATE_TASK: 'https://techhk.aoscdn.com/api/tasks/document/conversion',
+  CHECK_STATUS: 'https://techhk.aoscdn.com/api/tasks/document/conversion/',
+  CHECK_CREDITS: 'https://techhk.aoscdn.com/api/customers/coins'
+};
+
+// Thời gian tối đa chờ xử lý từ API (30 giây)
+const MAX_POLLING_TIME = 30000;
+// Khoảng thời gian giữa các lần kiểm tra trạng thái (1 giây)
+const POLLING_INTERVAL = 1000;
+
+/**
+ * Tạo nhiệm vụ xóa watermark trên API bên ngoài
+ * @param {string} filePath - Đường dẫn đến file PDF cần xử lý
+ * @param {string} apiKey - API key cho dịch vụ
+ * @returns {Promise<string>} - Task ID
+ */
+async function createWatermarkRemovalTask(filePath, apiKey) {
+  const form = new FormData();
+  form.append('format', 'doc-repair');
+  form.append('file', fs.createReadStream(filePath));
+  
+  try {
+    const response = await axios.post(API_ENDPOINT.CREATE_TASK, form, {
+      headers: {
+        ...form.getHeaders(),
+        'X-API-KEY': apiKey
+      }
+    });
+    
+    if (response.data?.status === 200 && response.data?.data?.task_id) {
+      return response.data.data.task_id;
+    } else {
+      throw new Error(`Lỗi khi tạo nhiệm vụ: ${response.data?.message || 'Không xác định'}`);
+    }
+  } catch (error) {
+    throw new Error(`Lỗi API: ${error.message}`);
+  }
+}
+
+/**
+ * Kiểm tra trạng thái của nhiệm vụ
+ * @param {string} taskId - ID của nhiệm vụ 
+ * @param {string} apiKey - API key
+ */
+async function checkTaskStatus(taskId, apiKey) {
+  try {
+    const response = await axios.get(`${API_ENDPOINT.CHECK_STATUS}${taskId}`, {
+      headers: {
+        'X-API-KEY': apiKey
+      }
+    });
+    
+    if (response.data?.status === 200) {
+      return response.data.data;
+    } else {
+      throw new Error(`Lỗi khi kiểm tra trạng thái: ${response.data?.message || 'Không xác định'}`);
+    }
+  } catch (error) {
+    throw new Error(`Lỗi API: ${error.message}`);
+  }
+}
+
+/**
+ * Kiểm tra trạng thái và chờ cho đến khi hoàn thành
+ * @param {string} taskId - ID của nhiệm vụ
+ * @param {string} apiKey - API key 
+ * @param {number} startTime - Thời gian bắt đầu kiểm tra
+ */
+async function pollTaskStatus(taskId, apiKey, startTime = Date.now()) {
+  // Kiểm tra nếu đã quá thời gian chờ
+  if (Date.now() - startTime > MAX_POLLING_TIME) {
+    throw new Error('Quá thời gian chờ xử lý từ API');
+  }
+  
+  // Kiểm tra trạng thái
+  const status = await checkTaskStatus(taskId, apiKey);
+  
+  // Các mã trạng thái:
+  // state < 0: Lỗi
+  // state = 0: Đang xếp hàng
+  // state = 1: Hoàn thành
+  // state = 2-5: Đang xử lý
+  if (status.state === 1) {
+    // Hoàn thành
+    return status;
+  } else if (status.state < 0) {
+    // Xử lý lỗi
+    const errorMessages = {
+      '-8': 'Xử lý vượt quá thời gian cho phép',
+      '-7': 'File không hợp lệ',
+      '-6': 'Mật khẩu không đúng',
+      '-5': 'File vượt quá kích thước cho phép',
+      '-4': 'Không thể gửi nhiệm vụ',
+      '-3': 'Không thể tải xuống file',
+      '-2': 'Không thể tải file lên',
+      '-1': 'Xử lý thất bại'
+    };
+    
+    throw new Error(`Xử lý thất bại: ${errorMessages[status.state] || 'Lỗi không xác định'}`);
+  }
+  
+  // Chờ một khoảng thời gian trước khi kiểm tra lại
+  await new Promise(resolve => setTimeout(resolve, POLLING_INTERVAL));
+  return pollTaskStatus(taskId, apiKey, startTime);
+}
+
+/**
+ * Tải xuống file đã xử lý
+ * @param {string} fileUrl - URL của file cần tải xuống
+ * @param {string} outputPath - Đường dẫn lưu file
+ */
+async function downloadProcessedFile(fileUrl, outputPath) {
+  try {
+    const response = await axios({
+      method: 'GET',
+      url: fileUrl,
+      responseType: 'stream'
+    });
+    
+    const writer = fs.createWriteStream(outputPath);
+    response.data.pipe(writer);
+    
+    return new Promise((resolve, reject) => {
+      writer.on('finish', resolve);
+      writer.on('error', reject);
+    });
+  } catch (error) {
+    throw new Error(`Lỗi khi tải file: ${error.message}`);
+  }
+}
+
+/**
+ * Xử lý file PDF để xóa watermark
+ * @param {string} filePath - Đường dẫn đến file cần xử lý
+ * @param {string} outputPath - Đường dẫn lưu file đã xử lý
+ * @param {string} apiKey - API key
+ */
+async function processPDFWatermark(filePath, outputPath, apiKey) {
+  try {
+    // Tạo nhiệm vụ xử lý
+    const taskId = await createWatermarkRemovalTask(filePath, apiKey);
+    console.log(`Đã tạo nhiệm vụ xử lý với ID: ${taskId}`);
+    
+    // Chờ và kiểm tra kết quả
+    const result = await pollTaskStatus(taskId, apiKey);
+    console.log(`Xử lý hoàn tất. Kích thước file đầu vào: ${result.input_size} bytes, đầu ra: ${result.output_size} bytes`);
+    
+    // Tải xuống file đã xử lý
+    await downloadProcessedFile(result.file, outputPath);
+    console.log(`Đã tải file đã xử lý về ${outputPath}`);
+    
+    return {
+      inputSize: result.input_size,
+      outputSize: result.output_size,
+      pages: result.file_pages || 0
+    };
+  } catch (error) {
+    throw new Error(`Lỗi khi xử lý PDF: ${error.message}`);
   }
 }
 
@@ -587,11 +765,12 @@ export async function POST(request) {
   try {
     // Parse request body
     const requestBody = await request.json();
-    const { driveLink, folderId } = requestBody;
+    const { driveLink, folderId, apiKey } = requestBody;
     
     console.log('Thông tin request:', {
       driveLink: driveLink || 'không có',
-      folderId: folderId || 'sẽ dùng folder mặc định "1Lt10aHyWp9VtPaImzInE0DmIcbrjJgpN"'
+      folderId: folderId || 'sẽ dùng folder mặc định "1Lt10aHyWp9VtPaImzInE0DmIcbrjJgpN"',
+      apiKey: apiKey ? 'Đã cung cấp' : 'Sử dụng mặc định'
     });
     
     // Validate drive link
@@ -632,7 +811,7 @@ export async function POST(request) {
         processedFilePath = downloadResult.filePath;
       } else {
         // Xử lý file thông thường
-        const processResult = await processFile(downloadResult.filePath, downloadResult.mimeType);
+        const processResult = await processFile(downloadResult.filePath, downloadResult.mimeType, apiKey);
         processedFilePath = processResult.processedPath;
       }
       
