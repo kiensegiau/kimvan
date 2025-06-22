@@ -267,7 +267,7 @@ export async function POST(request, { params }) {
         const processResult = await processLink(baseUrl, cellInfo.url, cookie, 2, 90000); // 90 giây timeout, 2 lần retry
         
         // Tạo giá trị mới cho ô
-        const newUrl = processResult.processedFile.link;
+        const newUrl = processResult.processedLink;
         console.log(`Đã xử lý thành công, URL mới: ${newUrl}`);
         
         try {
@@ -341,11 +341,60 @@ export async function POST(request, { params }) {
         
       } catch (error) {
         console.error(`❌ Lỗi khi xử lý ô [${cellInfo.rowIndex + 1}:${cellInfo.colIndex + 1}]:`, error);
+        
+        // Kiểm tra loại lỗi để hiển thị thông báo phù hợp
+        let errorMessage = error.message;
+        
+        // Thêm thông tin về vị trí ô vào thông báo lỗi
+        errorMessage = `Ô [${cellInfo.rowIndex + 1}:${cellInfo.colIndex + 1}]: ${errorMessage}`;
+        
+        // Xử lý các loại lỗi phổ biến
+        if (error.message.includes('Không có quyền truy cập') || error.message.includes('Không có quyền tải xuống')) {
+          // Thử cập nhật ô với thông báo lỗi
+          try {
+            console.log(`Cập nhật ô với thông báo lỗi quyền truy cập...`);
+            
+            // Thêm comment vào ô để thông báo lỗi
+            await sheets.spreadsheets.batchUpdate({
+              spreadsheetId: sheet.sheetId,
+              requestBody: {
+                requests: [
+                  {
+                    updateCells: {
+                      range: {
+                        sheetId: actualSheetId,
+                        startRowIndex: cellInfo.rowIndex,
+                        endRowIndex: cellInfo.rowIndex + 1,
+                        startColumnIndex: cellInfo.colIndex,
+                        endColumnIndex: cellInfo.colIndex + 1
+                      },
+                      rows: [
+                        {
+                          values: [
+                            {
+                              note: `Lỗi: Không có quyền truy cập file này. Vui lòng kiểm tra quyền chia sẻ của file.`
+                            }
+                          ]
+                        }
+                      ],
+                      fields: 'note'
+                    }
+                  }
+                ]
+              }
+            });
+            
+            console.log(`Đã thêm ghi chú lỗi vào ô [${cellInfo.rowIndex + 1}:${cellInfo.colIndex + 1}]`);
+          } catch (commentError) {
+            console.error(`Không thể thêm ghi chú lỗi:`, commentError);
+          }
+        }
+        
         errors.push({
           rowIndex: cellInfo.rowIndex,
           colIndex: cellInfo.colIndex,
           url: cellInfo.url,
-          error: error.message,
+          error: errorMessage,
           timestamp: new Date().toISOString()
         });
         

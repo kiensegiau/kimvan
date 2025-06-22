@@ -427,20 +427,31 @@ export async function processLink(baseUrl, url, cookie = '', maxRetries = 2, tim
         // Clear the timeout
         clearTimeout(timeoutId);
         
+        // Lấy dữ liệu phản hồi
+        const responseData = await processResponse.json();
+        
         if (!processResponse.ok) {
-          const errorData = await processResponse.json();
-          throw new Error(errorData.error || 'Không thể xử lý file');
+          // Kiểm tra lỗi quyền truy cập
+          if (responseData.error && (
+              responseData.error.includes('Không có quyền truy cập') || 
+              responseData.error.includes('Không có quyền tải xuống') ||
+              responseData.error.includes('permission')
+          )) {
+            console.error(`Lỗi quyền truy cập: ${responseData.error}`);
+            throw new Error(`Không có quyền truy cập file này. Vui lòng kiểm tra quyền chia sẻ của file.`);
+          }
+          
+          throw new Error(responseData.error || 'Không thể xử lý file');
         }
         
-        const processResult = await processResponse.json();
-        console.log(`Xử lý thành công link: ${url} -> ${processResult.processedFile.link}`);
+        console.log(`Xử lý thành công link: ${url} -> ${responseData.processedFile.link}`);
         
         return {
           success: true,
           originalLink: url,
-          processedLink: processResult.processedFile.link,
-          processedFileId: processResult.processedFile.id,
-          processedFileName: processResult.processedFile.name
+          processedLink: responseData.processedFile.link,
+          processedFileId: responseData.processedFile.id,
+          processedFileName: responseData.processedFile.name
         };
       } catch (fetchError) {
         // Xóa timeout nếu có lỗi
@@ -455,6 +466,16 @@ export async function processLink(baseUrl, url, cookie = '', maxRetries = 2, tim
       }
     } catch (error) {
       console.error(`Lỗi khi xử lý link (lần thử ${retries + 1}/${maxRetries + 1}):`, error.message);
+      
+      // Kiểm tra nếu là lỗi quyền truy cập thì không retry
+      if (error.message && (
+          error.message.includes('Không có quyền truy cập') || 
+          error.message.includes('Không có quyền tải xuống') ||
+          error.message.includes('permission')
+      )) {
+        console.error(`Không thể truy cập file, bỏ qua các lần thử lại.`);
+        throw error;
+      }
       
       retries++;
       
