@@ -288,14 +288,14 @@ async function processFile(filePath, mimeType, apiKey) {
 }
 
 /**
- * Xóa watermark dạng text ở header và footer của PDF
+ * Xóa watermark dạng text ở header và footer của PDF bằng cách cắt PDF
  * @param {string} inputPath - Đường dẫn đến file PDF cần xử lý
  * @param {string} outputPath - Đường dẫn lưu file PDF sau khi xử lý
  */
 async function removeHeaderFooterWatermark(inputPath, outputPath) {
   try {
     // Sử dụng thư viện pdf-lib để đọc và xử lý PDF
-    const { PDFDocument, rgb } = require('pdf-lib');
+    const { PDFDocument } = require('pdf-lib');
     
     // Đọc file PDF
     const pdfBytes = fs.readFileSync(inputPath);
@@ -310,38 +310,24 @@ async function removeHeaderFooterWatermark(inputPath, outputPath) {
       const page = pdfDoc.getPage(i);
       const { width, height } = page.getSize();
       
-      // Tạo redaction annotation để xóa text ở header (phần trên cùng của trang)
-      const headerHeight = height * 0.05; // 5% chiều cao trang cho header
-      page.drawRectangle({
-        x: 0,
-        y: height - headerHeight,
-        width: width,
-        height: headerHeight,
-        color: rgb(1, 1, 1), // Màu trắng
-        opacity: 1,
-      });
+      // Tính toán kích thước mới sau khi cắt header và footer
+      const headerCut = height * 0.03; // Cắt 3% từ phía trên
+      const footerCut = height * 0.03; // Cắt 3% từ phía dưới
+      const newHeight = height - headerCut - footerCut;
       
-      // Tạo redaction annotation để xóa text ở footer (phần dưới cùng của trang)
-      const footerHeight = height * 0.05; // 5% chiều cao trang cho footer
-      page.drawRectangle({
-        x: 0,
-        y: 0,
-        width: width,
-        height: footerHeight,
-        color: rgb(1, 1, 1), // Màu trắng
-        opacity: 1,
-      });
+      // Thiết lập CropBox mới để cắt header và footer
+      page.setCropBox(0, footerCut, width, newHeight);
     }
     
     // Lưu file PDF sau khi xử lý
     const modifiedPdfBytes = await pdfDoc.save();
     fs.writeFileSync(outputPath, modifiedPdfBytes);
     
-    console.log(`Đã xóa watermark dạng text ở header và footer của PDF: ${outputPath}`);
+    console.log(`Đã cắt header và footer của PDF: ${outputPath}`);
     return true;
   } catch (error) {
-    console.error('Lỗi khi xóa watermark dạng text ở header và footer:', error);
-    throw new Error(`Không thể xóa watermark dạng text: ${error.message}`);
+    console.error('Lỗi khi cắt header và footer:', error);
+    throw new Error(`Không thể cắt header và footer: ${error.message}`);
   }
 }
 
