@@ -246,6 +246,23 @@ export async function POST(request, { params }) {
       });
     }
     
+    // Nhóm các ô có cùng URL để tránh xử lý lặp lại
+    const urlGroups = {};
+    cellsToProcess.forEach(cellInfo => {
+      // Chuẩn hóa URL để so sánh
+      const normalizedUrl = extractDriveFileId(cellInfo.url);
+      if (!urlGroups[normalizedUrl]) {
+        urlGroups[normalizedUrl] = {
+          fileId: normalizedUrl,
+          originalUrl: cellInfo.url,
+          cells: []
+        };
+      }
+      urlGroups[normalizedUrl].cells.push(cellInfo);
+    });
+    
+    console.log(`Đã nhóm ${cellsToProcess.length} ô thành ${Object.keys(urlGroups).length} nhóm URL duy nhất`);
+    
     // Xử lý từng link
     const processedCells = [];
     const errors = [];
@@ -256,105 +273,28 @@ export async function POST(request, { params }) {
     const baseUrl = `${protocol}://${host}`;
     const cookie = request.headers.get('cookie') || '';
     
-    // Xử lý tuần tự từng link thay vì song song
-    console.log(`Bắt đầu xử lý tuần tự ${cellsToProcess.length} link...`);
+    // Xử lý tuần tự từng nhóm link thay vì từng ô riêng lẻ
+    console.log(`Bắt đầu xử lý tuần tự ${Object.keys(urlGroups).length} link duy nhất...`);
     
-    for (const cellInfo of cellsToProcess) {
+    for (const fileId of Object.keys(urlGroups)) {
+      const urlGroup = urlGroups[fileId];
+      const firstCell = urlGroup.cells[0]; // Lấy ô đầu tiên để hiển thị thông tin
+      
       try {
-        console.log(`\n===== Đang xử lý ô [${cellInfo.rowIndex + 1}:${cellInfo.colIndex + 1}]: ${cellInfo.url} =====`);
+        console.log(`\n===== Đang xử lý URL: ${urlGroup.originalUrl} (${urlGroup.cells.length} ô) =====`);
         
         // Sử dụng hàm processLink với retry và timeout
-        const processResult = await processLink(baseUrl, cellInfo.url, cookie, 2, 90000); // 90 giây timeout, 2 lần retry
+        const processResult = await processLink(baseUrl, urlGroup.originalUrl, cookie, 2, 90000); // 90 giây timeout, 2 lần retry
         
         // Tạo giá trị mới cho ô
         const newUrl = processResult.processedLink;
         console.log(`Đã xử lý thành công, URL mới: ${newUrl}`);
         
-        try {
-          console.log(`Cập nhật ô [${cellInfo.rowIndex + 1}:${cellInfo.colIndex + 1}] trong sheet...`);
-          // Sử dụng batchUpdate để cập nhật cả giá trị và định dạng hyperlink
-          await sheets.spreadsheets.batchUpdate({
-            spreadsheetId: sheet.sheetId,
-            requestBody: {
-              requests: [
-                {
-                  updateCells: {
-                    range: {
-                      sheetId: actualSheetId, // Sử dụng sheetId thực tế
-                      startRowIndex: cellInfo.rowIndex,
-                      endRowIndex: cellInfo.rowIndex + 1,
-                      startColumnIndex: cellInfo.colIndex,
-                      endColumnIndex: cellInfo.colIndex + 1
-                    },
-                    rows: [
-                      {
-                        values: [
-                          {
-                            userEnteredValue: {
-                              stringValue: cellInfo.cell // Giữ nguyên text hiển thị
-                            },
-                            userEnteredFormat: {
-                              textFormat: {
-                                link: { uri: newUrl }
-                              }
-                            }
-                          }
-                        ]
-                      }
-                    ],
-                    fields: 'userEnteredValue,userEnteredFormat.textFormat.link'
-                  }
-                }
-              ]
-            }
-          });
-          console.log(`Đã cập nhật ô thành công với batchUpdate`);
-        } catch (batchUpdateError) {
-          console.error('Lỗi khi sử dụng batchUpdate, thử phương pháp thay thế:', batchUpdateError);
-          
-          // Phương pháp thay thế sử dụng values.update
-          const newCellValue = createHyperlinkFormula(cellInfo.cell, newUrl);
-          console.log(`Thử phương pháp thay thế với values.update, giá trị mới: ${newCellValue}`);
-          await sheets.spreadsheets.values.update({
-            spreadsheetId: sheet.sheetId,
-            range: `${firstSheetName}!${String.fromCharCode(65 + cellInfo.colIndex)}${cellInfo.rowIndex + 1}`,
-            valueInputOption: 'USER_ENTERED',
-            requestBody: {
-              values: [[newCellValue]]
-            }
-          });
-          console.log(`Đã cập nhật ô thành công với values.update`);
-        }
-        
-        processedCells.push({
-          rowIndex: cellInfo.rowIndex,
-          colIndex: cellInfo.colIndex,
-          originalUrl: cellInfo.url,
-          newUrl: newUrl,
-          duplicatesDeleted: processResult.duplicatesDeleted || 0
-        });
-        
-        console.log(`✅ Đã xử lý và cập nhật ô [${cellInfo.rowIndex + 1}:${cellInfo.colIndex + 1}] thành công`);
-        
-        // Đợi một khoảng thời gian ngắn giữa các yêu cầu để tránh quá tải API
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-      } catch (error) {
-        console.error(`❌ Lỗi khi xử lý ô [${cellInfo.rowIndex + 1}:${cellInfo.colIndex + 1}]:`, error);
-        
-        // Kiểm tra loại lỗi để hiển thị thông báo phù hợp
-        let errorMessage = error.message;
-        
-        // Thêm thông tin về vị trí ô vào thông báo lỗi
-        errorMessage = `Ô [${cellInfo.rowIndex + 1}:${cellInfo.colIndex + 1}]: ${errorMessage}`;
-        
-        // Xử lý các loại lỗi phổ biến
-        if (error.message.includes('Không có quyền truy cập') || error.message.includes('Không có quyền tải xuống')) {
-          // Thử cập nhật ô với thông báo lỗi
+        // Cập nhật tất cả các ô trong nhóm
+        for (const cellInfo of urlGroup.cells) {
           try {
-            console.log(`Cập nhật ô với thông báo lỗi quyền truy cập...`);
-            
-            // Thêm comment vào ô để thông báo lỗi
+            console.log(`Cập nhật ô [${cellInfo.rowIndex + 1}:${cellInfo.colIndex + 1}] trong sheet...`);
+            // Sử dụng batchUpdate để cập nhật cả giá trị và định dạng hyperlink
             await sheets.spreadsheets.batchUpdate({
               spreadsheetId: sheet.sheetId,
               requestBody: {
@@ -362,7 +302,7 @@ export async function POST(request, { params }) {
                   {
                     updateCells: {
                       range: {
-                        sheetId: actualSheetId,
+                        sheetId: actualSheetId, // Sử dụng sheetId thực tế
                         startRowIndex: cellInfo.rowIndex,
                         endRowIndex: cellInfo.rowIndex + 1,
                         startColumnIndex: cellInfo.colIndex,
@@ -372,31 +312,119 @@ export async function POST(request, { params }) {
                         {
                           values: [
                             {
-                              note: `Lỗi: Không có quyền truy cập file này. Vui lòng kiểm tra quyền chia sẻ của file.`
+                              userEnteredValue: {
+                                stringValue: cellInfo.cell // Giữ nguyên text hiển thị
+                              },
+                              userEnteredFormat: {
+                                textFormat: {
+                                  link: { uri: newUrl }
+                                }
+                              }
                             }
                           ]
                         }
                       ],
-                      fields: 'note'
+                      fields: 'userEnteredValue,userEnteredFormat.textFormat.link'
                     }
                   }
                 ]
               }
             });
+            console.log(`Đã cập nhật ô thành công với batchUpdate`);
+          } catch (batchUpdateError) {
+            console.error('Lỗi khi sử dụng batchUpdate, thử phương pháp thay thế:', batchUpdateError);
             
-            console.log(`Đã thêm ghi chú lỗi vào ô [${cellInfo.rowIndex + 1}:${cellInfo.colIndex + 1}]`);
-          } catch (commentError) {
-            console.error(`Không thể thêm ghi chú lỗi:`, commentError);
+            // Phương pháp thay thế sử dụng values.update
+            const newCellValue = createHyperlinkFormula(cellInfo.cell, newUrl);
+            console.log(`Thử phương pháp thay thế với values.update, giá trị mới: ${newCellValue}`);
+            await sheets.spreadsheets.values.update({
+              spreadsheetId: sheet.sheetId,
+              range: `${firstSheetName}!${String.fromCharCode(65 + cellInfo.colIndex)}${cellInfo.rowIndex + 1}`,
+              valueInputOption: 'USER_ENTERED',
+              requestBody: {
+                values: [[newCellValue]]
+              }
+            });
+            console.log(`Đã cập nhật ô thành công với values.update`);
           }
+          
+          processedCells.push({
+            rowIndex: cellInfo.rowIndex,
+            colIndex: cellInfo.colIndex,
+            originalUrl: cellInfo.url,
+            newUrl: newUrl,
+            duplicatesDeleted: processResult.duplicatesDeleted || 0,
+            sharedWithCells: urlGroup.cells.length - 1 // Số ô khác có cùng URL
+          });
+          
+          console.log(`✅ Đã xử lý và cập nhật ô [${cellInfo.rowIndex + 1}:${cellInfo.colIndex + 1}] thành công`);
         }
         
-        errors.push({
-          rowIndex: cellInfo.rowIndex,
-          colIndex: cellInfo.colIndex,
-          url: cellInfo.url,
-          error: errorMessage,
-          timestamp: new Date().toISOString()
-        });
+        // Đợi một khoảng thời gian ngắn giữa các yêu cầu để tránh quá tải API
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+      } catch (error) {
+        console.error(`❌ Lỗi khi xử lý URL: ${urlGroup.originalUrl}:`, error);
+        
+        // Xử lý lỗi cho tất cả các ô trong nhóm
+        for (const cellInfo of urlGroup.cells) {
+          // Kiểm tra loại lỗi để hiển thị thông báo phù hợp
+          let errorMessage = error.message;
+          
+          // Thêm thông tin về vị trí ô vào thông báo lỗi
+          errorMessage = `Ô [${cellInfo.rowIndex + 1}:${cellInfo.colIndex + 1}]: ${errorMessage}`;
+          
+          // Xử lý các loại lỗi phổ biến
+          if (error.message.includes('Không có quyền truy cập') || error.message.includes('Không có quyền tải xuống')) {
+            // Thử cập nhật ô với thông báo lỗi
+            try {
+              console.log(`Cập nhật ô với thông báo lỗi quyền truy cập...`);
+              
+              // Thêm comment vào ô để thông báo lỗi
+              await sheets.spreadsheets.batchUpdate({
+                spreadsheetId: sheet.sheetId,
+                requestBody: {
+                  requests: [
+                    {
+                      updateCells: {
+                        range: {
+                          sheetId: actualSheetId,
+                          startRowIndex: cellInfo.rowIndex,
+                          endRowIndex: cellInfo.rowIndex + 1,
+                          startColumnIndex: cellInfo.colIndex,
+                          endColumnIndex: cellInfo.colIndex + 1
+                        },
+                        rows: [
+                          {
+                            values: [
+                              {
+                                note: `Lỗi: Không có quyền truy cập file này. Vui lòng kiểm tra quyền chia sẻ của file.`
+                              }
+                            ]
+                          }
+                        ],
+                        fields: 'note'
+                      }
+                    }
+                  ]
+                }
+              });
+              
+              console.log(`Đã thêm ghi chú lỗi vào ô [${cellInfo.rowIndex + 1}:${cellInfo.colIndex + 1}]`);
+            } catch (commentError) {
+              console.error(`Không thể thêm ghi chú lỗi:`, commentError);
+            }
+          }
+          
+          errors.push({
+            rowIndex: cellInfo.rowIndex,
+            colIndex: cellInfo.colIndex,
+            url: cellInfo.url,
+            error: errorMessage,
+            timestamp: new Date().toISOString(),
+            sharedWithCells: urlGroup.cells.length - 1 // Số ô khác có cùng URL
+          });
+        }
         
         // Đợi một khoảng thời gian ngắn trước khi tiếp tục sau lỗi
         await new Promise(resolve => setTimeout(resolve, 3000));
@@ -404,13 +432,15 @@ export async function POST(request, { params }) {
     }
     
     console.log(`\n===== KẾT QUẢ XỬ LÝ LINK =====`);
-    console.log(`Tổng số link: ${cellsToProcess.length}`);
+    console.log(`Tổng số ô chứa link: ${cellsToProcess.length}`);
+    console.log(`Số link duy nhất: ${Object.keys(urlGroups).length}`);
     console.log(`Đã xử lý thành công: ${processedCells.length}`);
     console.log(`Thất bại: ${errors.length}`);
     
     return NextResponse.json({
       success: true,
-      totalLinks: cellsToProcess.length,
+      totalCells: cellsToProcess.length,
+      uniqueLinks: Object.keys(urlGroups).length,
       processed: processedCells.length,
       failed: errors.length,
       processedCells,
