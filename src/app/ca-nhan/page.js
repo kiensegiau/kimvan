@@ -37,13 +37,9 @@ export default function PersonalPage() {
       try {
         setLoading(true);
         setError(null);
-        console.log('Đang gọi API lấy thông tin người dùng...');
         
         const response = await fetch('/api/users/me');
-        console.log('Phản hồi từ API:', response.status, response.statusText);
-        
         const result = await response.json();
-        console.log('Dữ liệu phản hồi:', result);
 
         if (!result.success) {
           throw new Error(result.error || 'Không thể lấy thông tin người dùng');
@@ -51,7 +47,6 @@ export default function PersonalPage() {
 
         // Xử lý dữ liệu người dùng - API trả về result.user thay vì result.data
         const data = result.user || {};
-        console.log('Nhận được dữ liệu người dùng:', data);
         
         // Thiết lập dữ liệu người dùng với kiểm tra null/undefined
         setUserData({
@@ -260,7 +255,6 @@ export default function PersonalPage() {
     try {
       setIsPasswordLoading(true);
       
-      console.log('Đang gửi yêu cầu đổi mật khẩu...');
       const response = await fetch('/api/users/me/password', {
         method: 'POST',
         headers: {
@@ -277,7 +271,6 @@ export default function PersonalPage() {
         throw new Error(result.error || 'Có lỗi xảy ra khi đổi mật khẩu');
       }
 
-      console.log('Đổi mật khẩu thành công!');
       setPasswordSuccess('Đổi mật khẩu thành công!');
       
       // Reset form

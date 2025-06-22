@@ -37,7 +37,6 @@ export function useCourseData(id) {
       cleanupOldCaches();
       
       setCacheStatus('saved');
-      console.log(`✅ Đã lưu dữ liệu khóa học ${id} vào cache`);
     } catch (error) {
       console.error('Lỗi khi lưu cache:', error);
       // Xử lý lỗi im lặng
@@ -61,12 +60,10 @@ export function useCourseData(id) {
       if (now - cacheItem.timestamp > CACHE_DURATION) {
         localStorage.removeItem(cacheKey);
         setCacheStatus('expired');
-        console.log(`🕒 Cache cho khóa học ${id} đã hết hạn`);
         return null;
       }
       
       setCacheStatus('hit');
-      console.log(`✅ Đã lấy dữ liệu khóa học ${id} từ cache`);
       return cacheItem.data;
     } catch (error) {
       console.error('Lỗi khi đọc cache:', error);
@@ -109,7 +106,6 @@ export function useCourseData(id) {
         // Xóa các cache cũ nhất
         for (let i = 0; i < cacheItems.length - MAX_CACHE_ITEMS; i++) {
           localStorage.removeItem(cacheItems[i].key);
-          console.log(`🗑️ Đã xóa cache cũ: ${cacheItems[i].key}`);
         }
       }
     } catch (e) {
@@ -126,7 +122,6 @@ export function useCourseData(id) {
       const cacheKey = `course-detail-${id}`;
       localStorage.removeItem(cacheKey);
       setCacheStatus('cleared');
-      console.log(`🗑️ Đã xóa cache cho khóa học ${id}`);
     } catch (error) {
       console.error('Lỗi khi xóa cache:', error);
     }

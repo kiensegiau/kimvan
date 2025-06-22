@@ -144,12 +144,11 @@ export default function CoursesPage() {
       
       setCacheStatus('hit');
       return cacheItem.data;
-          } catch (error) {
+    } catch (error) {
       console.error('Lỗi khi đọc cache:', error);
       // Xóa cache lỗi
       try {
         localStorage.removeItem('courses-list');
-        console.log('Đã xóa cache lỗi');
       } catch (e) {
         // Bỏ qua nếu không thể xóa
       }
@@ -250,7 +249,6 @@ export default function CoursesPage() {
     try {
       localStorage.removeItem('courses-list');
       setCacheStatus('cleared');
-      console.log('Đã xóa cache khóa học');
     } catch (error) {
       console.error('Lỗi khi xóa cache:', error);
     }
@@ -267,7 +265,6 @@ export default function CoursesPage() {
     if (cachedData) {
       setCourses(cachedData);
       setLoading(false);
-      console.log('Đã tải dữ liệu khóa học từ cache');
     } else {
       fetchCourses();
     }
@@ -320,9 +317,6 @@ export default function CoursesPage() {
     // Tạo bản sao để tránh thay đổi trực tiếp mảng gốc
     let result = [...courses];
     
-    // Thêm thông tin để debug
-    console.log(`Đang lọc ${courses.length} khóa học`);
-    
     // Lọc các khóa học đã đăng ký nếu chế độ chỉ hiển thị khóa học đã đăng ký được bật
     if (enrolledOnly && enrolledCourses.length > 0) {
       const enrolledCourseIds = enrolledCourses.map(enrollment => enrollment.courseId);
@@ -330,7 +324,6 @@ export default function CoursesPage() {
         enrolledCourseIds.includes(course._id) || 
         enrolledCourseIds.includes(course.courseId)
       );
-      console.log(`Sau khi lọc theo đăng ký: ${result.length} khóa học`);
     }
     
     // Lọc theo từ khóa tìm kiếm - tối ưu để không phải lọc nếu không có từ khóa
@@ -340,7 +333,6 @@ export default function CoursesPage() {
         (course.name?.toLowerCase().includes(term) ||
         course.description?.toLowerCase().includes(term))
       );
-      console.log(`Sau khi lọc theo từ khóa "${term}": ${result.length} khóa học`);
     }
     
     // Lọc theo danh mục

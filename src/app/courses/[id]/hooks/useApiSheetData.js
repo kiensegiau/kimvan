@@ -31,7 +31,6 @@ export function useApiSheetData(courseId) {
       cleanupOldCaches();
       
       setCacheStatus('saved-list');
-      console.log(`✅ Đã lưu danh sách sheet cho khóa học ${courseId} vào cache`);
     } catch (error) {
       console.error('Lỗi khi lưu cache sheet list:', error);
     }
@@ -54,7 +53,6 @@ export function useApiSheetData(courseId) {
       localStorage.setItem(cacheKey, JSON.stringify(cacheItem));
       
       setCacheStatus(`saved-detail-${sheetId}`);
-      console.log(`✅ Đã lưu chi tiết sheet ${sheetId} vào cache`);
     } catch (error) {
       console.error('Lỗi khi lưu cache sheet detail:', error);
     }
@@ -77,12 +75,10 @@ export function useApiSheetData(courseId) {
       if (now - cacheItem.timestamp > CACHE_DURATION) {
         localStorage.removeItem(cacheKey);
         setCacheStatus('expired-list');
-        console.log(`🕒 Cache danh sách sheet của khóa học ${courseId} đã hết hạn`);
         return null;
       }
       
       setCacheStatus('hit-list');
-      console.log(`✅ Đã lấy danh sách sheet của khóa học ${courseId} từ cache`);
       return cacheItem.data;
     } catch (error) {
       console.error('Lỗi khi đọc cache danh sách sheet:', error);
@@ -107,12 +103,10 @@ export function useApiSheetData(courseId) {
       if (now - cacheItem.timestamp > CACHE_DURATION) {
         localStorage.removeItem(cacheKey);
         setCacheStatus(`expired-detail-${sheetId}`);
-        console.log(`🕒 Cache chi tiết sheet ${sheetId} đã hết hạn`);
         return null;
       }
       
       setCacheStatus(`hit-detail-${sheetId}`);
-      console.log(`✅ Đã lấy chi tiết sheet ${sheetId} từ cache`);
       return cacheItem.data;
     } catch (error) {
       console.error('Lỗi khi đọc cache chi tiết sheet:', error);
@@ -152,7 +146,6 @@ export function useApiSheetData(courseId) {
         
         for (let i = 0; i < cacheItems.length - MAX_CACHE_ITEMS; i++) {
           localStorage.removeItem(cacheItems[i].key);
-          console.log(`🗑️ Đã xóa cache danh sách sheet cũ: ${cacheItems[i].key}`);
         }
       }
       
@@ -175,7 +168,6 @@ export function useApiSheetData(courseId) {
         
         for (let i = 0; i < cacheItems.length - (MAX_CACHE_ITEMS * 3); i++) {
           localStorage.removeItem(cacheItems[i].key);
-          console.log(`🗑️ Đã xóa cache chi tiết sheet cũ: ${cacheItems[i].key}`);
         }
       }
     } catch (e) {
@@ -201,7 +193,6 @@ export function useApiSheetData(courseId) {
       }
       
       setCacheStatus('cleared');
-      console.log(`🗑️ Đã xóa tất cả cache liên quan đến khóa học ${courseId}`);
     } catch (error) {
       console.error('Lỗi khi xóa cache:', error);
     }

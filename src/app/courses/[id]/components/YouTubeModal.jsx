@@ -161,7 +161,7 @@ const YouTubeModal = ({ isOpen, videoId, onClose }) => {
                   iframeDoc.head.appendChild(style);
                 }
               } catch (error) {
-                console.log("Không thể inject CSS:", error);
+                // Xử lý lỗi im lặng - không cần log
               }
             }
             
