@@ -63,7 +63,6 @@ function addSecurityHeaders(response) {
 
 export async function middleware(request) {
   const { pathname } = request.nextUrl;
-  console.log('🚨 MIDDLEWARE EXECUTED FOR:', pathname);
 
   // Áp dụng security headers cho tất cả các request
   const response = NextResponse.next();
@@ -84,7 +83,6 @@ export async function middleware(request) {
   if (publicPathCache.has(pathname)) {
     const isPublic = publicPathCache.get(pathname);
     if (isPublic) {
-      console.log('🔓 Middleware - Đường dẫn công khai (cached):', pathname);
       return addSecurityHeaders(response);
     }
   }
@@ -94,7 +92,6 @@ export async function middleware(request) {
   
   // Không kiểm tra xác thực cho các đường dẫn công khai
   if (pathIsPublic) {
-    console.log('🔓 Middleware - Đường dẫn công khai:', pathname);
     return addSecurityHeaders(response);
   }
 
@@ -120,7 +117,6 @@ export async function middleware(request) {
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || request.nextUrl.origin;
     
     // Gọi API xác thực token
-    console.log('🔒 Middleware - Đang xác thực token cho đường dẫn:', pathname);
     const verifyResponse = await fetch(`${baseUrl}${TOKEN_VERIFY_API}`, {
       method: 'POST',
       headers: {
@@ -130,7 +126,7 @@ export async function middleware(request) {
     });
 
     if (!verifyResponse.ok) {
-      console.log('❌ Middleware - API xác thực không trả về kết quả thành công');
+      console.log('❌ Middleware - API xác thực không thành công');
       const redirectUrl = new URL(routes.login, request.url);
       redirectUrl.searchParams.set('returnUrl', pathname);
       const redirectResponse = NextResponse.redirect(redirectUrl);
@@ -160,14 +156,9 @@ export async function middleware(request) {
 
     const user = verifyData.user;
     
-    // Log chi tiết thông tin user để debug
-    console.log('🔍 MIDDLEWARE - Thông tin người dùng đầy đủ:', JSON.stringify(user));
-    console.log('🔍 MIDDLEWARE - Role của người dùng từ token:', user.role);
-    
     // Lấy role từ MongoDB thông qua API
     let userRole = user.role || 'user';
     try {
-      console.log('🔍 MIDDLEWARE - Đang lấy role từ MongoDB qua API');
       const roleResponse = await fetch(`${baseUrl}${USER_ROLE_API}`, {
         method: 'POST',
         headers: {
@@ -180,18 +171,14 @@ export async function middleware(request) {
         const roleData = await roleResponse.json();
         if (roleData.success && roleData.role) {
           userRole = roleData.role;
-          console.log('🔍 MIDDLEWARE - Role từ MongoDB:', userRole);
         }
       } else {
-        console.error('❌ MIDDLEWARE - Lỗi khi gọi API role:', await roleResponse.text());
+        console.error('❌ Middleware - Lỗi khi gọi API role:', await roleResponse.text());
       }
     } catch (roleError) {
-      console.error('❌ MIDDLEWARE - Lỗi khi lấy role từ API:', roleError);
+      console.error('❌ Middleware - Lỗi khi lấy role từ API:', roleError);
       // Không làm gián đoạn luồng nếu lỗi API, tiếp tục sử dụng role từ token
     }
-    
-    console.log('🔍 MIDDLEWARE - Role cuối cùng sử dụng:', userRole);
-    console.log('🔍 MIDDLEWARE - Kiểm tra role === admin:', userRole === 'admin');
 
     // Kiểm tra xem token có sắp hết hạn không
     // Lấy thời gian hết hạn từ payload token
@@ -219,8 +206,6 @@ export async function middleware(request) {
         const refreshData = await refreshResponse.json();
         
         if (refreshResponse.ok) {
-          console.log('✅ Làm mới token thành công');
-          
           // Cập nhật cookie với token mới
           if (refreshData.token) {
             // Thiết lập cookie mới cho response
@@ -253,17 +238,12 @@ export async function middleware(request) {
     
     // 1. Kiểm tra nếu yêu cầu là cho trang admin
     if (pathname.startsWith('/admin') && !pathname.startsWith('/admin/login')) {
-      console.log('🔒 Middleware - Kiểm tra quyền truy cập trang admin cho:', pathname);
-      
       // Kiểm tra user có quyền admin không - sử dụng userRole thay vì user.role
       if (!userRole || userRole !== 'admin') {
         console.log('⚠️ Middleware - Không phải là admin, chuyển hướng đến trang chủ');
         const redirectResponse = NextResponse.redirect(new URL('/', request.url));
         return addSecurityHeaders(redirectResponse);
       }
-      
-      // Loại bỏ phần kiểm tra email admin - chỉ kiểm tra role
-      console.log('✅ Middleware - User có role admin hợp lệ:', user.email);
       
       // Thêm cookie admin_access để đánh dấu quyền admin
       response.cookies.set('admin_access', 'true', {
@@ -274,18 +254,12 @@ export async function middleware(request) {
         path: '/',
       });
       
-      // Nếu hợp lệ, cho phép truy cập
-      console.log('✅ Middleware - User admin hợp lệ, cho phép truy cập');
       return addSecurityHeaders(response);
     }
     
     // 2. Kiểm tra nếu yêu cầu là cho trang công tác viên (CTV)
     if (pathname.startsWith('/ctv') && !pathname.startsWith('/ctv/login')) {
-      console.log('🔒 Middleware - Kiểm tra quyền truy cập trang CTV cho:', pathname);
-      
       // Kiểm tra user có quyền ctv (công tác viên) hay không - sử dụng userRole
-      console.log('🔒 Middleware - Kiểm tra quyền CTV, vai trò hiện tại:', userRole);
-      
       if (!userRole || userRole !== 'ctv') {
         console.log('⚠️ Middleware - Không phải là CTV, chuyển hướng đến trang chủ');
         const redirectResponse = NextResponse.redirect(new URL('/', request.url));
@@ -301,23 +275,15 @@ export async function middleware(request) {
         path: '/',
       });
       
-      // Nếu hợp lệ, cho phép truy cập
-      console.log('✅ Middleware - User CTV hợp lệ, cho phép truy cập');
       return addSecurityHeaders(response);
     }
     
     // 3. Kiểm tra nếu yêu cầu là cho API admin
     if (pathname.startsWith('/api/admin') || pathname.startsWith('/api/courses/raw')) {
-      console.log('🔒 Middleware - Kiểm tra quyền truy cập API admin cho:', pathname);
-      
       // Kiểm tra các API đặc biệt mà CTV được phép truy cập
       if (pathname.startsWith('/api/admin/enrollments') || pathname.startsWith('/api/admin/courses')) {
-        console.log('🔒 Middleware - Đây là API admin mà CTV cũng có thể truy cập');
-        
         // Kiểm tra user có quyền admin hoặc ctv không
         if (userRole === 'admin' || userRole === 'ctv') {
-          console.log(`✅ Middleware - Có quyền ${userRole}, cho phép truy cập API ${pathname}`);
-          
           // Thiết lập cookie phù hợp dựa trên vai trò
           if (userRole === 'admin') {
             response.cookies.set('admin_access', 'true', {
@@ -376,14 +342,11 @@ export async function middleware(request) {
         path: '/',
       });
       
-      console.log('✅ Middleware - Có quyền admin, cho phép truy cập API');
       return addSecurityHeaders(response);
     }
     
     // 4. Kiểm tra nếu yêu cầu là cho API công tác viên (CTV)
     if (pathname.startsWith('/api/ctv')) {
-      console.log('🔒 Middleware - Kiểm tra quyền truy cập API CTV cho:', pathname);
-      
       // Kiểm tra user có quyền CTV không - sử dụng userRole
       if (!userRole || userRole !== 'ctv') {
         console.log('⚠️ Middleware - Không phải là CTV, từ chối truy cập API');
@@ -402,7 +365,6 @@ export async function middleware(request) {
         path: '/',
       });
       
-      console.log('✅ Middleware - Có quyền CTV, cho phép truy cập API');
       return addSecurityHeaders(response);
     }
     
