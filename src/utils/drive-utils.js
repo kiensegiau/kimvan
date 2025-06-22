@@ -467,13 +467,18 @@ export async function processLink(baseUrl, url, cookie = '', maxRetries = 2, tim
     } catch (error) {
       console.error(`Lỗi khi xử lý link (lần thử ${retries + 1}/${maxRetries + 1}):`, error.message);
       
-      // Kiểm tra nếu là lỗi quyền truy cập thì không retry
+      // Kiểm tra các lỗi không nên thử lại
       if (error.message && (
+          // Lỗi quyền truy cập
           error.message.includes('Không có quyền truy cập') || 
           error.message.includes('Không có quyền tải xuống') ||
-          error.message.includes('permission')
+          error.message.includes('permission') ||
+          // Lỗi file không tồn tại
+          error.message.includes('404') ||
+          error.message.includes('không tồn tại') ||
+          error.message.includes('Không tìm thấy file')
       )) {
-        console.error(`Không thể truy cập file, bỏ qua các lần thử lại.`);
+        console.error(`Lỗi không thể khắc phục bằng thử lại, bỏ qua các lần thử lại: ${error.message}`);
         throw error;
       }
       

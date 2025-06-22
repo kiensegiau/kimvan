@@ -293,15 +293,18 @@ export async function downloadBlockedPDF(fileId, fileName, tempDir, watermarkCon
     throw new Error(`Không thể tạo thư mục con: ${mkdirError.message}`);
   }
   
-  // Tạo thư mục hồ sơ cho Chrome
-  let profilePath;
-  try {
-    profilePath = createChromeUserProfile();
-  } catch (profileError) {
-    console.error(`Lỗi tạo hồ sơ Chrome: ${profileError.message}`);
-    profilePath = path.join(tempDir, 'chrome-profile');
-    fs.mkdirSync(profilePath, { recursive: true });
-  }
+      // Tạo thư mục hồ sơ cho Chrome
+    let profilePath;
+    try {
+      profilePath = createChromeUserProfile();
+    } catch (profileError) {
+      console.error(`Lỗi tạo hồ sơ Chrome: ${profileError.message}`);
+      profilePath = path.join(tempDir, 'chrome-profile');
+      fs.mkdirSync(profilePath, { recursive: true });
+    }
+    
+    // Lưu thông tin cấu hình
+    const debugMode = watermarkConfig && watermarkConfig.debugMode === true;
   
   const outputPath = path.join(tempDir, `${path.basename(fileName, '.pdf')}_clean.pdf`);
   
@@ -343,7 +346,7 @@ export async function downloadBlockedPDF(fileId, fileName, tempDir, watermarkCon
     // Khởi tạo trình duyệt với cấu hình nâng cao
     try {
       browser = await puppeteer.launch({
-        headless: false, // Hiển thị trình duyệt để dễ debug
+        headless: debugMode ? false : 'new', // Hiển thị trình duyệt nếu ở chế độ debug
         channel: "chrome",
         executablePath: chromePath,
         args: [
@@ -530,13 +533,18 @@ export async function downloadBlockedPDF(fileId, fileName, tempDir, watermarkCon
     
     console.log(`✅ Đã tạo file PDF thành công: ${outputPath} (${(fileSize / 1024 / 1024).toFixed(2)}MB) trong ${processingTime.toFixed(2)} giây`);
     
+    // Kiểm tra xem có phát hiện trang nào không
+    const pageCount = processedImages.length;
+    
     return {
       success: true,
       filePath: outputPath,
       fileName: `${path.basename(fileName, '.pdf')}_clean.pdf`,
       originalSize: 0, // Không thể biết kích thước gốc
       processedSize: fileSize,
-      processingTime: processingTime.toFixed(2)
+      processingTime: processingTime.toFixed(2),
+      pageCount: pageCount,
+      emptyFile: pageCount === 0
     };
   } catch (error) {
     console.error(`❌ Lỗi tải file bị chặn: ${error.message}`);
@@ -544,21 +552,28 @@ export async function downloadBlockedPDF(fileId, fileName, tempDir, watermarkCon
       success: false,
       error: error.message
     };
-  } finally {
-    // Đóng browser nếu còn mở
-    if (page) {
+  }   finally {
+    // Đóng browser nếu còn mở, trừ khi đang trong chế độ debug và không có trang nào được phát hiện
+    const shouldKeepBrowserOpen = (watermarkConfig && watermarkConfig.keepChromeOpen === true && pageRequests && pageRequests.size === 0);
+    
+    if (page && !shouldKeepBrowserOpen) {
       try {
         await page.close().catch(() => {});
       } catch (closeError) {
         console.warn(`Lỗi đóng tab: ${closeError.message}`);
       }
     }
-    if (browser) {
+    
+    if (browser && !shouldKeepBrowserOpen) {
       try {
         await browser.close().catch(() => {});
       } catch (closeError) {
         console.warn(`Lỗi đóng trình duyệt: ${closeError.message}`);
       }
+    }
+    
+    if (shouldKeepBrowserOpen) {
+      console.log(`⚠️ KHÔNG PHÁT HIỆN TRANG NÀO! Chrome được giữ mở để debug. Vui lòng kiểm tra trình duyệt.`);
     }
     
     // Dọn dẹp các file ảnh tạm

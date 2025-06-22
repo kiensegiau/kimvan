@@ -9,6 +9,7 @@ import {
   createOAuth2Client, 
   checkAndDeleteDuplicates 
 } from '@/utils/drive-utils';
+import { processPDF } from '@/app/api/drive/remove-watermark/lib/drive-fix-blockdown.js';
 
 // Tải xuống file từ Google Drive
 async function downloadFromGoogleDrive(fileId) {
@@ -37,14 +38,77 @@ async function downloadFromGoogleDrive(fileId) {
       
       // Kiểm tra quyền truy cập
       if (fileInfo.data.capabilities && !fileInfo.data.capabilities.canDownload) {
-        throw new Error('Không có quyền tải xuống file này. Vui lòng kiểm tra quyền truy cập.');
+        console.log('Phát hiện file không có quyền tải xuống, sẽ sử dụng phương pháp drive-fix-blockdown');
+        // Sử dụng phương pháp đặc biệt cho file bị chặn
+        const tempDir = path.join(os.tmpdir(), 'blocked-pdf-');
+        const blockedTempDir = fs.mkdtempSync(tempDir);
+        // Thêm tham số keepChromeOpen=true để giữ Chrome mở khi debug
+        const result = await processPDF(null, null, {
+          keepChromeOpen: true, // Giữ Chrome mở để debug
+          debugMode: true // Bật chế độ debug
+        }, true, fileId);
+        
+        if (!result.success) {
+          throw new Error(`Không thể xử lý file bị chặn: ${result.error}`);
+        }
+        
+        // Kiểm tra nếu không phát hiện trang nào
+        if (result.pageCount === 0 || !result.filePath || result.emptyFile) {
+          throw new Error(`Không phát hiện trang nào trong file PDF. Chrome đã được giữ mở để debug. File ID: ${fileId}`);
+        }
+        
+        return {
+          success: true,
+          filePath: result.filePath,
+          fileName: result.fileName || `blocked_${fileId}_clean.pdf`,
+          mimeType: 'application/pdf',
+          outputDir: blockedTempDir
+        };
       }
     } catch (error) {
+      // Kiểm tra lỗi 404 - File không tồn tại
       if (error.code === 404 || error.response?.status === 404) {
+        console.error(`File không tồn tại (404): ${fileId}. Không thử lại.`);
         throw new Error(`Không tìm thấy file với ID: ${fileId}. File có thể đã bị xóa hoặc không tồn tại.`);
-      } else if (error.code === 403 || error.response?.status === 403) {
-        throw new Error(`Không có quyền truy cập file với ID: ${fileId}. Vui lòng kiểm tra quyền truy cập.`);
+      } 
+      // Kiểm tra lỗi 403 - Không có quyền truy cập
+      else if (error.code === 403 || error.response?.status === 403) {
+        console.log(`Lỗi quyền truy cập (403): ${fileId}. Thử sử dụng phương pháp drive-fix-blockdown...`);
+        
+        try {
+          // Sử dụng phương pháp đặc biệt cho file bị chặn
+          const tempDir = path.join(os.tmpdir(), 'blocked-pdf-');
+          const blockedTempDir = fs.mkdtempSync(tempDir);
+          
+          // Thử xử lý file bằng phương pháp đặc biệt
+          const result = await processPDF(null, null, {
+            keepChromeOpen: true,
+            debugMode: true
+          }, true, fileId);
+          
+          if (!result.success) {
+            throw new Error(`Không thể xử lý file bị chặn: ${result.error}`);
+          }
+          
+          // Kiểm tra nếu không phát hiện trang nào
+          if (result.pageCount === 0 || !result.filePath || result.emptyFile) {
+            throw new Error(`Không phát hiện trang nào trong file PDF. Chrome đã được giữ mở để debug. File ID: ${fileId}`);
+          }
+          
+          return {
+            success: true,
+            filePath: result.filePath,
+            fileName: result.fileName || `blocked_${fileId}_clean.pdf`,
+            mimeType: 'application/pdf',
+            outputDir: blockedTempDir
+          };
+        } catch (blockError) {
+          console.error(`Không thể xử lý file bị chặn: ${blockError.message}`);
+          throw new Error(`Không có quyền truy cập file với ID: ${fileId}. Đã thử phương pháp đặc biệt nhưng không thành công: ${blockError.message}`);
+        }
       }
+      
+      // Các lỗi khác
       throw error;
     }
     
@@ -522,42 +586,84 @@ export async function POST(request) {
     
     // Tải xuống file
     console.log(`Đang xử lý yêu cầu tải xuống: ${driveLink}`);
-    const downloadResult = await downloadFromGoogleDrive(fileId);
-    tempDir = downloadResult.outputDir;
     
-    // Xử lý file
-    const processResult = await processFile(downloadResult.filePath, downloadResult.mimeType);
-    
-    // Tải lên file đã xử lý
-    const uploadResult = await uploadToGoogleDrive(
-      processResult.processedPath,
-      downloadResult.fileName,
-      downloadResult.mimeType,
-      folderId
-    );
-    
-    // Dọn dẹp thư mục tạm
+    let downloadResult;
     try {
-      fs.rmdirSync(tempDir, { recursive: true });
-      console.log(`Đã xóa thư mục tạm: ${tempDir}`);
-    } catch (cleanupError) {
-      console.error('Lỗi khi dọn dẹp thư mục tạm:', cleanupError);
+      downloadResult = await downloadFromGoogleDrive(fileId);
+      tempDir = downloadResult.outputDir;
+      
+      let processedFilePath;
+      let processedFileName = downloadResult.fileName;
+      
+      // Kiểm tra xem file có phải là file bị chặn đã được xử lý bởi drive-fix-blockdown không
+      const isBlockedFileProcessed = downloadResult.fileName && downloadResult.fileName.includes('blocked_') && downloadResult.fileName.includes('_clean');
+      
+      if (isBlockedFileProcessed) {
+        console.log('File đã được xử lý bởi drive-fix-blockdown, bỏ qua bước xử lý thông thường');
+        processedFilePath = downloadResult.filePath;
+      } else {
+        // Xử lý file thông thường
+        const processResult = await processFile(downloadResult.filePath, downloadResult.mimeType);
+        processedFilePath = processResult.processedPath;
+      }
+      
+      // Tải lên file đã xử lý
+      const uploadResult = await uploadToGoogleDrive(
+        processedFilePath,
+        processedFileName,
+        downloadResult.mimeType,
+        folderId
+      );
+      
+      // Dọn dẹp thư mục tạm
+      try {
+        fs.rmdirSync(tempDir, { recursive: true });
+        console.log(`Đã xóa thư mục tạm: ${tempDir}`);
+      } catch (cleanupError) {
+        console.error('Lỗi khi dọn dẹp thư mục tạm:', cleanupError);
+      }
+      
+      // Trả về kết quả
+      return NextResponse.json({
+        success: true,
+        originalFile: {
+          id: fileId,
+          link: driveLink
+        },
+        processedFile: {
+          id: uploadResult.fileId,
+          name: uploadResult.fileName,
+          link: uploadResult.webViewLink
+        },
+        duplicatesDeleted: uploadResult.duplicatesDeleted || 0
+      });
+    } catch (error) {
+      console.error('Lỗi khi tải xuống hoặc xử lý file:', error);
+      
+      // Kiểm tra lỗi 404 - File không tồn tại
+      if (error.message && (error.message.includes('404') || error.message.includes('không tồn tại'))) {
+        console.error(`File không tồn tại (404): ${fileId}. Không thử lại.`);
+        return NextResponse.json(
+          { success: false, error: `Không tìm thấy file với ID: ${fileId}. File có thể đã bị xóa hoặc không tồn tại.` },
+          { status: 404 }
+        );
+      }
+      
+      // Dọn dẹp thư mục tạm nếu có lỗi
+      if (tempDir) {
+        try {
+          fs.rmdirSync(tempDir, { recursive: true });
+          console.log(`Đã xóa thư mục tạm: ${tempDir}`);
+        } catch (cleanupError) {
+          console.error('Lỗi khi dọn dẹp thư mục tạm:', cleanupError);
+        }
+      }
+      
+      return NextResponse.json(
+        { success: false, error: `Lỗi khi xử lý và thay thế file: ${error.message}` },
+        { status: 500 }
+      );
     }
-    
-    // Trả về kết quả
-    return NextResponse.json({
-      success: true,
-      originalFile: {
-        id: fileId,
-        link: driveLink
-      },
-      processedFile: {
-        id: uploadResult.fileId,
-        name: uploadResult.fileName,
-        link: uploadResult.webViewLink
-      },
-      duplicatesDeleted: uploadResult.duplicatesDeleted || 0
-    });
   } catch (error) {
     console.error('Lỗi khi xử lý và thay thế file:', error);
     
