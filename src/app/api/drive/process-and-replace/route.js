@@ -199,10 +199,19 @@ async function uploadToGoogleDrive(filePath, fileName, mimeType, folderId = null
     
     // Kiểm tra tên file có ký tự đặc biệt không
     console.log(`Tên file gốc: "${fileName}"`);
-    const sanitizedFileName = fileName
-      .replace(/[^\w\s.-]/g, '_')  // Thay thế các ký tự đặc biệt bằng dấu gạch dưới
-      .replace(/\s+/g, ' ')        // Thay thế nhiều khoảng trắng bằng một khoảng trắng
-      .trim();                     // Xóa khoảng trắng ở đầu và cuối
+    
+    // Xóa trùng đuôi file (ví dụ: .pdf.pdf hoặc .pdf.pdf.pdf)
+    let sanitizedFileName = fileName;
+    
+    // Tìm tất cả các đuôi file trong tên
+    const extensionMatch = fileName.match(/(\.[a-zA-Z0-9]+)(\1+)$/);
+    if (extensionMatch) {
+      // Nếu có đuôi file trùng lặp, chỉ giữ lại một đuôi
+      const duplicateExtension = extensionMatch[0];
+      const singleExtension = extensionMatch[1];
+      sanitizedFileName = fileName.replace(duplicateExtension, singleExtension);
+      console.log(`Đã xóa đuôi file trùng lặp: "${duplicateExtension}" -> "${singleExtension}"`);
+    }
     
     console.log(`Tên file sau khi làm sạch: "${sanitizedFileName}"`);
     
@@ -226,8 +235,8 @@ async function uploadToGoogleDrive(filePath, fileName, mimeType, folderId = null
     
     console.log('Kiểm tra quyền truy cập Drive...');
     
-    // Folder mặc định "tài liệu sheet" nếu không có folderId
-    const defaultFolderId = "1Qs4Oi8OGZ-t2HKGX5PUH4-FMVcVYdI9N"; // ID của folder "tài liệu sheet"
+    // Folder mặc định nếu không có folderId
+    const defaultFolderId = "1Lt10aHyWp9VtPaImzInE0DmIcbrjJgpN"; // ID của folder mới
     
     // Xác định folder ID sẽ sử dụng
     let targetFolderId = null;
@@ -490,7 +499,7 @@ export async function POST(request) {
     
     console.log('Thông tin request:', {
       driveLink: driveLink || 'không có',
-      folderId: folderId || 'sẽ dùng folder mặc định "tài liệu sheet"'
+      folderId: folderId || 'sẽ dùng folder mặc định "1Lt10aHyWp9VtPaImzInE0DmIcbrjJgpN"'
     });
     
     // Validate drive link
