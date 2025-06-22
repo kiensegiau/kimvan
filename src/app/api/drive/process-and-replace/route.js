@@ -4,121 +4,11 @@ import path from 'path';
 import os from 'os';
 import { google } from 'googleapis';
 import { v4 as uuidv4 } from 'uuid';
-
-// Đường dẫn file lưu token
-const TOKEN_PATHS = [
-  path.join(process.cwd(), 'drive_token_upload.json'),   // Token tải lên - Upload
-  path.join(process.cwd(), 'drive_token_download.json')  // Token tải xuống - Download
-];
-
-// Đọc token từ file
-function getStoredToken(accountIndex) {
-  try {
-    if (fs.existsSync(TOKEN_PATHS[accountIndex])) {
-      const tokenContent = fs.readFileSync(TOKEN_PATHS[accountIndex], 'utf8');
-      console.log(`Đọc token từ file: ${TOKEN_PATHS[accountIndex]}`);
-      
-      try {
-        const parsedToken = JSON.parse(tokenContent);
-        console.log('Phân tích token thành công');
-        return parsedToken;
-      } catch (parseError) {
-        console.error('Lỗi phân tích JSON token:', parseError);
-        return null;
-      }
-    } else {
-      console.error('File token không tồn tại tại đường dẫn:', TOKEN_PATHS[accountIndex]);
-    }
-  } catch (error) {
-    console.error(`Lỗi đọc file token ${accountIndex}:`, error);
-  }
-  return null;
-}
-
-// Trích xuất ID từ URL Google Drive
-function extractDriveFileId(url) {
-  if (!url) return null;
-  
-  console.log('Trích xuất ID từ URL:', url);
-  
-  // Handle Google redirects (google.com/url?q=...)
-  if (url.includes('google.com/url?q=')) {
-    try {
-      // Extract the encoded URL from the redirect
-      const match = url.match(/google\.com\/url\?q=([^&]+)/);
-      if (match && match[1]) {
-        // Decode the URL
-        const decodedUrl = decodeURIComponent(match[1]);
-        console.log('Giải mã URL từ Google redirect:', decodedUrl);
-        
-        // Now extract the ID from the decoded URL
-        return extractDriveFileId(decodedUrl);
-      }
-    } catch (error) {
-      console.error('Lỗi khi giải mã URL:', error);
-    }
-  }
-  
-  // Handle URL encoded parameters (id%3D...)
-  if (url.includes('id%3D')) {
-    try {
-      const match = url.match(/id%3D([a-zA-Z0-9_-]+)/);
-      if (match && match[1]) {
-        console.log('Tìm thấy ID từ URL có mã hóa:', match[1]);
-        return match[1];
-      }
-    } catch (error) {
-      console.error('Lỗi khi trích xuất ID từ URL có mã hóa:', error);
-    }
-  }
-  
-  // Handle URL encoded parameters with additional encoding (id%253D...)
-  if (url.includes('id%253D')) {
-    try {
-      const match = url.match(/id%253D([a-zA-Z0-9_-]+)/);
-      if (match && match[1]) {
-        console.log('Tìm thấy ID từ URL có mã hóa kép:', match[1]);
-        return match[1];
-      }
-    } catch (error) {
-      console.error('Lỗi khi trích xuất ID từ URL có mã hóa kép:', error);
-    }
-  }
-  
-  // Mẫu URL Google Drive
-  const patterns = [
-    /\/d\/([a-zA-Z0-9-_]+)/,                // Format: /d/FILE_ID
-    /id=([a-zA-Z0-9-_]+)/,                  // Format: id=FILE_ID
-    /drive\.google\.com\/file\/d\/([a-zA-Z0-9-_]+)/,  // Format: drive.google.com/file/d/FILE_ID
-    /drive\.google\.com\/open\?id=([a-zA-Z0-9-_]+)/,  // Format: drive.google.com/open?id=FILE_ID
-    /docs\.google\.com\/\w+\/d\/([a-zA-Z0-9-_]+)/,    // Format: docs.google.com/document/d/FILE_ID
-    /spreadsheets\/d\/([a-zA-Z0-9-_]+)/,              // Format: spreadsheets/d/FILE_ID
-    /presentation\/d\/([a-zA-Z0-9-_]+)/,              // Format: presentation/d/FILE_ID
-    /^([a-zA-Z0-9-_]{25,40})$/              // Direct ID (25-40 chars)
-  ];
-  
-  for (const pattern of patterns) {
-    const match = url.match(pattern);
-    if (match && match[1]) {
-      console.log('Tìm thấy ID từ pattern:', match[1]);
-      return match[1];
-    }
-  }
-  
-  // Try one more time with double decoding if we haven't found anything yet
-  try {
-    const doubleDecodedUrl = decodeURIComponent(decodeURIComponent(url));
-    if (doubleDecodedUrl !== url) {
-      console.log('Thử giải mã URL hai lần:', doubleDecodedUrl);
-      return extractDriveFileId(doubleDecodedUrl);
-    }
-  } catch (error) {
-    console.error('Lỗi khi giải mã URL hai lần:', error);
-  }
-  
-  console.log('Không tìm thấy ID từ URL');
-  return null;
-}
+import { 
+  extractDriveFileId, 
+  createOAuth2Client, 
+  checkAndDeleteDuplicates 
+} from '@/utils/drive-utils';
 
 // Tải xuống file từ Google Drive
 async function downloadFromGoogleDrive(fileId) {
@@ -129,21 +19,10 @@ async function downloadFromGoogleDrive(fileId) {
   const outputDir = fs.mkdtempSync(tempDir);
   
   try {
-    // Lấy token đã lưu
-    const storedToken = getStoredToken(1); // Sử dụng token tải xuống (index 1)
-    if (!storedToken) {
-      throw new Error('Không tìm thấy token Google Drive. Vui lòng cấu hình API trong cài đặt.');
-    }
+    // Tạo OAuth2 client với khả năng tự động refresh token
+    const oauth2Client = createOAuth2Client(1); // Sử dụng token tải xuống (index 1)
     console.log('Sử dụng token tải xuống (drive_token_download.json)');
     
-    // Tạo OAuth2 client và Drive API
-    const oauth2Client = new google.auth.OAuth2(
-      process.env.GOOGLE_CLIENT_ID,
-      process.env.GOOGLE_CLIENT_SECRET,
-      process.env.GOOGLE_REDIRECT_URI
-    );
-    
-    oauth2Client.setCredentials(storedToken);
     const drive = google.drive({ version: 'v3', auth: oauth2Client });
     
     console.log('Kiểm tra quyền truy cập Drive...');
@@ -253,66 +132,47 @@ async function processFile(filePath, mimeType) {
   const fileName = path.basename(filePath, fileExt);
   const processedPath = path.join(fileDir, `${fileName}_processed${fileExt}`);
   
-  // Đây là nơi bạn sẽ thêm logic xử lý file tùy thuộc vào loại file
-  // Ví dụ: loại bỏ watermark, chỉnh sửa nội dung, v.v.
-  
-  // Trong ví dụ này, chúng ta chỉ sao chép file
-  fs.copyFileSync(filePath, processedPath);
-  
-  console.log(`File đã được xử lý và lưu tại: ${processedPath}`);
-  
-  return {
-    success: true,
-    processedPath: processedPath
-  };
-}
-
-// Kiểm tra và xóa file trùng lặp trước khi tải lên
-async function checkAndDeleteDuplicates(drive, fileName, folderId) {
-  console.log(`Kiểm tra file trùng lặp với tên: "${fileName} (Processed)"`);
-  
   try {
-    // Escape special characters in file name for the query
-    const escapedFileName = fileName.replace(/'/g, "\\'").replace(/\\/g, "\\\\");
-    
-    // Xây dựng query để tìm file trùng lặp
-    let query = `name = '${escapedFileName} (Processed)' and trashed = false`;
-    
-    // Nếu có folder ID, thêm vào query
-    if (folderId) {
-      query += ` and '${folderId}' in parents`;
+    // Xác định loại file và áp dụng xử lý phù hợp
+    if (mimeType.includes('pdf')) {
+      // Xử lý file PDF - hiện tại chỉ sao chép
+      console.log('Đang xử lý file PDF...');
+      fs.copyFileSync(filePath, processedPath);
+    } else if (mimeType.includes('image')) {
+      // Xử lý file hình ảnh - hiện tại chỉ sao chép
+      console.log('Đang xử lý file hình ảnh...');
+      fs.copyFileSync(filePath, processedPath);
+    } else if (mimeType.includes('spreadsheet') || mimeType.includes('excel')) {
+      // Xử lý file bảng tính - hiện tại chỉ sao chép
+      console.log('Đang xử lý file bảng tính...');
+      fs.copyFileSync(filePath, processedPath);
+    } else if (mimeType.includes('document') || mimeType.includes('word')) {
+      // Xử lý file văn bản - hiện tại chỉ sao chép
+      console.log('Đang xử lý file văn bản...');
+      fs.copyFileSync(filePath, processedPath);
+    } else if (mimeType.includes('presentation') || mimeType.includes('powerpoint')) {
+      // Xử lý file trình chiếu - hiện tại chỉ sao chép
+      console.log('Đang xử lý file trình chiếu...');
+      fs.copyFileSync(filePath, processedPath);
+    } else if (mimeType.includes('video') || mimeType.includes('audio')) {
+      // Xử lý file media - hiện tại chỉ sao chép
+      console.log('Đang xử lý file media...');
+      fs.copyFileSync(filePath, processedPath);
     } else {
-      // Sử dụng folder mặc định "tài liệu sheet"
-      const defaultFolderId = "1Qs4Oi8OGZ-t2HKGX5PUH4-FMVcVYdI9N";
-      query += ` and '${defaultFolderId}' in parents`;
+      // Các loại file khác - chỉ sao chép
+      console.log(`Không có xử lý đặc biệt cho loại file: ${mimeType}, thực hiện sao chép đơn giản`);
+      fs.copyFileSync(filePath, processedPath);
     }
     
-    console.log(`Query tìm file trùng lặp: ${query}`);
+    console.log(`File đã được xử lý và lưu tại: ${processedPath}`);
     
-    // Tìm kiếm các file trùng lặp
-    const response = await drive.files.list({
-      q: query,
-      fields: 'files(id, name)',
-      spaces: 'drive'
-    });
-    
-    const duplicates = response.data.files;
-    console.log(`Tìm thấy ${duplicates.length} file trùng lặp`);
-    
-    // Xóa các file trùng lặp
-    for (const file of duplicates) {
-      console.log(`Đang xóa file trùng lặp: ${file.name} (ID: ${file.id})`);
-      await drive.files.delete({
-        fileId: file.id
-      });
-      console.log(`Đã xóa file trùng lặp: ${file.id}`);
-    }
-    
-    return duplicates.length;
+    return {
+      success: true,
+      processedPath: processedPath
+    };
   } catch (error) {
-    console.error('Lỗi khi kiểm tra và xóa file trùng lặp:', error);
-    // Không throw error, chỉ log và tiếp tục
-    return 0;
+    console.error('Lỗi khi xử lý file:', error);
+    throw new Error(`Không thể xử lý file: ${error.message}`);
   }
 }
 
@@ -321,75 +181,296 @@ async function uploadToGoogleDrive(filePath, fileName, mimeType, folderId = null
   console.log(`Đang tải lên file đã xử lý: ${filePath}`);
   
   try {
-    // Lấy token đã lưu
-    const storedToken = getStoredToken(0); // Sử dụng token tải lên (index 0 - drive_token_upload.json)
-    if (!storedToken) {
-      throw new Error('Không tìm thấy token Google Drive. Vui lòng cấu hình API trong cài đặt.');
+    // Kiểm tra file có tồn tại không
+    if (!fs.existsSync(filePath)) {
+      console.error(`Lỗi: File không tồn tại tại đường dẫn ${filePath}`);
+      throw new Error(`File không tồn tại tại đường dẫn ${filePath}`);
     }
+    
+    // Kiểm tra kích thước file
+    const stats = fs.statSync(filePath);
+    const fileSizeInBytes = stats.size;
+    const fileSizeInMB = fileSizeInBytes / (1024 * 1024);
+    console.log(`Kích thước file: ${fileSizeInBytes} bytes (${fileSizeInMB.toFixed(2)} MB)`);
+    
+    if (fileSizeInMB > 100) {
+      console.warn(`Cảnh báo: File có kích thước lớn (${fileSizeInMB.toFixed(2)} MB), có thể gặp vấn đề khi tải lên`);
+    }
+    
+    // Kiểm tra tên file có ký tự đặc biệt không
+    console.log(`Tên file gốc: "${fileName}"`);
+    const sanitizedFileName = fileName
+      .replace(/[^\w\s.-]/g, '_')  // Thay thế các ký tự đặc biệt bằng dấu gạch dưới
+      .replace(/\s+/g, ' ')        // Thay thế nhiều khoảng trắng bằng một khoảng trắng
+      .trim();                     // Xóa khoảng trắng ở đầu và cuối
+    
+    console.log(`Tên file sau khi làm sạch: "${sanitizedFileName}"`);
+    
+    // Tạo OAuth2 client với khả năng tự động refresh token
+    const oauth2Client = createOAuth2Client(0); // Sử dụng token tải lên (index 0)
     console.log('Sử dụng token tải lên (drive_token_upload.json)');
     
-    // Tạo OAuth2 client và Drive API
-    const oauth2Client = new google.auth.OAuth2(
-      process.env.GOOGLE_CLIENT_ID,
-      process.env.GOOGLE_CLIENT_SECRET,
-      process.env.GOOGLE_REDIRECT_URI
-    );
-    
-    oauth2Client.setCredentials(storedToken);
     const drive = google.drive({ version: 'v3', auth: oauth2Client });
     
-    console.log('Kiểm tra quyền truy cập Drive...');
-    
-    // Kiểm tra và xóa file trùng lặp trước khi tải lên
-    const deletedCount = await checkAndDeleteDuplicates(drive, fileName, folderId);
-    if (deletedCount > 0) {
-      console.log(`Đã xóa ${deletedCount} file trùng lặp trước khi tải lên`);
+    // Kiểm tra token
+    try {
+      console.log('Kiểm tra token...');
+      const aboutResponse = await drive.about.get({
+        fields: 'user'
+      });
+      console.log(`Token hợp lệ, người dùng: ${aboutResponse.data.user.emailAddress || 'không có email'}`);
+    } catch (tokenError) {
+      console.error('Lỗi khi kiểm tra token:', tokenError);
+      throw new Error(`Token không hợp lệ hoặc đã hết hạn: ${tokenError.message}`);
     }
     
-    // Tạo metadata cho file
-    const fileMetadata = {
-      name: `${fileName} (Processed)`,
-      mimeType: mimeType
-    };
+    console.log('Kiểm tra quyền truy cập Drive...');
     
     // Folder mặc định "tài liệu sheet" nếu không có folderId
     const defaultFolderId = "1Qs4Oi8OGZ-t2HKGX5PUH4-FMVcVYdI9N"; // ID của folder "tài liệu sheet"
     
-    // Nếu có folder ID, thêm vào parent, nếu không dùng folder mặc định
+    // Xác định folder ID sẽ sử dụng
+    let targetFolderId = null;
+    let folderExists = false;
+    let folderName = "";
+    
+    // Kiểm tra folder được chỉ định
     if (folderId) {
-      fileMetadata.parents = [folderId];
-      console.log(`Tải lên vào folder được chỉ định: ${folderId}`);
-    } else {
-      fileMetadata.parents = [defaultFolderId];
-      console.log(`Tải lên vào folder mặc định "tài liệu sheet": ${defaultFolderId}`);
+      try {
+        console.log(`Kiểm tra folder ID: ${folderId}`);
+        const folderResponse = await drive.files.get({
+          fileId: folderId,
+          fields: 'id,name,mimeType'
+        });
+        
+        // Kiểm tra xem đây có phải là folder không
+        if (folderResponse.data.mimeType === 'application/vnd.google-apps.folder') {
+          targetFolderId = folderId;
+          folderExists = true;
+          folderName = folderResponse.data.name;
+          console.log(`Folder tồn tại, sẽ sử dụng folder ID: ${targetFolderId} (${folderName})`);
+        } else {
+          console.warn(`ID ${folderId} không phải là folder, đó là: ${folderResponse.data.mimeType}`);
+        }
+      } catch (folderError) {
+        if (folderError.code === 404 || folderError.response?.status === 404) {
+          console.log(`Folder ID ${folderId} không tồn tại.`);
+        } else {
+          console.error(`Lỗi khi kiểm tra folder ${folderId}:`, folderError.message);
+        }
+      }
     }
     
-    // Tạo media cho file
-    const media = {
-      mimeType: mimeType,
-      body: fs.createReadStream(filePath)
+    // Nếu folder không tồn tại hoặc không phải là folder, thử dùng folder mặc định
+    if (!folderExists) {
+      try {
+        console.log(`Kiểm tra folder mặc định: ${defaultFolderId}`);
+        const defaultFolderResponse = await drive.files.get({
+          fileId: defaultFolderId,
+          fields: 'id,name,mimeType'
+        });
+        
+        if (defaultFolderResponse.data.mimeType === 'application/vnd.google-apps.folder') {
+          targetFolderId = defaultFolderId;
+          folderExists = true;
+          folderName = defaultFolderResponse.data.name;
+          console.log(`Sử dụng folder mặc định: ${targetFolderId} (${folderName})`);
+        } else {
+          console.warn(`ID mặc định ${defaultFolderId} không phải là folder`);
+        }
+      } catch (defaultFolderError) {
+        console.error(`Lỗi khi kiểm tra folder mặc định:`, defaultFolderError.message);
+      }
+    }
+    
+    // Nếu cả hai folder đều không tồn tại, tạo folder mới
+    if (!folderExists) {
+      try {
+        const folderDate = new Date().toISOString().split('T')[0];
+        const newFolderName = `Processed Files ${folderDate}`;
+        console.log(`Không tìm thấy folder hợp lệ, tạo folder mới: ${newFolderName}`);
+        
+        const newFolder = await drive.files.create({
+          requestBody: {
+            name: newFolderName,
+            mimeType: 'application/vnd.google-apps.folder'
+          },
+          fields: 'id,name'
+        });
+        
+        targetFolderId = newFolder.data.id;
+        folderExists = true;
+        folderName = newFolder.data.name;
+        console.log(`Đã tạo folder mới: ${targetFolderId} (${folderName})`);
+      } catch (createFolderError) {
+        console.error('Lỗi khi tạo folder mới:', createFolderError);
+        throw new Error(`Không thể tạo folder: ${createFolderError.message}`);
+      }
+    }
+    
+    // Kiểm tra xem đã có folder ID hợp lệ chưa
+    if (!targetFolderId) {
+      throw new Error('Không thể xác định folder để tải lên file');
+    }
+    
+    console.log(`Folder đích: ${folderName} (${targetFolderId})`);
+    
+    // Tạo tên file với timestamp để tránh trùng lặp
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const processedFileName = `${sanitizedFileName} (Processed-${timestamp.substring(0, 10)})`;
+    
+    console.log(`Tên file cuối cùng sẽ tải lên: "${processedFileName}"`);
+    
+    // Kiểm tra MIME type
+    if (!mimeType) {
+      console.warn('MIME type không được cung cấp, sử dụng application/octet-stream');
+      mimeType = 'application/octet-stream';
+    }
+    console.log(`MIME type: ${mimeType}`);
+    
+    // Tạo metadata cho file
+    const fileMetadata = {
+      name: processedFileName,
+      parents: [targetFolderId]
     };
+    
+    console.log(`Tải lên vào folder: ${targetFolderId}`);
+    console.log(`Metadata file:`, JSON.stringify(fileMetadata, null, 2));
+    
+    // Tạo media cho file
+    let fileStream;
+    try {
+      fileStream = fs.createReadStream(filePath);
+      console.log('Đã tạo stream đọc file thành công');
+      
+      // Kiểm tra stream
+      fileStream.on('error', (streamError) => {
+        console.error('Lỗi khi đọc file stream:', streamError);
+      });
+    } catch (streamError) {
+      console.error('Lỗi khi tạo stream đọc file:', streamError);
+      throw new Error(`Không thể đọc file: ${streamError.message}`);
+    }
     
     // Tải lên file
-    console.log('Đang tải lên file...');
-    const response = await drive.files.create({
-      requestBody: fileMetadata,
-      media: media,
-      fields: 'id,name,webViewLink'
+    console.log('Đang tải lên file...', {
+      fileName: fileMetadata.name,
+      mimeType: mimeType,
+      folderId: targetFolderId
     });
     
-    console.log('File đã được tải lên thành công!');
-    console.log(`ID: ${response.data.id}`);
-    console.log(`Tên: ${response.data.name}`);
-    console.log(`Link: ${response.data.webViewLink}`);
-    
-    return {
-      success: true,
-      fileId: response.data.id,
-      fileName: response.data.name,
-      webViewLink: response.data.webViewLink,
-      duplicatesDeleted: deletedCount
-    };
+    try {
+      console.log('Bắt đầu quá trình tải lên...');
+      
+      // Thử tải lên với simple upload
+      const response = await drive.files.create({
+        requestBody: fileMetadata,
+        media: {
+          mimeType: mimeType,
+          body: fileStream
+        },
+        fields: 'id,name,webViewLink',
+        supportsAllDrives: true
+      });
+      
+      console.log('File đã được tải lên thành công!');
+      console.log(`ID: ${response.data.id}`);
+      console.log(`Tên: ${response.data.name}`);
+      console.log(`Link: ${response.data.webViewLink}`);
+      
+      return {
+        success: true,
+        fileId: response.data.id,
+        fileName: response.data.name,
+        webViewLink: response.data.webViewLink,
+        duplicatesDeleted: 0
+      };
+    } catch (uploadError) {
+      console.error('Lỗi chi tiết khi tải lên file:', JSON.stringify({
+        message: uploadError.message,
+        code: uploadError.code,
+        errors: uploadError.errors,
+        response: uploadError.response?.data
+      }, null, 2));
+      
+      // Thử phương án thay thế với tên file đơn giản
+      try {
+        console.log('Thử phương án thay thế với tên file đơn giản...');
+        
+        // Tạo tên file đơn giản không có ký tự đặc biệt
+        const fileExt = mimeType.split('/')[1] || 'bin';
+        const simpleFileName = `file_${Date.now()}.${fileExt}`;
+        console.log(`Tên file đơn giản: ${simpleFileName}`);
+        
+        // Tạo metadata đơn giản
+        const simpleMetadata = {
+          name: simpleFileName,
+          parents: [targetFolderId]
+        };
+        
+        // Tạo stream đọc file mới
+        const newFileStream = fs.createReadStream(filePath);
+        
+        // Thử tải lên với cấu hình tối giản
+        const simpleResponse = await drive.files.create({
+          requestBody: simpleMetadata,
+          media: {
+            mimeType: mimeType,
+            body: newFileStream
+          },
+          fields: 'id,name,webViewLink'
+        });
+        
+        console.log('File đã được tải lên thành công với tên đơn giản!');
+        console.log(`ID: ${simpleResponse.data.id}`);
+        console.log(`Tên: ${simpleResponse.data.name}`);
+        console.log(`Link: ${simpleResponse.data.webViewLink}`);
+        
+        return {
+          success: true,
+          fileId: simpleResponse.data.id,
+          fileName: simpleResponse.data.name,
+          webViewLink: simpleResponse.data.webViewLink,
+          duplicatesDeleted: 0
+        };
+      } catch (fallbackError) {
+        console.error('Lỗi khi thử phương án thay thế:', fallbackError);
+        
+        // Thử phương án cuối cùng: sử dụng resumable upload
+        try {
+          console.log('Thử phương án cuối cùng với resumable upload...');
+          
+          const finalFileName = `backup_${Date.now()}.${mimeType.split('/')[1] || 'bin'}`;
+          const finalMetadata = {
+            name: finalFileName,
+            parents: [targetFolderId]
+          };
+          
+          // Sử dụng resumable upload
+          const finalResponse = await drive.files.create({
+            requestBody: finalMetadata,
+            media: {
+              mimeType: mimeType,
+              body: fs.createReadStream(filePath) // Tạo stream mới
+            },
+            fields: 'id,name,webViewLink',
+            uploadType: 'resumable'
+          });
+          
+          console.log('File đã được tải lên thành công với phương án cuối cùng!');
+          return {
+            success: true,
+            fileId: finalResponse.data.id,
+            fileName: finalResponse.data.name,
+            webViewLink: finalResponse.data.webViewLink,
+            duplicatesDeleted: 0
+          };
+        } catch (finalError) {
+          console.error('Tất cả các phương án tải lên đều thất bại:', finalError);
+          throw new Error(`Không thể tải lên file: ${finalError.message}`);
+        }
+      }
+    }
   } catch (error) {
     console.error('Lỗi khi tải lên file lên Google Drive:', error);
     throw error;

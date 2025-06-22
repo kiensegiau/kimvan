@@ -5,138 +5,13 @@ import path from 'path';
 import { connectDB } from '@/lib/mongodb';
 import Sheet from '@/models/Sheet';
 import { ObjectId } from 'mongodb';
-
-// Function to get stored token from file
-function getStoredToken(tokenPath) {
-  try {
-    if (fs.existsSync(tokenPath)) {
-      const tokenContent = fs.readFileSync(tokenPath, 'utf8');
-      
-      try {
-        const parsedToken = JSON.parse(tokenContent);
-        return parsedToken;
-      } catch (parseError) {
-        console.error('Lỗi phân tích JSON token:', parseError);
-        return null;
-      }
-    } else {
-      console.error('File token không tồn tại tại đường dẫn:', tokenPath);
-    }
-  } catch (error) {
-    console.error(`Lỗi đọc file token:`, error);
-  }
-  return null;
-}
-
-// Extract Drive file ID from URL
-function extractDriveFileId(url) {
-  if (!url) return null;
-  
-  console.log('Extracting Drive ID from URL:', url);
-  
-  // Mẫu URL Google Drive
-  const patterns = [
-    /\/d\/([a-zA-Z0-9-_]+)/,                // Format: /d/FILE_ID
-    /id=([a-zA-Z0-9-_]+)/,                  // Format: id=FILE_ID
-    /drive\.google\.com\/file\/d\/([a-zA-Z0-9-_]+)/,  // Format: drive.google.com/file/d/FILE_ID
-    /drive\.google\.com\/open\?id=([a-zA-Z0-9-_]+)/,  // Format: drive.google.com/open?id=FILE_ID
-    /docs\.google\.com\/(?:document|presentation|spreadsheets)\/d\/([a-zA-Z0-9-_]+)/, // Google Docs/Slides/Sheets
-    /^([a-zA-Z0-9-_]+)$/                    // Direct ID
-  ];
-  
-  for (const pattern of patterns) {
-    const match = url.match(pattern);
-    if (match && match[1]) {
-      console.log('Found Drive ID:', match[1], 'using pattern:', pattern);
-      return match[1];
-    }
-  }
-  
-  console.log('No Drive ID found in URL');
-  return null;
-}
-
-// Extract URL from cell content
-function extractUrlFromCell(cell) {
-  if (!cell || typeof cell !== 'string') return null;
-  
-  // Check for HYPERLINK formula
-  const hyperlinkRegex = /=HYPERLINK\("([^"]+)"(?:,\s*"([^"]+)")?\)/i;
-  const hyperlinkMatch = cell.match(hyperlinkRegex);
-  if (hyperlinkMatch) {
-    return hyperlinkMatch[1];
-  }
-  
-  // Check for Google Drive IDs embedded in text
-  const driveIdPatterns = [
-    /(?:drive\.google\.com\/file\/d\/|drive\.google\.com\/open\?id=|docs\.google\.com\/\w+\/d\/)([a-zA-Z0-9_-]{25,})/i,
-    /\/d\/([a-zA-Z0-9_-]{25,})/i,
-    /id=([a-zA-Z0-9_-]{25,})/i
-  ];
-  
-  for (const pattern of driveIdPatterns) {
-    const match = cell.match(pattern);
-    if (match && match[1]) {
-      // Construct a proper Drive URL from the ID
-      return `https://drive.google.com/file/d/${match[1]}/view`;
-    }
-  }
-  
-  // Check if cell content is a URL
-  const urlRegex = /(https?:\/\/[^\s"]+)/g;
-  const urlMatch = cell.match(urlRegex);
-  if (urlMatch) {
-    return urlMatch[0];
-  }
-  
-  return null;
-}
-
-// Check if a URL is a Google Drive URL
-function isDriveUrl(url) {
-  if (!url || typeof url !== 'string') return false;
-  
-  const driveDomains = [
-    'drive.google.com',
-    'docs.google.com',
-    'sheets.google.com',
-    'slides.google.com'
-  ];
-  
-  // Check if URL contains any of the Google domains
-  const containsDriveDomain = driveDomains.some(domain => url.includes(domain));
-  
-  // Check if URL contains file ID pattern
-  const hasFileIdPattern = url.includes('/d/') || 
-                          url.includes('id=') || 
-                          url.match(/\/file\/d\/([a-zA-Z0-9-_]+)/) ||
-                          url.match(/\/([a-zA-Z0-9_-]{25,})(?:\/|$)/) || // Long IDs are likely Drive file IDs
-                          url.match(/docs\.google\.com\/\w+\/d\/([a-zA-Z0-9-_]+)/);
-  
-  return containsDriveDomain || hasFileIdPattern;
-}
-
-// Create HYPERLINK formula with the same text but new URL
-function createHyperlinkFormula(originalCell, newUrl) {
-  if (!originalCell || typeof originalCell !== 'string') return newUrl;
-  
-  const hyperlinkRegex = /=HYPERLINK\("([^"]+)"(?:,\s*"([^"]+)")?\)/i;
-  const hyperlinkMatch = originalCell.match(hyperlinkRegex);
-  
-  if (hyperlinkMatch) {
-    const displayText = hyperlinkMatch[2] || newUrl;
-    return `=HYPERLINK("${newUrl}","${displayText}")`;
-  }
-  
-  // If it was just a URL, return the new URL
-  const urlRegex = /(https?:\/\/[^\s]+)/g;
-  if (originalCell.trim().match(urlRegex) && originalCell.trim().match(urlRegex)[0] === originalCell.trim()) {
-    return newUrl;
-  }
-  
-  // Otherwise create a new HYPERLINK formula
-  return `=HYPERLINK("${newUrl}","${originalCell}")`;
-}
+import { 
+  extractDriveFileId, 
+  extractUrlFromCell, 
+  isDriveUrl, 
+  createHyperlinkFormula, 
+  processLink 
+} from '@/utils/drive-utils';
 
 export async function POST(request, { params }) {
   console.log('============== BẮT ĐẦU XỬ LÝ TẤT CẢ LINK TRONG SHEET ==============');
@@ -375,6 +250,12 @@ export async function POST(request, { params }) {
     const processedCells = [];
     const errors = [];
     
+    // Determine the base URL for API calls
+    const protocol = request.headers.get('x-forwarded-proto') || 'http';
+    const host = request.headers.get('host');
+    const baseUrl = `${protocol}://${host}`;
+    const cookie = request.headers.get('cookie') || '';
+    
     // Xử lý tuần tự từng link thay vì song song
     console.log(`Bắt đầu xử lý tuần tự ${cellsToProcess.length} link...`);
     
@@ -382,123 +263,81 @@ export async function POST(request, { params }) {
       try {
         console.log(`\n===== Đang xử lý ô [${cellInfo.rowIndex + 1}:${cellInfo.colIndex + 1}]: ${cellInfo.url} =====`);
         
-        // Determine the base URL for API calls
-        const protocol = request.headers.get('x-forwarded-proto') || 'http';
-        const host = request.headers.get('host');
-        const baseUrl = `${protocol}://${host}`;
+        // Sử dụng hàm processLink với retry và timeout
+        const processResult = await processLink(baseUrl, cellInfo.url, cookie, 2, 90000); // 90 giây timeout, 2 lần retry
         
-        // Gọi API xử lý và thay thế file
-        console.log(`Gửi yêu cầu xử lý link đến API: ${baseUrl}/api/drive/process-and-replace`);
-        
-        // Thêm timeout cho fetch request để tránh treo quá lâu
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 giây timeout
+        // Tạo giá trị mới cho ô
+        const newUrl = processResult.processedFile.link;
+        console.log(`Đã xử lý thành công, URL mới: ${newUrl}`);
         
         try {
-          const processResponse = await fetch(`${baseUrl}/api/drive/process-and-replace`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Cookie': request.headers.get('cookie') || ''
-            },
-            body: JSON.stringify({
-              driveLink: cellInfo.url
-            }),
-            signal: controller.signal
-          });
-          
-          // Clear the timeout
-          clearTimeout(timeoutId);
-          
-          if (!processResponse.ok) {
-            const errorData = await processResponse.json();
-            throw new Error(errorData.error || 'Không thể xử lý file');
-          }
-          
-          const processResult = await processResponse.json();
-          
-          if (!processResult.success) {
-            throw new Error(processResult.error || 'Xử lý file thất bại');
-          }
-          
-          // Tạo giá trị mới cho ô
-          const newUrl = processResult.processedFile.link;
-          console.log(`Đã xử lý thành công, URL mới: ${newUrl}`);
-          
-          try {
-            console.log(`Cập nhật ô [${cellInfo.rowIndex + 1}:${cellInfo.colIndex + 1}] trong sheet...`);
-            // Sử dụng batchUpdate để cập nhật cả giá trị và định dạng hyperlink
-            await sheets.spreadsheets.batchUpdate({
-              spreadsheetId: sheet.sheetId,
-              requestBody: {
-                requests: [
-                  {
-                    updateCells: {
-                      range: {
-                        sheetId: actualSheetId, // Sử dụng sheetId thực tế
-                        startRowIndex: cellInfo.rowIndex,
-                        endRowIndex: cellInfo.rowIndex + 1,
-                        startColumnIndex: cellInfo.colIndex,
-                        endColumnIndex: cellInfo.colIndex + 1
-                      },
-                      rows: [
-                        {
-                          values: [
-                            {
-                              userEnteredValue: {
-                                stringValue: cellInfo.cell // Giữ nguyên text hiển thị
-                              },
-                              userEnteredFormat: {
-                                textFormat: {
-                                  link: { uri: newUrl }
-                                }
+          console.log(`Cập nhật ô [${cellInfo.rowIndex + 1}:${cellInfo.colIndex + 1}] trong sheet...`);
+          // Sử dụng batchUpdate để cập nhật cả giá trị và định dạng hyperlink
+          await sheets.spreadsheets.batchUpdate({
+            spreadsheetId: sheet.sheetId,
+            requestBody: {
+              requests: [
+                {
+                  updateCells: {
+                    range: {
+                      sheetId: actualSheetId, // Sử dụng sheetId thực tế
+                      startRowIndex: cellInfo.rowIndex,
+                      endRowIndex: cellInfo.rowIndex + 1,
+                      startColumnIndex: cellInfo.colIndex,
+                      endColumnIndex: cellInfo.colIndex + 1
+                    },
+                    rows: [
+                      {
+                        values: [
+                          {
+                            userEnteredValue: {
+                              stringValue: cellInfo.cell // Giữ nguyên text hiển thị
+                            },
+                            userEnteredFormat: {
+                              textFormat: {
+                                link: { uri: newUrl }
                               }
                             }
-                          ]
-                        }
-                      ],
-                      fields: 'userEnteredValue,userEnteredFormat.textFormat.link'
-                    }
+                          }
+                        ]
+                      }
+                    ],
+                    fields: 'userEnteredValue,userEnteredFormat.textFormat.link'
                   }
-                ]
-              }
-            });
-            console.log(`Đã cập nhật ô thành công với batchUpdate`);
-          } catch (batchUpdateError) {
-            console.error('Lỗi khi sử dụng batchUpdate, thử phương pháp thay thế:', batchUpdateError);
-            
-            // Phương pháp thay thế sử dụng values.update
-            const newCellValue = createHyperlinkFormula(cellInfo.cell, newUrl);
-            console.log(`Thử phương pháp thay thế với values.update, giá trị mới: ${newCellValue}`);
-            await sheets.spreadsheets.values.update({
-              spreadsheetId: sheet.sheetId,
-              range: `${firstSheetName}!${String.fromCharCode(65 + cellInfo.colIndex)}${cellInfo.rowIndex + 1}`,
-              valueInputOption: 'USER_ENTERED',
-              requestBody: {
-                values: [[newCellValue]]
-              }
-            });
-            console.log(`Đã cập nhật ô thành công với values.update`);
-          }
-          
-          processedCells.push({
-            rowIndex: cellInfo.rowIndex,
-            colIndex: cellInfo.colIndex,
-            originalUrl: cellInfo.url,
-            newUrl: newUrl,
-            duplicatesDeleted: processResult.duplicatesDeleted || 0
+                }
+              ]
+            }
           });
+          console.log(`Đã cập nhật ô thành công với batchUpdate`);
+        } catch (batchUpdateError) {
+          console.error('Lỗi khi sử dụng batchUpdate, thử phương pháp thay thế:', batchUpdateError);
           
-          console.log(`✅ Đã xử lý và cập nhật ô [${cellInfo.rowIndex + 1}:${cellInfo.colIndex + 1}] thành công`);
-        } catch (fetchError) {
-          if (fetchError.name === 'AbortError') {
-            throw new Error('Yêu cầu xử lý file bị hủy do quá thời gian chờ (60 giây)');
-          }
-          throw fetchError;
+          // Phương pháp thay thế sử dụng values.update
+          const newCellValue = createHyperlinkFormula(cellInfo.cell, newUrl);
+          console.log(`Thử phương pháp thay thế với values.update, giá trị mới: ${newCellValue}`);
+          await sheets.spreadsheets.values.update({
+            spreadsheetId: sheet.sheetId,
+            range: `${firstSheetName}!${String.fromCharCode(65 + cellInfo.colIndex)}${cellInfo.rowIndex + 1}`,
+            valueInputOption: 'USER_ENTERED',
+            requestBody: {
+              values: [[newCellValue]]
+            }
+          });
+          console.log(`Đã cập nhật ô thành công với values.update`);
         }
         
+        processedCells.push({
+          rowIndex: cellInfo.rowIndex,
+          colIndex: cellInfo.colIndex,
+          originalUrl: cellInfo.url,
+          newUrl: newUrl,
+          duplicatesDeleted: processResult.duplicatesDeleted || 0
+        });
+        
+        console.log(`✅ Đã xử lý và cập nhật ô [${cellInfo.rowIndex + 1}:${cellInfo.colIndex + 1}] thành công`);
+        
         // Đợi một khoảng thời gian ngắn giữa các yêu cầu để tránh quá tải API
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 2000));
         
       } catch (error) {
         console.error(`❌ Lỗi khi xử lý ô [${cellInfo.rowIndex + 1}:${cellInfo.colIndex + 1}]:`, error);
@@ -511,7 +350,7 @@ export async function POST(request, { params }) {
         });
         
         // Đợi một khoảng thời gian ngắn trước khi tiếp tục sau lỗi
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await new Promise(resolve => setTimeout(resolve, 3000));
       }
     }
     
