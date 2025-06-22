@@ -324,9 +324,8 @@ async function uploadToGoogleDrive(filePath, fileName, mimeType, folderId = null
     
     console.log(`Folder đích: ${folderName} (${targetFolderId})`);
     
-    // Tạo tên file với timestamp để tránh trùng lặp
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const processedFileName = `${sanitizedFileName} (Processed-${timestamp.substring(0, 10)})`;
+    // Sử dụng tên file đã làm sạch mà không thêm timestamp
+    const processedFileName = sanitizedFileName;
     
     console.log(`Tên file cuối cùng sẽ tải lên: "${processedFileName}"`);
     
