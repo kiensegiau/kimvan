@@ -241,6 +241,10 @@ async function processFile(filePath, mimeType, apiKey) {
         const apiKeyToUse = apiKey || DEFAULT_API_KEY;
         await processPDFWatermark(filePath, processedPath, apiKeyToUse);
         console.log(`PDF đã được xử lý thành công với API xóa watermark`);
+        
+        // Xóa watermark dạng text ở header và footer
+        await removeHeaderFooterWatermark(processedPath, processedPath);
+        console.log(`Đã xóa watermark dạng text ở header và footer`);
       } catch (watermarkError) {
         console.error(`Lỗi khi xóa watermark: ${watermarkError.message}. Sẽ sao chép file gốc.`);
         fs.copyFileSync(filePath, processedPath);
@@ -280,6 +284,64 @@ async function processFile(filePath, mimeType, apiKey) {
   } catch (error) {
     console.error('Lỗi khi xử lý file:', error);
     throw new Error(`Không thể xử lý file: ${error.message}`);
+  }
+}
+
+/**
+ * Xóa watermark dạng text ở header và footer của PDF
+ * @param {string} inputPath - Đường dẫn đến file PDF cần xử lý
+ * @param {string} outputPath - Đường dẫn lưu file PDF sau khi xử lý
+ */
+async function removeHeaderFooterWatermark(inputPath, outputPath) {
+  try {
+    // Sử dụng thư viện pdf-lib để đọc và xử lý PDF
+    const { PDFDocument, rgb } = require('pdf-lib');
+    
+    // Đọc file PDF
+    const pdfBytes = fs.readFileSync(inputPath);
+    const pdfDoc = await PDFDocument.load(pdfBytes);
+    
+    // Lấy số trang của PDF
+    const pageCount = pdfDoc.getPageCount();
+    console.log(`Số trang PDF: ${pageCount}`);
+    
+    // Xử lý từng trang PDF
+    for (let i = 0; i < pageCount; i++) {
+      const page = pdfDoc.getPage(i);
+      const { width, height } = page.getSize();
+      
+      // Tạo redaction annotation để xóa text ở header (phần trên cùng của trang)
+      const headerHeight = height * 0.05; // 5% chiều cao trang cho header
+      page.drawRectangle({
+        x: 0,
+        y: height - headerHeight,
+        width: width,
+        height: headerHeight,
+        color: rgb(1, 1, 1), // Màu trắng
+        opacity: 1,
+      });
+      
+      // Tạo redaction annotation để xóa text ở footer (phần dưới cùng của trang)
+      const footerHeight = height * 0.05; // 5% chiều cao trang cho footer
+      page.drawRectangle({
+        x: 0,
+        y: 0,
+        width: width,
+        height: footerHeight,
+        color: rgb(1, 1, 1), // Màu trắng
+        opacity: 1,
+      });
+    }
+    
+    // Lưu file PDF sau khi xử lý
+    const modifiedPdfBytes = await pdfDoc.save();
+    fs.writeFileSync(outputPath, modifiedPdfBytes);
+    
+    console.log(`Đã xóa watermark dạng text ở header và footer của PDF: ${outputPath}`);
+    return true;
+  } catch (error) {
+    console.error('Lỗi khi xóa watermark dạng text ở header và footer:', error);
+    throw new Error(`Không thể xóa watermark dạng text: ${error.message}`);
   }
 }
 
