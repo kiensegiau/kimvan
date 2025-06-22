@@ -499,41 +499,18 @@ export async function downloadBlockedPDF(fileId, fileName, tempDir, watermarkCon
       throw new Error(`Không thể tải ảnh từ các trang PDF: ${downloadError.message}`);
     }
     
-    // Xử lý watermark trên từng ảnh - sử dụng hàm từ module watermark
+    // Bỏ qua xử lý watermark và sử dụng ảnh gốc trực tiếp
     try {
-      // Kiểm tra xem có bỏ qua bước xử lý watermark không
-      if (watermarkConfig && (watermarkConfig.skipWatermarkRemoval || watermarkConfig.skipImageProcessing || watermarkConfig.preserveOriginal || watermarkConfig.noProcessing)) {
-        console.log(`⏭️ BỎ QUA HOÀN TOÀN bước xử lý watermark theo yêu cầu...`);
-        // Chỉ chuyển đổi định dạng ảnh nếu cần
-        const pngImages = await convertAllImagesToPng(downloadedImages, imagesDir);
-        
-        // Tạo bản sao của ảnh với tên file đã xử lý để duy trì luồng xử lý
-        const copiedImages = [];
-        for (let i = 0; i < pngImages.length; i++) {
-          const image = pngImages[i];
-          let pageNum;
-          try {
-            pageNum = parseInt(path.basename(image).match(/page_(\d+)/)[1]);
-          } catch (parseError) {
-            pageNum = i + 1;
-          }
-          
-          const processedPath = path.join(processedDir, `page_${String(pageNum).padStart(3, '0')}_processed.png`);
-          fs.copyFileSync(image, processedPath);
-          console.log(`✅ Đã sao chép trang ${pageNum} (không xử lý watermark)`);
-          copiedImages.push(processedPath);
-        }
-        processedImages = copiedImages;
-      } else {
-        console.log(`🔧 Xử lý watermark trên ${downloadedImages.length} ảnh...`);
-        // Chuyển đổi ảnh webp sang png trước khi xử lý watermark
-        const pngImages = await convertAllImagesToPng(downloadedImages, imagesDir);
-        // Sau đó xử lý watermark trên các ảnh đã chuyển đổi
-        processedImages = await processAllImages(pngImages, processedDir, watermarkConfig || config);
-      }
+      console.log(`⏭️ BỎ QUA HOÀN TOÀN bước xử lý watermark...`);
+      // Chỉ chuyển đổi định dạng ảnh nếu cần
+      const pngImages = await convertAllImagesToPng(downloadedImages, imagesDir);
+      
+      // Sử dụng trực tiếp ảnh gốc đã chuyển đổi sang PNG mà không tạo bản sao
+      console.log(`✅ Sử dụng trực tiếp ${pngImages.length} ảnh gốc mà không xử lý watermark`);
+      processedImages = pngImages;
     } catch (processError) {
-      console.error(`Lỗi xử lý watermark: ${processError.message}`);
-      throw new Error(`Không thể xử lý watermark trên ảnh: ${processError.message}`);
+      console.error(`Lỗi xử lý ảnh: ${processError.message}`);
+      throw new Error(`Không thể xử lý ảnh: ${processError.message}`);
     }
     
     // Tạo file PDF từ các ảnh đã xử lý
@@ -1073,38 +1050,38 @@ async function processAllImages(images, outputDir, config) {
                 .toBuffer();
             }
             
-            // // Xử lý đặc biệt cho watermark khi giữ màu sắc
-            // if (enhancedConfig.preserveColors) {
-            //   console.log(`🎨 Áp dụng xử lý giữ màu sắc cho trang ${pageNum}...`);
+            // Xử lý đặc biệt cho watermark khi giữ màu sắc
+            if (enhancedConfig.preserveColors) {
+              console.log(`🎨 Áp dụng xử lý giữ màu sắc cho trang ${pageNum}...`);
               
-            //   // Sử dụng phương pháp giữ màu sắc và loại bỏ watermark
-            //   processedBuffer = await sharp(processedBuffer)
-            //     // Thay thế sharpen bằng phương pháp thay thế
-            //     .linear(1.3, -0.12)
-            //     .recomb([
-            //       [1.12, 0, 0],
-            //       [0, 1.12, 0],
-            //       [0, 0, 1.12]
-            //     ])
-            //     // Tăng độ tương phản nhẹ để làm rõ văn bản
-            //     .linear(
-            //       1.25, // Tăng từ 1.2 lên 1.25
-            //       -0.03 // Giữ nguyên
-            //     )
-            //     // Tăng độ bão hòa màu một chút nữa
-            //     .modulate({
-            //       saturation: 1.3, // Giữ nguyên
-            //       brightness: 1.05 // Giữ nguyên
-            //     })
-            //     // Thêm bước xử lý cuối cùng để tăng độ nét
-            //     .recomb([
-            //       [1.1, 0, 0],    // Tăng kênh đỏ lên 10%
-            //       [0, 1.1, 0],    // Tăng kênh xanh lá lên 10%
-            //       [0, 0, 1.1]     // Tăng kênh xanh dương lên 10%
-            //     ])
-            //     .png({ quality: 100 })
-            //     .toBuffer();
-            // }
+              // Sử dụng phương pháp giữ màu sắc và loại bỏ watermark
+              processedBuffer = await sharp(processedBuffer)
+                // Thay thế sharpen bằng phương pháp thay thế
+                .linear(1.3, -0.12)
+                .recomb([
+                  [1.12, 0, 0],
+                  [0, 1.12, 0],
+                  [0, 0, 1.12]
+                ])
+                // Tăng độ tương phản nhẹ để làm rõ văn bản
+                .linear(
+                  1.25, // Tăng từ 1.2 lên 1.25
+                  -0.03 // Giữ nguyên
+                )
+                // Tăng độ bão hòa màu một chút nữa
+                .modulate({
+                  saturation: 1.3, // Giữ nguyên
+                  brightness: 1.05 // Giữ nguyên
+                })
+                // Thêm bước xử lý cuối cùng để tăng độ nét
+                .recomb([
+                  [1.1, 0, 0],    // Tăng kênh đỏ lên 10%
+                  [0, 1.1, 0],    // Tăng kênh xanh lá lên 10%
+                  [0, 0, 1.1]     // Tăng kênh xanh dương lên 10%
+                ])
+                .png({ quality: 100 })
+                .toBuffer();
+            }
             
             // Lưu ảnh đã xử lý
             fs.writeFileSync(processedPath, processedBuffer);
