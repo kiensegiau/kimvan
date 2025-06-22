@@ -57,10 +57,20 @@ async function downloadFromGoogleDrive(fileId) {
           throw new Error(`Không phát hiện trang nào trong file PDF. Chrome đã được giữ mở để debug. File ID: ${fileId}`);
         }
         
+        // Lấy tên file gốc
+        let originalFileName;
+        try {
+          originalFileName = fileInfo.data.name;
+          console.log(`Tên file gốc từ Drive: ${originalFileName}`);
+        } catch (nameError) {
+          console.warn(`Không thể lấy tên file gốc: ${nameError.message}`);
+          originalFileName = result.fileName || `file_${fileId}.pdf`;
+        }
+        
         return {
           success: true,
           filePath: result.filePath,
-          fileName: result.fileName || `blocked_${fileId}_clean.pdf`,
+          fileName: originalFileName, // Sử dụng tên file gốc
           mimeType: 'application/pdf',
           outputDir: blockedTempDir
         };
@@ -73,21 +83,26 @@ async function downloadFromGoogleDrive(fileId) {
       } 
       // Kiểm tra lỗi 403 - Không có quyền truy cập
       else if (error.code === 403 || error.response?.status === 403) {
-        console.log(`Lỗi quyền truy cập (403): ${fileId}. Thử sử dụng phương pháp drive-fix-blockdown...`);
+        console.log(`Lỗi quyền truy cập (403): ${fileId}. Thử sử dụng Chrome để tải nhưng không xử lý watermark...`);
         
         try {
           // Sử dụng phương pháp đặc biệt cho file bị chặn
           const tempDir = path.join(os.tmpdir(), 'blocked-pdf-');
           const blockedTempDir = fs.mkdtempSync(tempDir);
           
-          // Thử xử lý file bằng phương pháp đặc biệt
+          // Thử xử lý file bằng phương pháp đặc biệt nhưng tắt xử lý watermark
+          console.log('Tải file bằng Chrome và BỎ QUA hoàn toàn bước xử lý watermark');
           const result = await processPDF(null, null, {
             keepChromeOpen: true,
-            debugMode: true
+            debugMode: true,
+            skipWatermarkRemoval: true, // Bỏ qua bước xóa watermark
+            skipImageProcessing: true,  // Bỏ qua bước xử lý ảnh
+            preserveOriginal: true,     // Giữ nguyên nội dung gốc
+            noProcessing: true          // Flag đặc biệt để đảm bảo không xử lý
           }, true, fileId);
           
           if (!result.success) {
-            throw new Error(`Không thể xử lý file bị chặn: ${result.error}`);
+            throw new Error(`Không thể tải file bị chặn: ${result.error}`);
           }
           
           // Kiểm tra nếu không phát hiện trang nào
@@ -95,16 +110,30 @@ async function downloadFromGoogleDrive(fileId) {
             throw new Error(`Không phát hiện trang nào trong file PDF. Chrome đã được giữ mở để debug. File ID: ${fileId}`);
           }
           
+          // Lấy tên file gốc từ fileInfo nếu có
+          let originalFileName;
+          try {
+            const fileInfoResponse = await drive.files.get({
+              fileId: fileId,
+              fields: 'name'
+            });
+            originalFileName = fileInfoResponse.data.name;
+            console.log(`Tên file gốc từ Drive: ${originalFileName}`);
+          } catch (nameError) {
+            console.warn(`Không thể lấy tên file gốc: ${nameError.message}`);
+            originalFileName = result.fileName || `file_${fileId}.pdf`;
+          }
+          
           return {
             success: true,
             filePath: result.filePath,
-            fileName: result.fileName || `blocked_${fileId}_clean.pdf`,
+            fileName: originalFileName, // Sử dụng tên file gốc
             mimeType: 'application/pdf',
             outputDir: blockedTempDir
           };
         } catch (blockError) {
-          console.error(`Không thể xử lý file bị chặn: ${blockError.message}`);
-          throw new Error(`Không có quyền truy cập file với ID: ${fileId}. Đã thử phương pháp đặc biệt nhưng không thành công: ${blockError.message}`);
+          console.error(`Không thể tải file bị chặn: ${blockError.message}`);
+          throw new Error(`Không có quyền truy cập file với ID: ${fileId}. Đã thử tải bằng Chrome nhưng không thành công: ${blockError.message}`);
         }
       }
       

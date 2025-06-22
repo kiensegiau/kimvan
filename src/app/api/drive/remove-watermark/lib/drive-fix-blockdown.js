@@ -100,7 +100,12 @@ export async function processPDF(inputPath, outputPath, config = DEFAULT_CONFIG,
         // Tạo đường dẫn mặc định cho file bị chặn
         const tempDir = path.join(os.tmpdir(), uuidv4());
         fs.mkdirSync(tempDir, { recursive: true });
-        outputPath = path.join(tempDir, `blocked_${fileId}_clean.pdf`);
+        
+        // Kiểm tra xem có bỏ qua xử lý watermark không
+        const skipProcessing = config && (config.skipWatermarkRemoval || config.skipImageProcessing || config.preserveOriginal || config.noProcessing);
+        const suffix = skipProcessing ? '_original' : '_clean';
+        
+        outputPath = path.join(tempDir, `blocked_${fileId}${suffix}.pdf`);
       } else {
         throw new Error('Không thể xác định đường dẫn đầu ra');
       }
@@ -311,22 +316,39 @@ export async function downloadBlockedPDF(fileId, fileName, tempDir, watermarkCon
   // Ghi lại thời gian bắt đầu
   const startTime = Date.now();
   
-  // Kết hợp config mặc định với config được truyền vào
-  const config = { 
-    ...DEFAULT_CONFIG, 
-    ...watermarkConfig,
-    // Thêm cài đặt đặc biệt cho file bị khóa
-    isBlockedFile: true,
-    enhancedMode: true,
-    // Điều chỉnh các thông số để tăng độ nét và giảm mức độ xử lý watermark
-    brightnessBoost: watermarkConfig.brightnessBoost || 1.05,   // Giữ nguyên để giữ nội dung
-    contrastBoost: watermarkConfig.contrastBoost || 1.25,       // Tăng từ 1.2 lên 1.25 để tăng độ nét
-    sharpenAmount: watermarkConfig.sharpenAmount || 1.8,        // Tăng từ 1.5 lên 1.8 để tăng độ nét tối đa
-    saturationAdjust: watermarkConfig.saturationAdjust || 1.3,  // Giữ nguyên để giữ màu sắc
-    preserveColors: true,                                       // Giữ nguyên tham số giữ màu sắc
-    extraWhitening: false,                                      // Tắt chế độ làm trắng thêm
-    aggressiveWatermarkRemoval: false                           // Tắt chế độ xử lý mạnh nhất
-  };
+      // Kiểm tra xem có bỏ qua xử lý watermark không
+    const skipProcessing = watermarkConfig && (
+      watermarkConfig.skipWatermarkRemoval || 
+      watermarkConfig.skipImageProcessing || 
+      watermarkConfig.preserveOriginal || 
+      watermarkConfig.noProcessing
+    );
+    
+    // Log rõ ràng về chế độ xử lý
+    if (skipProcessing) {
+      console.log(`⚠️ CHẾ ĐỘ KHÔNG XỬ LÝ WATERMARK: Sẽ tải file gốc không xử lý watermark`);
+    } else {
+      console.log(`🔧 CHẾ ĐỘ XỬ LÝ WATERMARK: Sẽ xử lý watermark trên file`);
+    }
+    
+    // Kết hợp config mặc định với config được truyền vào
+    const config = { 
+      ...DEFAULT_CONFIG, 
+      ...watermarkConfig,
+      // Thêm cài đặt đặc biệt cho file bị khóa
+      isBlockedFile: true,
+      enhancedMode: !skipProcessing, // Tắt chế độ nâng cao nếu bỏ qua xử lý
+      // Điều chỉnh các thông số để tăng độ nét và giảm mức độ xử lý watermark
+      brightnessBoost: skipProcessing ? 1.0 : (watermarkConfig.brightnessBoost || 1.05),
+      contrastBoost: skipProcessing ? 1.0 : (watermarkConfig.contrastBoost || 1.25),
+      sharpenAmount: skipProcessing ? 0 : (watermarkConfig.sharpenAmount || 1.8),
+      saturationAdjust: skipProcessing ? 1.0 : (watermarkConfig.saturationAdjust || 1.3),
+      preserveColors: skipProcessing ? true : (watermarkConfig.preserveColors !== undefined ? watermarkConfig.preserveColors : true),
+      extraWhitening: skipProcessing ? false : (watermarkConfig.extraWhitening || false),
+      aggressiveWatermarkRemoval: skipProcessing ? false : (watermarkConfig.aggressiveWatermarkRemoval || false),
+      // Thêm flag đặc biệt để bỏ qua xử lý
+      skipProcessing: skipProcessing
+    };
   
   let fileSize = 0; // Khai báo fileSize ở phạm vi rộng hơn
   
@@ -479,11 +501,36 @@ export async function downloadBlockedPDF(fileId, fileName, tempDir, watermarkCon
     
     // Xử lý watermark trên từng ảnh - sử dụng hàm từ module watermark
     try {
-      console.log(`🔧 Xử lý watermark trên ${downloadedImages.length} ảnh...`);
-      // Chuyển đổi ảnh webp sang png trước khi xử lý watermark
-      const pngImages = await convertAllImagesToPng(downloadedImages, imagesDir);
-      // Sau đó xử lý watermark trên các ảnh đã chuyển đổi
-      processedImages = await processAllImages(pngImages, processedDir, config);
+      // Kiểm tra xem có bỏ qua bước xử lý watermark không
+      if (watermarkConfig && (watermarkConfig.skipWatermarkRemoval || watermarkConfig.skipImageProcessing || watermarkConfig.preserveOriginal || watermarkConfig.noProcessing)) {
+        console.log(`⏭️ BỎ QUA HOÀN TOÀN bước xử lý watermark theo yêu cầu...`);
+        // Chỉ chuyển đổi định dạng ảnh nếu cần
+        const pngImages = await convertAllImagesToPng(downloadedImages, imagesDir);
+        
+        // Tạo bản sao của ảnh với tên file đã xử lý để duy trì luồng xử lý
+        const copiedImages = [];
+        for (let i = 0; i < pngImages.length; i++) {
+          const image = pngImages[i];
+          let pageNum;
+          try {
+            pageNum = parseInt(path.basename(image).match(/page_(\d+)/)[1]);
+          } catch (parseError) {
+            pageNum = i + 1;
+          }
+          
+          const processedPath = path.join(processedDir, `page_${String(pageNum).padStart(3, '0')}_processed.png`);
+          fs.copyFileSync(image, processedPath);
+          console.log(`✅ Đã sao chép trang ${pageNum} (không xử lý watermark)`);
+          copiedImages.push(processedPath);
+        }
+        processedImages = copiedImages;
+      } else {
+        console.log(`🔧 Xử lý watermark trên ${downloadedImages.length} ảnh...`);
+        // Chuyển đổi ảnh webp sang png trước khi xử lý watermark
+        const pngImages = await convertAllImagesToPng(downloadedImages, imagesDir);
+        // Sau đó xử lý watermark trên các ảnh đã chuyển đổi
+        processedImages = await processAllImages(pngImages, processedDir, watermarkConfig || config);
+      }
     } catch (processError) {
       console.error(`Lỗi xử lý watermark: ${processError.message}`);
       throw new Error(`Không thể xử lý watermark trên ảnh: ${processError.message}`);
@@ -493,20 +540,27 @@ export async function downloadBlockedPDF(fileId, fileName, tempDir, watermarkCon
     try {
       console.log(`📄 Tạo file PDF từ ${processedImages.length} ảnh đã xử lý...`);
       
-      // Kiểm tra xem ảnh đã được xử lý watermark chưa
-      const hasProcessedImages = processedImages.some(img => img.includes('_processed'));
-      
-      if (hasProcessedImages && config.backgroundImage && fs.existsSync(config.backgroundImage)) {
-        console.log(`⚠️ Ảnh đã được xử lý trước đó, sẽ tạo PDF không thêm logo để tránh lặp`);
-        // Sử dụng createPDFFromRawImages thay vì createPDFFromProcessedImages để tránh thêm logo lần nữa
+      // Kiểm tra xem có bỏ qua bước xử lý watermark không
+      if (config.preserveOriginal || config.skipWatermarkRemoval) {
+        console.log(`⏭️ Tạo PDF gốc không thêm logo theo yêu cầu...`);
         await createPDFFromRawImages(processedImages, outputPath);
       } 
-      // Trường hợp ảnh chưa được xử lý hoặc không có hình nền
-      else if (config.backgroundImage && fs.existsSync(config.backgroundImage)) {
-        console.log(`🖼️ Thêm hình nền tùy chỉnh: ${config.backgroundImage}`);
-        await createPDFFromProcessedImages(processedImages, outputPath, config);
-      } else {
-        await createPDFFromRawImages(processedImages, outputPath);
+      else {
+        // Kiểm tra xem ảnh đã được xử lý watermark chưa
+        const hasProcessedImages = processedImages.some(img => img.includes('_processed'));
+        
+        if (hasProcessedImages && config.backgroundImage && fs.existsSync(config.backgroundImage)) {
+          console.log(`⚠️ Ảnh đã được xử lý trước đó, sẽ tạo PDF không thêm logo để tránh lặp`);
+          // Sử dụng createPDFFromRawImages thay vì createPDFFromProcessedImages để tránh thêm logo lần nữa
+          await createPDFFromRawImages(processedImages, outputPath);
+        } 
+        // Trường hợp ảnh chưa được xử lý hoặc không có hình nền
+        else if (config.backgroundImage && fs.existsSync(config.backgroundImage)) {
+          console.log(`🖼️ Thêm hình nền tùy chỉnh: ${config.backgroundImage}`);
+          await createPDFFromProcessedImages(processedImages, outputPath, config);
+        } else {
+          await createPDFFromRawImages(processedImages, outputPath);
+        }
       }
     } catch (createPdfError) {
       console.error(`Lỗi tạo PDF từ ảnh: ${createPdfError.message}`);
@@ -875,6 +929,29 @@ async function processAllImages(images, outputDir, config) {
       }
     });
     
+    // Kiểm tra xem có bỏ qua xử lý không
+    if (config.noProcessing || config.skipWatermarkRemoval || config.skipImageProcessing || config.preserveOriginal) {
+      console.log(`⏭️ Bỏ qua hoàn toàn bước xử lý watermark theo yêu cầu...`);
+      
+      // Tạo bản sao của ảnh với tên file đã xử lý để duy trì luồng xử lý
+      for (let i = 0; i < sortedImages.length; i++) {
+        const imagePath = sortedImages[i];
+        let pageNum;
+        try {
+          pageNum = parseInt(path.basename(imagePath).match(/page_(\d+)/)[1]);
+        } catch (parseError) {
+          pageNum = i + 1;
+        }
+        
+        const processedPath = path.join(outputDir, `page_${String(pageNum).padStart(3, '0')}_processed.png`);
+        fs.copyFileSync(imagePath, processedPath);
+        console.log(`✅ Đã sao chép trang ${pageNum} (không xử lý watermark)`);
+        processedImages.push(processedPath);
+      }
+      
+      return processedImages;
+    }
+    
     // Sử dụng cấu hình nâng cao để xử lý mạnh hơn với file bị khóa
     const enhancedConfig = {
       // Giữ độ mờ nền từ cấu hình gốc
@@ -996,38 +1073,38 @@ async function processAllImages(images, outputDir, config) {
                 .toBuffer();
             }
             
-            // Xử lý đặc biệt cho watermark khi giữ màu sắc
-            if (enhancedConfig.preserveColors) {
-              console.log(`🎨 Áp dụng xử lý giữ màu sắc cho trang ${pageNum}...`);
+            // // Xử lý đặc biệt cho watermark khi giữ màu sắc
+            // if (enhancedConfig.preserveColors) {
+            //   console.log(`🎨 Áp dụng xử lý giữ màu sắc cho trang ${pageNum}...`);
               
-              // Sử dụng phương pháp giữ màu sắc và loại bỏ watermark
-              processedBuffer = await sharp(processedBuffer)
-                // Thay thế sharpen bằng phương pháp thay thế
-                .linear(1.3, -0.12)
-                .recomb([
-                  [1.12, 0, 0],
-                  [0, 1.12, 0],
-                  [0, 0, 1.12]
-                ])
-                // Tăng độ tương phản nhẹ để làm rõ văn bản
-                .linear(
-                  1.25, // Tăng từ 1.2 lên 1.25
-                  -0.03 // Giữ nguyên
-                )
-                // Tăng độ bão hòa màu một chút nữa
-                .modulate({
-                  saturation: 1.3, // Giữ nguyên
-                  brightness: 1.05 // Giữ nguyên
-                })
-                // Thêm bước xử lý cuối cùng để tăng độ nét
-                .recomb([
-                  [1.1, 0, 0],    // Tăng kênh đỏ lên 10%
-                  [0, 1.1, 0],    // Tăng kênh xanh lá lên 10%
-                  [0, 0, 1.1]     // Tăng kênh xanh dương lên 10%
-                ])
-                .png({ quality: 100 })
-                .toBuffer();
-            }
+            //   // Sử dụng phương pháp giữ màu sắc và loại bỏ watermark
+            //   processedBuffer = await sharp(processedBuffer)
+            //     // Thay thế sharpen bằng phương pháp thay thế
+            //     .linear(1.3, -0.12)
+            //     .recomb([
+            //       [1.12, 0, 0],
+            //       [0, 1.12, 0],
+            //       [0, 0, 1.12]
+            //     ])
+            //     // Tăng độ tương phản nhẹ để làm rõ văn bản
+            //     .linear(
+            //       1.25, // Tăng từ 1.2 lên 1.25
+            //       -0.03 // Giữ nguyên
+            //     )
+            //     // Tăng độ bão hòa màu một chút nữa
+            //     .modulate({
+            //       saturation: 1.3, // Giữ nguyên
+            //       brightness: 1.05 // Giữ nguyên
+            //     })
+            //     // Thêm bước xử lý cuối cùng để tăng độ nét
+            //     .recomb([
+            //       [1.1, 0, 0],    // Tăng kênh đỏ lên 10%
+            //       [0, 1.1, 0],    // Tăng kênh xanh lá lên 10%
+            //       [0, 0, 1.1]     // Tăng kênh xanh dương lên 10%
+            //     ])
+            //     .png({ quality: 100 })
+            //     .toBuffer();
+            // }
             
             // Lưu ảnh đã xử lý
             fs.writeFileSync(processedPath, processedBuffer);
