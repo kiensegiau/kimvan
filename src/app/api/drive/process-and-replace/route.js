@@ -12,6 +12,8 @@ import {
 import { processPDF } from '@/app/api/drive/remove-watermark/lib/drive-fix-blockdown.js';
 import axios from 'axios';
 import FormData from 'form-data';
+// Import the API key management utilities
+import { getNextApiKey, removeApiKey } from '@/utils/watermark-api-keys';
 
 // Tải xuống file từ Google Drive
 async function downloadFromGoogleDrive(fileId) {
@@ -251,12 +253,19 @@ async function processFile(filePath, mimeType, apiKey) {
       // Xử lý file PDF - sử dụng API techhk.aoscdn.com để xóa watermark
       console.log('Đang xử lý file PDF với API xóa watermark...');
       
-      // API Key mặc định
-      const DEFAULT_API_KEY = process.env.TECHHK_API_KEY || 'wxu5s7wu6c4hfc0di';
-      
       try {
-        // Gọi API xóa watermark với apiKey được truyền vào hoặc dùng mặc định
-        const apiKeyToUse = apiKey || DEFAULT_API_KEY;
+        // Lấy API key từ hệ thống quản lý API key
+        // Nếu apiKey được truyền vào, sử dụng nó, nếu không, lấy key từ hệ thống
+        const apiKeyToUse = apiKey || await getNextApiKey();
+        
+        if (!apiKeyToUse) {
+          console.error('Không có API key khả dụng để xóa watermark');
+          throw new Error('Không có API key khả dụng để xóa watermark');
+        }
+        
+        console.log(`Sử dụng API key: ${apiKeyToUse.substring(0, 5)}... để xóa watermark`);
+        
+        // Gọi API xóa watermark
         await processPDFWatermark(filePath, processedPath, apiKeyToUse);
         console.log(`PDF đã được xử lý thành công với API xóa watermark`);
         
@@ -265,6 +274,15 @@ async function processFile(filePath, mimeType, apiKey) {
         console.log(`Đã xóa watermark dạng text ở header và footer và thêm logo`);
       } catch (watermarkError) {
         console.error(`Lỗi khi xóa watermark: ${watermarkError.message}. Sẽ sao chép file gốc và thử thêm logo.`);
+        
+        // Nếu lỗi liên quan đến API key (ví dụ: hết credit), xóa key đó
+        if (watermarkError.message.includes('credit') || 
+            watermarkError.message.includes('coins') || 
+            watermarkError.message.includes('quota')) {
+          console.log('Phát hiện lỗi liên quan đến hết credit, xóa API key...');
+          removeApiKey(apiKey);
+        }
+        
         fs.copyFileSync(filePath, processedPath);
         
         // Vẫn thử thêm logo ngay cả khi xóa watermark thất bại
@@ -415,6 +433,13 @@ async function createWatermarkRemovalTask(filePath, apiKey) {
       throw new Error(`Lỗi khi tạo nhiệm vụ: ${response.data?.message || 'Không xác định'}`);
     }
   } catch (error) {
+    // Kiểm tra lỗi liên quan đến API key
+    if (error.response?.data?.message?.includes('quota') || 
+        error.response?.data?.message?.includes('credit') ||
+        error.response?.data?.message?.includes('coins')) {
+      console.log(`API key ${apiKey.substring(0, 5)}... đã hết credit. Đánh dấu để xóa.`);
+      removeApiKey(apiKey);
+    }
     throw new Error(`Lỗi API: ${error.message}`);
   }
 }
@@ -438,6 +463,13 @@ async function checkTaskStatus(taskId, apiKey) {
       throw new Error(`Lỗi khi kiểm tra trạng thái: ${response.data?.message || 'Không xác định'}`);
     }
   } catch (error) {
+    // Kiểm tra lỗi liên quan đến API key
+    if (error.response?.data?.message?.includes('quota') || 
+        error.response?.data?.message?.includes('credit') ||
+        error.response?.data?.message?.includes('coins')) {
+      console.log(`API key ${apiKey.substring(0, 5)}... đã hết credit. Đánh dấu để xóa.`);
+      removeApiKey(apiKey);
+    }
     throw new Error(`Lỗi API: ${error.message}`);
   }
 }
@@ -537,6 +569,21 @@ async function processPDFWatermark(filePath, outputPath, apiKey) {
       pages: result.file_pages || 0
     };
   } catch (error) {
+    // Kiểm tra lỗi liên quan đến API key
+    if (error.message.includes('quota') || 
+        error.message.includes('credit') || 
+        error.message.includes('coins')) {
+      console.log(`API key ${apiKey.substring(0, 5)}... đã hết credit. Đánh dấu để xóa.`);
+      removeApiKey(apiKey);
+      
+      // Thử lấy API key mới và xử lý lại
+      const newApiKey = await getNextApiKey();
+      if (newApiKey) {
+        console.log(`Thử lại với API key mới: ${newApiKey.substring(0, 5)}...`);
+        return processPDFWatermark(filePath, outputPath, newApiKey);
+      }
+    }
+    
     throw new Error(`Lỗi khi xử lý PDF: ${error.message}`);
   }
 }
@@ -864,7 +911,7 @@ export async function POST(request) {
     console.log('Thông tin request:', {
       driveLink: driveLink || 'không có',
       folderId: folderId || 'sẽ dùng folder mặc định "1Lt10aHyWp9VtPaImzInE0DmIcbrjJgpN"',
-      apiKey: apiKey ? 'Đã cung cấp' : 'Sử dụng mặc định'
+      apiKey: apiKey ? 'Đã cung cấp' : 'Sử dụng từ hệ thống quản lý API key'
     });
     
     // Validate drive link
