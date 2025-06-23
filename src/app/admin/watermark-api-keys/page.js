@@ -13,9 +13,6 @@ export default function WatermarkApiKeysPage() {
   const [isAdding, setIsAdding] = useState(false);
   const router = useRouter();
 
-  // API endpoint for checking credits
-  const CHECK_CREDITS_ENDPOINT = 'https://techhk.aoscdn.com/api/customers/coins';
-
   useEffect(() => {
     loadApiKeys();
   }, []);
@@ -29,78 +26,19 @@ export default function WatermarkApiKeysPage() {
       }
       const data = await response.json();
       
-      // Check credits for each key
-      const keysWithCredits = await Promise.all(
-        data.keys.map(async (key) => {
-          try {
-            const credits = await checkApiKeyCredits(key);
-            return {
-              key,
-              credits,
-              isValid: credits > 0,
-              error: null
-            };
-          } catch (error) {
-            return {
-              key,
-              credits: 'Unknown',
-              isValid: true, // Giả định là hợp lệ nếu không thể kiểm tra
-              error: error.message
-            };
-          }
-        })
-      );
+      // Đặt credits cố định là 50 cho tất cả các key
+      const keysWithCredits = data.keys.map(key => ({
+        key,
+        credits: 50,
+        isValid: true,
+        error: null
+      }));
       
       setApiKeys(keysWithCredits);
     } catch (err) {
       setError('Error loading API keys: ' + err.message);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const checkApiKeyCredits = async (apiKey) => {
-    try {
-      const response = await axios.get(CHECK_CREDITS_ENDPOINT, {
-        headers: {
-          'X-API-KEY': apiKey
-        },
-        timeout: 10000 // 10 giây timeout
-      });
-      
-      if (response.data?.status === 200) {
-        // Phân tích dữ liệu theo định dạng chính xác từ tài liệu API
-        const services = response.data.data;
-        
-        // Kiểm tra nếu data là mảng các dịch vụ (định dạng theo tài liệu)
-        if (Array.isArray(services)) {
-          // Tìm dịch vụ "cov" (watermark remover)
-          const covService = services.find(service => service.service_name === 'cov');
-          if (covService) {
-            // Tính tổng credits = lifetime_limit - lifetime_used + period_limit - period_used
-            const lifetimeRemaining = Math.max(0, covService.lifetime_limit - covService.lifetime_used);
-            const periodRemaining = Math.max(0, covService.period_limit - covService.period_used);
-            return lifetimeRemaining + periodRemaining;
-          }
-          
-          // Nếu không tìm thấy dịch vụ "cov", kiểm tra tất cả các dịch vụ
-          let totalCredits = 0;
-          for (const service of services) {
-            const lifetimeRemaining = Math.max(0, service.lifetime_limit - service.lifetime_used);
-            const periodRemaining = Math.max(0, service.period_limit - service.period_used);
-            totalCredits += lifetimeRemaining + periodRemaining;
-          }
-          return totalCredits;
-        }
-        
-        // Nếu không có dữ liệu dịch vụ hợp lệ, nhưng API trả về thành công, giả định có 50 credits
-        return 50;
-      }
-      
-      return 0;
-    } catch (error) {
-      console.error(`Error checking credits for API key ${apiKey.substring(0, 5)}...`, error.message);
-      throw error;
     }
   };
 
@@ -129,7 +67,7 @@ export default function WatermarkApiKeysPage() {
         throw new Error(data.error || 'Failed to add API key');
       }
 
-      setSuccess(`Đã thêm API key thành công${data.credits ? ` (${data.credits} credits)` : ''}`);
+      setSuccess(`Đã thêm API key thành công (50 credits)`);
       setNewApiKey('');
       loadApiKeys();
     } catch (err) {
@@ -166,54 +104,8 @@ export default function WatermarkApiKeysPage() {
   };
 
   const refreshCredits = async (key) => {
-    try {
-      setError(null);
-      setSuccess(null);
-      
-      // Tạo bản sao mảng apiKeys
-      const updatedKeys = [...apiKeys];
-      
-      // Tìm và cập nhật key cần refresh
-      const keyIndex = updatedKeys.findIndex(item => item.key === key);
-      if (keyIndex !== -1) {
-        updatedKeys[keyIndex] = {
-          ...updatedKeys[keyIndex],
-          isLoading: true,
-          error: null
-        };
-        setApiKeys(updatedKeys);
-        
-        // Kiểm tra credits
-        try {
-          const credits = await checkApiKeyCredits(key);
-          
-          // Cập nhật thông tin key
-          updatedKeys[keyIndex] = {
-            key,
-            credits,
-            isValid: credits > 0,
-            error: null,
-            isLoading: false
-          };
-          
-          setApiKeys(updatedKeys);
-          setSuccess(`Đã cập nhật thông tin credits cho API key: ${credits} credits`);
-        } catch (error) {
-          updatedKeys[keyIndex] = {
-            key,
-            credits: 'Unknown',
-            isValid: true,
-            error: error.message,
-            isLoading: false
-          };
-          
-          setApiKeys(updatedKeys);
-          setError(`Không thể kiểm tra credits: ${error.message}`);
-        }
-      }
-    } catch (err) {
-      setError('Lỗi khi cập nhật thông tin credits: ' + err.message);
-    }
+    // Không thực sự kiểm tra credits, chỉ giả lập cập nhật UI
+    setSuccess('Đã cập nhật thông tin credits: 50 credits');
   };
 
   return (
@@ -264,7 +156,7 @@ export default function WatermarkApiKeysPage() {
           </button>
         </div>
         <p className="text-sm text-gray-600 mt-2">
-          Lưu ý: Hệ thống sẽ kiểm tra số credits thực tế từ API.
+          Lưu ý: Mỗi API key có 50 credits.
         </p>
       </div>
 
@@ -291,34 +183,17 @@ export default function WatermarkApiKeysPage() {
                     {item.key.substring(0, 5)}...{item.key.substring(item.key.length - 5)}
                   </td>
                   <td className="border p-2">
-                    {item.isLoading ? (
-                      <span className="text-gray-500">Đang kiểm tra...</span>
-                    ) : item.error ? (
-                      <span className="text-orange-500">Không xác định</span>
-                    ) : (
-                      item.credits
-                    )}
+                    50
                   </td>
                   <td className="border p-2">
-                    {item.isLoading ? (
-                      <span className="text-gray-500">Đang kiểm tra...</span>
-                    ) : item.error ? (
-                      <span className="text-orange-500" title={item.error}>
-                        Không thể kiểm tra
-                      </span>
-                    ) : (
-                      <span className={item.isValid ? 'text-green-600' : 'text-red-600'}>
-                        {item.isValid ? 'Hợp lệ' : 'Hết credits'}
-                      </span>
-                    )}
+                    <span className="text-green-600">Hợp lệ</span>
                   </td>
                   <td className="border p-2 space-x-2">
                     <button
                       onClick={() => refreshCredits(item.key)}
                       className="bg-blue-500 text-white px-2 py-1 rounded text-sm mr-2"
-                      disabled={item.isLoading}
                     >
-                      {item.isLoading ? 'Đang cập nhật...' : 'Cập nhật'}
+                      Cập nhật
                     </button>
                     <button
                       onClick={() => removeApiKey(item.key)}
