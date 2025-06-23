@@ -411,6 +411,16 @@ async function createWatermarkRemovalTask(filePath, apiKey) {
       throw new Error(`Lỗi khi tạo nhiệm vụ: ${response.data?.message || 'Không xác định'}`);
     }
   } catch (error) {
+    // Kiểm tra lỗi 401 (hết credit)
+    if (error.response?.status === 401 || 
+        (error.response?.data?.message && (
+          error.response.data.message.includes('quota') || 
+          error.response.data.message.includes('credit') ||
+          error.response.data.message.includes('coins')))) {
+      console.log(`API key ${apiKey.substring(0, 5)}... đã hết credit hoặc không hợp lệ (lỗi 401)`);
+      throw new Error('API_KEY_NO_CREDIT');
+    }
+    
     console.log(`Lỗi API khi tạo nhiệm vụ: ${error.message}`);
     throw new Error(`Lỗi API: ${error.message}`);
   }
@@ -435,6 +445,16 @@ async function checkTaskStatus(taskId, apiKey) {
       throw new Error(`Lỗi khi kiểm tra trạng thái: ${response.data?.message || 'Không xác định'}`);
     }
   } catch (error) {
+    // Kiểm tra lỗi 401 (hết credit)
+    if (error.response?.status === 401 || 
+        (error.response?.data?.message && (
+          error.response.data.message.includes('quota') || 
+          error.response.data.message.includes('credit') ||
+          error.response.data.message.includes('coins')))) {
+      console.log(`API key ${apiKey.substring(0, 5)}... đã hết credit hoặc không hợp lệ (lỗi 401)`);
+      throw new Error('API_KEY_NO_CREDIT');
+    }
+    
     console.log(`Lỗi API khi kiểm tra trạng thái: ${error.message}`);
     throw new Error(`Lỗi API: ${error.message}`);
   }
@@ -535,11 +555,39 @@ async function processPDFWatermark(filePath, outputPath, apiKey) {
       pages: result.file_pages || 0
     };
   } catch (error) {
-    // Nếu gặp lỗi, thử lấy API key mới và xử lý lại
-    const newApiKey = await getNextApiKey();
-    if (newApiKey && newApiKey !== apiKey) {
-      console.log(`Thử lại với API key mới: ${newApiKey.substring(0, 5)}...`);
-      return processPDFWatermark(filePath, outputPath, newApiKey);
+    // Kiểm tra lỗi API_KEY_NO_CREDIT đặc biệt
+    if (error.message === 'API_KEY_NO_CREDIT') {
+      console.log(`API key ${apiKey.substring(0, 5)}... đã hết credit. Xóa và thử key khác...`);
+      
+      // Xóa API key hiện tại
+      removeApiKey(apiKey);
+      
+      // Lấy API key mới
+      const newApiKey = await getNextApiKey();
+      if (newApiKey) {
+        console.log(`Thử lại với API key mới: ${newApiKey.substring(0, 5)}...`);
+        return processPDFWatermark(filePath, outputPath, newApiKey);
+      } else {
+        throw new Error('Không còn API key nào khả dụng sau khi xóa key hết credit');
+      }
+    }
+    
+    // Kiểm tra lỗi 401 (hết credit) từ các lỗi khác
+    if (error.message.includes('401') || error.message.includes('quota') || 
+        error.message.includes('credit') || error.message.includes('coins')) {
+      console.log(`API key ${apiKey.substring(0, 5)}... có thể đã hết credit. Xóa và thử key khác...`);
+      
+      // Xóa API key hiện tại
+      removeApiKey(apiKey);
+      
+      // Lấy API key mới
+      const newApiKey = await getNextApiKey();
+      if (newApiKey) {
+        console.log(`Thử lại với API key mới: ${newApiKey.substring(0, 5)}...`);
+        return processPDFWatermark(filePath, outputPath, newApiKey);
+      } else {
+        throw new Error('Không còn API key nào khả dụng sau khi xóa key hết credit');
+      }
     }
     
     throw new Error(`Lỗi khi xử lý PDF: ${error.message}`);
