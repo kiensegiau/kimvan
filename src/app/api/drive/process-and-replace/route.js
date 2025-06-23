@@ -69,6 +69,15 @@ async function downloadFromGoogleDrive(fileId) {
           originalFileName = result.fileName || `file_${fileId}.pdf`;
         }
         
+        // Thêm logo vào file PDF đã tải xuống
+        try {
+          console.log('Thêm logo vào file PDF đã tải xuống bằng Chrome...');
+          await removeHeaderFooterWatermark(result.filePath, result.filePath);
+          console.log('Đã thêm logo thành công vào file PDF đã tải xuống bằng Chrome');
+        } catch (logoError) {
+          console.error(`Không thể thêm logo vào file PDF: ${logoError.message}`);
+        }
+        
         return {
           success: true,
           filePath: result.filePath,
@@ -124,6 +133,15 @@ async function downloadFromGoogleDrive(fileId) {
           } catch (nameError) {
             console.warn(`Không thể lấy tên file gốc: ${nameError.message}`);
             originalFileName = result.fileName || `file_${fileId}.pdf`;
+          }
+          
+          // Thêm logo vào file PDF đã tải xuống
+          try {
+            console.log('Thêm logo vào file PDF đã tải xuống bằng Chrome (403 case)...');
+            await removeHeaderFooterWatermark(result.filePath, result.filePath);
+            console.log('Đã thêm logo thành công vào file PDF đã tải xuống bằng Chrome (403 case)');
+          } catch (logoError) {
+            console.error(`Không thể thêm logo vào file PDF (403 case): ${logoError.message}`);
           }
           
           return {
@@ -242,12 +260,20 @@ async function processFile(filePath, mimeType, apiKey) {
         await processPDFWatermark(filePath, processedPath, apiKeyToUse);
         console.log(`PDF đã được xử lý thành công với API xóa watermark`);
         
-        // Xóa watermark dạng text ở header và footer
+        // Xóa watermark dạng text ở header và footer và thêm logo
         await removeHeaderFooterWatermark(processedPath, processedPath);
-        console.log(`Đã xóa watermark dạng text ở header và footer`);
+        console.log(`Đã xóa watermark dạng text ở header và footer và thêm logo`);
       } catch (watermarkError) {
-        console.error(`Lỗi khi xóa watermark: ${watermarkError.message}. Sẽ sao chép file gốc.`);
+        console.error(`Lỗi khi xóa watermark: ${watermarkError.message}. Sẽ sao chép file gốc và thử thêm logo.`);
         fs.copyFileSync(filePath, processedPath);
+        
+        // Vẫn thử thêm logo ngay cả khi xóa watermark thất bại
+        try {
+          await removeHeaderFooterWatermark(processedPath, processedPath);
+          console.log(`Đã thêm logo vào file PDF gốc`);
+        } catch (logoError) {
+          console.error(`Không thể thêm logo vào file PDF: ${logoError.message}`);
+        }
       }
     } else if (mimeType.includes('image')) {
       // Xử lý file hình ảnh - hiện tại chỉ sao chép
@@ -288,18 +314,24 @@ async function processFile(filePath, mimeType, apiKey) {
 }
 
 /**
- * Xóa watermark dạng text ở header và footer của PDF bằng cách cắt PDF
+ * Xóa watermark dạng text ở header và footer của PDF bằng cách cắt PDF và thêm logo
  * @param {string} inputPath - Đường dẫn đến file PDF cần xử lý
  * @param {string} outputPath - Đường dẫn lưu file PDF sau khi xử lý
  */
 async function removeHeaderFooterWatermark(inputPath, outputPath) {
   try {
     // Sử dụng thư viện pdf-lib để đọc và xử lý PDF
-    const { PDFDocument } = require('pdf-lib');
+    const { PDFDocument, rgb } = require('pdf-lib');
     
     // Đọc file PDF
     const pdfBytes = fs.readFileSync(inputPath);
     const pdfDoc = await PDFDocument.load(pdfBytes);
+    
+    // Đọc file logo
+    const logoPath = path.join(process.cwd(), 'nen.png');
+    const logoBytes = fs.readFileSync(logoPath);
+    const logoImage = await pdfDoc.embedPng(logoBytes);
+    const logoSize = logoImage.size();
     
     // Lấy số trang của PDF
     const pageCount = pdfDoc.getPageCount();
@@ -317,17 +349,31 @@ async function removeHeaderFooterWatermark(inputPath, outputPath) {
       
       // Thiết lập CropBox mới để cắt header và footer
       page.setCropBox(0, footerCut, width, newHeight);
+      
+      // Thêm logo vào giữa trang với kích thước rất lớn
+      const logoWidth = width * 0.8; // Logo chiếm 80% chiều rộng trang
+      const logoHeight = (logoWidth / logoSize.width) * logoSize.height;
+      const logoX = (width - logoWidth) / 2; // Căn giữa theo chiều ngang
+      const logoY = (height - logoHeight) / 2; // Căn giữa theo chiều dọc
+      
+      page.drawImage(logoImage, {
+        x: logoX,
+        y: logoY,
+        width: logoWidth,
+        height: logoHeight,
+        opacity: 0.15 // Độ mờ đục 15%
+      });
     }
     
     // Lưu file PDF sau khi xử lý
     const modifiedPdfBytes = await pdfDoc.save();
     fs.writeFileSync(outputPath, modifiedPdfBytes);
     
-    console.log(`Đã cắt header và footer của PDF: ${outputPath}`);
+    console.log(`Đã cắt header và footer của PDF và thêm logo: ${outputPath}`);
     return true;
   } catch (error) {
-    console.error('Lỗi khi cắt header và footer:', error);
-    throw new Error(`Không thể cắt header và footer: ${error.message}`);
+    console.error('Lỗi khi cắt header và footer và thêm logo:', error);
+    throw new Error(`Không thể cắt header và footer và thêm logo: ${error.message}`);
   }
 }
 
