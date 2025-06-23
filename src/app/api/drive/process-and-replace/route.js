@@ -253,38 +253,24 @@ async function processFile(filePath, mimeType, apiKey) {
       // Xử lý file PDF - sử dụng API techhk.aoscdn.com để xóa watermark
       console.log('Đang xử lý file PDF với API xóa watermark...');
       
-      try {
-        // Lấy API key từ hệ thống quản lý API key
-        // Nếu apiKey được truyền vào, sử dụng nó, nếu không, lấy key từ hệ thống
-        const apiKeyToUse = apiKey || await getNextApiKey();
-        
-        if (!apiKeyToUse) {
-          console.error('Không có API key khả dụng để xóa watermark');
-          throw new Error('Không có API key khả dụng để xóa watermark');
-        }
-        
-        console.log(`Sử dụng API key: ${apiKeyToUse.substring(0, 5)}... để xóa watermark`);
-        
-        // Gọi API xóa watermark
-        await processPDFWatermark(filePath, processedPath, apiKeyToUse);
-        console.log(`PDF đã được xử lý thành công với API xóa watermark`);
-        
-        // Xóa watermark dạng text ở header và footer và thêm logo
-        await removeHeaderFooterWatermark(processedPath, processedPath);
-        console.log(`Đã xóa watermark dạng text ở header và footer và thêm logo`);
-      } catch (watermarkError) {
-        console.error(`Lỗi khi xóa watermark: ${watermarkError.message}. Sẽ sao chép file gốc và thử thêm logo.`);
-        
-        fs.copyFileSync(filePath, processedPath);
-        
-        // Vẫn thử thêm logo ngay cả khi xóa watermark thất bại
-        try {
-          await removeHeaderFooterWatermark(processedPath, processedPath);
-          console.log(`Đã thêm logo vào file PDF gốc`);
-        } catch (logoError) {
-          console.error(`Không thể thêm logo vào file PDF: ${logoError.message}`);
-        }
+      // Lấy API key từ hệ thống quản lý API key
+      // Nếu apiKey được truyền vào, sử dụng nó, nếu không, lấy key từ hệ thống
+      const apiKeyToUse = apiKey || await getNextApiKey();
+      
+      if (!apiKeyToUse) {
+        console.error('Không có API key khả dụng để xóa watermark');
+        throw new Error('Không có API key khả dụng để xóa watermark');
       }
+      
+      console.log(`Sử dụng API key: ${apiKeyToUse.substring(0, 5)}... để xóa watermark`);
+      
+      // Gọi API xóa watermark
+      await processPDFWatermark(filePath, processedPath, apiKeyToUse);
+      console.log(`PDF đã được xử lý thành công với API xóa watermark`);
+      
+      // Xóa watermark dạng text ở header và footer và thêm logo
+      await removeHeaderFooterWatermark(processedPath, processedPath);
+      console.log(`Đã xóa watermark dạng text ở header và footer và thêm logo`);
     } else if (mimeType.includes('image')) {
       // Xử lý file hình ảnh - hiện tại chỉ sao chép
       console.log('Đang xử lý file hình ảnh...');
