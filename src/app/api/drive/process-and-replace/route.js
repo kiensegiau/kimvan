@@ -311,8 +311,8 @@ async function removeHeaderFooterWatermark(inputPath, outputPath) {
       const { width, height } = page.getSize();
       
       // Tính toán kích thước mới sau khi cắt header và footer
-      const headerCut = height * 0.01; // Cắt 1% từ phía trên
-      const footerCut = height * 0.01; // Cắt 1% từ phía dưới
+      const headerCut = height * 0.015; // Cắt 1% từ phía trên
+      const footerCut = height * 0.015; // Cắt 1% từ phía dưới
       const newHeight = height - headerCut - footerCut;
       
       // Thiết lập CropBox mới để cắt header và footer
