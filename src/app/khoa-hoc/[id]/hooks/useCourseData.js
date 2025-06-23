@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import CryptoJS from 'crypto-js';
+import useUserData from '@/hooks/useUserData';
 
 // Khóa mã hóa - phải giống với khóa ở phía server
 const ENCRYPTION_KEY = 'kimvan-secure-key-2024';
@@ -26,6 +27,9 @@ export function useCourseData(id) {
   const [sheetData, setSheetData] = useState({});
   const [loadingSheetData, setLoadingSheetData] = useState({});
   
+  // Lấy thông tin người dùng từ hook useUserData
+  const { userData, loading: userDataLoading } = useUserData();
+
   // Hàm giải mã dữ liệu với xử lý lỗi tốt hơn
   const decryptData = (encryptedData) => {
     try {
@@ -252,28 +256,18 @@ export function useCourseData(id) {
       let hasPermissionChange = false;
       let currentPermissions = null;
       
-      try {
-        const permissionResponse = await fetch('/api/users/me');
-        if (permissionResponse.ok) {
-          const userData = await permissionResponse.json();
-          currentPermissions = {
-            [PERMISSION_KEYS.canViewAllCourses]: userData?.canViewAllCourses || false,
-            [PERMISSION_KEYS.isEnrolled]: userData?.enrolledCourses?.includes(id) || false
-          };
-        } else {
-          // Nếu không lấy được thông tin người dùng, giả định không có quyền
-          currentPermissions = { 
-            [PERMISSION_KEYS.canViewAllCourses]: false, 
-            [PERMISSION_KEYS.isEnrolled]: false 
-          };
-        }
-      } catch (permError) {
-        // Nếu có lỗi khi kiểm tra quyền, giả định không có quyền
+      // Sử dụng userData từ hook useUserData thay vì gọi API trực tiếp
+      if (!userDataLoading && userData) {
+        currentPermissions = {
+          [PERMISSION_KEYS.canViewAllCourses]: userData?.canViewAllCourses || false,
+          [PERMISSION_KEYS.isEnrolled]: userData?.enrollments?.some(e => e.courseId === id) || false
+        };
+      } else {
+        // Nếu không lấy được thông tin người dùng, giả định không có quyền
         currentPermissions = { 
           [PERMISSION_KEYS.canViewAllCourses]: false, 
           [PERMISSION_KEYS.isEnrolled]: false 
         };
-        console.error('Lỗi khi kiểm tra quyền truy cập:', permError);
       }
 
       // Kiểm tra cache trước

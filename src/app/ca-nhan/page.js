@@ -7,9 +7,17 @@ import {
   ExclamationCircleIcon,
   CheckBadgeIcon
 } from '@heroicons/react/24/outline';
+import useUserData from '@/hooks/useUserData';
 
 export default function PersonalPage() {
+  const [activeTab, setActiveTab] = useState('profile');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [userData, setUserData] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [formError, setFormError] = useState('');
+  const [formSuccess, setFormSuccess] = useState('');
+  const [isFormSubmitting, setIsFormSubmitting] = useState(false);
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: '',
     newPassword: '',
@@ -18,12 +26,6 @@ export default function PersonalPage() {
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState('');
   const [isPasswordLoading, setIsPasswordLoading] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [userData, setUserData] = useState(null);
-  const [formError, setFormError] = useState('');
-  const [formSuccess, setFormSuccess] = useState('');
-  const [isFormSubmitting, setIsFormSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState({
     current: false,
     new: false,
@@ -31,51 +33,42 @@ export default function PersonalPage() {
   });
   const [passwordStrength, setPasswordStrength] = useState(0);
   
-  // Fetch user data
+  // Sử dụng hook useUserData để lấy thông tin người dùng
+  const { 
+    userData: userDataFromHook, 
+    loading: userDataLoading, 
+    error: userDataError,
+    refreshUserData
+  } = useUserData();
+  
+  // Cập nhật userData từ hook
   useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        const response = await fetch('/api/users/me');
-        const result = await response.json();
-
-        if (!result.success) {
-          throw new Error(result.error || 'Không thể lấy thông tin người dùng');
-        }
-
-        // Xử lý dữ liệu người dùng - API trả về result.user thay vì result.data
-        const data = result.user || {};
-        
-        // Thiết lập dữ liệu người dùng với kiểm tra null/undefined
-        setUserData({
-          ...data,
-          name: data?.displayName || '',
-          email: data?.email || '',
-          phone: data?.phoneNumber || '',
-          role: data?.role || 'user',
-          createdAt: data?.createdAt || '',
-          additionalInfo: data?.additionalInfo || {}
-        });
-        
-        // Cập nhật form dữ liệu
-        setFormData({
-          name: data?.displayName || '',
-          email: data?.email || '',
-          phone: data?.phoneNumber || '',
-          bio: data?.additionalInfo?.bio || ''
-        });
-      } catch (error) {
-        console.error('Lỗi khi lấy thông tin người dùng:', error);
-        setError(error.message || 'Có lỗi xảy ra khi tải dữ liệu');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUserData();
-  }, []);
+    if (!userDataLoading && userDataFromHook) {
+      // Thiết lập dữ liệu người dùng với kiểm tra null/undefined
+      setUserData({
+        ...userDataFromHook,
+        name: userDataFromHook?.displayName || '',
+        email: userDataFromHook?.email || '',
+        phone: userDataFromHook?.phoneNumber || '',
+        role: userDataFromHook?.role || 'user',
+        createdAt: userDataFromHook?.createdAt || '',
+        additionalInfo: userDataFromHook?.additionalInfo || {}
+      });
+      
+      // Cập nhật form dữ liệu
+      setFormData({
+        name: userDataFromHook?.displayName || '',
+        email: userDataFromHook?.email || '',
+        phone: userDataFromHook?.phoneNumber || '',
+        bio: userDataFromHook?.additionalInfo?.bio || ''
+      });
+    }
+    
+    // Sử dụng error từ hook nếu có
+    if (userDataError) {
+      setError(userDataError);
+    }
+  }, [userDataFromHook, userDataLoading, userDataError]);
 
   // Personal Info form
   const [formData, setFormData] = useState({
@@ -140,6 +133,9 @@ export default function PersonalPage() {
           bio: formData.bio
         }
       }));
+
+      // Làm mới dữ liệu trong hook useUserData
+      refreshUserData();
 
       setFormSuccess('Cập nhật thông tin thành công!');
       setTimeout(() => {
@@ -229,23 +225,10 @@ export default function PersonalPage() {
   const handlePasswordSubmit = async (e) => {
     e.preventDefault();
     
-    // Reset messages
     setPasswordError('');
     setPasswordSuccess('');
     
-    // Validate required fields - không cần mật khẩu hiện tại
-    if (!passwordForm.newPassword || !passwordForm.confirmPassword) {
-      setPasswordError('Vui lòng điền đầy đủ thông tin mật khẩu mới');
-      return;
-    }
-    
-    // Validate password match
-    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      setPasswordError('Mật khẩu xác nhận không khớp');
-      return;
-    }
-    
-    // Validate password length (chỉ kiểm tra độ dài tối thiểu)
+    // Kiểm tra xác thực mật khẩu mới
     const passwordErrors = validatePassword(passwordForm.newPassword);
     if (passwordErrors.length > 0) {
       setPasswordError(passwordErrors.join('. '));
@@ -271,6 +254,9 @@ export default function PersonalPage() {
         throw new Error(result.error || 'Có lỗi xảy ra khi đổi mật khẩu');
       }
 
+      // Làm mới dữ liệu người dùng trong hook useUserData
+      refreshUserData();
+      
       setPasswordSuccess('Đổi mật khẩu thành công!');
       
       // Reset form

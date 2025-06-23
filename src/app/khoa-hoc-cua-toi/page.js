@@ -413,7 +413,7 @@ export default function MyCoursesPage() {
                     <div 
                       key={course.courseId || index} 
                       className="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col h-full group cursor-pointer"
-                      onClick={() => router.push(`/khoa-hoc/${course.courseId}`)}
+                      onClick={() => router.push(`/courses/${course.courseId}`)}
                     >
                       <div className="h-40 bg-gradient-to-r from-indigo-600 to-purple-700 relative overflow-hidden">
                         {/* Background pattern */}

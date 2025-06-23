@@ -5,6 +5,7 @@ import { ExclamationCircleIcon, MagnifyingGlassIcon, AcademicCapIcon, CheckCircl
 import { StarIcon, FireIcon } from '@heroicons/react/24/solid';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import useUserData from '@/hooks/useUserData';
 
 // Thời gian cache - Có thể điều chỉnh dễ dàng
 const CACHE_DURATION = 12 * 60 * 60 * 1000; // 12 giờ 
@@ -25,6 +26,9 @@ export default function CoursesPage() {
   const [enrolledCourses, setEnrolledCourses] = useState([]);
   const [canViewAllCourses, setCanViewAllCourses] = useState(false); // Quyền xem tất cả khóa học
   const [viewAllMode, setViewAllMode] = useState(false); // Công tắc bật/tắt chế độ xem tất cả
+  
+  // Lấy thông tin người dùng từ hook useUserData
+  const { userData, loading: userDataLoading } = useUserData();
   
   // Thêm các state mới cho bộ lọc
   const [selectedLevel, setSelectedLevel] = useState('all');
@@ -156,22 +160,15 @@ export default function CoursesPage() {
     }
   };
 
-  // Hàm kiểm tra quyền xem tất cả khóa học
+  // Hàm kiểm tra quyền xem tất cả khóa học từ userData
   const checkViewAllPermission = async () => {
-    try {
-      const response = await fetch('/api/users/me');
-      if (response.ok) {
-        const userData = await response.json();
-        if (userData && userData.user) {
-          setCanViewAllCourses(!!userData.user.canViewAllCourses);
-          return !!userData.user.canViewAllCourses;
-        }
-      }
-      return false;
-    } catch (error) {
-      console.error('Lỗi khi kiểm tra quyền xem tất cả khóa học:', error);
-      return false;
+    // Sử dụng userData từ hook thay vì gọi API
+    if (!userDataLoading && userData) {
+      const hasPermission = !!userData.canViewAllCourses;
+      setCanViewAllCourses(hasPermission);
+      return hasPermission;
     }
+    return false;
   };
 
   // Hàm để tải danh sách khóa học từ API

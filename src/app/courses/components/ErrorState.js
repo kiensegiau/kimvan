@@ -1,50 +1,39 @@
-import { ExclamationCircleIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
+'use client';
 
-export default function ErrorState({ error }) {
+import { useRouter } from 'next/navigation';
+
+export default function ErrorState({ error, redirectUrl = '/courses' }) {
+  const router = useRouter();
+  
   return (
-    <div className="bg-white shadow-sm rounded-xl p-8 text-center max-w-2xl mx-auto">
-      <div className="relative flex justify-center">
-        <div className="absolute -inset-1 bg-red-100 rounded-full opacity-50 animate-pulse"></div>
-        <div className="relative bg-red-50 p-4 rounded-full">
-          <ExclamationCircleIcon className="h-12 w-12 text-red-500" />
+    <div className="min-h-screen bg-gray-100 p-6">
+      <div className="max-w-4xl mx-auto bg-white rounded-lg shadow p-8 relative">
+        <div className="bg-red-50 p-4 rounded-md">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-red-800">Đã xảy ra lỗi</h3>
+              <div className="mt-2 text-sm text-red-700">
+                <p>{error}</p>
+              </div>
+              <div className="mt-4">
+                <button
+                  onClick={() => router.push(redirectUrl)}
+                  className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
+                >
+                  <svg className="-ml-0.5 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+                  </svg>
+                  Quay lại danh sách
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-      
-      <h3 className="mt-6 text-xl font-bold text-gray-900">Đã xảy ra lỗi</h3>
-      
-      <div className="mt-3 text-base text-gray-500 max-w-md mx-auto">
-        <p className="mb-2">
-          {error || 'Không thể tải danh sách khóa học. Vui lòng thử lại sau.'}
-        </p>
-        <p className="text-sm text-gray-400">
-          Mã lỗi: {error ? error.split(':')[0] : 'ERR_FETCH_FAILED'}
-        </p>
-      </div>
-      
-      <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
-        <button
-          onClick={() => window.location.reload()}
-          className="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-        >
-          <ArrowPathIcon className="h-5 w-5 mr-2" />
-          Tải lại trang
-        </button>
-        
-        <button
-          onClick={() => window.history.back()}
-          className="inline-flex items-center justify-center px-5 py-3 border border-gray-300 text-base font-medium rounded-lg shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-        >
-          Quay lại trang trước
-        </button>
-      </div>
-      
-      <div className="mt-8 border-t border-gray-100 pt-6">
-        <p className="text-sm text-gray-500">
-          Nếu lỗi vẫn tiếp tục xảy ra, vui lòng liên hệ với chúng tôi qua email:
-          <a href="mailto:support@example.com" className="text-blue-600 hover:text-blue-800 ml-1">
-            support@example.com
-          </a>
-        </p>
       </div>
     </div>
   );

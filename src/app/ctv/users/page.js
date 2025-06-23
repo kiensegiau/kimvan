@@ -6,6 +6,7 @@ import { PlusIcon, PencilIcon, TrashIcon, ExclamationCircleIcon, ArrowPathIcon, 
 import { auth } from '@/lib/firebase';
 import { toast } from 'react-hot-toast';
 import { Toaster } from 'react-hot-toast';
+import useUserData from '@/hooks/useUserData';
 
 export default function UsersPage() {
   const router = useRouter();
@@ -34,61 +35,59 @@ export default function UsersPage() {
   const [authChecking, setAuthChecking] = useState(true);
   const [currentCtvEmail, setCurrentCtvEmail] = useState('');
 
-  // Kiểm tra xác thực người dùng và phân quyền
+  // Sử dụng hook useUserData
+  const { userData, loading: userDataLoading } = useUserData();
+  
+  // Kiểm tra xác thực 
   useEffect(() => {
     const checkAuth = async () => {
       try {
         setAuthChecking(true);
         
-        // Kiểm tra cookie ctv_access
-        const cookies = document.cookie.split(';').map(cookie => cookie.trim());
+        // Kiểm tra cookie
+        const cookieStr = document.cookie;
+        const cookies = cookieStr.split(';').map(c => c.trim());
         const hasCtvAccess = cookies.some(cookie => cookie.startsWith('ctv_access=true'));
         
         if (hasCtvAccess) {
           console.log("✅ Đã tìm thấy cookie ctv_access, CTV đã được middleware xác thực");
           setIsAuthorized(true);
           
-          // Vẫn gọi API để lấy thông tin người dùng
-          const response = await fetch('/api/users/me');
-          if (response.ok) {
-            const userData = await response.json();
-            console.log("Dữ liệu user từ API:", userData);
-            if (userData && userData.user && userData.user.email) {
-              setCurrentCtvEmail(userData.user.email);
-              console.log("Email CTV đã được lưu:", userData.user.email);
+          // Sử dụng userData từ hook thay vì gọi API
+          if (!userDataLoading && userData) {
+            console.log("Dữ liệu user từ hook useUserData:", userData);
+            if (userData && userData.email) {
+              setCurrentCtvEmail(userData.email);
+              console.log("Email CTV đã được lưu:", userData.email);
             }
           }
         } else {
-          console.log("⚠️ Không tìm thấy cookie ctv_access, kiểm tra thông qua API");
-          const response = await fetch('/api/users/me');
+          console.log("⚠️ Không tìm thấy cookie ctv_access, kiểm tra thông qua userData");
           
-          if (!response.ok) {
-            console.error("API Response không thành công:", response.status, response.statusText);
+          // Sử dụng userData từ hook thay vì gọi API
+          if (userDataLoading) {
+            console.log("Đang tải dữ liệu người dùng...");
+            return;
+          }
+          
+          if (!userData) {
+            console.error("Không có dữ liệu người dùng");
             router.push('/');
             return;
           }
           
-          const userData = await response.json();
+          console.log("Dữ liệu user từ hook useUserData:", userData);
+          console.log("Role nhận được:", userData.role);
           
-          console.log("Dữ liệu user từ API:", userData);
-          
-          if (!userData || !userData.user) {
-            console.error("Dữ liệu user không hợp lệ");
+          if (userData.role !== 'ctv') {
+            console.error(`Role không hợp lệ: '${userData.role}' (cần role 'ctv')`);
             router.push('/');
             return;
           }
           
-          console.log("Role nhận được:", userData.user.role);
-          
-          if (userData.user.role !== 'ctv') {
-            console.error(`Role không hợp lệ: '${userData.user.role}' (cần role 'ctv')`);
-            router.push('/');
-            return;
-          }
-          
-          console.log("Xác thực thành công với role:", userData.user.role);
-          setCurrentCtvEmail(userData.user.email);
-          console.log("Email CTV đã được lưu:", userData.user.email);
+          console.log("Xác thực thành công với role:", userData.role);
+          setCurrentCtvEmail(userData.email);
+          console.log("Email CTV đã được lưu:", userData.email);
           setIsAuthorized(true);
         }
       } catch (err) {
@@ -99,8 +98,11 @@ export default function UsersPage() {
       }
     };
     
-    checkAuth();
-  }, [router]);
+    // Chỉ chạy khi userData đã sẵn sàng hoặc đã có lỗi
+    if (!userDataLoading || userData) {
+      checkAuth();
+    }
+  }, [router, userData, userDataLoading]);
 
   // Hàm lấy danh sách người dùng
   const fetchUsers = async () => {

@@ -17,14 +17,14 @@ import {
 } from '@heroicons/react/24/outline';
 import { useState, useEffect } from 'react';
 import { logout } from '@/utils/auth-client';
+import useUserData from '@/hooks/useUserData';
 
 const Sidebar = ({ closeSidebar }) => {
   const pathname = usePathname();
   const router = useRouter();
   const [isMobile, setIsMobile] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [userData, setUserData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { userData, loading, clearUserDataCache } = useUserData();
 
   useEffect(() => {
     const checkIfMobile = () => {
@@ -37,143 +37,6 @@ const Sidebar = ({ closeSidebar }) => {
     return () => {
       window.removeEventListener('resize', checkIfMobile);
     };
-  }, []);
-
-  // Fetch user data
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        setLoading(true);
-        
-        // Luôn ưu tiên lấy dữ liệu từ API trước
-        console.log('Đang gọi API users/me để lấy thông tin người dùng...');
-        
-        const response = await fetch('/api/users/me', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          credentials: 'same-origin' // Quan trọng để gửi cookies
-        });
-        
-        console.log('Phản hồi từ API users/me:', {
-          status: response.status,
-          statusText: response.statusText,
-          headers: Object.fromEntries([...response.headers])
-        });
-        
-        if (response.ok) {
-          // Chuyển đổi response thành JSON
-          const contentType = response.headers.get('content-type');
-          if (contentType && contentType.includes('application/json')) {
-            const result = await response.json();
-            console.log('Dữ liệu JSON từ API users/me:', result);
-            
-            if (result.success && result.user) {
-              console.log('✅ Lấy dữ liệu người dùng từ API thành công');
-              setUserData(result.user);
-              
-              // Lưu thông tin người dùng vào localStorage để dùng khi offline
-              try {
-                localStorage.setItem('userData', JSON.stringify(result.user));
-                localStorage.setItem('userDataTimestamp', Date.now().toString());
-              } catch (e) {
-                console.error('Không thể lưu vào localStorage:', e);
-              }
-              
-              setLoading(false);
-              return;
-            } else {
-              console.warn('API trả về thành công nhưng không có dữ liệu người dùng hợp lệ:', result);
-            }
-          } else {
-            const textContent = await response.text();
-            console.warn('API không trả về JSON mà trả về:', textContent.substring(0, 200) + '...');
-          }
-        } else {
-          console.warn(`API trả về lỗi ${response.status}: ${response.statusText}`);
-        }
-        
-        // Nếu không lấy được từ API, thử lấy từ localStorage
-        try {
-          console.log('Thử lấy dữ liệu từ localStorage do API thất bại');
-          const cachedData = localStorage.getItem('userData');
-          const timestamp = localStorage.getItem('userDataTimestamp');
-          const now = Date.now();
-          
-          // Chỉ sử dụng cache nếu nó tồn tại và không quá 1 giờ
-          if (cachedData && timestamp && (now - parseInt(timestamp)) < 3600000) {
-            const parsedData = JSON.parse(cachedData);
-            console.log('✅ Sử dụng dữ liệu người dùng từ cache:', parsedData);
-            setUserData(parsedData);
-          } else {
-            // Hard-coded user data khi không có cache và API thất bại
-            console.log('⚠️ Không có cache hoặc cache đã hết hạn. Tạo mẫu dữ liệu người dùng');
-            const defaultUser = {
-              uid: "WZuBYIhzJXMTETTmlJebfPcXdtl2",
-              email: "phanhuukien2001@gmail.com",
-              role: "admin",
-              canViewAllCourses: true,
-              roleDisplayName: "Quản trị viên",
-              additionalInfo: {},
-              enrollments: []
-            };
-            setUserData(defaultUser);
-          }
-        } catch (storageErr) {
-          console.error('Không thể đọc từ localStorage:', storageErr);
-          // Hard-coded fallback user as last resort
-          const defaultUser = {
-            uid: "WZuBYIhzJXMTETTmlJebfPcXdtl2",
-            email: "phanhuukien2001@gmail.com",
-            role: "admin",
-            canViewAllCourses: true,
-            roleDisplayName: "Quản trị viên"
-          };
-          setUserData(defaultUser);
-        }
-      } catch (error) {
-        console.error('❌ Lỗi khi lấy thông tin người dùng:', error);
-        
-        // Fallback to localStorage if API request fails
-        try {
-          const cachedData = localStorage.getItem('userData');
-          if (cachedData) {
-            const parsedData = JSON.parse(cachedData);
-            console.log('API lỗi, sử dụng dữ liệu từ cache:', parsedData);
-            setUserData(parsedData);
-          } else {
-            console.log('API lỗi, không có cache. Tạo mẫu dữ liệu người dùng');
-            const defaultUser = {
-              uid: "WZuBYIhzJXMTETTmlJebfPcXdtl2",
-              email: "phanhuukien2001@gmail.com",
-              role: "admin",
-              canViewAllCourses: true,
-              roleDisplayName: "Quản trị viên",
-              additionalInfo: {},
-              enrollments: []
-            };
-            setUserData(defaultUser);
-          }
-        } catch (storageErr) {
-          console.error('Không thể đọc từ localStorage:', storageErr);
-          // Hard-coded user as absolute fallback
-          const defaultUser = {
-            uid: "WZuBYIhzJXMTETTmlJebfPcXdtl2",
-            email: "phanhuukien2001@gmail.com",
-            role: "admin",
-            canViewAllCourses: true,
-            roleDisplayName: "Quản trị viên"
-          };
-          setUserData(defaultUser);
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUserData();
   }, []);
 
   const handleMenuItemClick = () => {
@@ -189,6 +52,9 @@ const Sidebar = ({ closeSidebar }) => {
       // Gọi hàm đăng xuất từ auth-client
       await logout();
       
+      // Xóa cache người dùng
+      clearUserDataCache();
+      
       // Hard reload để đảm bảo tất cả state được làm mới
       window.location.href = '/login';
     } catch (error) {
@@ -200,7 +66,7 @@ const Sidebar = ({ closeSidebar }) => {
 
   const menuItems = [
     { name: 'Trang chủ', path: '/', icon: <HomeIcon className="w-5 h-5" /> },
-    { name: 'Khóa học', path: '/khoa-hoc', icon: <AcademicCapIcon className="w-5 h-5" /> },
+    { name: 'Khóa học', path: '/courses', icon: <AcademicCapIcon className="w-5 h-5" /> },
     { name: 'Khóa học của tôi', path: '/khoa-hoc-cua-toi', icon: <ClipboardDocumentListIcon className="w-5 h-5" /> },
     { name: 'Thư viện', path: '/thu-vien', icon: <BookOpenIcon className="w-5 h-5" /> },
   ];
