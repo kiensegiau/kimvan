@@ -280,7 +280,7 @@ export async function POST(request, { params }) {
     const urlGroupsArray = Object.values(urlGroups);
     
     // Xử lý theo batch, mỗi batch 5 link
-    const BATCH_SIZE = 5;
+    const BATCH_SIZE = 10;
     
     // Hàm xử lý một link và trả về kết quả
     const processLinkWithResult = async (urlGroup) => {

@@ -661,14 +661,9 @@ async function pollTaskStatus(taskId, apiKey, startTime = Date.now(), retryCount
       if (status.progress === lastProgress && lastProgress > 0) {
         newStuckCounter++;
         
-        // Nếu tiến độ bị kẹt ở 21% quá lâu (khoảng 3 phút), thử khởi động lại
-        if (status.progress === 21 && newStuckCounter >= 12) {
-          console.log(`⚠️ Phát hiện tiến độ bị kẹt ở 21% trong ${Math.round(newStuckCounter * POLLING_INTERVAL / 1000)} giây. Thử khởi động lại quá trình...`);
-          throw new Error('PROGRESS_STUCK_AT_21');
-        }
-        
-        // Nếu tiến độ không thay đổi quá lâu (khoảng 10 phút), thử khởi động lại
-        if (newStuckCounter >= 40) {
+        // Bỏ phát hiện kẹt ở 21% vì đây là hành vi bình thường của server
+        // Chỉ phát hiện kẹt nếu không phải ở 21%
+        if (status.progress !== 21 && newStuckCounter >= 40) {
           console.log(`⚠️ Phát hiện tiến độ bị kẹt ở ${status.progress}% trong ${Math.round(newStuckCounter * POLLING_INTERVAL / 1000)} giây. Thử khởi động lại quá trình...`);
           throw new Error('PROGRESS_STUCK');
         }
@@ -686,7 +681,12 @@ async function pollTaskStatus(taskId, apiKey, startTime = Date.now(), retryCount
           const estimatedTotalTime = timeElapsed / (percentComplete / 100);
           const estimatedTimeRemaining = estimatedTotalTime - timeElapsed;
           
-          console.log(`Tiến độ xử lý: ${status.progress}% - Đã chạy: ${Math.round(timeElapsed/1000)} giây - Còn lại ước tính: ${Math.round(estimatedTimeRemaining/1000)} giây`);
+          // Thêm thông báo đặc biệt khi tiến độ là 21% để thông báo người dùng
+          if (status.progress === 21) {
+            console.log(`Tiến độ xử lý: ${status.progress}% - Đã chạy: ${Math.round(timeElapsed/1000)} giây - Còn lại ước tính: ${Math.round(estimatedTimeRemaining/1000)} giây (Tiến độ 21% có thể kéo dài, đây là bình thường)`);
+          } else {
+            console.log(`Tiến độ xử lý: ${status.progress}% - Đã chạy: ${Math.round(timeElapsed/1000)} giây - Còn lại ước tính: ${Math.round(estimatedTimeRemaining/1000)} giây`);
+          }
         } else {
           console.log(`Tiến độ xử lý: ${status.progress}% - Đã chạy: ${elapsedSeconds} giây`);
         }
@@ -709,7 +709,7 @@ async function pollTaskStatus(taskId, apiKey, startTime = Date.now(), retryCount
     }
   } catch (error) {
     // Kiểm tra lỗi tiến độ bị kẹt
-    if (error.message === 'PROGRESS_STUCK_AT_21' || error.message === 'PROGRESS_STUCK') {
+    if (error.message === 'PROGRESS_STUCK') {
       if (retryCount < 5) {
         console.log(`⚠️ Tiến độ bị kẹt, thử lại lần ${retryCount + 1}... (đã chờ ${elapsedSeconds} giây)`);
         // Chờ một khoảng thời gian dài hơn trước khi thử lại
