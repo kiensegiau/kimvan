@@ -56,4 +56,68 @@ export async function GET(request) {
       error: error.message
     }, { status: 500 });
   }
+}
+
+export async function POST(request) {
+  try {
+    // Kết nối đến MongoDB
+    await connectDB();
+    
+    // Lấy dữ liệu từ request
+    const miniCourseData = await request.json();
+    
+    if (!miniCourseData) {
+      return NextResponse.json({
+        success: false,
+        message: 'Không có dữ liệu khóa học để thêm/cập nhật'
+      }, { status: 400 });
+    }
+    
+    let result;
+    
+    // Kiểm tra nếu đã có courseId thì cập nhật, ngược lại thì tạo mới
+    if (miniCourseData.courseId) {
+      // Tìm minicourse với courseId tương ứng
+      const existingMiniCourse = await MiniCourse.findOne({ courseId: miniCourseData.courseId });
+      
+      if (existingMiniCourse) {
+        // Cập nhật minicourse đã tồn tại
+        result = await MiniCourse.findOneAndUpdate(
+          { courseId: miniCourseData.courseId },
+          { 
+            ...miniCourseData,
+            updatedAt: new Date()
+          },
+          { new: true }
+        );
+        
+        return NextResponse.json({
+          success: true,
+          message: 'Cập nhật minicourse thành công',
+          data: result
+        });
+      }
+    }
+    
+    // Tạo mới minicourse nếu không tìm thấy
+    result = await MiniCourse.create({
+      ...miniCourseData,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+    
+    return NextResponse.json({
+      success: true,
+      message: 'Thêm minicourse mới thành công',
+      data: result
+    });
+    
+  } catch (error) {
+    console.error('Lỗi khi thêm/cập nhật minicourse:', error);
+    return NextResponse.json({
+      success: false,
+      message: 'Đã xảy ra lỗi khi thêm/cập nhật minicourse',
+      error: error.message
+    }, { status: 500 });
+  }
 } 

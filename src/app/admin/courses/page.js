@@ -49,6 +49,41 @@ export default function CoursesPage() {
   const [autoSyncTotal, setAutoSyncTotal] = useState(0);
   const [autoSyncResults, setAutoSyncResults] = useState([]);
   
+  // Hàm tiện ích để đồng bộ dữ liệu với bảng minicourse
+  const syncToMiniCourse = async (courseData) => {
+    try {
+      console.log('🔄 Đang đồng bộ với minicourse...');
+      const miniCourse = {
+        kimvanId: courseData.kimvanId || null,
+        name: courseData.name,
+        description: courseData.description,
+        price: courseData.price,
+        status: courseData.status,
+        courseId: courseData._id
+      };
+      
+      // Gọi API để thêm/cập nhật minicourse
+      const miniCourseResponse = await fetch('/api/minicourses', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(miniCourse),
+      });
+      
+      if (!miniCourseResponse.ok) {
+        console.warn('⚠️ Thêm/cập nhật minicourse không thành công');
+        return false;
+      } else {
+        console.log('✅ Thêm/cập nhật minicourse thành công');
+        return true;
+      }
+    } catch (miniErr) {
+      console.error('❌ Lỗi khi đồng bộ minicourse:', miniErr);
+      return false;
+    }
+  };
+  
   // Thiết lập cookie admin_access khi trang được tải
   useEffect(() => {
     // Thiết lập cookie admin_access=true (có thể hết hạn sau 1 ngày)
@@ -194,6 +229,7 @@ export default function CoursesPage() {
     try {
       setError(null);
       let response;
+      let savedCourse;
       
       // Nếu có _id, thì cập nhật khóa học hiện có
       if (currentCourse._id) {
@@ -215,6 +251,8 @@ export default function CoursesPage() {
         setCourses(courses.map(course => 
           course._id === currentCourse._id ? currentCourse : course
         ));
+        
+        savedCourse = currentCourse;
       } 
       // Ngược lại, tạo khóa học mới
       else {
@@ -234,7 +272,11 @@ export default function CoursesPage() {
         
         // Thêm khóa học mới vào danh sách
         setCourses([...courses, data.course]);
+        savedCourse = data.course;
       }
+      
+      // Đồng bộ với bảng minicourse
+      await syncToMiniCourse(savedCourse);
       
       // Đóng modal và đặt lại trạng thái
       setShowModal(false);
@@ -287,6 +329,7 @@ export default function CoursesPage() {
       // Tự động đồng bộ minicourses song song
       try {
         console.log('🔄 Đang đồng bộ minicourses song song...');
+        // Sử dụng API sync vì cần xử lý nhiều minicourses cùng lúc
         const miniCourseResponse = await fetch('/api/minicourses/sync', {
           method: 'POST',
           headers: {
@@ -649,41 +692,8 @@ export default function CoursesPage() {
       
       console.log('✅ Đồng bộ thành công');
       
-      // Đồng bộ song song với minicourses
-      try {
-        console.log('🔄 Đang đồng bộ minicourse song song...');
-        // Tạo dữ liệu minicourse không chứa originalData
-        const miniCourse = {
-          kimvanId: existingCourse.kimvanId,
-          name: existingCourse.name,
-          description: existingCourse.description,
-          price: existingCourse.price,
-          status: existingCourse.status,
-          courseId: existingCourse._id,
-          updatedAt: new Date()
-        };
-        
-        const miniCourseResponse = await fetch('/api/minicourses/sync', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ 
-            courses: [miniCourse] 
-          }),
-        });
-        
-        const miniCourseData = await miniCourseResponse.json();
-        
-        if (miniCourseResponse.ok) {
-          console.log('✅ Đồng bộ minicourse thành công:', miniCourseData);
-        } else {
-          console.warn('⚠️ Đồng bộ minicourse không thành công:', miniCourseData);
-        }
-      } catch (miniErr) {
-        console.error('❌ Lỗi khi đồng bộ minicourse:', miniErr);
-        // Không hiển thị lỗi này cho người dùng vì đây là quá trình chạy ngầm
-      }
+      // Đồng bộ với minicourse
+      await syncToMiniCourse(courseToSync);
       
       // Hiển thị kết quả đồng bộ
       setSyncResults({
@@ -1371,34 +1381,8 @@ export default function CoursesPage() {
           
           console.log(`✅ Đồng bộ khóa học ${currentCourse.name} thành công`);
           
-          // Đồng bộ song song với minicourses
-          try {
-            const miniCourse = {
-              kimvanId: currentCourse.kimvanId,
-              name: currentCourse.name,
-              description: currentCourse.description,
-              price: currentCourse.price,
-              status: currentCourse.status,
-              courseId: currentCourse._id,
-              updatedAt: new Date()
-            };
-            
-            const miniCourseResponse = await fetch('/api/minicourses/sync', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ 
-                courses: [miniCourse] 
-              }),
-            });
-            
-            if (!miniCourseResponse.ok) {
-              console.warn('⚠️ Đồng bộ minicourse không thành công');
-            }
-          } catch (miniErr) {
-            console.error('❌ Lỗi khi đồng bộ minicourse:', miniErr);
-          }
+          // Đồng bộ với minicourse
+          await syncToMiniCourse(courseToSync);
           
           // Thêm kết quả thành công
           setAutoSyncResults(prev => [...prev, { 
@@ -1461,31 +1445,16 @@ export default function CoursesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="container mx-auto px-4 py-6">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">Quản lý khóa học</h1>
-          <div className="flex space-x-2">
-            <button
-              onClick={handleCreateFromSheets}
-              className="bg-green-600 text-white px-4 py-2 rounded-md flex items-center"
-            >
-              <PlusIcon className="h-5 w-5 mr-2" />
-              Tạo từ Sheets
-            </button>
-            <button
-              onClick={() => setCurrentCourse({ name: '', description: '', price: 0, status: 'active' }) || setShowModal(true)}
-              className="bg-blue-600 text-white px-4 py-2 rounded-md flex items-center"
-            >
-              <PlusIcon className="h-5 w-5 mr-2" />
-              Thêm khóa học
-            </button>
-          </div>
-        </div>
-      </div>
-      
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-semibold text-gray-900">Quản lý khóa học</h1>
         <div className="flex space-x-4">
+          <button
+            onClick={handleCreateFromSheets}
+            className="bg-green-600 text-white px-4 py-2 rounded-md flex items-center"
+          >
+            <PlusIcon className="h-5 w-5 mr-2" />
+            Tạo từ Sheets
+          </button>
           <button
             onClick={handleInitDatabase}
             disabled={initializing}
