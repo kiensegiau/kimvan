@@ -19,7 +19,13 @@ export async function POST(request, { params }) {
   try {
     await connectDB();
     const { id } = await params;
-    const requestBody = await request.json();
+    // Xử lý trường hợp request không có body hoặc body không hợp lệ
+    let requestBody = {};
+    try {
+      requestBody = await request.json();
+    } catch (jsonError) {
+      console.log('Không có body hoặc body không hợp lệ, sử dụng object rỗng');
+    }
     
     console.log('ID sheet:', id);
     
@@ -290,10 +296,38 @@ export async function POST(request, { params }) {
         
         // Xác định loại file từ URL hoặc tên file
         let fileType = 'pdf'; // Mặc định là PDF
+        let isFolder = false; // Flag để đánh dấu nếu là folder
         
         try {
           // Trích xuất file ID để lấy thông tin file
-          const { fileId } = extractDriveFileId(urlGroup.originalUrl);
+          let fileId;
+          try {
+            const extracted = extractDriveFileId(urlGroup.originalUrl);
+            if (!extracted || !extracted.fileId) {
+              throw new Error('Không thể trích xuất ID file từ URL');
+            }
+            fileId = extracted.fileId;
+            console.log(`Đã trích xuất file ID: ${fileId}`);
+          } catch (extractError) {
+            console.warn(`Không thể trích xuất ID file: ${extractError.message}`);
+            // Nếu không trích xuất được ID, thử xác định loại file từ phần mở rộng
+            fileType = determineFileTypeFromExtension(urlGroup.originalUrl);
+            console.log(`Xác định loại file từ phần mở rộng: ${fileType}`);
+            
+            // Nếu URL có dấu hiệu là folder, đánh dấu là folder
+            const url = urlGroup.originalUrl.toLowerCase();
+            if (url.includes('drive.google.com/drive/folders/') || 
+                url.includes('drive.google.com/drive/u/0/folders/') ||
+                url.includes('drive.google.com/drive/my-drive/folders/') ||
+                url.includes('drive.google.com/folders/')) {
+              console.log('Phát hiện link là folder Google Drive từ URL');
+              isFolder = true;
+              fileType = 'folder';
+            }
+            
+            // Trả về sớm vì không thể sử dụng API
+            return continueProcessing();
+          }
           
           // Lấy thông tin file từ Drive API để xác định loại file
           const auth = new google.auth.GoogleAuth({
@@ -316,51 +350,70 @@ export async function POST(request, { params }) {
             
             if (fileMetadata.data && fileMetadata.data.mimeType) {
               fileType = fileMetadata.data.mimeType;
-              console.log(`Đã xác định loại file: ${fileType} (${fileMetadata.data.name || 'không có tên'})`);
+              
+              // Kiểm tra xem có phải là folder không
+              if (fileMetadata.data.mimeType === 'application/vnd.google-apps.folder') {
+                console.log(`Phát hiện file là folder: ${fileMetadata.data.name || 'không có tên'}`);
+                isFolder = true;
+                fileType = 'folder';
+              } else {
+                console.log(`Đã xác định loại file từ Drive API: ${fileType} (${fileMetadata.data.name || 'không có tên'})`);
+              }
+            } else {
+              console.log('Không thể lấy thông tin MIME type từ Drive API, sử dụng mặc định là PDF');
+              fileType = determineFileTypeFromExtension(urlGroup.originalUrl);
             }
-          } catch (fileInfoError) {
-            console.warn(`Không thể lấy thông tin file, giả định là PDF: ${fileInfoError.message}`);
-            
-            // Nếu không lấy được thông tin, thử đoán từ tên file hoặc URL
-            if (urlGroup.originalUrl.toLowerCase().endsWith('.docx')) {
-              fileType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-            } else if (urlGroup.originalUrl.toLowerCase().endsWith('.xlsx')) {
-              fileType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-            } else if (urlGroup.originalUrl.toLowerCase().endsWith('.pptx')) {
-              fileType = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
-            } else if (urlGroup.originalUrl.toLowerCase().endsWith('.doc')) {
-              fileType = 'application/msword';
-            } else if (urlGroup.originalUrl.toLowerCase().endsWith('.xls')) {
-              fileType = 'application/vnd.ms-excel';
-            } else if (urlGroup.originalUrl.toLowerCase().endsWith('.ppt')) {
-              fileType = 'application/vnd.ms-powerpoint';
-            } else if (urlGroup.originalUrl.toLowerCase().endsWith('.jpg') || urlGroup.originalUrl.toLowerCase().endsWith('.jpeg')) {
-              fileType = 'image/jpeg';
-            } else if (urlGroup.originalUrl.toLowerCase().endsWith('.png')) {
-              fileType = 'image/png';
-            } else if (urlGroup.originalUrl.toLowerCase().endsWith('.mp4')) {
-              fileType = 'video/mp4';
-            } else if (urlGroup.originalUrl.toLowerCase().endsWith('.mp3')) {
-              fileType = 'audio/mpeg';
-            }
+          } catch (driveApiError) {
+            console.warn(`Lỗi khi truy vấn Drive API: ${driveApiError.message}`);
+            console.log('Thử xác định loại file từ phần mở rộng...');
+            fileType = determineFileTypeFromExtension(urlGroup.originalUrl);
           }
         } catch (error) {
-          console.warn(`Không thể xác định loại file, giả định là PDF: ${error.message}`);
+          console.warn(`Lỗi khi xác định loại file: ${error.message}`);
+          console.log('Sử dụng loại file mặc định là PDF');
         }
         
-        // Sử dụng hàm processLink với retry và timeout, truyền thêm thông tin loại file
-        const processResult = await processLink(baseUrl, urlGroup.originalUrl, cookie, 2, 500000, fileType); // 500 giây timeout, 2 lần retry
+        return continueProcessing();
         
-        // Tạo giá trị mới cho ô
-        const newUrl = processResult.processedLink;
-        console.log(`Đã xử lý thành công, URL mới: ${newUrl}`);
-        
-        return {
-          success: true,
-          urlGroup,
-          newUrl,
-          processResult
-        };
+        // Hàm tiếp tục xử lý sau khi đã xác định loại file
+        function continueProcessing() {
+          console.log(`Loại file cuối cùng được xác định: ${fileType}, là folder: ${isFolder}`);
+          
+          // Nếu là folder, không cần xử lý, chỉ trả về URL gốc
+          if (isFolder) {
+            console.log(`Link là folder, không cần xử lý: ${urlGroup.originalUrl}`);
+            return {
+              success: true,
+              urlGroup,
+              newUrl: urlGroup.originalUrl, // Giữ nguyên URL gốc cho folder
+              processResult: {
+                success: true,
+                originalLink: urlGroup.originalUrl,
+                processedLink: urlGroup.originalUrl,
+                isFolder: true
+              },
+              fileType: 'folder',
+              isFolder: true
+            };
+          }
+          
+          // Sử dụng hàm processLink với retry và timeout, truyền thêm thông tin loại file
+          return processLink(baseUrl, urlGroup.originalUrl, cookie, 2, 500000, fileType) // 500 giây timeout, 2 lần retry
+            .then(processResult => {
+              // Tạo giá trị mới cho ô
+              const newUrl = processResult.processedLink;
+              console.log(`Đã xử lý thành công, URL mới: ${newUrl}`);
+              
+              return {
+                success: true,
+                urlGroup,
+                newUrl,
+                processResult,
+                fileType, // Thêm thông tin loại file vào kết quả
+                isFolder: false
+              };
+            });
+        }
       } catch (error) {
         console.error(`❌ Lỗi khi xử lý URL: ${urlGroup.originalUrl}:`, error);
         return {
@@ -370,6 +423,23 @@ export async function POST(request, { params }) {
         };
       }
     };
+    
+    // Hàm xác định loại file từ phần mở rộng
+    function determineFileTypeFromExtension(url) {
+      const lowerUrl = url.toLowerCase();
+      if (lowerUrl.endsWith('.pdf')) return 'application/pdf';
+      if (lowerUrl.endsWith('.docx')) return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      if (lowerUrl.endsWith('.xlsx')) return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      if (lowerUrl.endsWith('.pptx')) return 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+      if (lowerUrl.endsWith('.doc')) return 'application/msword';
+      if (lowerUrl.endsWith('.xls')) return 'application/vnd.ms-excel';
+      if (lowerUrl.endsWith('.ppt')) return 'application/vnd.ms-powerpoint';
+      if (lowerUrl.endsWith('.jpg') || lowerUrl.endsWith('.jpeg')) return 'image/jpeg';
+      if (lowerUrl.endsWith('.png')) return 'image/png';
+      if (lowerUrl.endsWith('.mp4')) return 'video/mp4';
+      if (lowerUrl.endsWith('.mp3')) return 'audio/mpeg';
+      return 'pdf'; // Mặc định là PDF
+    }
     
     // Xử lý các batch
     for (let i = 0; i < urlGroupsArray.length; i += BATCH_SIZE) {
@@ -384,6 +454,9 @@ export async function POST(request, { params }) {
       for (const result of batchResults) {
         if (result.success) {
           const { urlGroup, newUrl, processResult } = result;
+          const fileType = result.fileType || 'pdf'; // Lấy fileType nếu có, mặc định là pdf
+          
+          console.log(`Xử lý kết quả cho URL: ${urlGroup.originalUrl}, loại file: ${fileType}`);
           
           // Cập nhật tất cả các ô trong nhóm
           for (const cellInfo of urlGroup.cells) {
