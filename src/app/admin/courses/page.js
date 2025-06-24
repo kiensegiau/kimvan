@@ -200,6 +200,13 @@ export default function CoursesPage() {
     if (window.confirm('Bạn có chắc chắn muốn xóa khóa học này?')) {
       try {
         setError(null);
+        
+        // Lấy thông tin khóa học trước khi xóa để có kimvanId
+        const courseResponse = await fetch(`/api/admin/courses/${id}`);
+        const courseData = await courseResponse.json();
+        const kimvanId = courseData.kimvanId;
+        
+        // Xóa khóa học
         const response = await fetch(`/api/admin/courses/${id}`, {
           method: 'DELETE',
         });
@@ -212,6 +219,29 @@ export default function CoursesPage() {
         
         // Cập nhật danh sách khóa học sau khi xóa
         setCourses(courses.filter(course => course._id !== id));
+        
+        // Xóa minicourse tương ứng
+        try {
+          console.log('Đang xóa minicourse tương ứng...');
+          const miniCourseResponse = await fetch('/api/minicourses', {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              courseId: id,
+              kimvanId: kimvanId
+            }),
+          });
+          
+          if (miniCourseResponse.ok) {
+            console.log('✅ Đã xóa minicourse thành công');
+          } else {
+            console.warn('⚠️ Không thể xóa minicourse');
+          }
+        } catch (miniErr) {
+          console.error('❌ Lỗi khi xóa minicourse:', miniErr);
+        }
       } catch (err) {
         console.error('Lỗi khi xóa khóa học:', err);
         setError(err.message || 'Đã xảy ra lỗi khi xóa khóa học. Vui lòng kiểm tra kết nối MongoDB.');
@@ -1006,6 +1036,27 @@ export default function CoursesPage() {
       if (data.success) {
         await fetchCourses();
         
+        // Đồng bộ với minicourse cho từng khóa học đã xử lý
+        if (data.updatedCourses && Array.isArray(data.updatedCourses)) {
+          console.log('Đồng bộ dữ liệu với minicourse cho các khóa học đã xử lý');
+          for (const course of data.updatedCourses) {
+            await syncToMiniCourse(course);
+          }
+        } else {
+          // Nếu API không trả về danh sách khóa học đã cập nhật, tải lại từng khóa học và đồng bộ
+          for (const courseId of selectedCourses) {
+            try {
+              const courseResponse = await fetch(`/api/admin/courses/${courseId}`);
+              if (courseResponse.ok) {
+                const courseData = await courseResponse.json();
+                await syncToMiniCourse(courseData);
+              }
+            } catch (err) {
+              console.error(`Lỗi khi đồng bộ minicourse cho khóa học ${courseId}:`, err);
+            }
+          }
+        }
+        
         // Reset lựa chọn sau khi xử lý thành công
         setSelectedCourses([]);
       }
@@ -1102,6 +1153,18 @@ export default function CoursesPage() {
           
             // Đánh dấu đã xử lý xong cho khóa học này
             setProcessingPDFCourses(prev => ({ ...prev, [course._id]: false }));
+            
+            // Đồng bộ với minicourse sau khi xử lý PDF
+            try {
+              const courseResponse = await fetch(`/api/admin/courses/${course._id}`);
+              if (courseResponse.ok) {
+                const courseData = await courseResponse.json();
+                await syncToMiniCourse(courseData);
+                console.log(`Đã đồng bộ minicourse cho khóa học ${course._id} sau khi xử lý PDF`);
+              }
+            } catch (syncError) {
+              console.error(`Lỗi khi đồng bộ minicourse cho khóa học ${course._id}:`, syncError);
+            }
           
             return {
               courseId: course._id,
@@ -1238,6 +1301,18 @@ export default function CoursesPage() {
       
         // Tải lại danh sách khóa học
         await fetchCourses();
+        
+        // Đồng bộ với minicourse sau khi xử lý PDF
+        try {
+          const courseResponse = await fetch(`/api/admin/courses/${courseId}`);
+          if (courseResponse.ok) {
+            const courseData = await courseResponse.json();
+            await syncToMiniCourse(courseData);
+            console.log(`Đã đồng bộ minicourse cho khóa học ${courseId} sau khi xử lý PDF`);
+          }
+        } catch (syncError) {
+          console.error(`Lỗi khi đồng bộ minicourse cho khóa học ${courseId}:`, syncError);
+        }
       } catch (fetchError) {
         throw fetchError;
       } finally {

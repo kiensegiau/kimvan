@@ -120,4 +120,54 @@ export async function POST(request) {
       error: error.message
     }, { status: 500 });
   }
+}
+
+export async function DELETE(request) {
+  try {
+    // Kết nối đến MongoDB
+    await connectDB();
+    
+    // Lấy dữ liệu từ request
+    const data = await request.json();
+    
+    if (!data || (!data.courseId && !data.kimvanId)) {
+      return NextResponse.json({
+        success: false,
+        message: 'Thiếu thông tin courseId hoặc kimvanId để xóa minicourse'
+      }, { status: 400 });
+    }
+    
+    // Tạo query dựa trên dữ liệu đầu vào
+    let query = {};
+    if (data.courseId) {
+      query.courseId = data.courseId;
+    } else if (data.kimvanId) {
+      query.kimvanId = data.kimvanId;
+    }
+    
+    // Tìm và xóa minicourse
+    const result = await MiniCourse.deleteOne(query);
+    
+    if (result.deletedCount === 0) {
+      return NextResponse.json({
+        success: false,
+        message: 'Không tìm thấy minicourse để xóa',
+        data: result
+      }, { status: 404 });
+    }
+    
+    return NextResponse.json({
+      success: true,
+      message: 'Xóa minicourse thành công',
+      data: result
+    });
+    
+  } catch (error) {
+    console.error('Lỗi khi xóa minicourse:', error);
+    return NextResponse.json({
+      success: false,
+      message: 'Đã xảy ra lỗi khi xóa minicourse',
+      error: error.message
+    }, { status: 500 });
+  }
 } 
