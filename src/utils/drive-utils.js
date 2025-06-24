@@ -400,27 +400,42 @@ export function createHyperlinkFormula(originalCell, newUrl) {
 }
 
 // Xử lý một link với timeout và retry
-export async function processLink(baseUrl, url, cookie = '', maxRetries = 2, timeoutMs = 60000) {
+export async function processLink(baseUrl, url, cookie = '', maxRetries = 2, timeoutMs = 60000, fileType = null) {
   let retries = 0;
   
   while (retries <= maxRetries) {
     try {
-      console.log(`Gửi yêu cầu xử lý link đến API: ${baseUrl}/api/drive/process-and-replace (lần thử ${retries + 1}/${maxRetries + 1})`);
+      // Xác định API endpoint dựa trên loại file
+      let apiEndpoint = '/api/drive/process-and-replace';
+      let requestBody = { driveLink: url };
+      
+      // Nếu không phải PDF, sử dụng API đơn giản hơn chỉ tải xuống và upload lại
+      if (fileType && fileType !== 'application/pdf' && fileType !== 'pdf') {
+        console.log(`File không phải PDF (${fileType}), sử dụng API đơn giản hơn để xử lý`);
+        apiEndpoint = '/api/drive/download-and-reupload';
+        requestBody = { 
+          driveLink: url,
+          fileType: fileType,
+          skipProcessing: true
+        };
+      } else {
+        console.log(`Xử lý file PDF: ${url}`);
+      }
+      
+      console.log(`Gửi yêu cầu xử lý link đến API: ${baseUrl}${apiEndpoint} (lần thử ${retries + 1}/${maxRetries + 1})`);
       
       // Thêm timeout cho fetch request để tránh treo quá lâu
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
       
       try {
-        const processResponse = await fetch(`${baseUrl}/api/drive/process-and-replace`, {
+        const processResponse = await fetch(`${baseUrl}${apiEndpoint}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Cookie': cookie
           },
-          body: JSON.stringify({
-            driveLink: url
-          }),
+          body: JSON.stringify(requestBody),
           signal: controller.signal
         });
         
@@ -470,7 +485,8 @@ export async function processLink(baseUrl, url, cookie = '', maxRetries = 2, tim
           originalLink: url,
           processedLink: responseData.processedFile.link,
           processedFileId: responseData.processedFile.id,
-          processedFileName: responseData.processedFile.name
+          processedFileName: responseData.processedFile.name,
+          fileType: fileType || 'pdf'
         };
       } catch (fetchError) {
         // Xóa timeout nếu có lỗi

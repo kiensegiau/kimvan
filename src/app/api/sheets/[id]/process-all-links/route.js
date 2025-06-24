@@ -288,8 +288,68 @@ export async function POST(request, { params }) {
       try {
         console.log(`\n===== Đang xử lý URL: ${urlGroup.originalUrl} (${urlGroup.cells.length} ô) =====`);
         
-        // Sử dụng hàm processLink với retry và timeout
-        const processResult = await processLink(baseUrl, urlGroup.originalUrl, cookie, 2, 500000); // 500 giây timeout, 2 lần retry
+        // Xác định loại file từ URL hoặc tên file
+        let fileType = 'pdf'; // Mặc định là PDF
+        
+        try {
+          // Trích xuất file ID để lấy thông tin file
+          const { fileId } = extractDriveFileId(urlGroup.originalUrl);
+          
+          // Lấy thông tin file từ Drive API để xác định loại file
+          const auth = new google.auth.GoogleAuth({
+            credentials: {
+              client_email: process.env.GOOGLE_CLIENT_EMAIL,
+              private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n')
+            },
+            scopes: ['https://www.googleapis.com/auth/drive.readonly']
+          });
+          
+          const drive = google.drive({ version: 'v3', auth });
+          
+          try {
+            const fileMetadata = await drive.files.get({
+              fileId: fileId,
+              fields: 'mimeType,name',
+              supportsAllDrives: true,
+              includeItemsFromAllDrives: true
+            });
+            
+            if (fileMetadata.data && fileMetadata.data.mimeType) {
+              fileType = fileMetadata.data.mimeType;
+              console.log(`Đã xác định loại file: ${fileType} (${fileMetadata.data.name || 'không có tên'})`);
+            }
+          } catch (fileInfoError) {
+            console.warn(`Không thể lấy thông tin file, giả định là PDF: ${fileInfoError.message}`);
+            
+            // Nếu không lấy được thông tin, thử đoán từ tên file hoặc URL
+            if (urlGroup.originalUrl.toLowerCase().endsWith('.docx')) {
+              fileType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+            } else if (urlGroup.originalUrl.toLowerCase().endsWith('.xlsx')) {
+              fileType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+            } else if (urlGroup.originalUrl.toLowerCase().endsWith('.pptx')) {
+              fileType = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+            } else if (urlGroup.originalUrl.toLowerCase().endsWith('.doc')) {
+              fileType = 'application/msword';
+            } else if (urlGroup.originalUrl.toLowerCase().endsWith('.xls')) {
+              fileType = 'application/vnd.ms-excel';
+            } else if (urlGroup.originalUrl.toLowerCase().endsWith('.ppt')) {
+              fileType = 'application/vnd.ms-powerpoint';
+            } else if (urlGroup.originalUrl.toLowerCase().endsWith('.jpg') || urlGroup.originalUrl.toLowerCase().endsWith('.jpeg')) {
+              fileType = 'image/jpeg';
+            } else if (urlGroup.originalUrl.toLowerCase().endsWith('.png')) {
+              fileType = 'image/png';
+            } else if (urlGroup.originalUrl.toLowerCase().endsWith('.mp4')) {
+              fileType = 'video/mp4';
+            } else if (urlGroup.originalUrl.toLowerCase().endsWith('.mp3')) {
+              fileType = 'audio/mpeg';
+            }
+          }
+        } catch (error) {
+          console.warn(`Không thể xác định loại file, giả định là PDF: ${error.message}`);
+        }
+        
+        // Sử dụng hàm processLink với retry và timeout, truyền thêm thông tin loại file
+        const processResult = await processLink(baseUrl, urlGroup.originalUrl, cookie, 2, 500000, fileType); // 500 giây timeout, 2 lần retry
         
         // Tạo giá trị mới cho ô
         const newUrl = processResult.processedLink;
