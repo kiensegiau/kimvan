@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { PlusIcon, TrashIcon, PencilIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, TrashIcon, PencilIcon, ArrowPathIcon, DocumentArrowDownIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 
 export default function SheetsAdminPage() {
@@ -17,6 +17,14 @@ export default function SheetsAdminPage() {
     sheetUrl: '',
   });
   const [addingSheet, setAddingSheet] = useState(false);
+  const [processingPDFs, setProcessingPDFs] = useState(false);
+  const [processingStatus, setProcessingStatus] = useState({
+    current: 0,
+    total: 0,
+    currentSheet: '',
+    results: []
+  });
+  const [showProcessingModal, setShowProcessingModal] = useState(false);
 
   useEffect(() => {
     fetchSheets();
@@ -149,17 +157,110 @@ export default function SheetsAdminPage() {
     }
   };
 
+  // Hàm xử lý tất cả PDF trong các sheets
+  const handleProcessAllPDFs = async () => {
+    if (!confirm('Bạn có chắc chắn muốn xử lý tất cả PDF trong tất cả sheets? Quá trình này có thể mất nhiều thời gian.')) {
+      return;
+    }
+
+    setProcessingPDFs(true);
+    setShowProcessingModal(true);
+    setProcessingStatus({
+      current: 0,
+      total: sheets.length,
+      currentSheet: '',
+      results: []
+    });
+
+    try {
+      // Xử lý tuần tự từng sheet
+      for (let i = 0; i < sheets.length; i++) {
+        const sheet = sheets[i];
+        setProcessingStatus(prev => ({
+          ...prev,
+          current: i + 1,
+          currentSheet: sheet.name
+        }));
+
+        try {
+          // Gọi API để xử lý tất cả link trong sheet
+          const response = await fetch(`/api/sheets/${sheet._id}/process-all-links`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            }
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || `Không thể xử lý sheet ${sheet.name}`);
+          }
+
+          const result = await response.json();
+          
+          // Cập nhật kết quả
+          setProcessingStatus(prev => ({
+            ...prev,
+            results: [...prev.results, {
+              sheetName: sheet.name,
+              sheetId: sheet._id,
+              success: true,
+              processed: result.processed || 0,
+              failed: result.failed || 0,
+              total: result.totalCells || 0,
+              uniqueLinks: result.uniqueLinks || 0
+            }]
+          }));
+        } catch (error) {
+          console.error(`Lỗi khi xử lý sheet ${sheet.name}:`, error);
+          
+          // Cập nhật kết quả lỗi
+          setProcessingStatus(prev => ({
+            ...prev,
+            results: [...prev.results, {
+              sheetName: sheet.name,
+              sheetId: sheet._id,
+              success: false,
+              error: error.message
+            }]
+          }));
+        }
+        
+        // Đợi 2 giây giữa các sheet để tránh quá tải
+        if (i < sheets.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+      }
+    } catch (error) {
+      console.error('Lỗi khi xử lý tất cả PDF:', error);
+    } finally {
+      setProcessingPDFs(false);
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Quản lý Google Sheets</h1>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-md flex items-center"
-        >
-          <PlusIcon className="h-5 w-5 mr-2" />
-          Thêm Sheet mới
-        </button>
+        <div className="flex space-x-3">
+          <button
+            onClick={handleProcessAllPDFs}
+            disabled={processingPDFs || sheets.length === 0}
+            className={`bg-green-600 text-white px-4 py-2 rounded-md flex items-center ${
+              processingPDFs || sheets.length === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-green-700'
+            }`}
+          >
+            <DocumentArrowDownIcon className="h-5 w-5 mr-2" />
+            {processingPDFs ? 'Đang xử lý...' : 'Xử lý tất cả PDF'}
+          </button>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="bg-blue-600 text-white px-4 py-2 rounded-md flex items-center hover:bg-blue-700"
+          >
+            <PlusIcon className="h-5 w-5 mr-2" />
+            Thêm Sheet mới
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -295,6 +396,86 @@ export default function SheetsAdminPage() {
                   ) : (
                     'Thêm Sheet'
                   )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal hiển thị tiến trình xử lý PDF */}
+      {showProcessingModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] overflow-y-auto">
+            <div className="p-6">
+              <h2 className="text-xl font-semibold mb-4">Xử lý PDF từ tất cả Google Sheets</h2>
+              
+              <div className="mb-6">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-medium">Tiến trình: {processingStatus.current}/{processingStatus.total} sheets</span>
+                  <span className="text-sm">{Math.round((processingStatus.current / processingStatus.total) * 100) || 0}%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2.5">
+                  <div 
+                    className="bg-blue-600 h-2.5 rounded-full" 
+                    style={{ width: `${(processingStatus.current / processingStatus.total) * 100}%` }}
+                  ></div>
+                </div>
+                {processingPDFs && (
+                  <p className="text-sm text-gray-600 mt-2">
+                    Đang xử lý: {processingStatus.currentSheet}
+                  </p>
+                )}
+              </div>
+              
+              <div className="border rounded-lg overflow-hidden">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sheet</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Trạng thái</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Đã xử lý</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Thất bại</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tổng links</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {processingStatus.results.map((result, index) => (
+                      <tr key={index} className={result.success ? 'bg-green-50' : 'bg-red-50'}>
+                        <td className="px-4 py-3 text-sm">{result.sheetName}</td>
+                        <td className="px-4 py-3 text-sm">
+                          {result.success ? (
+                            <span className="text-green-600 font-medium">Thành công</span>
+                          ) : (
+                            <span className="text-red-600 font-medium">Lỗi: {result.error}</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-sm">{result.processed || 0}</td>
+                        <td className="px-4 py-3 text-sm">{result.failed || 0}</td>
+                        <td className="px-4 py-3 text-sm">{result.total || 0} ({result.uniqueLinks || 0} duy nhất)</td>
+                      </tr>
+                    ))}
+                    {processingPDFs && processingStatus.results.length < processingStatus.total && (
+                      <tr>
+                        <td colSpan="5" className="px-4 py-3 text-center text-sm">
+                          <div className="flex items-center justify-center">
+                            <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-blue-500 mr-2"></div>
+                            Đang xử lý...
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              
+              <div className="mt-6 flex justify-end">
+                <button
+                  onClick={() => setShowProcessingModal(false)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  disabled={processingPDFs}
+                >
+                  {processingPDFs ? 'Đang xử lý...' : 'Đóng'}
                 </button>
               </div>
             </div>
