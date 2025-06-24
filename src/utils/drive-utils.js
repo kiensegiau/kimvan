@@ -431,6 +431,25 @@ export async function processLink(baseUrl, url, cookie = '', maxRetries = 2, tim
         const responseData = await processResponse.json();
         
         if (!processResponse.ok) {
+          // Kiểm tra lỗi file không tồn tại (404) - coi như đã xử lý thành công trước đó
+          if (responseData.error && (
+              responseData.error.includes('404') ||
+              responseData.error.includes('không tồn tại') ||
+              responseData.error.includes('Không tìm thấy file')
+          )) {
+            console.log(`File không tồn tại (404): ${url}. Coi như đã xử lý thành công trước đó.`);
+            
+            // Trả về kết quả thành công với link gốc
+            return {
+              success: true,
+              originalLink: url,
+              processedLink: url, // Sử dụng link gốc vì file không tồn tại
+              processedFileId: extractDriveFileId(url).fileId,
+              processedFileName: "File đã xử lý trước đó",
+              wasProcessedBefore: true
+            };
+          }
+          
           // Kiểm tra lỗi quyền truy cập
           if (responseData.error && (
               responseData.error.includes('Không có quyền truy cập') || 
@@ -467,16 +486,31 @@ export async function processLink(baseUrl, url, cookie = '', maxRetries = 2, tim
     } catch (error) {
       console.error(`Lỗi khi xử lý link (lần thử ${retries + 1}/${maxRetries + 1}):`, error.message);
       
+      // Kiểm tra lỗi file không tồn tại (404) - coi như đã xử lý thành công trước đó
+      if (error.message && (
+          error.message.includes('404') ||
+          error.message.includes('không tồn tại') ||
+          error.message.includes('Không tìm thấy file')
+      )) {
+        console.log(`File không tồn tại (404): ${url}. Coi như đã xử lý thành công trước đó.`);
+        
+        // Trả về kết quả thành công với link gốc
+        return {
+          success: true,
+          originalLink: url,
+          processedLink: url, // Sử dụng link gốc vì file không tồn tại
+          processedFileId: extractDriveFileId(url).fileId,
+          processedFileName: "File đã xử lý trước đó",
+          wasProcessedBefore: true
+        };
+      }
+      
       // Kiểm tra các lỗi không nên thử lại
       if (error.message && (
           // Lỗi quyền truy cập
           error.message.includes('Không có quyền truy cập') || 
           error.message.includes('Không có quyền tải xuống') ||
-          error.message.includes('permission') ||
-          // Lỗi file không tồn tại
-          error.message.includes('404') ||
-          error.message.includes('không tồn tại') ||
-          error.message.includes('Không tìm thấy file')
+          error.message.includes('permission')
       )) {
         console.error(`Lỗi không thể khắc phục bằng thử lại, bỏ qua các lần thử lại: ${error.message}`);
         throw error;
