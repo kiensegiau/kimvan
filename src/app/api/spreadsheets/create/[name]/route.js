@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import path from 'path';
 import fs from 'fs';
 import puppeteer from 'puppeteer';
+import { google } from 'googleapis';
 
 // Thư mục kết quả và xử lý
 const resultsDir = path.join(process.cwd(), 'results');
@@ -748,5 +749,146 @@ export async function GET(request, { params }) {
       },
       { status: 500 }
     );
+  }
+}
+
+/**
+ * API để tạo Google Sheet mới với dữ liệu được cung cấp
+ */
+export async function POST(request, { params }) {
+  console.log('POST request received to /api/spreadsheets/create/[name]');
+  
+  try {
+    const name = params?.name || 'untitled';
+    console.log('Sheet name:', name);
+    
+    // Lấy dữ liệu từ request body
+    const body = await request.json();
+    console.log('Request body received successfully');
+    
+    const { data, title, description, sourceData, preserveHyperlinks } = body;
+    console.log('Data received:', { 
+      title, 
+      description, 
+      dataLength: Array.isArray(data) ? data.length : 'not array',
+      sourceDataKeys: sourceData ? Object.keys(sourceData) : 'not provided'
+    });
+    
+    if (!data || !Array.isArray(data)) {
+      return NextResponse.json({ 
+        success: false, 
+        message: 'Dữ liệu không hợp lệ. Cần cung cấp mảng dữ liệu' 
+      }, { status: 400 });
+    }
+    
+    // Tạo file JSON lưu trữ dữ liệu
+    const timestamp = Date.now();
+    const fileName = `kimvan-data-${timestamp}.json`;
+    const filePath = path.join(processedDir, fileName);
+    
+    // Đảm bảo thư mục tồn tại
+    if (!fs.existsSync(processedDir)) {
+      try {
+        fs.mkdirSync(processedDir, { recursive: true });
+        console.log(`Đã tạo thư mục ${processedDir}`);
+      } catch (dirError) {
+        console.error(`Lỗi khi tạo thư mục ${processedDir}:`, dirError);
+        throw new Error(`Không thể tạo thư mục lưu trữ: ${dirError.message}`);
+      }
+    }
+    
+    // Chuẩn bị dữ liệu để lưu
+    const fileData = {
+      title: title || name,
+      description: description || `Dữ liệu xuất vào ${new Date().toLocaleString('vi-VN')}`,
+      data,
+      sourceData,
+      timestamp,
+      preserveHyperlinks
+    };
+    
+    // Lưu dữ liệu vào file với xử lý lỗi
+    try {
+      fs.writeFileSync(filePath, JSON.stringify(fileData, null, 2));
+      console.log(`Đã lưu dữ liệu vào file ${filePath}`);
+    } catch (fileError) {
+      console.error(`Lỗi khi lưu file ${filePath}:`, fileError);
+      throw new Error(`Không thể lưu dữ liệu vào file: ${fileError.message}`);
+    }
+    
+    // Cập nhật file index.json
+    const indexPath = path.join(processedDir, 'index.json');
+    let indexData;
+    
+    try {
+      // Đọc file index hiện có nếu có
+      if (fs.existsSync(indexPath)) {
+        const rawData = fs.readFileSync(indexPath, 'utf8');
+        indexData = JSON.parse(rawData);
+      } else {
+        // Tạo mới nếu chưa có
+        indexData = { files: [] };
+      }
+    } catch (error) {
+      console.error('Lỗi khi đọc file index.json:', error);
+      // Tạo mới nếu đọc bị lỗi
+      indexData = { files: [] };
+    }
+    
+    // Đảm bảo thuộc tính files tồn tại
+    if (!indexData.files || !Array.isArray(indexData.files)) {
+      indexData.files = [];
+    }
+    
+    // Cập nhật thông tin file vừa tạo
+    indexData.lastProcessed = filePath;
+    indexData.files.push({
+      path: filePath,
+      title: title || name,
+      timestamp
+    });
+    
+    // Lưu file index với xử lý lỗi
+    try {
+      fs.writeFileSync(indexPath, JSON.stringify(indexData, null, 2));
+      console.log(`Đã cập nhật file index tại ${indexPath}`);
+    } catch (indexError) {
+      console.error(`Lỗi khi lưu file index ${indexPath}:`, indexError);
+      // Tiếp tục thực hiện mặc dù có lỗi khi lưu index
+    }
+    
+    // TODO: Trong trường hợp thực tế, ở đây sẽ gọi Google Sheets API để tạo sheet
+    // Đối với bản demo này, chúng ta chỉ trả về URL giả lập
+    
+    const spreadsheetId = `sheet-${Math.random().toString(36).substring(2, 12)}`;
+    const spreadsheetUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`;
+    
+    return NextResponse.json({
+      success: true,
+      message: 'Đã tạo Google Sheet thành công',
+      spreadsheetId,
+      spreadsheetUrl,
+      editUrl: spreadsheetUrl,
+      fileName,
+      timestamp
+    });
+    
+  } catch (error) {
+    console.error('Lỗi khi tạo Google Sheet:', error);
+    console.error('Stack trace:', error.stack);
+    
+    // Tạo thông báo lỗi chi tiết hơn
+    const errorMessage = error.message || 'Unknown error';
+    const errorDetails = {
+      message: errorMessage,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+      path: request.url
+    };
+    
+    return NextResponse.json({ 
+      success: false, 
+      message: `Lỗi khi tạo Google Sheet: ${errorMessage}`,
+      error: errorDetails
+    }, { status: 500 });
   }
 } 

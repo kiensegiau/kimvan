@@ -9,7 +9,7 @@ import YouTubeModal from '../../components/YouTubeModal';
 import PDFModal from '../../components/PDFModal';
 import MediaProcessingModal from '../../components/MediaProcessingModal';
 import * as XLSX from 'xlsx';
-import { toast } from 'react-toastify';
+import toast, { Toaster } from 'react-hot-toast';
 
 export default function CourseDetailPage({ params }) {
   const router = useRouter();
@@ -653,6 +653,580 @@ export default function CourseDetailPage({ params }) {
     if (!url) return false;
     return (url.includes('drive.google.com') || url.includes('docs.google.com')) && 
            (url.toLowerCase().endsWith('.pdf') || url.includes('pdf'));
+  };
+
+  // Hàm xuất dữ liệu sang Google Sheets
+  const exportToGoogleSheet = async () => {
+    // Kiểm tra xem có dữ liệu để xuất không
+    if (!course) {
+      toast.error('Không có thông tin khóa học');
+      return;
+    }
+    
+    if (!course.originalData) {
+      toast.error('Không có dữ liệu gốc của khóa học');
+      return;
+    }
+    
+    if (!course.originalData.sheets || !Array.isArray(course.originalData.sheets)) {
+      toast.error('Cấu trúc dữ liệu sheets không hợp lệ');
+      return;
+    }
+    
+    if (!course.originalData.sheets[activeSheet]) {
+      toast.error(`Không tìm thấy sheet với index ${activeSheet}`);
+      return;
+    }
+    
+    try {
+      // Hiển thị thông báo đang xử lý
+      toast.loading('Đang chuẩn bị dữ liệu để xuất sang Google Sheets...');
+      
+      // Lấy dữ liệu từ sheet hiện tại
+      const sheet = course.originalData.sheets[activeSheet];
+      const sheetData = sheet?.data?.[0]?.rowData;
+      
+      if (!sheetData || sheetData.length === 0) {
+        toast.dismiss();
+        toast.error('Không có dữ liệu để xuất');
+        return;
+      }
+      
+      // Lấy dữ liệu đầy đủ từ file gốc
+      console.log("Đang xử lý dữ liệu từ sheet...");
+      
+      // Tạo mảng dữ liệu cho bảng với thông tin đầy đủ
+      const sheetsData = [];
+      const linkData = []; // Mảng lưu trữ thông tin về các URL
+      const linkTexts = []; // Mảng lưu trữ text hiển thị cho link
+      
+      // Thêm tiêu đề
+      const headers = [];
+      const headerRow = sheetData[0];
+      if (headerRow && headerRow.values) {
+        headerRow.values.forEach(cell => {
+          headers.push(cell.formattedValue || '');
+        });
+        sheetsData.push(headers);
+        linkData.push(new Array(headers.length).fill(null)); // Không có link trong header
+        linkTexts.push(new Array(headers.length).fill(null)); // Không có text link trong header
+      }
+      
+      console.log(`Tìm thấy ${Math.min(sheetData.length - 1, 100)} hàng dữ liệu để xử lý`);
+      
+      // Thêm dữ liệu với liên kết
+      for (let i = 1; i < Math.min(sheetData.length, 100); i++) { // Giới hạn 100 hàng để tránh lỗi
+        const row = sheetData[i];
+        if (row && row.values) {
+          const rowData = [];
+          const rowLinks = [];
+          const rowLinkTexts = [];
+          
+          row.values.forEach((cell) => {
+            // Lấy giá trị text
+            let value = cell.formattedValue || '';
+            
+            // Lấy URL từ cell
+            const url = cell.userEnteredFormat?.textFormat?.link?.uri || cell.hyperlink;
+            
+            // Xử lý đặc biệt cho các cell có hyperlink
+            if (url) {
+              console.log(`Tìm thấy hyperlink: ${url} với text: ${value || '(không có text)'}`);
+              
+              // Lưu thông tin URL và text hiển thị
+              rowLinks.push(url);
+              
+              // Xác định text hiển thị cho link
+              let linkText;
+              if (value) {
+                linkText = value; // Sử dụng text hiện có
+              } else {
+                // Tạo text mặc định dựa trên loại link
+                linkText = isYoutubeLink(url) ? 'Xem video' : 
+                          isPdfLink(url) ? 'Xem PDF' : 
+                          isGoogleDriveLink(url) ? 'Xem trên Google Drive' : 
+                          'Xem tài liệu';
+              }
+              
+              rowLinkTexts.push(linkText);
+              
+              // Sử dụng text hiển thị làm giá trị cell
+              value = linkText;
+            } else {
+              // Không có hyperlink
+              rowLinks.push(null);
+              rowLinkTexts.push(null);
+            }
+            
+            // Giới hạn độ dài của chuỗi để tránh lỗi
+            if (value && value.length > 500) {
+              value = value.substring(0, 497) + '...';
+            }
+            
+            rowData.push(value);
+          });
+          
+          // Thêm dữ liệu hàng
+          sheetsData.push(rowData);
+          linkData.push(rowLinks);
+          linkTexts.push(rowLinkTexts);
+        }
+      }
+      
+      console.log(`Đã xử lý xong ${sheetsData.length - 1} hàng dữ liệu với hyperlink`);
+      
+      // Chuẩn bị dữ liệu để xuất
+      // Tạo tên file Google Sheet
+      const sheetTitle = getSheetTitle(activeSheet, course.originalData.sheets);
+      const courseName = course.name || 'Khóa học';
+      const timeStamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+      const fileName = `${courseName} - ${sheetTitle} - ${timeStamp}`;
+      
+      // Dữ liệu metadata đã được tinh gọn để tránh lỗi
+      const metadata = {
+        id: course._id ? course._id.toString() : id, // Đảm bảo đây là string
+        name: courseName,
+        index: activeSheet,
+        title: sheetTitle,
+        date: new Date().toISOString().split('T')[0] // Chỉ lấy phần ngày
+      };
+      
+      console.log('Đang gửi yêu cầu xuất dữ liệu...');
+      
+      // Tạo API URL đơn giản hơn
+      const apiUrl = '/api/spreadsheets/create/export-' + Date.now();
+      console.log('API URL:', apiUrl);
+      
+      // Tạo payload đơn giản
+      const payload = {
+        data: sheetsData,
+        title: fileName,
+        description: `Xuất từ khóa học: ${courseName}`,
+        sourceData: metadata
+      };
+      
+      // Log kích thước payload
+      console.log('Payload size:', JSON.stringify(payload).length, 'bytes');
+      
+      // Gọi API để tạo Google Sheet
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+      
+      // Kiểm tra nếu response không phải là JSON, ném lỗi
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error(`Phản hồi không hợp lệ từ server: ${await response.text()}`);
+      }
+      
+      const result = await response.json();
+      
+      console.log('Kết quả từ API:', result);
+      
+      if (!response.ok) {
+        throw new Error(result.message || 'Không thể tạo Google Sheet');
+      }
+      
+      // Hiển thị thông báo thành công
+      toast.dismiss(); // Đóng toast loading
+      
+      // Thông báo thành công và giải thích
+      toast.success('Dữ liệu đã được xuất thành công!', {
+        duration: 5000,
+        position: 'top-center'
+      });
+      
+      // Tạo bảng HTML để hiển thị dữ liệu cho người dùng copy
+      if (result.fileName) {
+        try {
+          // Tạo modal để hiển thị bảng HTML
+          const modalContainer = document.createElement('div');
+          modalContainer.style.position = 'fixed';
+          modalContainer.style.top = '0';
+          modalContainer.style.left = '0';
+          modalContainer.style.width = '100%';
+          modalContainer.style.height = '100%';
+          modalContainer.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+          modalContainer.style.zIndex = '9999';
+          modalContainer.style.display = 'flex';
+          modalContainer.style.justifyContent = 'center';
+          modalContainer.style.alignItems = 'center';
+          modalContainer.style.padding = '20px';
+          
+          // Tạo content cho modal
+          const modalContent = document.createElement('div');
+          modalContent.style.backgroundColor = '#fff';
+          modalContent.style.borderRadius = '8px';
+          modalContent.style.width = '90%';
+          modalContent.style.maxWidth = '1200px';
+          modalContent.style.maxHeight = '90vh';
+          modalContent.style.overflow = 'auto';
+          modalContent.style.position = 'relative';
+          modalContent.style.padding = '20px';
+          modalContent.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
+          
+          // Tạo nút đóng
+          const closeButton = document.createElement('button');
+          closeButton.textContent = 'Đóng';
+          closeButton.style.position = 'absolute';
+          closeButton.style.top = '10px';
+          closeButton.style.right = '10px';
+          closeButton.style.padding = '8px 16px';
+          closeButton.style.backgroundColor = '#e53e3e';
+          closeButton.style.color = 'white';
+          closeButton.style.border = 'none';
+          closeButton.style.borderRadius = '4px';
+          closeButton.style.cursor = 'pointer';
+          closeButton.onclick = () => {
+            document.body.removeChild(modalContainer);
+          };
+          
+          // Tạo nút copy
+          const copyButton = document.createElement('button');
+          copyButton.textContent = 'Copy toàn bộ bảng';
+          copyButton.style.marginRight = '10px';
+          copyButton.style.padding = '8px 16px';
+          copyButton.style.backgroundColor = '#4299e1';
+          copyButton.style.color = 'white';
+          copyButton.style.border = 'none';
+          copyButton.style.borderRadius = '4px';
+          copyButton.style.cursor = 'pointer';
+          copyButton.onclick = () => {
+            // Hiển thị tất cả các URL trước khi copy nếu đang ẩn
+            const showUrls = document.querySelectorAll('.full-url');
+            const wasHidden = showUrls[0] && showUrls[0].style.display === 'none';
+            
+            if (wasHidden) {
+              showUrls.forEach(url => {
+                url.style.display = 'inline';
+              });
+            }
+            
+            const range = document.createRange();
+            range.selectNode(tableContainer);
+            window.getSelection().removeAllRanges();
+            window.getSelection().addRange(range);
+            document.execCommand('copy');
+            window.getSelection().removeAllRanges();
+            
+            // Ẩn lại URL sau khi copy nếu chúng đã bị ẩn trước đó
+            if (wasHidden) {
+              showUrls.forEach(url => {
+                url.style.display = 'none';
+              });
+            }
+            
+            copyButton.textContent = 'Đã copy!';
+            copyButton.style.backgroundColor = '#48bb78';
+            setTimeout(() => {
+              copyButton.textContent = 'Copy toàn bộ bảng';
+              copyButton.style.backgroundColor = '#4299e1';
+            }, 2000);
+          };
+          
+          // Tạo nút hiển thị/ẩn URL đầy đủ
+          const toggleUrlButton = document.createElement('button');
+          toggleUrlButton.textContent = 'Hiển thị URL đầy đủ';
+          toggleUrlButton.style.marginRight = '10px';
+          toggleUrlButton.style.padding = '8px 16px';
+          toggleUrlButton.style.backgroundColor = '#805ad5';
+          toggleUrlButton.style.color = 'white';
+          toggleUrlButton.style.border = 'none';
+          toggleUrlButton.style.borderRadius = '4px';
+          toggleUrlButton.style.cursor = 'pointer';
+          
+          // Biến để theo dõi trạng thái hiển thị URL
+          let urlsVisible = false;
+          
+          toggleUrlButton.onclick = () => {
+            // Lấy tất cả các phần tử URL
+            const urlElements = document.querySelectorAll('.full-url');
+            
+            // Chuyển đổi trạng thái hiển thị
+            urlsVisible = !urlsVisible;
+            
+            // Cập nhật hiển thị của các URL
+            urlElements.forEach(url => {
+              url.style.display = urlsVisible ? 'inline' : 'none';
+            });
+            
+            // Cập nhật text của nút
+            toggleUrlButton.textContent = urlsVisible ? 'Ẩn URL đầy đủ' : 'Hiển thị URL đầy đủ';
+            toggleUrlButton.style.backgroundColor = urlsVisible ? '#d53f8c' : '#805ad5';
+          };
+          
+          // Tạo nút xuất Excel
+          const excelButton = document.createElement('button');
+          excelButton.textContent = 'Xuất Excel';
+          excelButton.style.padding = '8px 16px';
+          excelButton.style.backgroundColor = '#48bb78';
+          excelButton.style.color = 'white';
+          excelButton.style.border = 'none';
+          excelButton.style.borderRadius = '4px';
+          excelButton.style.cursor = 'pointer';
+          excelButton.onclick = () => {
+            try {
+              // Tạo workbook và worksheet
+              const wb = XLSX.utils.book_new();
+              const ws = XLSX.utils.aoa_to_sheet(sheetsData);
+              
+              // Đặt tên cho worksheet
+              XLSX.utils.book_append_sheet(wb, ws, sheetTitle || 'Sheet1');
+              
+              // Xuất file Excel
+              XLSX.writeFile(wb, `${fileName}.xlsx`);
+              
+              // Thông báo
+              excelButton.textContent = 'Đã xuất Excel!';
+              setTimeout(() => {
+                excelButton.textContent = 'Xuất Excel';
+              }, 2000);
+            } catch (error) {
+              console.error('Lỗi khi xuất Excel:', error);
+              alert('Không thể xuất Excel. Vui lòng thử lại sau.');
+            }
+          };
+          
+          // Tạo tiêu đề
+          const header = document.createElement('h2');
+          header.textContent = `Dữ liệu khóa học: ${courseName}`;
+          header.style.marginBottom = '20px';
+          header.style.fontSize = '1.5rem';
+          header.style.fontWeight = 'bold';
+          header.style.color = '#2d3748';
+          header.style.paddingRight = '100px'; // Để không bị che bởi nút đóng
+          
+          // Tạo container cho bảng
+          const tableContainer = document.createElement('div');
+          tableContainer.style.width = '100%';
+          tableContainer.style.overflowX = 'auto';
+          tableContainer.style.marginBottom = '20px';
+          
+          // Tạo bảng HTML từ dữ liệu
+          const table = document.createElement('table');
+          table.style.width = '100%';
+          table.style.borderCollapse = 'collapse';
+          table.style.border = '1px solid #e2e8f0';
+          
+          // Tạo header cho bảng
+          if (sheetsData.length > 0) {
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+            
+            sheetsData[0].forEach(header => {
+              const th = document.createElement('th');
+              th.textContent = header;
+              th.style.padding = '12px';
+              th.style.backgroundColor = '#4299e1';
+              th.style.color = 'white';
+              th.style.textAlign = 'left';
+              th.style.fontWeight = 'bold';
+              th.style.border = '1px solid #2b6cb0';
+              headerRow.appendChild(th);
+            });
+            
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+            
+            // Tạo body cho bảng
+            const tbody = document.createElement('tbody');
+            
+            for (let i = 1; i < sheetsData.length; i++) {
+              const row = document.createElement('tr');
+              row.style.backgroundColor = i % 2 === 0 ? '#f7fafc' : 'white';
+              
+              sheetsData[i].forEach((cell, index) => {
+                const td = document.createElement('td');
+                td.style.padding = '8px 12px';
+                td.style.border = '1px solid #e2e8f0';
+                td.style.verticalAlign = 'top';
+                
+                // Lấy URL và text hiển thị từ dữ liệu đã chuẩn bị
+                const url = linkData[i] && linkData[i][index];
+                const linkText = linkTexts[i] && linkTexts[i][index];
+                
+                // Nếu là cột đầu tiên, làm nổi bật
+                if (index === 0) {
+                  td.style.fontWeight = 'bold';
+                  td.style.backgroundColor = '#ebf8ff';
+                }
+                
+                // Nếu có URL, hiển thị dưới dạng link với icon
+                if (url) {
+                  // Tạo link
+                  const link = document.createElement('a');
+                  link.href = url;
+                  link.textContent = linkText || cell || url;
+                  link.target = '_blank';
+                  link.style.color = '#3182ce';
+                  link.style.textDecoration = 'underline';
+                  
+                  // Thêm icon phù hợp với loại link
+                  let icon = '';
+                  if (isYoutubeLink(url)) {
+                    icon = '🎬';
+                    link.title = 'Video YouTube';
+                    link.style.color = '#e53e3e';
+                  } else if (isPdfLink(url)) {
+                    icon = '📄';
+                    link.title = 'Tài liệu PDF';
+                    link.style.color = '#dd6b20';
+                  } else if (isGoogleDriveLink(url)) {
+                    icon = '📁';
+                    link.title = 'Google Drive';
+                    link.style.color = '#38a169';
+                  } else {
+                    icon = '🔗';
+                    link.title = 'Liên kết';
+                  }
+                  
+                  // Tạo container để chứa icon và link
+                  const linkContainer = document.createElement('div');
+                  linkContainer.style.display = 'flex';
+                  linkContainer.style.alignItems = 'center';
+                  
+                  // Thêm icon
+                  const iconSpan = document.createElement('span');
+                  iconSpan.textContent = icon + ' ';
+                  iconSpan.style.marginRight = '4px';
+                  linkContainer.appendChild(iconSpan);
+                  
+                  // Thêm link
+                  linkContainer.appendChild(link);
+                  
+                  // Thêm vào cell
+                  td.appendChild(linkContainer);
+                  
+                  // Thêm URL đầy đủ bên dưới (nhưng ẩn khi hiển thị)
+                  const urlContainer = document.createElement('div');
+                  urlContainer.className = 'full-url';
+                  urlContainer.style.marginTop = '4px';
+                  urlContainer.style.display = 'none';
+                  
+                  const urlDisplay = document.createElement('input');
+                  urlDisplay.type = 'text';
+                  urlDisplay.value = url;
+                  urlDisplay.readOnly = true;
+                  urlDisplay.style.width = '100%';
+                  urlDisplay.style.fontSize = '0.75rem';
+                  urlDisplay.style.padding = '2px 4px';
+                  urlDisplay.style.border = '1px solid #e2e8f0';
+                  urlDisplay.style.borderRadius = '2px';
+                  urlDisplay.style.backgroundColor = '#f7fafc';
+                  
+                  // Thêm nút copy URL
+                  const copyUrlBtn = document.createElement('button');
+                  copyUrlBtn.textContent = 'Copy';
+                  copyUrlBtn.style.fontSize = '0.7rem';
+                  copyUrlBtn.style.padding = '2px 6px';
+                  copyUrlBtn.style.marginLeft = '4px';
+                  copyUrlBtn.style.backgroundColor = '#4299e1';
+                  copyUrlBtn.style.color = 'white';
+                  copyUrlBtn.style.border = 'none';
+                  copyUrlBtn.style.borderRadius = '2px';
+                  copyUrlBtn.style.cursor = 'pointer';
+                  copyUrlBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    urlDisplay.select();
+                    document.execCommand('copy');
+                    copyUrlBtn.textContent = 'Copied!';
+                    setTimeout(() => {
+                      copyUrlBtn.textContent = 'Copy';
+                    }, 1000);
+                  };
+                  
+                  // Flex container cho URL và nút copy
+                  const urlFlexContainer = document.createElement('div');
+                  urlFlexContainer.style.display = 'flex';
+                  urlFlexContainer.style.alignItems = 'center';
+                  
+                  urlFlexContainer.appendChild(urlDisplay);
+                  urlFlexContainer.appendChild(copyUrlBtn);
+                  
+                  urlContainer.appendChild(urlFlexContainer);
+                  td.appendChild(urlContainer);
+                } else {
+                  // Nếu không có URL, hiển thị text thông thường
+                  td.textContent = cell || '';
+                }
+                
+                row.appendChild(td);
+              });
+              
+              tbody.appendChild(row);
+            }
+            
+            table.appendChild(tbody);
+          }
+          
+          // Thêm các phần tử vào modal
+          tableContainer.appendChild(table);
+          
+          // Tạo container cho các nút
+          const buttonContainer = document.createElement('div');
+          buttonContainer.style.display = 'flex';
+          buttonContainer.style.justifyContent = 'flex-start';
+          buttonContainer.style.marginBottom = '20px';
+          
+          buttonContainer.appendChild(copyButton);
+          buttonContainer.appendChild(toggleUrlButton);
+          buttonContainer.appendChild(excelButton);
+          
+          modalContent.appendChild(closeButton);
+          modalContent.appendChild(header);
+          modalContent.appendChild(buttonContainer);
+          modalContent.appendChild(tableContainer);
+          
+          modalContainer.appendChild(modalContent);
+          document.body.appendChild(modalContainer);
+          
+          console.log('Đã hiển thị bảng HTML thành công');
+        } catch (error) {
+          console.error('Lỗi khi tạo bảng HTML:', error);
+          alert('Không thể hiển thị dữ liệu. Vui lòng thử lại sau.');
+          
+          // Phương án dự phòng: xuất file Excel
+          try {
+            // Tạo workbook và worksheet
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(sheetsData);
+            
+            // Đặt tên cho worksheet
+            XLSX.utils.book_append_sheet(wb, ws, sheetTitle || 'Sheet1');
+            
+            // Xuất file Excel
+            XLSX.writeFile(wb, `${fileName}.xlsx`);
+            
+            // Thông báo
+            console.log('Đã xuất file Excel thành công');
+          } catch (excelError) {
+            console.error('Lỗi khi xuất Excel:', excelError);
+            alert('Không thể xuất dữ liệu. Vui lòng thử lại sau.');
+          }
+        }
+      }
+      
+      console.log('Xuất dữ liệu thành công:', result);
+      
+    } catch (error) {
+      console.error('Lỗi khi xuất dữ liệu sang Google Sheets:', error);
+      toast.dismiss(); // Đóng toast loading nếu có
+      
+      // Hiển thị thông báo lỗi chi tiết hơn
+      toast.error(`Lỗi khi xuất dữ liệu: ${error.message || 'Đã xảy ra lỗi không xác định'}`, {
+        duration: 8000,
+        position: 'top-center'
+      });
+      
+      // Log lỗi chi tiết ra console
+      if (error.stack) {
+        console.error('Chi tiết lỗi:', error.stack);
+      }
+    }
   };
 
   // Hàm xuất bảng dữ liệu thành file Excel
@@ -1427,6 +2001,8 @@ const renderAddLinkField = (header, value) => {
 
   return (
     <div className="min-h-screen bg-gray-100 p-2 sm:p-6">
+      {/* Toaster component for notifications */}
+      <div><Toaster position="top-right" /></div>
       <div className="max-w-4xl mx-auto bg-white rounded-lg shadow p-4 sm:p-8 relative">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
@@ -1852,16 +2428,26 @@ const renderAddLinkField = (header, value) => {
                             </svg>
                             Thêm hàng
                           </button>
-                          <button
-                            onClick={() => exportTableToExcel('course-data-table', `khoa-hoc-${course.name ? course.name.replace(/\s+/g, '-') : 'data'}`)}
-                            className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
-                            title="Xuất Excel bằng thư viện SheetJS (chất lượng cao)"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                            </svg>
-                            Xuất Excel
-                          </button>
+                                                      <button
+                              onClick={() => exportTableToExcel('course-data-table', `khoa-hoc-${course.name ? course.name.replace(/\s+/g, '-') : 'data'}`)}
+                              className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
+                              title="Xuất Excel bằng thư viện SheetJS (chất lượng cao)"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                              </svg>
+                              Xuất Excel
+                            </button>
+                            <button
+                              onClick={() => exportToGoogleSheet()}
+                              className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-500 hover:bg-blue-600 ml-2"
+                              title="Hiển thị bảng dữ liệu để copy"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                              </svg>
+                              Hiển thị bảng dữ liệu
+                            </button>
                         </>
                       ) : (
                         <div className="text-sm text-gray-600 ml-7 sm:ml-0">
