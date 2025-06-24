@@ -54,6 +54,121 @@ export default function ApiSheetData({
     return url.includes('drive.google.com') || url.includes('docs.google.com');
   };
 
+  // Hàm lấy video ID từ URL YouTube
+  const getYoutubeVideoId = (url) => {
+    if (!url) return null;
+    
+    // Xử lý các định dạng URL YouTube khác nhau
+    let videoId = null;
+    
+    // Format: https://www.youtube.com/watch?v=VIDEO_ID
+    const watchMatch = url.match(/(?:\?v=|&v=|youtu\.be\/|\/v\/|\/embed\/)([^&\n?#]+)/);
+    if (watchMatch) {
+      videoId = watchMatch[1];
+    }
+    
+    return videoId;
+  };
+
+  const handleYoutubeClick = (e, url) => {
+    e.preventDefault();
+    const videoId = getYoutubeVideoId(url);
+    if (videoId) {
+      setSelectedVideo(videoId);
+    } else {
+      // Nếu không lấy được video ID, mở link trong tab mới
+      window.open(url, '_blank');
+    }
+  };
+
+  const handlePdfClick = (e, url, title = '') => {
+    e.preventDefault();
+    setSelectedPDF(url);
+    setPdfTitle(title);
+  };
+
+  // Handle general link click with proxy link creation
+  const handleLinkClick = (e, url, title = '') => {
+    e.preventDefault();
+    
+    // Xử lý proxy link trực tiếp (không cần cache)
+    if (url.startsWith('/api/proxy-link/')) {
+      window.open(url, '_blank');
+      return;
+    }
+    
+    // Handle special links directly
+    if (isYoutubeLink(url)) {
+      handleYoutubeClick(e, url);
+      return;
+    } 
+    
+    if (isPdfLink(url)) {
+      handlePdfClick(e, url, title);
+      return;
+    }
+    
+    // Tạo proxy URL bằng base64
+    const proxyUrl = createProxyLink(url);
+    if (proxyUrl) {
+      window.open(proxyUrl, '_blank');
+    } else {
+      // Fallback to original URL if proxy creation failed
+      console.warn('Không thể tạo proxy link, mở URL gốc:', url);
+      window.open(url, '_blank');
+    }
+  };
+  
+  // Hàm xử lý hyperlink trong table rendering
+  const renderHyperlinkCell = (hyperlink, cellContent, rowIndex, cellIndex) => {
+    // Xác định loại liên kết để hiển thị icon phù hợp
+    let icon = null;
+    if (isYoutubeLink(hyperlink)) {
+      icon = <span className="text-red-500 mr-1" title="YouTube Video">🎬</span>;
+    } else if (isGoogleDriveLink(hyperlink)) {
+      icon = <span className="text-blue-500 mr-1" title="Google Drive">📄</span>;
+    } else if (hyperlink.includes('docs.google.com/document')) {
+      icon = <span className="text-green-500 mr-1" title="Google Docs">📝</span>;
+    } else if (isPdfLink(hyperlink)) {
+      icon = <span className="text-red-500 mr-1" title="PDF">📕</span>;
+    } else if (hyperlink.startsWith('/api/proxy-link/')) {
+      icon = <span className="text-blue-500 mr-1" title="Secure Link">🔒</span>;
+    }
+    
+    const key = `${rowIndex}-${cellIndex}`;
+    const content = cellContent || hyperlink;
+    
+    // Hiển thị domain hoặc text thay vì URL đầy đủ
+    let displayText = content;
+    if (displayText === hyperlink) {
+      // Kiểm tra xem đã là proxy URL hoặc domain chưa
+      if (hyperlink.startsWith('/api/proxy-link/') || hyperlink.includes('/...')) {
+        displayText = 'Secure Link';
+      } else {
+        try {
+          const urlObj = new URL(hyperlink);
+          displayText = urlObj.hostname + (hyperlink.length > 30 ? '...' : '');
+        } catch (e) {
+          displayText = displayText.substring(0, 30) + (displayText.length > 30 ? '...' : '');
+        }
+      }
+    }
+    
+    return (
+      <td key={cellIndex} className="px-6 py-4 border-r border-gray-200 last:border-r-0">
+        <div>
+          <a 
+            href="#" 
+            className="text-blue-600 hover:underline"
+            onClick={(e) => handleLinkClick(e, hyperlink, content)}
+          >
+            {icon}{displayText}
+          </a>
+        </div>
+      </td>
+    );
+  };
+
   // Hàm xử lý nội dung cell để phát hiện và chuyển đổi URL thành liên kết
   const renderCellContent = (content) => {
     if (!content) return '';
@@ -127,71 +242,6 @@ export default function ApiSheetData({
     }
     
     return content;
-  };
-
-  // Hàm lấy video ID từ URL YouTube
-  const getYoutubeVideoId = (url) => {
-    if (!url) return null;
-    
-    // Xử lý các định dạng URL YouTube khác nhau
-    let videoId = null;
-    
-    // Format: https://www.youtube.com/watch?v=VIDEO_ID
-    const watchMatch = url.match(/(?:\?v=|&v=|youtu\.be\/|\/v\/|\/embed\/)([^&\n?#]+)/);
-    if (watchMatch) {
-      videoId = watchMatch[1];
-    }
-    
-    return videoId;
-  };
-
-  const handleYoutubeClick = (e, url) => {
-    e.preventDefault();
-    const videoId = getYoutubeVideoId(url);
-    if (videoId) {
-      setSelectedVideo(videoId);
-    } else {
-      // Nếu không lấy được video ID, mở link trong tab mới
-      window.open(url, '_blank');
-    }
-  };
-
-  const handlePdfClick = (e, url, title = '') => {
-    e.preventDefault();
-    setSelectedPDF(url);
-    setPdfTitle(title);
-  };
-
-  // Handle general link click with proxy link creation
-  const handleLinkClick = (e, url, title = '') => {
-    e.preventDefault();
-    
-    // Xử lý proxy link trực tiếp (không cần cache)
-    if (url.startsWith('/api/proxy-link/')) {
-      window.open(url, '_blank');
-      return;
-    }
-    
-    // Handle special links directly
-    if (isYoutubeLink(url)) {
-      handleYoutubeClick(e, url);
-      return;
-    } 
-    
-    if (isPdfLink(url)) {
-      handlePdfClick(e, url, title);
-      return;
-    }
-    
-    // Tạo proxy URL bằng base64
-    const proxyUrl = createProxyLink(url);
-    if (proxyUrl) {
-      window.open(proxyUrl, '_blank');
-    } else {
-      // Fallback to original URL if proxy creation failed
-      console.warn('Không thể tạo proxy link, mở URL gốc:', url);
-      window.open(url, '_blank');
-    }
   };
 
   // Không cần kiểm tra lỗi và trạng thái loading vì đã được xử lý ở component cha
@@ -434,54 +484,4 @@ export default function ApiSheetData({
       </div>
     </div>
   );
-}
-
-// Hàm xử lý hyperlink trong table rendering
-const renderHyperlinkCell = (hyperlink, cellContent, rowIndex, cellIndex) => {
-  // Xác định loại liên kết để hiển thị icon phù hợp
-  let icon = null;
-  if (isYoutubeLink(hyperlink)) {
-    icon = <span className="text-red-500 mr-1" title="YouTube Video">🎬</span>;
-  } else if (isGoogleDriveLink(hyperlink)) {
-    icon = <span className="text-blue-500 mr-1" title="Google Drive">📄</span>;
-  } else if (hyperlink.includes('docs.google.com/document')) {
-    icon = <span className="text-green-500 mr-1" title="Google Docs">📝</span>;
-  } else if (isPdfLink(hyperlink)) {
-    icon = <span className="text-red-500 mr-1" title="PDF">📕</span>;
-  } else if (hyperlink.startsWith('/api/proxy-link/')) {
-    icon = <span className="text-blue-500 mr-1" title="Secure Link">🔒</span>;
-  }
-  
-  const key = `${rowIndex}-${cellIndex}`;
-  const content = cellContent || hyperlink;
-  
-  // Hiển thị domain hoặc text thay vì URL đầy đủ
-  let displayText = content;
-  if (displayText === hyperlink) {
-    // Kiểm tra xem đã là proxy URL hoặc domain chưa
-    if (hyperlink.startsWith('/api/proxy-link/') || hyperlink.includes('/...')) {
-      displayText = 'Secure Link';
-    } else {
-      try {
-        const urlObj = new URL(hyperlink);
-        displayText = urlObj.hostname + (hyperlink.length > 30 ? '...' : '');
-      } catch (e) {
-        displayText = displayText.substring(0, 30) + (displayText.length > 30 ? '...' : '');
-      }
-    }
-  }
-  
-  return (
-    <td key={cellIndex} className="px-6 py-4 border-r border-gray-200 last:border-r-0">
-      <div>
-        <a 
-          href="#" 
-          className="text-blue-600 hover:underline"
-          onClick={(e) => handleLinkClick(e, hyperlink, content)}
-        >
-          {icon}{displayText}
-        </a>
-      </div>
-    </td>
-  );
-}; 
+} 
