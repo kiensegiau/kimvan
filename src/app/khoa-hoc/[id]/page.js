@@ -819,7 +819,7 @@ export default function CourseDetailPage({ params }) {
             isUpdating: false
           });
         }
-      } else {
+            } else {
         window.open(processedUrlInfo.url, '_blank');
       }
     }
@@ -1364,14 +1364,12 @@ export default function CourseDetailPage({ params }) {
                                             : isLink
                                               ? (
                                                   <a 
-                                                    onClick={(e) => {
-                                                      e.preventDefault();
-                                                      handleLinkClick(originalUrl, cell.formattedValue);
-                                                    }}
-                                                    href="#"
+                                                    href={url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
                                                     data-type={linkType}
                                                     className="inline-flex items-center text-indigo-600 font-medium hover:text-indigo-800 transition-colors duration-150 group cursor-pointer hover:underline"
-                                                    title={cell.formattedValue || (linkType === 'youtube' ? 'Video' : linkType === 'pdf' ? 'PDF' : 'Tài liệu')}
+                                                    title={url || (linkType === 'youtube' ? 'Video' : linkType === 'pdf' ? 'PDF' : 'Tài liệu')}
                                                   >
                                                     <span className="icon-container mr-1 flex-shrink-0">
                                                       {linkType === 'youtube' ? (
@@ -1400,7 +1398,7 @@ export default function CourseDetailPage({ params }) {
                                                         </span>
                                                       )}
                                                     </span>
-                                                    <span className="break-words whitespace-normal no-truncate text-sm" title={cell.formattedValue || ''}>
+                                                    <span className="break-words whitespace-normal no-truncate text-sm" title={originalUrl || ''}>
                                                       {cell.formattedValue || (linkType === 'youtube' ? 'Video' : linkType === 'pdf' ? 'PDF' : 'Tài liệu')}
                                                     </span>
                                                   </a>
