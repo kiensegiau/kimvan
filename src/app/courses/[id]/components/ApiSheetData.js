@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ArrowPathIcon } from '@heroicons/react/24/outline';
 import YouTubeModal from './YouTubeModal';
 import PDFModal from './PDFModal';
@@ -15,6 +15,17 @@ export default function ApiSheetData({
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [selectedPDF, setSelectedPDF] = useState(null);
   const [pdfTitle, setPdfTitle] = useState('');
+  
+  // Tạo proxy link từ URL thông qua Base64 encoding
+  const createProxyLink = useCallback((url) => {
+    try {
+      const base64Url = Buffer.from(url).toString('base64');
+      return `/api/proxy-link/${base64Url}`;
+    } catch (error) {
+      console.error('Lỗi khi tạo proxy link:', error);
+      return null;
+    }
+  }, []);
 
   // Kiểm tra và tải chi tiết sheet nếu cần
   useEffect(() => {
@@ -69,9 +80,8 @@ export default function ApiSheetData({
       
       return (
         <a 
-          href={url} 
-          target="_blank" 
-          rel="noopener noreferrer" 
+          href="#" 
+          onClick={(e) => handleLinkClick(e, url, displayText)}
           className="text-blue-600 hover:underline"
         >
           {icon}{displayText}
@@ -96,14 +106,22 @@ export default function ApiSheetData({
         icon = <span className="text-red-500 mr-1" title="PDF">📕</span>;
       }
       
+      // Hiển thị domain thay vì URL đầy đủ
+      let displayUrl = '';
+      try {
+        const urlObj = new URL(content);
+        displayUrl = urlObj.hostname + (content.length > 30 ? '...' : '');
+      } catch (e) {
+        displayUrl = content.substring(0, 30) + (content.length > 30 ? '...' : '');
+      }
+      
       return (
         <a 
-          href={content} 
-          target="_blank" 
-          rel="noopener noreferrer" 
+          href="#" 
+          onClick={(e) => handleLinkClick(e, content)}
           className="text-blue-600 hover:underline"
         >
-          {icon}{content}
+          {icon}{displayUrl}
         </a>
       );
     }
@@ -142,6 +160,38 @@ export default function ApiSheetData({
     e.preventDefault();
     setSelectedPDF(url);
     setPdfTitle(title);
+  };
+
+  // Handle general link click with proxy link creation
+  const handleLinkClick = (e, url, title = '') => {
+    e.preventDefault();
+    
+    // Xử lý proxy link trực tiếp (không cần cache)
+    if (url.startsWith('/api/proxy-link/')) {
+      window.open(url, '_blank');
+      return;
+    }
+    
+    // Handle special links directly
+    if (isYoutubeLink(url)) {
+      handleYoutubeClick(e, url);
+      return;
+    } 
+    
+    if (isPdfLink(url)) {
+      handlePdfClick(e, url, title);
+      return;
+    }
+    
+    // Tạo proxy URL bằng base64
+    const proxyUrl = createProxyLink(url);
+    if (proxyUrl) {
+      window.open(proxyUrl, '_blank');
+    } else {
+      // Fallback to original URL if proxy creation failed
+      console.warn('Không thể tạo proxy link, mở URL gốc:', url);
+      window.open(url, '_blank');
+    }
   };
 
   // Không cần kiểm tra lỗi và trạng thái loading vì đã được xử lý ở component cha
@@ -355,42 +405,7 @@ export default function ApiSheetData({
                         
                         // Nếu có hyperlink trong dữ liệu HTML
                         if (hyperlink) {
-                          // Xác định loại liên kết để hiển thị icon phù hợp
-                          let icon = null;
-                          if (isYoutubeLink(hyperlink)) {
-                            icon = <span className="text-red-500 mr-1" title="YouTube Video">🎬</span>;
-                          } else if (isGoogleDriveLink(hyperlink)) {
-                            icon = <span className="text-blue-500 mr-1" title="Google Drive">📄</span>;
-                          } else if (hyperlink.includes('docs.google.com/document')) {
-                            icon = <span className="text-green-500 mr-1" title="Google Docs">📝</span>;
-                          } else if (isPdfLink(hyperlink)) {
-                            icon = <span className="text-red-500 mr-1" title="PDF">📕</span>;
-                          }
-                          
-                          const key = `${rowIndex}-${cellIndex}`;
-                          const cellContent = cell || hyperlink;
-                          
-                          return (
-                            <td key={cellIndex} className="px-6 py-4 border-r border-gray-200 last:border-r-0">
-                              <div>
-                                <a 
-                                  href={hyperlink} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer" 
-                                  className="text-blue-600 hover:underline"
-                                  onClick={(e) => {
-                                    if (isYoutubeLink(hyperlink)) {
-                                      handleYoutubeClick(e, hyperlink);
-                                    } else if (isPdfLink(hyperlink)) {
-                                      handlePdfClick(e, hyperlink, cellContent);
-                                    }
-                                  }}
-                                >
-                                  {icon}{cellContent}
-                                </a>
-                              </div>
-                            </td>
-                          );
+                          return renderHyperlinkCell(hyperlink, cell, rowIndex, cellIndex);
                         }
                         
                         // Xử lý các cell thông thường
@@ -419,4 +434,54 @@ export default function ApiSheetData({
       </div>
     </div>
   );
-} 
+}
+
+// Hàm xử lý hyperlink trong table rendering
+const renderHyperlinkCell = (hyperlink, cellContent, rowIndex, cellIndex) => {
+  // Xác định loại liên kết để hiển thị icon phù hợp
+  let icon = null;
+  if (isYoutubeLink(hyperlink)) {
+    icon = <span className="text-red-500 mr-1" title="YouTube Video">🎬</span>;
+  } else if (isGoogleDriveLink(hyperlink)) {
+    icon = <span className="text-blue-500 mr-1" title="Google Drive">📄</span>;
+  } else if (hyperlink.includes('docs.google.com/document')) {
+    icon = <span className="text-green-500 mr-1" title="Google Docs">📝</span>;
+  } else if (isPdfLink(hyperlink)) {
+    icon = <span className="text-red-500 mr-1" title="PDF">📕</span>;
+  } else if (hyperlink.startsWith('/api/proxy-link/')) {
+    icon = <span className="text-blue-500 mr-1" title="Secure Link">🔒</span>;
+  }
+  
+  const key = `${rowIndex}-${cellIndex}`;
+  const content = cellContent || hyperlink;
+  
+  // Hiển thị domain hoặc text thay vì URL đầy đủ
+  let displayText = content;
+  if (displayText === hyperlink) {
+    // Kiểm tra xem đã là proxy URL hoặc domain chưa
+    if (hyperlink.startsWith('/api/proxy-link/') || hyperlink.includes('/...')) {
+      displayText = 'Secure Link';
+    } else {
+      try {
+        const urlObj = new URL(hyperlink);
+        displayText = urlObj.hostname + (hyperlink.length > 30 ? '...' : '');
+      } catch (e) {
+        displayText = displayText.substring(0, 30) + (displayText.length > 30 ? '...' : '');
+      }
+    }
+  }
+  
+  return (
+    <td key={cellIndex} className="px-6 py-4 border-r border-gray-200 last:border-r-0">
+      <div>
+        <a 
+          href="#" 
+          className="text-blue-600 hover:underline"
+          onClick={(e) => handleLinkClick(e, hyperlink, content)}
+        >
+          {icon}{displayText}
+        </a>
+      </div>
+    </td>
+  );
+}; 

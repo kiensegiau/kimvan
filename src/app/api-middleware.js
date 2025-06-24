@@ -100,5 +100,9 @@ export async function middleware(request) {
 
 // Cấu hình middleware
 export const config = {
-  matcher: ['/api/courses/:path*']
+  matcher: [
+    '/api/courses/:path*',
+    '/api/sheets/:path*',
+    '/api/proxy-link/:path*'  // Thay thế links API bằng proxy-link API
+  ]
 }; 

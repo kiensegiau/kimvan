@@ -6,6 +6,7 @@ import { ObjectId } from 'mongodb';
 import { google } from 'googleapis';
 import fs from 'fs';
 import path from 'path';
+import { authMiddleware } from '@/lib/auth';
 
 // Hàm làm sạch URL từ Google Sheets
 function cleanGoogleUrl(url) {
@@ -168,9 +169,41 @@ function removeFirstColumn(data) {
   return data;
 }
 
+// Middleware helper function to verify user authentication
+async function checkAuth(request) {
+  const user = await authMiddleware(request);
+  if (!user) {
+    return {
+      isAuthorized: false,
+      response: NextResponse.json(
+        { success: false, error: 'Unauthorized access' },
+        { status: 401 }
+      )
+    };
+  }
+  return { isAuthorized: true, user };
+}
+
+// Hàm tạo proxy URL từ URL gốc bằng base64
+function createProxyUrl(originalUrl) {
+  try {
+    const base64Url = Buffer.from(originalUrl).toString('base64');
+    return `/api/proxy-link/${base64Url}`;
+  } catch (error) {
+    console.error('Lỗi khi tạo proxy URL:', error);
+    return null;
+  }
+}
+
 // GET /api/sheets/[id] - Lấy chi tiết sheet
 export async function GET(request, { params }) {
   try {
+    // Check authentication
+    const auth = await checkAuth(request);
+    if (!auth.isAuthorized) {
+      return auth.response;
+    }
+
     const { id } = params;
     await connectDB();
     
@@ -197,11 +230,69 @@ export async function GET(request, { params }) {
     if (fetchData) {
       // Lấy dữ liệu từ Google Sheets
       const sheetData = await fetchSheetData(sheet.sheetId);
+      
+      // Tạo bản sao của sheetData để xử lý
+      const sanitizedData = JSON.parse(JSON.stringify(sheetData));
+      
+      // Xử lý và làm sạch dữ liệu trước khi gửi về client
+      // 1. Lọc dữ liệu HTML (chứa hyperlink gốc)
+      if (sanitizedData && sanitizedData.htmlData) {
+        sanitizedData.htmlData = sanitizedData.htmlData.map(row => {
+          if (row && row.values) {
+            return {
+              ...row,
+              values: row.values.map(cell => {
+                if (cell && cell.hyperlink) {
+                  // Tạo proxy URL bằng base64
+                  const proxyUrl = createProxyUrl(cell.hyperlink);
+                  return {
+                    ...cell,
+                    originalHyperlink: undefined, // Xóa URL gốc
+                    hyperlink: proxyUrl // Thay bằng proxy URL
+                  };
+                }
+                return cell;
+              })
+            };
+          }
+          return row;
+        });
+      }
+      
+      // 2. Lọc dữ liệu values (có thể chứa URL dưới dạng text)
+      if (sanitizedData && sanitizedData.values) {
+        sanitizedData.values = sanitizedData.values.map(row => {
+          return row.map(cell => {
+            // Nếu cell là URL, thay thế bằng một giá trị an toàn
+            if (typeof cell === 'string' && (
+              cell.startsWith('http://') || 
+              cell.startsWith('https://') || 
+              cell.includes('drive.google.com') || 
+              cell.includes('youtube.com')
+            )) {
+              // Tạo một proxy URL hoặc hiển thị domain
+              try {
+                const urlObj = new URL(cell);
+                return `${urlObj.hostname}/...`;
+              } catch (e) {
+                // Nếu không parse được URL, trả về giá trị ban đầu
+                return cell;
+              }
+            }
+            // Xử lý formula HYPERLINK
+            if (typeof cell === 'string' && cell.startsWith('=HYPERLINK')) {
+              return cell.replace(/=HYPERLINK\("([^"]+)"/, '=HYPERLINK("[Secure Link]"');
+            }
+            return cell;
+          });
+        });
+      }
+      
       return NextResponse.json({ 
         success: true, 
         sheet: {
           ...sheet.toObject(),
-          data: sheetData
+          data: sanitizedData
         }
       });
     }
@@ -219,6 +310,12 @@ export async function GET(request, { params }) {
 // PUT /api/sheets/[id] - Cập nhật sheet
 export async function PUT(request, { params }) {
   try {
+    // Check authentication
+    const auth = await checkAuth(request);
+    if (!auth.isAuthorized) {
+      return auth.response;
+    }
+
     const { id } = params;
     await connectDB();
     const data = await request.json();
@@ -264,6 +361,12 @@ export async function PUT(request, { params }) {
 // POST /api/sheets/[id]/related - Thêm sheet liên quan
 export async function POST(request, { params }) {
   try {
+    // Check authentication
+    const auth = await checkAuth(request);
+    if (!auth.isAuthorized) {
+      return auth.response;
+    }
+
     const { id } = params;
     await connectDB();
     const data = await request.json();
@@ -321,6 +424,12 @@ export async function POST(request, { params }) {
 // DELETE /api/sheets/[id]/related/[relatedId] - Xóa sheet liên quan
 export async function DELETE(request, { params, nextUrl }) {
   try {
+    // Check authentication
+    const auth = await checkAuth(request);
+    if (!auth.isAuthorized) {
+      return auth.response;
+    }
+
     const { id } = params;
     await connectDB();
     
