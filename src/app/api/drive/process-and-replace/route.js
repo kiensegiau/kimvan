@@ -73,8 +73,8 @@ async function downloadFromGoogleDrive(fileId) {
         
         // Thêm logo vào file PDF đã tải xuống
         try {
-          console.log('Thêm logo vào file PDF đã tải xuống bằng Chrome...');
-          await removeHeaderFooterWatermark(result.filePath, result.filePath);
+          console.log('Thêm logo vào file PDF đã tải xuống bằng Chrome (không cắt)...');
+          await addLogoToPDF(result.filePath, result.filePath);
           console.log('Đã thêm logo thành công vào file PDF đã tải xuống bằng Chrome');
         } catch (logoError) {
           console.error(`Không thể thêm logo vào file PDF: ${logoError.message}`);
@@ -140,7 +140,7 @@ async function downloadFromGoogleDrive(fileId) {
           // Thêm logo vào file PDF đã tải xuống
           try {
             console.log('Thêm logo vào file PDF đã tải xuống bằng Chrome (403 case)...');
-            await removeHeaderFooterWatermark(result.filePath, result.filePath);
+            await addLogoToPDF(result.filePath, result.filePath);
             console.log('Đã thêm logo thành công vào file PDF đã tải xuống bằng Chrome (403 case)');
           } catch (logoError) {
             console.error(`Không thể thêm logo vào file PDF (403 case): ${logoError.message}`);
@@ -416,6 +416,63 @@ async function removeHeaderFooterWatermark(inputPath, outputPath) {
   } catch (error) {
     console.error('Lỗi khi cắt header và footer và thêm logo:', error);
     throw new Error(`Không thể cắt header và footer và thêm logo: ${error.message}`);
+  }
+}
+
+/**
+ * Chỉ thêm logo vào PDF mà không cắt header và footer
+ * Sử dụng cho file PDF đã được tải bằng Chrome (đã bị cắt sẵn)
+ * @param {string} inputPath - Đường dẫn đến file PDF cần xử lý
+ * @param {string} outputPath - Đường dẫn lưu file PDF sau khi xử lý
+ */
+async function addLogoToPDF(inputPath, outputPath) {
+  try {
+    // Sử dụng thư viện pdf-lib để đọc và xử lý PDF
+    const { PDFDocument, rgb } = require('pdf-lib');
+    
+    // Đọc file PDF
+    const pdfBytes = fs.readFileSync(inputPath);
+    const pdfDoc = await PDFDocument.load(pdfBytes);
+    
+    // Đọc file logo
+    const logoPath = path.join(process.cwd(), 'nen.png');
+    const logoBytes = fs.readFileSync(logoPath);
+    const logoImage = await pdfDoc.embedPng(logoBytes);
+    const logoSize = logoImage.size();
+    
+    // Lấy số trang của PDF
+    const pageCount = pdfDoc.getPageCount();
+    console.log(`Số trang PDF (chỉ thêm logo): ${pageCount}`);
+    
+    // Xử lý từng trang PDF - chỉ thêm logo, không cắt
+    for (let i = 0; i < pageCount; i++) {
+      const page = pdfDoc.getPage(i);
+      const { width, height } = page.getSize();
+      
+      // Thêm logo vào giữa trang với kích thước rất lớn
+      const logoWidth = width * 0.8; // Logo chiếm 80% chiều rộng trang
+      const logoHeight = (logoWidth / logoSize.width) * logoSize.height;
+      const logoX = (width - logoWidth) / 2; // Căn giữa theo chiều ngang
+      const logoY = (height - logoHeight) / 2; // Căn giữa theo chiều dọc
+      
+      page.drawImage(logoImage, {
+        x: logoX,
+        y: logoY,
+        width: logoWidth,
+        height: logoHeight,
+        opacity: 0.15 // Độ mờ đục 15%
+      });
+    }
+    
+    // Lưu file PDF sau khi xử lý
+    const modifiedPdfBytes = await pdfDoc.save();
+    fs.writeFileSync(outputPath, modifiedPdfBytes);
+    
+    console.log(`Đã thêm logo vào PDF (không cắt): ${outputPath}`);
+    return true;
+  } catch (error) {
+    console.error('Lỗi khi thêm logo vào PDF:', error);
+    throw new Error(`Không thể thêm logo vào PDF: ${error.message}`);
   }
 }
 

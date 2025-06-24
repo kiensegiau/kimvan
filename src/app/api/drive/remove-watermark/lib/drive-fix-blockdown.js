@@ -30,6 +30,10 @@ const MAX_RETRIES = 3;
 const RETRY_DELAY = 5000;
 const BATCH_SIZE = 5;
 
+// Thêm biến toàn cục để quản lý các phiên Chrome đang hoạt động
+const activeBrowsers = new Map();
+const MAX_CONCURRENT_BROWSERS = 3; // Số lượng trình duyệt Chrome tối đa được phép chạy song song
+
 // Đường dẫn Chrome mặc định dựa trên hệ điều hành
 function getChromePath() {
   try {
@@ -126,6 +130,7 @@ export async function processPDF(inputPath, outputPath, config = DEFAULT_CONFIG,
       let retryCount = 0;
       const maxRetries = 3; // Tăng số lần retry lên 3
       let lastError = null;
+      let chromeStartFailed = false; // Biến cờ để theo dõi lỗi khởi động Chrome
       
       while (retryCount <= maxRetries) {
         try {
@@ -146,11 +151,23 @@ export async function processPDF(inputPath, outputPath, config = DEFAULT_CONFIG,
           if (result && result.success) {
             break;
           } else {
+            // Kiểm tra nếu Chrome không khởi động được, không thử lại nữa
+            if (result && result.chromeStartFailed) {
+              chromeStartFailed = true;
+              console.error(`❌ Chrome không thể khởi động. Dừng thử lại.`);
+              throw new Error(result.error || 'Chrome không thể khởi động');
+            }
             throw new Error(result?.error || 'Không thể tải PDF bị chặn');
           }
         } catch (downloadError) {
           lastError = downloadError;
           retryCount++;
+          
+          // Nếu Chrome không khởi động được, không thử lại nữa
+          if (chromeStartFailed) {
+            console.error(`❌ Chrome không thể khởi động. Dừng thử lại.`);
+            break;
+          }
           
           // Nếu đã hết số lần thử lại, throw lỗi
           if (retryCount > maxRetries) {
@@ -259,6 +276,151 @@ export async function processPDF(inputPath, outputPath, config = DEFAULT_CONFIG,
   }
 }
 
+// Hàm kiểm tra và lấy browser đang hoạt động hoặc tạo mới
+async function getOrCreateBrowser(profilePath, debugMode = false) {
+  try {
+    // Tạo ID duy nhất cho profilePath
+    const profileId = profilePath.replace(/[^a-zA-Z0-9]/g, '_');
+    
+    // Kiểm tra xem đã có browser cho profile này chưa
+    if (activeBrowsers.has(profileId)) {
+      const browserInfo = activeBrowsers.get(profileId);
+      
+      // Kiểm tra xem browser còn hoạt động không
+      try {
+        // Thử lấy danh sách pages để kiểm tra browser còn sống không
+        const pages = await browserInfo.browser.pages();
+        console.log(`✅ Tái sử dụng phiên Chrome đang hoạt động với ${pages.length} tab`);
+        
+        // Tăng số lượng tham chiếu
+        browserInfo.refCount += 1;
+        return { browser: browserInfo.browser, isNew: false, profileId };
+      } catch (checkError) {
+        console.log(`⚠️ Phiên Chrome cũ không còn hoạt động, tạo mới: ${checkError.message}`);
+        // Browser không còn hoạt động, xóa khỏi map
+        activeBrowsers.delete(profileId);
+      }
+    }
+    
+    // Kiểm tra số lượng browser đang hoạt động
+    if (activeBrowsers.size >= MAX_CONCURRENT_BROWSERS) {
+      console.log(`⚠️ Đã đạt giới hạn ${MAX_CONCURRENT_BROWSERS} phiên Chrome đang chạy, đợi...`);
+      
+      // Tìm browser ít được sử dụng nhất để đóng
+      let leastUsedBrowser = null;
+      let minRefCount = Infinity;
+      
+      for (const [id, info] of activeBrowsers.entries()) {
+        if (info.refCount < minRefCount) {
+          minRefCount = info.refCount;
+          leastUsedBrowser = id;
+        }
+      }
+      
+      // Đóng browser ít sử dụng nhất
+      if (leastUsedBrowser) {
+        try {
+          const browserToClose = activeBrowsers.get(leastUsedBrowser);
+          console.log(`🔄 Đóng phiên Chrome ít sử dụng nhất để giải phóng tài nguyên`);
+          await browserToClose.browser.close();
+          activeBrowsers.delete(leastUsedBrowser);
+        } catch (closeError) {
+          console.warn(`⚠️ Lỗi khi đóng phiên Chrome ít sử dụng: ${closeError.message}`);
+          activeBrowsers.delete(leastUsedBrowser);
+        }
+      }
+    }
+    
+    // Tạo browser mới
+    const chromePath = getChromePath();
+    console.log(`🌐 Khởi động Chrome mới: ${chromePath}`);
+    
+    const browser = await puppeteer.launch({
+      headless: debugMode ? false : 'new',
+      channel: "chrome",
+      executablePath: chromePath,
+      args: [
+        "--start-maximized",
+        `--user-data-dir=${profilePath}`,
+        "--enable-extensions",
+        "--remote-debugging-port=0", // Sử dụng cổng ngẫu nhiên để tránh xung đột
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-web-security",
+        "--disable-features=IsolateOrigins,site-per-process",
+        "--disable-site-isolation-trials",
+        "--disable-features=BlockInsecurePrivateNetworkRequests",
+        "--disable-features=SameSiteByDefaultCookies,CookiesWithoutSameSiteMustBeSecure",
+        "--no-first-run",
+        "--no-default-browser-check",
+        "--disable-popup-blocking",
+        "--disable-notifications",
+        "--disable-infobars",
+        "--disable-translate",
+        "--allow-running-insecure-content",
+        "--password-store=basic",
+        "--use-fake-ui-for-media-stream",
+        "--use-fake-device-for-media-stream",
+        "--allow-file-access-from-files",
+        "--allow-insecure-localhost",
+        "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+        "--disable-blink-features=AutomationControlled"
+      ],
+      defaultViewport: null,
+      ignoreDefaultArgs: ["--enable-automation"],
+      timeout: 180000,
+      slowMo: 50
+    });
+    
+    // Lưu browser vào map
+    activeBrowsers.set(profileId, {
+      browser,
+      refCount: 1,
+      createdAt: Date.now()
+    });
+    
+    return { browser, isNew: true, profileId };
+  } catch (error) {
+    console.error(`❌ Lỗi khi tạo/lấy phiên Chrome: ${error.message}`);
+    throw error;
+  }
+}
+
+// Hàm giải phóng browser khi không còn sử dụng
+async function releaseBrowser(profileId, forceClose = false) {
+  if (!activeBrowsers.has(profileId)) return;
+  
+  const browserInfo = activeBrowsers.get(profileId);
+  browserInfo.refCount -= 1;
+  
+  // Nếu không còn tham chiếu hoặc yêu cầu đóng cưỡng bức
+  if (browserInfo.refCount <= 0 || forceClose) {
+    try {
+      console.log(`🔄 Đóng phiên Chrome không còn sử dụng (profileId: ${profileId})`);
+      await browserInfo.browser.close();
+    } catch (closeError) {
+      console.warn(`⚠️ Lỗi khi đóng phiên Chrome: ${closeError.message}`);
+    } finally {
+      activeBrowsers.delete(profileId);
+    }
+  }
+}
+
+// Hàm dọn dẹp các browser không sử dụng sau một thời gian
+setInterval(() => {
+  const now = Date.now();
+  const MAX_IDLE_TIME = 10 * 60 * 1000; // 10 phút
+  
+  for (const [profileId, browserInfo] of activeBrowsers.entries()) {
+    // Nếu không còn tham chiếu và đã tồn tại quá lâu
+    if (browserInfo.refCount <= 0 && (now - browserInfo.createdAt > MAX_IDLE_TIME)) {
+      releaseBrowser(profileId, true).catch(err => {
+        console.warn(`⚠️ Lỗi khi dọn dẹp browser: ${err.message}`);
+      });
+    }
+  }
+}, 5 * 60 * 1000); // Kiểm tra mỗi 5 phút
+
 /**
  * Tải file PDF từ Google Drive bị chặn tải xuống
  * Sử dụng puppeteer để mở PDF viewer và chụp lại các trang
@@ -276,6 +438,8 @@ export async function downloadBlockedPDF(fileId, fileName, tempDir, watermarkCon
   const pageRequests = new Map();
   let cookies = null;
   let userAgent = null;
+  let chromeStartFailed = false;
+  let browserProfileId = null;
   
   // Tạo thư mục tạm nếu chưa tồn tại
   if (!tempDir) {
@@ -298,123 +462,76 @@ export async function downloadBlockedPDF(fileId, fileName, tempDir, watermarkCon
     throw new Error(`Không thể tạo thư mục con: ${mkdirError.message}`);
   }
   
-      // Tạo thư mục hồ sơ cho Chrome
-    let profilePath;
-    try {
-      profilePath = createChromeUserProfile();
-    } catch (profileError) {
-      console.error(`Lỗi tạo hồ sơ Chrome: ${profileError.message}`);
-      profilePath = path.join(tempDir, 'chrome-profile');
-      fs.mkdirSync(profilePath, { recursive: true });
-    }
-    
-    // Lưu thông tin cấu hình
-    const debugMode = watermarkConfig && watermarkConfig.debugMode === true;
+  // Tạo thư mục hồ sơ cho Chrome
+  let profilePath;
+  try {
+    profilePath = createChromeUserProfile();
+  } catch (profileError) {
+    console.error(`Lỗi tạo hồ sơ Chrome: ${profileError.message}`);
+    profilePath = path.join(tempDir, 'chrome-profile');
+    fs.mkdirSync(profilePath, { recursive: true });
+  }
+  
+  // Lưu thông tin cấu hình
+  const debugMode = watermarkConfig && watermarkConfig.debugMode === true;
   
   const outputPath = path.join(tempDir, `${path.basename(fileName, '.pdf')}_clean.pdf`);
   
   // Ghi lại thời gian bắt đầu
   const startTime = Date.now();
   
-      // Kiểm tra xem có bỏ qua xử lý watermark không
-    const skipProcessing = watermarkConfig && (
-      watermarkConfig.skipWatermarkRemoval || 
-      watermarkConfig.skipImageProcessing || 
-      watermarkConfig.preserveOriginal || 
-      watermarkConfig.noProcessing
-    );
-    
-    // Log rõ ràng về chế độ xử lý
-    if (skipProcessing) {
-      console.log(`⚠️ CHẾ ĐỘ KHÔNG XỬ LÝ WATERMARK: Sẽ tải file gốc không xử lý watermark`);
-    } else {
-      console.log(`🔧 CHẾ ĐỘ XỬ LÝ WATERMARK: Sẽ xử lý watermark trên file`);
-    }
-    
-    // Kết hợp config mặc định với config được truyền vào
-    const config = { 
-      ...DEFAULT_CONFIG, 
-      ...watermarkConfig,
-      // Thêm cài đặt đặc biệt cho file bị khóa
-      isBlockedFile: true,
-      enhancedMode: !skipProcessing, // Tắt chế độ nâng cao nếu bỏ qua xử lý
-      // Điều chỉnh các thông số để tăng độ nét và giảm mức độ xử lý watermark
-      brightnessBoost: skipProcessing ? 1.0 : (watermarkConfig.brightnessBoost || 1.05),
-      contrastBoost: skipProcessing ? 1.0 : (watermarkConfig.contrastBoost || 1.25),
-      sharpenAmount: skipProcessing ? 0 : (watermarkConfig.sharpenAmount || 1.8),
-      saturationAdjust: skipProcessing ? 1.0 : (watermarkConfig.saturationAdjust || 1.3),
-      preserveColors: skipProcessing ? true : (watermarkConfig.preserveColors !== undefined ? watermarkConfig.preserveColors : true),
-      extraWhitening: skipProcessing ? false : (watermarkConfig.extraWhitening || false),
-      aggressiveWatermarkRemoval: skipProcessing ? false : (watermarkConfig.aggressiveWatermarkRemoval || false),
-      // Thêm flag đặc biệt để bỏ qua xử lý
-      skipProcessing: skipProcessing
-    };
+  // Kiểm tra xem có bỏ qua xử lý watermark không
+  const skipProcessing = watermarkConfig && (
+    watermarkConfig.skipWatermarkRemoval || 
+    watermarkConfig.skipImageProcessing || 
+    watermarkConfig.preserveOriginal || 
+    watermarkConfig.noProcessing
+  );
   
-  let fileSize = 0; // Khai báo fileSize ở phạm vi rộng hơn
+  // Log rõ ràng về chế độ xử lý
+  if (skipProcessing) {
+    console.log(`⚠️ CHẾ ĐỘ KHÔNG XỬ LÝ WATERMARK: Sẽ tải file gốc không xử lý watermark`);
+  } else {
+    console.log(`🔧 CHẾ ĐỘ XỬ LÝ WATERMARK: Sẽ xử lý watermark trên file`);
+  }
+  
+  // Kết hợp config mặc định với config được truyền vào
+  const config = { 
+    ...DEFAULT_CONFIG, 
+    ...watermarkConfig,
+    isBlockedFile: true,
+    enhancedMode: !skipProcessing,
+    brightnessBoost: skipProcessing ? 1.0 : (watermarkConfig.brightnessBoost || 1.05),
+    contrastBoost: skipProcessing ? 1.0 : (watermarkConfig.contrastBoost || 1.25),
+    sharpenAmount: skipProcessing ? 0 : (watermarkConfig.sharpenAmount || 1.8),
+    saturationAdjust: skipProcessing ? 1.0 : (watermarkConfig.saturationAdjust || 1.3),
+    preserveColors: skipProcessing ? true : (watermarkConfig.preserveColors !== undefined ? watermarkConfig.preserveColors : true),
+    extraWhitening: skipProcessing ? false : (watermarkConfig.extraWhitening || false),
+    aggressiveWatermarkRemoval: skipProcessing ? false : (watermarkConfig.aggressiveWatermarkRemoval || false),
+    skipProcessing: skipProcessing
+  };
+  
+  let fileSize = 0;
   
   try {
     console.log(`🔍 Bắt đầu xử lý file bị chặn: ${fileName}`);
     
-    // Cấu hình mở rộng cho Puppeteer
-    let chromePath;
+    // Sử dụng hàm getOrCreateBrowser thay vì khởi tạo trực tiếp
     try {
-      chromePath = getChromePath();
-      console.log(`🌐 Sử dụng Chrome: ${chromePath}`);
-    } catch (chromePathError) {
-      console.error(`Lỗi tìm Chrome: ${chromePathError.message}`);
-      throw new Error(`Không tìm thấy Chrome: ${chromePathError.message}`);
-    }
-    
-    // Khởi tạo trình duyệt với cấu hình nâng cao
-    try {
-      browser = await puppeteer.launch({
-        headless: debugMode ? false : 'new', // Hiển thị trình duyệt nếu ở chế độ debug
-        channel: "chrome",
-        executablePath: chromePath,
-        args: [
-          "--start-maximized",
-          `--user-data-dir=${profilePath}`,
-          "--enable-extensions",
-          "--remote-debugging-port=9222",
-          "--no-sandbox",
-          "--disable-setuid-sandbox",
-          "--disable-web-security",
-          "--disable-features=IsolateOrigins,site-per-process",
-          "--disable-site-isolation-trials",
-          "--disable-features=BlockInsecurePrivateNetworkRequests",
-          "--disable-features=SameSiteByDefaultCookies,CookiesWithoutSameSiteMustBeSecure",
-          "--no-first-run",
-          "--no-default-browser-check",
-          "--disable-popup-blocking",
-          "--disable-notifications",
-          "--disable-infobars",
-          "--disable-translate",
-          "--allow-running-insecure-content",
-          "--password-store=basic",
-          // Thêm các flag mới để ngăn thông báo bảo mật
-          "--use-fake-ui-for-media-stream",
-          "--use-fake-device-for-media-stream",
-          "--allow-file-access-from-files",
-          "--allow-insecure-localhost",
-          "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
-          "--disable-blink-features=AutomationControlled"
-        ],
-        defaultViewport: null,
-        ignoreDefaultArgs: ["--enable-automation"],
-        // Tăng timeout lên 180s cho máy yếu
-        timeout: 180000, // 3 phút
-        // Thêm slowMo để làm chậm puppeteer cho máy yếu
-        slowMo: 50, // Giảm từ 100ms xuống 50ms để tăng tốc nhưng vẫn đảm bảo ổn định
-      });
+      const browserResult = await getOrCreateBrowser(profilePath, debugMode);
+      browser = browserResult.browser;
+      browserProfileId = browserResult.profileId;
+      console.log(`🌐 ${browserResult.isNew ? 'Tạo mới' : 'Tái sử dụng'} phiên Chrome thành công`);
     } catch (browserError) {
       console.error(`Lỗi khởi tạo trình duyệt: ${browserError.message}`);
+      chromeStartFailed = true;
       throw new Error(`Không thể khởi động Chrome: ${browserError.message}`);
     }
     
     // Tạo tab mới
     try {
       page = await browser.newPage();
-      await page.setDefaultNavigationTimeout(120000); // 2 phút timeout cho mỗi lần navigation
+      await page.setDefaultNavigationTimeout(120000);
     } catch (pageError) {
       console.error(`Lỗi tạo tab mới: ${pageError.message}`);
       throw new Error(`Không thể tạo tab trình duyệt: ${pageError.message}`);
@@ -456,7 +573,7 @@ export async function downloadBlockedPDF(fileId, fileName, tempDir, watermarkCon
       console.log(`🌐 Mở PDF viewer cho file: ${fileId}`);
       await page.goto(`https://drive.google.com/file/d/${fileId}/view`, {
         waitUntil: 'networkidle2',
-        timeout: 300000 // Tăng timeout cho trang để tải trọn vẹn (5 phút)
+        timeout: 300000
       });
     } catch (navigationError) {
       console.error(`Lỗi mở file PDF từ Drive: ${navigationError.message}`);
@@ -550,7 +667,7 @@ export async function downloadBlockedPDF(fileId, fileName, tempDir, watermarkCon
         throw new Error('Không thể tạo file PDF');
       }
       
-      fileSize = fs.statSync(outputPath).size; // Sử dụng biến đã khai báo bên ngoài
+      fileSize = fs.statSync(outputPath).size;
       if (fileSize === 0) {
         throw new Error('File PDF được tạo nhưng kích thước bằng 0');
       }
@@ -571,40 +688,38 @@ export async function downloadBlockedPDF(fileId, fileName, tempDir, watermarkCon
       success: true,
       filePath: outputPath,
       fileName: `${path.basename(fileName, '.pdf')}_clean.pdf`,
-      originalSize: 0, // Không thể biết kích thước gốc
+      originalSize: 0,
       processedSize: fileSize,
       processingTime: processingTime.toFixed(2),
       pageCount: pageCount,
-      emptyFile: pageCount === 0
+      emptyFile: pageCount === 0,
+      chromeStartFailed: chromeStartFailed
     };
   } catch (error) {
     console.error(`❌ Lỗi tải file bị chặn: ${error.message}`);
     return {
       success: false,
-      error: error.message
+      error: error.message,
+      chromeStartFailed: chromeStartFailed
     };
-  }   finally {
-    // Đóng browser nếu còn mở, trừ khi đang trong chế độ debug và không có trang nào được phát hiện
-    const shouldKeepBrowserOpen = (watermarkConfig && watermarkConfig.keepChromeOpen === true && pageRequests && pageRequests.size === 0);
-    
-    if (page && !shouldKeepBrowserOpen) {
+  } finally {
+    // Giải phóng browser thay vì đóng trực tiếp
+    if (browserProfileId) {
       try {
-        await page.close().catch(() => {});
-      } catch (closeError) {
-        console.warn(`Lỗi đóng tab: ${closeError.message}`);
+        // Đóng page nếu còn mở
+        if (page) {
+          try {
+            await page.close().catch(() => {});
+          } catch (closeError) {
+            console.warn(`Lỗi đóng tab: ${closeError.message}`);
+          }
+        }
+        
+        // Giải phóng browser
+        await releaseBrowser(browserProfileId, false);
+      } catch (releaseError) {
+        console.warn(`⚠️ Lỗi khi giải phóng phiên Chrome: ${releaseError.message}`);
       }
-    }
-    
-    if (browser && !shouldKeepBrowserOpen) {
-      try {
-        await browser.close().catch(() => {});
-      } catch (closeError) {
-        console.warn(`Lỗi đóng trình duyệt: ${closeError.message}`);
-      }
-    }
-    
-    if (shouldKeepBrowserOpen) {
-      console.log(`⚠️ KHÔNG PHÁT HIỆN TRANG NÀO! Chrome được giữ mở để debug. Vui lòng kiểm tra trình duyệt.`);
     }
     
     // Dọn dẹp các file ảnh tạm
@@ -622,11 +737,9 @@ export async function downloadBlockedPDF(fileId, fileName, tempDir, watermarkCon
       console.warn(`⚠️ Lỗi khi dọn dẹp ảnh tạm: ${cleanupError.message}`);
     }
     
-    // Dọn dẹp thư mục hồ sơ Chrome
+    // Giữ lại thư mục hồ sơ Chrome
     try {
-      // Không xóa thư mục hồ sơ Chrome nữa để giữ lại dữ liệu đăng nhập
       console.log(`✅ Giữ lại hồ sơ Chrome để lưu đăng nhập cho lần sau: ${profilePath}`);
-      // cleanupTempFiles(profilePath);
     } catch (cleanupError) {
       console.warn(`⚠️ Lỗi khi dọn dẹp thư mục hồ sơ Chrome: ${cleanupError.message}`);
     }
