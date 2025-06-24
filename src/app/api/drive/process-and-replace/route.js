@@ -427,10 +427,10 @@ const API_ENDPOINT = {
   CHECK_CREDITS: 'https://techhk.aoscdn.com/api/customers/coins'
 };
 
-// Thời gian tối đa chờ xử lý từ API (900 giây = 15 phút)
-const MAX_POLLING_TIME = 900000;
-// Khoảng thời gian giữa các lần kiểm tra trạng thái (10 giây)
-const POLLING_INTERVAL = 10000;
+// Thời gian tối đa chờ xử lý từ API (1800 giây = 30 phút)
+const MAX_POLLING_TIME = 1800000;
+// Khoảng thời gian giữa các lần kiểm tra trạng thái (15 giây)
+const POLLING_INTERVAL = 15000;
 
 /**
  * Tạo nhiệm vụ xóa watermark trên API bên ngoài
@@ -448,8 +448,17 @@ async function createWatermarkRemovalTask(filePath, apiKey) {
     const fileStats = fs.statSync(filePath);
     const fileSizeMB = fileStats.size / (1024 * 1024);
     
-    // Tính toán timeout dựa trên kích thước file (tối thiểu 120 giây, thêm 60 giây cho mỗi 10MB)
-    const dynamicTimeout = Math.max(120000, 60000 * Math.ceil(fileSizeMB / 10));
+    // Tính toán timeout dựa trên kích thước file
+    // - Tối thiểu 180 giây (3 phút)
+    // - Thêm 120 giây (2 phút) cho mỗi 10MB
+    // - Cho file lớn (>50MB), thêm 180 giây (3 phút) cho mỗi 10MB
+    let dynamicTimeout;
+    if (fileSizeMB > 50) {
+      dynamicTimeout = Math.max(180000, 180000 * Math.ceil(fileSizeMB / 10));
+    } else {
+      dynamicTimeout = Math.max(180000, 120000 * Math.ceil(fileSizeMB / 10));
+    }
+    
     console.log(`Kích thước file: ${fileSizeMB.toFixed(2)} MB, đặt timeout: ${dynamicTimeout/1000} giây`);
     
     const response = await axios.post(API_ENDPOINT.CREATE_TASK, form, {
@@ -492,7 +501,7 @@ async function checkTaskStatus(taskId, apiKey) {
       headers: {
         'X-API-KEY': apiKey
       },
-      timeout: 180000 // 180 giây timeout (3 phút)
+      timeout: 300000 // 300 giây timeout (5 phút)
     });
     
     if (response.data?.status === 200) {
@@ -529,9 +538,17 @@ async function checkTaskStatus(taskId, apiKey) {
  */
 async function pollTaskStatus(taskId, apiKey, startTime = Date.now(), retryCount = 0, fileSizeMB = 0, lastProgressUpdate = 0, lastProgress = 0, stuckCounter = 0) {
   // Tính toán thời gian chờ tối đa dựa trên kích thước file
-  const maxPollingTime = fileSizeMB > 10 ? 
-    Math.max(MAX_POLLING_TIME, fileSizeMB * 20000) : // 20 giây cho mỗi MB nếu file > 10MB
-    MAX_POLLING_TIME;
+  let maxPollingTime;
+  if (fileSizeMB > 50) {
+    // File rất lớn (>50MB): 30 giây cho mỗi MB
+    maxPollingTime = Math.max(MAX_POLLING_TIME, fileSizeMB * 30000);
+  } else if (fileSizeMB > 10) {
+    // File lớn (>10MB): 25 giây cho mỗi MB
+    maxPollingTime = Math.max(MAX_POLLING_TIME, fileSizeMB * 25000);
+  } else {
+    // File nhỏ: Sử dụng thời gian mặc định
+    maxPollingTime = MAX_POLLING_TIME;
+  }
   
   // Hiển thị thông tin về thời gian đã chờ
   const elapsedSeconds = Math.round((Date.now() - startTime) / 1000);
@@ -587,14 +604,14 @@ async function pollTaskStatus(taskId, apiKey, startTime = Date.now(), retryCount
       if (status.progress === lastProgress && lastProgress > 0) {
         newStuckCounter++;
         
-        // Nếu tiến độ bị kẹt ở 21% quá lâu (khoảng 5 phút), thử khởi động lại
-        if (status.progress === 21 && newStuckCounter >= 30) {
+        // Nếu tiến độ bị kẹt ở 21% quá lâu (khoảng 3 phút), thử khởi động lại
+        if (status.progress === 21 && newStuckCounter >= 12) {
           console.log(`⚠️ Phát hiện tiến độ bị kẹt ở 21% trong ${Math.round(newStuckCounter * POLLING_INTERVAL / 1000)} giây. Thử khởi động lại quá trình...`);
           throw new Error('PROGRESS_STUCK_AT_21');
         }
         
         // Nếu tiến độ không thay đổi quá lâu (khoảng 10 phút), thử khởi động lại
-        if (newStuckCounter >= 60) {
+        if (newStuckCounter >= 40) {
           console.log(`⚠️ Phát hiện tiến độ bị kẹt ở ${status.progress}% trong ${Math.round(newStuckCounter * POLLING_INTERVAL / 1000)} giây. Thử khởi động lại quá trình...`);
           throw new Error('PROGRESS_STUCK');
         }
@@ -673,7 +690,7 @@ async function downloadProcessedFile(fileUrl, outputPath) {
       method: 'GET',
       url: fileUrl,
       responseType: 'stream',
-      timeout: 300000 // 300 giây (5 phút) timeout cho tải xuống
+      timeout: 600000 // 600 giây (10 phút) timeout cho tải xuống
     });
     
     const writer = fs.createWriteStream(outputPath);
@@ -1229,8 +1246,8 @@ export async function POST(request) {
   console.log('============== BẮT ĐẦU API XỬ LÝ VÀ THAY THẾ FILE GOOGLE DRIVE ==============');
   
   let tempDir = null;
-  // Đặt timeout cho toàn bộ quá trình (30 phút)
-  const GLOBAL_TIMEOUT = 30 * 60 * 1000;
+  // Đặt timeout cho toàn bộ quá trình (60 phút)
+  const GLOBAL_TIMEOUT = 60 * 60 * 1000;
   const startTime = Date.now();
   
   // Tạo promise với timeout
