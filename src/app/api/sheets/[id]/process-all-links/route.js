@@ -284,7 +284,7 @@ export async function POST(request, { params }) {
         console.log(`\n===== Đang xử lý URL: ${urlGroup.originalUrl} (${urlGroup.cells.length} ô) =====`);
         
         // Sử dụng hàm processLink với retry và timeout
-        const processResult = await processLink(baseUrl, urlGroup.originalUrl, cookie, 2, 90000); // 90 giây timeout, 2 lần retry
+        const processResult = await processLink(baseUrl, urlGroup.originalUrl, cookie, 2, 500000); // 90 giây timeout, 2 lần retry
         
         // Tạo giá trị mới cho ô
         const newUrl = processResult.processedLink;
