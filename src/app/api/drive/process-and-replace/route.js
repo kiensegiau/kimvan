@@ -427,10 +427,10 @@ const API_ENDPOINT = {
   CHECK_CREDITS: 'https://techhk.aoscdn.com/api/customers/coins'
 };
 
-// Thời gian tối đa chờ xử lý từ API (600 giây = 10 phút)
-const MAX_POLLING_TIME = 600000;
-// Khoảng thời gian giữa các lần kiểm tra trạng thái (5 giây)
-const POLLING_INTERVAL = 5000;
+// Thời gian tối đa chờ xử lý từ API (900 giây = 15 phút)
+const MAX_POLLING_TIME = 900000;
+// Khoảng thời gian giữa các lần kiểm tra trạng thái (10 giây)
+const POLLING_INTERVAL = 10000;
 
 /**
  * Tạo nhiệm vụ xóa watermark trên API bên ngoài
@@ -448,8 +448,8 @@ async function createWatermarkRemovalTask(filePath, apiKey) {
     const fileStats = fs.statSync(filePath);
     const fileSizeMB = fileStats.size / (1024 * 1024);
     
-    // Tính toán timeout dựa trên kích thước file (tối thiểu 90 giây, thêm 30 giây cho mỗi 10MB)
-    const dynamicTimeout = Math.max(90000, 30000 * Math.ceil(fileSizeMB / 10));
+    // Tính toán timeout dựa trên kích thước file (tối thiểu 120 giây, thêm 60 giây cho mỗi 10MB)
+    const dynamicTimeout = Math.max(120000, 60000 * Math.ceil(fileSizeMB / 10));
     console.log(`Kích thước file: ${fileSizeMB.toFixed(2)} MB, đặt timeout: ${dynamicTimeout/1000} giây`);
     
     const response = await axios.post(API_ENDPOINT.CREATE_TASK, form, {
@@ -492,7 +492,7 @@ async function checkTaskStatus(taskId, apiKey) {
       headers: {
         'X-API-KEY': apiKey
       },
-      timeout: 120000 // 120 giây timeout
+      timeout: 180000 // 180 giây timeout (3 phút)
     });
     
     if (response.data?.status === 200) {
@@ -525,11 +525,12 @@ async function checkTaskStatus(taskId, apiKey) {
  * @param {number} fileSizeMB - Kích thước file tính bằng MB (để điều chỉnh thời gian chờ)
  * @param {number} lastProgressUpdate - Thời gian của lần cập nhật tiến độ gần nhất
  * @param {number} lastProgress - Giá trị tiến độ gần nhất
+ * @param {number} stuckCounter - Số lần tiến độ không thay đổi (mặc định là 0)
  */
-async function pollTaskStatus(taskId, apiKey, startTime = Date.now(), retryCount = 0, fileSizeMB = 0, lastProgressUpdate = 0, lastProgress = 0) {
+async function pollTaskStatus(taskId, apiKey, startTime = Date.now(), retryCount = 0, fileSizeMB = 0, lastProgressUpdate = 0, lastProgress = 0, stuckCounter = 0) {
   // Tính toán thời gian chờ tối đa dựa trên kích thước file
   const maxPollingTime = fileSizeMB > 10 ? 
-    Math.max(MAX_POLLING_TIME, fileSizeMB * 15000) : // 15 giây cho mỗi MB nếu file > 10MB
+    Math.max(MAX_POLLING_TIME, fileSizeMB * 20000) : // 20 giây cho mỗi MB nếu file > 10MB
     MAX_POLLING_TIME;
   
   // Hiển thị thông tin về thời gian đã chờ
@@ -539,10 +540,10 @@ async function pollTaskStatus(taskId, apiKey, startTime = Date.now(), retryCount
   // Kiểm tra nếu đã quá thời gian chờ
   if (Date.now() - startTime > maxPollingTime) {
     // Nếu chưa thử lại quá nhiều lần và chưa quá thời gian chờ quá nhiều
-    if (retryCount < 3 && Date.now() - startTime < maxPollingTime * 1.5) {
+    if (retryCount < 5 && Date.now() - startTime < maxPollingTime * 1.5) {
       console.log(`Đã quá thời gian chờ xử lý từ API (${elapsedSeconds} giây / tối đa ${maxWaitSeconds} giây), thử lại lần ${retryCount + 1}...`);
       // Thử lại một lần nữa với thời gian bắt đầu mới
-      return pollTaskStatus(taskId, apiKey, Date.now(), retryCount + 1, fileSizeMB, 0, lastProgress);
+      return pollTaskStatus(taskId, apiKey, Date.now(), retryCount + 1, fileSizeMB, 0, lastProgress, 0);
     }
     throw new Error(`Quá thời gian chờ xử lý từ API (${elapsedSeconds} giây / tối đa ${maxWaitSeconds} giây)`);
   }
@@ -581,6 +582,27 @@ async function pollTaskStatus(taskId, apiKey, startTime = Date.now(), retryCount
       const progressChanged = status.progress !== lastProgress;
       const timeSinceLastUpdate = now - lastProgressUpdate;
       
+      // Kiểm tra xem tiến độ có bị kẹt không
+      let newStuckCounter = stuckCounter;
+      if (status.progress === lastProgress && lastProgress > 0) {
+        newStuckCounter++;
+        
+        // Nếu tiến độ bị kẹt ở 21% quá lâu (khoảng 5 phút), thử khởi động lại
+        if (status.progress === 21 && newStuckCounter >= 30) {
+          console.log(`⚠️ Phát hiện tiến độ bị kẹt ở 21% trong ${Math.round(newStuckCounter * POLLING_INTERVAL / 1000)} giây. Thử khởi động lại quá trình...`);
+          throw new Error('PROGRESS_STUCK_AT_21');
+        }
+        
+        // Nếu tiến độ không thay đổi quá lâu (khoảng 10 phút), thử khởi động lại
+        if (newStuckCounter >= 60) {
+          console.log(`⚠️ Phát hiện tiến độ bị kẹt ở ${status.progress}% trong ${Math.round(newStuckCounter * POLLING_INTERVAL / 1000)} giây. Thử khởi động lại quá trình...`);
+          throw new Error('PROGRESS_STUCK');
+        }
+      } else if (progressChanged) {
+        // Nếu tiến độ thay đổi, đặt lại bộ đếm
+        newStuckCounter = 0;
+      }
+      
       // Hiển thị tiến độ nếu có và chỉ khi có thay đổi hoặc đã qua 10 giây
       if (status.progress && (progressChanged || timeSinceLastUpdate > 10000)) {
         // Tính toán thời gian dự kiến còn lại dựa trên tiến độ
@@ -596,28 +618,40 @@ async function pollTaskStatus(taskId, apiKey, startTime = Date.now(), retryCount
         }
         
         // Cập nhật thời gian và giá trị tiến độ gần nhất
-        return pollTaskStatus(taskId, apiKey, startTime, retryCount, fileSizeMB, now, status.progress);
+        return pollTaskStatus(taskId, apiKey, startTime, retryCount, fileSizeMB, now, status.progress, newStuckCounter);
       } else if (status.state === 0) {
         // Đang xếp hàng
         if (timeSinceLastUpdate > 15000) { // Hiển thị thông báo mỗi 15 giây
           console.log(`⏳ Đang xếp hàng... (đã chờ ${elapsedSeconds} giây)`);
-          return pollTaskStatus(taskId, apiKey, startTime, retryCount, fileSizeMB, now, lastProgress);
+          return pollTaskStatus(taskId, apiKey, startTime, retryCount, fileSizeMB, now, lastProgress, newStuckCounter);
         }
       } else if (status.state >= 2 && status.state <= 5) {
         // Đang xử lý, không có thông tin tiến độ
         if (timeSinceLastUpdate > 15000) { // Hiển thị thông báo mỗi 15 giây
           console.log(`⚙️ Đang xử lý... (trạng thái: ${status.state}, đã chờ ${elapsedSeconds} giây)`);
-          return pollTaskStatus(taskId, apiKey, startTime, retryCount, fileSizeMB, now, lastProgress);
+          return pollTaskStatus(taskId, apiKey, startTime, retryCount, fileSizeMB, now, lastProgress, newStuckCounter);
         }
       }
     }
   } catch (error) {
+    // Kiểm tra lỗi tiến độ bị kẹt
+    if (error.message === 'PROGRESS_STUCK_AT_21' || error.message === 'PROGRESS_STUCK') {
+      if (retryCount < 5) {
+        console.log(`⚠️ Tiến độ bị kẹt, thử lại lần ${retryCount + 1}... (đã chờ ${elapsedSeconds} giây)`);
+        // Chờ một khoảng thời gian dài hơn trước khi thử lại
+        await new Promise(resolve => setTimeout(resolve, POLLING_INTERVAL * 3));
+        return pollTaskStatus(taskId, apiKey, Date.now(), retryCount + 1, fileSizeMB, 0, 0, 0);
+      } else {
+        throw new Error(`Tiến độ bị kẹt quá nhiều lần sau ${elapsedSeconds} giây, không thể tiếp tục xử lý`);
+      }
+    }
+    
     // Nếu lỗi là timeout và chưa thử lại quá nhiều lần
-    if ((error.message.includes('timeout') || error.code === 'ETIMEDOUT') && retryCount < 3) {
-      console.log(`Lỗi timeout khi kiểm tra trạng thái, thử lại lần ${retryCount + 1}... (đã chờ ${elapsedSeconds} giây)`);
-      // Chờ một khoảng thời gian trước khi thử lại
-      await new Promise(resolve => setTimeout(resolve, POLLING_INTERVAL * 2));
-      return pollTaskStatus(taskId, apiKey, startTime, retryCount + 1, fileSizeMB, lastProgressUpdate, lastProgress);
+    if ((error.message.includes('timeout') || error.code === 'ETIMEDOUT') && retryCount < 5) {
+      console.log(`⏱️ Lỗi timeout khi kiểm tra trạng thái, thử lại lần ${retryCount + 1}...`);
+      // Chờ một khoảng thời gian trước khi thử lại (tăng theo số lần thử)
+      await new Promise(resolve => setTimeout(resolve, POLLING_INTERVAL * (retryCount + 2)));
+      return pollTaskStatus(taskId, apiKey, startTime, retryCount + 1, fileSizeMB, lastProgressUpdate, lastProgress, stuckCounter);
     }
     throw error;
   }
@@ -625,7 +659,7 @@ async function pollTaskStatus(taskId, apiKey, startTime = Date.now(), retryCount
   // Chờ một khoảng thời gian trước khi kiểm tra lại
   await new Promise(resolve => setTimeout(resolve, POLLING_INTERVAL));
   // Gọi đệ quy với các tham số đã cập nhật
-  return pollTaskStatus(taskId, apiKey, startTime, retryCount, fileSizeMB, lastProgressUpdate, lastProgress);
+  return pollTaskStatus(taskId, apiKey, startTime, retryCount, fileSizeMB, lastProgressUpdate, lastProgress, stuckCounter);
 }
 
 /**
@@ -639,7 +673,7 @@ async function downloadProcessedFile(fileUrl, outputPath) {
       method: 'GET',
       url: fileUrl,
       responseType: 'stream',
-      timeout: 180000 // 180 giây (3 phút) timeout cho tải xuống
+      timeout: 300000 // 300 giây (5 phút) timeout cho tải xuống
     });
     
     const writer = fs.createWriteStream(outputPath);
@@ -660,9 +694,29 @@ async function downloadProcessedFile(fileUrl, outputPath) {
  * @param {string} outputPath - Đường dẫn lưu file đã xử lý
  * @param {string} apiKey - API key
  * @param {number} retryCount - Số lần đã thử lại (mặc định là 0)
+ * @param {boolean} useSimpleMethod - Sử dụng phương pháp đơn giản nếu phương pháp API không hoạt động
  */
-async function processPDFWatermark(filePath, outputPath, apiKey, retryCount = 0) {
+async function processPDFWatermark(filePath, outputPath, apiKey, retryCount = 0, useSimpleMethod = false) {
   try {
+    // Nếu được yêu cầu sử dụng phương pháp đơn giản hoặc đã thử lại quá nhiều lần
+    if (useSimpleMethod || retryCount >= 5) {
+      console.log(`⚠️ Sử dụng phương pháp đơn giản để xử lý file PDF (bỏ qua API xóa watermark)`);
+      
+      // Sao chép file và chỉ thêm logo
+      fs.copyFileSync(filePath, outputPath);
+      
+      // Thêm logo vào file PDF
+      await removeHeaderFooterWatermark(outputPath, outputPath);
+      console.log(`✅ Đã xử lý file bằng phương pháp đơn giản (chỉ thêm logo)`);
+      
+      return {
+        inputSize: fs.statSync(filePath).size,
+        outputSize: fs.statSync(outputPath).size,
+        pages: 0,
+        simpleMethod: true
+      };
+    }
+    
     // Kiểm tra kích thước file
     const fileStats = fs.statSync(filePath);
     const fileSizeMB = fileStats.size / (1024 * 1024);
@@ -695,18 +749,18 @@ async function processPDFWatermark(filePath, outputPath, apiKey, retryCount = 0)
         const newApiKey = await getNextApiKey();
         if (newApiKey) {
           console.log(`🔄 Thử lại với API key mới: ${newApiKey.substring(0, 5)}...`);
-          return processPDFWatermark(filePath, outputPath, newApiKey, 0);
+          return processPDFWatermark(filePath, outputPath, newApiKey, 0, useSimpleMethod);
         } else {
           throw new Error('Không còn API key nào khả dụng sau khi xóa key hết credit');
         }
       }
       
       // Nếu lỗi là timeout và chưa thử lại quá nhiều lần
-      if ((createTaskError.message.includes('timeout') || createTaskError.code === 'ETIMEDOUT') && retryCount < 3) {
+      if ((createTaskError.message.includes('timeout') || createTaskError.code === 'ETIMEDOUT') && retryCount < 5) {
         console.log(`⏱️ Lỗi timeout khi tạo nhiệm vụ, thử lại lần ${retryCount + 1}...`);
-        // Chờ một khoảng thời gian trước khi thử lại
-        await new Promise(resolve => setTimeout(resolve, 5000 * (retryCount + 1)));
-        return processPDFWatermark(filePath, outputPath, apiKey, retryCount + 1);
+        // Chờ một khoảng thời gian trước khi thử lại (tăng theo số lần thử)
+        await new Promise(resolve => setTimeout(resolve, 10000 * (retryCount + 1)));
+        return processPDFWatermark(filePath, outputPath, apiKey, retryCount + 1, useSimpleMethod);
       }
       
       throw createTaskError;
@@ -718,6 +772,33 @@ async function processPDFWatermark(filePath, outputPath, apiKey, retryCount = 0)
       result = await pollTaskStatus(taskId, apiKey, Date.now(), 0, fileSizeMB);
       console.log(`✅ Xử lý hoàn tất. Kích thước file đầu vào: ${result.input_size} bytes, đầu ra: ${result.output_size} bytes`);
     } catch (pollError) {
+      // Kiểm tra lỗi tiến độ bị kẹt ở 21%
+      if (pollError.message === 'PROGRESS_STUCK_AT_21') {
+        console.log(`⚠️ Phát hiện tiến độ bị kẹt ở 21%. Chuyển sang phương pháp đơn giản...`);
+        return processPDFWatermark(filePath, outputPath, apiKey, retryCount, true);
+      }
+      
+      // Kiểm tra lỗi tiến độ bị kẹt
+      if (pollError.message === 'PROGRESS_STUCK' || 
+          pollError.message.includes('Tiến độ bị kẹt')) {
+        
+        console.log(`⚠️ Phát hiện tiến độ bị kẹt. Thử lại với API key khác...`);
+        
+        // Nếu chưa thử lại quá nhiều lần
+        if (retryCount < 3) {
+          // Lấy API key mới
+          const newApiKey = await getNextApiKey();
+          if (newApiKey && newApiKey !== apiKey) {
+            console.log(`🔄 Thử lại với API key mới: ${newApiKey.substring(0, 5)}...`);
+            return processPDFWatermark(filePath, outputPath, newApiKey, retryCount + 1, useSimpleMethod);
+          }
+        }
+        
+        // Nếu không có key mới hoặc đã thử lại quá nhiều lần, thử lại với cùng key
+        console.log(`🔄 Thử lại với cùng API key: ${apiKey.substring(0, 5)}...`);
+        return processPDFWatermark(filePath, outputPath, apiKey, retryCount + 1, useSimpleMethod);
+      }
+      
       // Kiểm tra lỗi API_KEY_NO_CREDIT đặc biệt
       if (pollError.message === 'API_KEY_NO_CREDIT' || 
           pollError.message.includes('401') || 
@@ -733,7 +814,7 @@ async function processPDFWatermark(filePath, outputPath, apiKey, retryCount = 0)
         const newApiKey = await getNextApiKey();
         if (newApiKey) {
           console.log(`🔄 Thử lại với API key mới: ${newApiKey.substring(0, 5)}...`);
-          return processPDFWatermark(filePath, outputPath, newApiKey, 0);
+          return processPDFWatermark(filePath, outputPath, newApiKey, 0, useSimpleMethod);
         } else {
           throw new Error('Không còn API key nào khả dụng sau khi xóa key hết credit');
         }
@@ -743,11 +824,11 @@ async function processPDFWatermark(filePath, outputPath, apiKey, retryCount = 0)
       if ((pollError.message.includes('timeout') || 
            pollError.message.includes('Quá thời gian chờ') || 
            pollError.code === 'ETIMEDOUT') && 
-          retryCount < 3) {
+          retryCount < 5) {
         console.log(`⏱️ Lỗi timeout khi kiểm tra trạng thái, thử lại lần ${retryCount + 1}...`);
-        // Chờ một khoảng thời gian trước khi thử lại
-        await new Promise(resolve => setTimeout(resolve, 5000 * (retryCount + 1)));
-        return processPDFWatermark(filePath, outputPath, apiKey, retryCount + 1);
+        // Chờ một khoảng thời gian trước khi thử lại (tăng theo số lần thử)
+        await new Promise(resolve => setTimeout(resolve, 10000 * (retryCount + 1)));
+        return processPDFWatermark(filePath, outputPath, apiKey, retryCount + 1, useSimpleMethod);
       }
       
       throw pollError;
@@ -759,10 +840,10 @@ async function processPDFWatermark(filePath, outputPath, apiKey, retryCount = 0)
       console.log(`📥 Đã tải file đã xử lý về ${outputPath}`);
     } catch (downloadError) {
       // Kiểm tra lỗi timeout
-      if ((downloadError.message.includes('timeout') || downloadError.code === 'ETIMEDOUT') && retryCount < 3) {
+      if ((downloadError.message.includes('timeout') || downloadError.code === 'ETIMEDOUT') && retryCount < 5) {
         console.log(`⏱️ Lỗi timeout khi tải xuống file, thử lại lần ${retryCount + 1}...`);
-        // Chờ một khoảng thời gian trước khi thử lại
-        await new Promise(resolve => setTimeout(resolve, 5000 * (retryCount + 1)));
+        // Chờ một khoảng thời gian trước khi thử lại (tăng theo số lần thử)
+        await new Promise(resolve => setTimeout(resolve, 10000 * (retryCount + 1)));
         
         // Thử tải lại file
         await downloadProcessedFile(result.file, outputPath);
@@ -778,6 +859,12 @@ async function processPDFWatermark(filePath, outputPath, apiKey, retryCount = 0)
       pages: result.file_pages || 0
     };
   } catch (error) {
+    // Nếu đã thử nhiều lần mà vẫn thất bại, sử dụng phương pháp đơn giản
+    if (retryCount >= 4 && !useSimpleMethod) {
+      console.log(`⚠️ Đã thử lại ${retryCount} lần không thành công. Chuyển sang phương pháp đơn giản...`);
+      return processPDFWatermark(filePath, outputPath, apiKey, 0, true);
+    }
+    
     // Kiểm tra lỗi API_KEY_NO_CREDIT đặc biệt
     if (error.message === 'API_KEY_NO_CREDIT') {
       console.log(`❌ API key ${apiKey.substring(0, 5)}... đã hết credit. Xóa và thử key khác...`);
@@ -789,7 +876,7 @@ async function processPDFWatermark(filePath, outputPath, apiKey, retryCount = 0)
       const newApiKey = await getNextApiKey();
       if (newApiKey) {
         console.log(`🔄 Thử lại với API key mới: ${newApiKey.substring(0, 5)}...`);
-        return processPDFWatermark(filePath, outputPath, newApiKey, 0);
+        return processPDFWatermark(filePath, outputPath, newApiKey, 0, useSimpleMethod);
       } else {
         throw new Error('Không còn API key nào khả dụng sau khi xóa key hết credit');
       }
@@ -799,11 +886,11 @@ async function processPDFWatermark(filePath, outputPath, apiKey, retryCount = 0)
     if ((error.message.includes('timeout') || 
          error.message.includes('Quá thời gian chờ') || 
          error.code === 'ETIMEDOUT') && 
-        retryCount < 3) {
+        retryCount < 5) {
       console.log(`⏱️ Lỗi timeout khi xử lý PDF, thử lại lần ${retryCount + 1}...`);
       // Chờ một khoảng thời gian trước khi thử lại (tăng thời gian chờ theo số lần thử)
-      await new Promise(resolve => setTimeout(resolve, 5000 * (retryCount + 1)));
-      return processPDFWatermark(filePath, outputPath, apiKey, retryCount + 1);
+      await new Promise(resolve => setTimeout(resolve, 10000 * (retryCount + 1)));
+      return processPDFWatermark(filePath, outputPath, apiKey, retryCount + 1, useSimpleMethod);
     }
     
     // Kiểm tra lỗi 401 (hết credit) từ các lỗi khác
@@ -818,7 +905,7 @@ async function processPDFWatermark(filePath, outputPath, apiKey, retryCount = 0)
       const newApiKey = await getNextApiKey();
       if (newApiKey) {
         console.log(`🔄 Thử lại với API key mới: ${newApiKey.substring(0, 5)}...`);
-        return processPDFWatermark(filePath, outputPath, newApiKey, 0);
+        return processPDFWatermark(filePath, outputPath, newApiKey, 0, useSimpleMethod);
       } else {
         throw new Error('Không còn API key nào khả dụng sau khi xóa key hết credit');
       }
@@ -1142,6 +1229,16 @@ export async function POST(request) {
   console.log('============== BẮT ĐẦU API XỬ LÝ VÀ THAY THẾ FILE GOOGLE DRIVE ==============');
   
   let tempDir = null;
+  // Đặt timeout cho toàn bộ quá trình (30 phút)
+  const GLOBAL_TIMEOUT = 30 * 60 * 1000;
+  const startTime = Date.now();
+  
+  // Tạo promise với timeout
+  const timeoutPromise = new Promise((_, reject) => {
+    setTimeout(() => {
+      reject(new Error(`Quá trình xử lý vượt quá thời gian cho phép (${GLOBAL_TIMEOUT / 60000} phút)`));
+    }, GLOBAL_TIMEOUT);
+  });
   
   try {
     // Parse request body
@@ -1176,83 +1273,117 @@ export async function POST(request) {
     // Tải xuống file
     console.log(`Đang xử lý yêu cầu tải xuống: ${driveLink}`);
     
-    let downloadResult;
-    try {
-      downloadResult = await downloadFromGoogleDrive(fileId);
-      tempDir = downloadResult.outputDir;
-      
-      let processedFilePath;
-      let processedFileName = downloadResult.fileName;
-      
-      // Kiểm tra xem file có phải là file bị chặn đã được xử lý bởi drive-fix-blockdown không
-      const isBlockedFileProcessed = downloadResult.fileName && downloadResult.fileName.includes('blocked_') && downloadResult.fileName.includes('_clean');
-      
-      if (isBlockedFileProcessed) {
-        console.log('File đã được xử lý bởi drive-fix-blockdown, bỏ qua bước xử lý thông thường');
-        processedFilePath = downloadResult.filePath;
-      } else {
-        // Xử lý file thông thường
-        const processResult = await processFile(downloadResult.filePath, downloadResult.mimeType, apiKey);
-        processedFilePath = processResult.processedPath;
-      }
-      
-      // Tải lên file đã xử lý
-      const uploadResult = await uploadToGoogleDrive(
-        processedFilePath,
-        processedFileName,
-        downloadResult.mimeType,
-        folderId
-      );
-      
-      // Dọn dẹp thư mục tạm
+    // Tạo promise cho quá trình xử lý
+    const processingPromise = (async () => {
+      let downloadResult;
       try {
-        fs.rmdirSync(tempDir, { recursive: true });
-        console.log(`Đã xóa thư mục tạm: ${tempDir}`);
-      } catch (cleanupError) {
-        console.error('Lỗi khi dọn dẹp thư mục tạm:', cleanupError);
-      }
-      
-      // Trả về kết quả
-      return NextResponse.json({
-        success: true,
-        originalFile: {
-          id: fileId,
-          link: driveLink
-        },
-        processedFile: {
-          id: uploadResult.fileId,
-          name: uploadResult.fileName,
-          link: uploadResult.webViewLink
-        },
-        duplicatesDeleted: uploadResult.duplicatesDeleted || 0
-      });
-    } catch (error) {
-      console.error('Lỗi khi tải xuống hoặc xử lý file:', error);
-      
-      // Kiểm tra lỗi 404 - File không tồn tại
-      if (error.message && (error.message.includes('404') || error.message.includes('không tồn tại'))) {
-        console.error(`File không tồn tại (404): ${fileId}. Không thử lại.`);
-        return NextResponse.json(
-          { success: false, error: `Không tìm thấy file với ID: ${fileId}. File có thể đã bị xóa hoặc không tồn tại.` },
-          { status: 404 }
+        downloadResult = await downloadFromGoogleDrive(fileId);
+        tempDir = downloadResult.outputDir;
+        
+        let processedFilePath;
+        let processedFileName = downloadResult.fileName;
+        
+        // Kiểm tra xem file có phải là file bị chặn đã được xử lý bởi drive-fix-blockdown không
+        const isBlockedFileProcessed = downloadResult.fileName && downloadResult.fileName.includes('blocked_') && downloadResult.fileName.includes('_clean');
+        
+        if (isBlockedFileProcessed) {
+          console.log('File đã được xử lý bởi drive-fix-blockdown, bỏ qua bước xử lý thông thường');
+          processedFilePath = downloadResult.filePath;
+        } else {
+          // Kiểm tra kích thước file trước khi xử lý
+          const fileStats = fs.statSync(downloadResult.filePath);
+          const fileSizeMB = fileStats.size / (1024 * 1024);
+          
+          if (fileSizeMB > 200) {
+            console.log(`⚠️ CẢNH BÁO: File rất lớn (${fileSizeMB.toFixed(2)} MB), có thể gặp vấn đề khi xử lý`);
+            console.log(`Thời gian xử lý ước tính: ${Math.ceil(fileSizeMB * 15 / 60)} phút hoặc lâu hơn`);
+            console.log(`Đang tiếp tục xử lý, nhưng có thể mất nhiều thời gian...`);
+          }
+          
+          // Xử lý file thông thường
+          const processResult = await processFile(downloadResult.filePath, downloadResult.mimeType, apiKey);
+          processedFilePath = processResult.processedPath;
+        }
+        
+        // Tải lên file đã xử lý
+        const uploadResult = await uploadToGoogleDrive(
+          processedFilePath,
+          processedFileName,
+          downloadResult.mimeType,
+          folderId
         );
-      }
-      
-      // Dọn dẹp thư mục tạm nếu có lỗi
-      if (tempDir) {
+        
+        // Dọn dẹp thư mục tạm
         try {
           fs.rmdirSync(tempDir, { recursive: true });
           console.log(`Đã xóa thư mục tạm: ${tempDir}`);
         } catch (cleanupError) {
           console.error('Lỗi khi dọn dẹp thư mục tạm:', cleanupError);
         }
+        
+        // Tính toán thời gian xử lý
+        const processingTime = Math.round((Date.now() - startTime) / 1000);
+        console.log(`✅ Hoàn tất xử lý sau ${processingTime} giây`);
+        
+        // Trả về kết quả
+        return {
+          success: true,
+          originalFile: {
+            id: fileId,
+            link: driveLink
+          },
+          processedFile: {
+            id: uploadResult.fileId,
+            name: uploadResult.fileName,
+            link: uploadResult.webViewLink
+          },
+          duplicatesDeleted: uploadResult.duplicatesDeleted || 0,
+          processingTime: processingTime
+        };
+      } catch (error) {
+        console.error('Lỗi khi tải xuống hoặc xử lý file:', error);
+        
+        // Kiểm tra lỗi 404 - File không tồn tại
+        if (error.message && (error.message.includes('404') || error.message.includes('không tồn tại'))) {
+          console.error(`File không tồn tại (404): ${fileId}. Không thử lại.`);
+          return {
+            success: false, 
+            error: `Không tìm thấy file với ID: ${fileId}. File có thể đã bị xóa hoặc không tồn tại.`,
+            status: 404
+          };
+        }
+        
+        // Dọn dẹp thư mục tạm nếu có lỗi
+        if (tempDir) {
+          try {
+            fs.rmdirSync(tempDir, { recursive: true });
+            console.log(`Đã xóa thư mục tạm: ${tempDir}`);
+          } catch (cleanupError) {
+            console.error('Lỗi khi dọn dẹp thư mục tạm:', cleanupError);
+          }
+        }
+        
+        return {
+          success: false, 
+          error: `Lỗi khi xử lý và thay thế file: ${error.message}`,
+          status: 500
+        };
       }
-      
+    })();
+    
+    // Chạy với timeout
+    const result = await Promise.race([processingPromise, timeoutPromise]);
+    
+    // Nếu kết quả có status code, sử dụng nó
+    if (result.status) {
       return NextResponse.json(
-        { success: false, error: `Lỗi khi xử lý và thay thế file: ${error.message}` },
-        { status: 500 }
+        { success: result.success, error: result.error },
+        { status: result.status }
       );
     }
+    
+    // Trả về kết quả thành công
+    return NextResponse.json(result);
   } catch (error) {
     console.error('Lỗi khi xử lý và thay thế file:', error);
     
@@ -1264,6 +1395,19 @@ export async function POST(request) {
       } catch (cleanupError) {
         console.error('Lỗi khi dọn dẹp thư mục tạm:', cleanupError);
       }
+    }
+    
+    // Kiểm tra nếu lỗi là do timeout
+    if (error.message && error.message.includes('Quá trình xử lý vượt quá thời gian')) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: error.message,
+          timeout: true,
+          message: "File quá lớn hoặc quá phức tạp, không thể xử lý trong thời gian cho phép. Vui lòng thử lại với file nhỏ hơn."
+        },
+        { status: 504 } // Gateway Timeout
+      );
     }
     
     return NextResponse.json(
