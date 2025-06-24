@@ -409,9 +409,39 @@ export async function processLink(baseUrl, url, cookie = '', maxRetries = 2, tim
       let apiEndpoint = '/api/drive/process-and-replace';
       let requestBody = { driveLink: url };
       
-      // Nếu không phải PDF, sử dụng API đơn giản hơn chỉ tải xuống và upload lại
-      if (fileType && fileType !== 'application/pdf' && fileType !== 'pdf') {
-        console.log(`File không phải PDF (${fileType}), sử dụng API đơn giản hơn để xử lý`);
+      // Kiểm tra loại file chi tiết hơn
+      const isVideoFile = fileType && (
+        fileType.includes('video/') || 
+        fileType.includes('mp4') || 
+        fileType.includes('avi') || 
+        fileType.includes('mov') ||
+        fileType.includes('mkv') ||
+        fileType.includes('webm')
+      );
+      
+      const isAudioFile = fileType && (
+        fileType.includes('audio/') || 
+        fileType.includes('mp3') || 
+        fileType.includes('wav') || 
+        fileType.includes('ogg')
+      );
+      
+      const isImageFile = fileType && (
+        fileType.includes('image/') || 
+        fileType.includes('jpg') || 
+        fileType.includes('jpeg') || 
+        fileType.includes('png') || 
+        fileType.includes('gif')
+      );
+      
+      // Nếu không phải PDF hoặc là file media (video, audio, hình ảnh), sử dụng API đơn giản hơn
+      if (fileType && 
+          (fileType !== 'application/pdf' && 
+           fileType !== 'pdf' || 
+           isVideoFile || 
+           isAudioFile || 
+           isImageFile)) {
+        console.log(`File không phải PDF hoặc là file media (${fileType}), sử dụng API đơn giản hơn để xử lý`);
         apiEndpoint = '/api/drive/download-and-reupload';
         requestBody = { 
           driveLink: url,

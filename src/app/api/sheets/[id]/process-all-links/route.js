@@ -397,7 +397,43 @@ export async function POST(request, { params }) {
             };
           }
           
-          // Sử dụng hàm processLink với retry và timeout, truyền thêm thông tin loại file
+          // Xác định xem có phải là file video không
+          const isVideoFile = fileType && (
+            fileType.includes('video/') || 
+            fileType.includes('mp4') || 
+            fileType.includes('avi') || 
+            fileType.includes('mov') ||
+            fileType.includes('mkv') ||
+            fileType.includes('webm')
+          );
+          
+          // Xác định xem có phải là file audio không
+          const isAudioFile = fileType && (
+            fileType.includes('audio/') || 
+            fileType.includes('mp3') || 
+            fileType.includes('wav') || 
+            fileType.includes('ogg')
+          );
+          
+          // Xác định xem có phải là file hình ảnh không
+          const isImageFile = fileType && (
+            fileType.includes('image/') || 
+            fileType.includes('jpg') || 
+            fileType.includes('jpeg') || 
+            fileType.includes('png') || 
+            fileType.includes('gif')
+          );
+          
+          // Log loại file được phát hiện
+          if (isVideoFile) {
+            console.log(`Phát hiện file video: ${fileType}`);
+          } else if (isAudioFile) {
+            console.log(`Phát hiện file audio: ${fileType}`);
+          } else if (isImageFile) {
+            console.log(`Phát hiện file hình ảnh: ${fileType}`);
+          }
+          
+          // Sử dụng hàm processLink với retry và timeout, truyền thêm thông tin loại file chính xác
           return processLink(baseUrl, urlGroup.originalUrl, cookie, 2, 500000, fileType) // 500 giây timeout, 2 lần retry
             .then(processResult => {
               // Tạo giá trị mới cho ô
