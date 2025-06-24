@@ -187,7 +187,12 @@ async function checkAuth(request) {
 // Hàm tạo proxy URL từ URL gốc bằng base64
 function createProxyUrl(originalUrl) {
   try {
-    const base64Url = Buffer.from(originalUrl).toString('base64');
+    // Mã hóa URL sử dụng base64 URL-safe
+    const base64Url = Buffer.from(originalUrl).toString('base64')
+      .replace(/\+/g, '-')  // Thay thế + thành -
+      .replace(/\//g, '_')  // Thay thế / thành _
+      .replace(/=+$/, '');  // Loại bỏ padding '='
+    
     return `/api/proxy-link/${base64Url}`;
   } catch (error) {
     console.error('Lỗi khi tạo proxy URL:', error);

@@ -15,11 +15,17 @@ export default function ApiSheetData({
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [selectedPDF, setSelectedPDF] = useState(null);
   const [pdfTitle, setPdfTitle] = useState('');
+  const [loadingLinks, setLoadingLinks] = useState({});
   
   // Tạo proxy link từ URL thông qua Base64 encoding
   const createProxyLink = useCallback((url) => {
     try {
-      const base64Url = Buffer.from(url).toString('base64');
+      // Mã hóa URL sử dụng base64 URL-safe
+      const base64Url = Buffer.from(url).toString('base64')
+        .replace(/\+/g, '-')  // Thay thế + thành -
+        .replace(/\//g, '_')  // Thay thế / thành _
+        .replace(/=+$/, '');  // Loại bỏ padding '='
+      
       return `/api/proxy-link/${base64Url}`;
     } catch (error) {
       console.error('Lỗi khi tạo proxy link:', error);
@@ -91,20 +97,35 @@ export default function ApiSheetData({
   const handleLinkClick = (e, url, title = '') => {
     e.preventDefault();
     
+    // Đánh dấu link đang loading
+    setLoadingLinks(prev => ({ ...prev, [url]: true }));
+    
     // Xử lý proxy link trực tiếp (không cần cache)
     if (url.startsWith('/api/proxy-link/')) {
       window.open(url, '_blank');
+      // Đánh dấu link đã xong loading
+      setTimeout(() => {
+        setLoadingLinks(prev => ({ ...prev, [url]: false }));
+      }, 500);
       return;
     }
     
     // Handle special links directly
     if (isYoutubeLink(url)) {
       handleYoutubeClick(e, url);
+      // Đánh dấu link đã xong loading
+      setTimeout(() => {
+        setLoadingLinks(prev => ({ ...prev, [url]: false }));
+      }, 500);
       return;
     } 
     
     if (isPdfLink(url)) {
       handlePdfClick(e, url, title);
+      // Đánh dấu link đã xong loading
+      setTimeout(() => {
+        setLoadingLinks(prev => ({ ...prev, [url]: false }));
+      }, 500);
       return;
     }
     
@@ -117,6 +138,11 @@ export default function ApiSheetData({
       console.warn('Không thể tạo proxy link, mở URL gốc:', url);
       window.open(url, '_blank');
     }
+    
+    // Đánh dấu link đã xong loading sau khi mở tab mới
+    setTimeout(() => {
+      setLoadingLinks(prev => ({ ...prev, [url]: false }));
+    }, 500);
   };
   
   // Hàm xử lý hyperlink trong table rendering
@@ -137,6 +163,7 @@ export default function ApiSheetData({
     
     const key = `${rowIndex}-${cellIndex}`;
     const content = cellContent || hyperlink;
+    const isLoading = loadingLinks[hyperlink];
     
     // Hiển thị domain hoặc text thay vì URL đầy đủ
     let displayText = content;
@@ -159,10 +186,21 @@ export default function ApiSheetData({
         <div>
           <a 
             href="#" 
-            className="text-blue-600 hover:underline"
+            className={`text-blue-600 hover:underline ${isLoading ? 'opacity-50 cursor-wait' : ''}`}
             onClick={(e) => handleLinkClick(e, hyperlink, content)}
           >
-            {icon}{displayText}
+            {icon}
+            {isLoading ? (
+              <span>
+                {displayText}
+                <span className="inline-block ml-2">
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                </span>
+              </span>
+            ) : displayText}
           </a>
         </div>
       </td>

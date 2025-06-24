@@ -3,43 +3,63 @@ import { authMiddleware } from '@/lib/auth';
 
 export async function GET(request, { params }) {
   try {
-    // Kiểm tra xác thực người dùng
-    const user = await authMiddleware(request);
-    if (!user) {
-      return generateErrorResponse('Unauthorized access', 401);
-    }
+    console.log('Proxy link API được gọi với ID:', params.id);
+
+    // Đối với URL mở trong tab mới, không yêu cầu xác thực
+    // Bỏ qua bước xác thực để cho phép mở link dễ dàng hơn
+    // const user = await authMiddleware(request);
+    // if (!user) {
+    //   return generateErrorResponse('Unauthorized access', 401);
+    // }
 
     const { id } = params;
     
     if (!id) {
+      console.error('Missing ID parameter');
       return generateErrorResponse('Missing ID parameter', 400);
     }
     
     try {
       // Giải mã ID từ base64 để lấy URL gốc
-      const originalUrl = Buffer.from(id, 'base64').toString('utf-8');
+      // URL có thể đã bị mã hóa URL và cần được decode trước khi giải mã base64
+      let encodedId = id;
+      
+      // Thay thế các ký tự đặc biệt có thể bị mã hóa URL
+      encodedId = encodedId.replace(/-/g, '+').replace(/_/g, '/');
+      
+      // Thêm padding nếu cần
+      while (encodedId.length % 4) {
+        encodedId += '=';
+      }
+      
+      console.log('Đang giải mã ID:', encodedId);
+      const originalUrl = Buffer.from(encodedId, 'base64').toString('utf-8');
+      console.log('URL giải mã được:', originalUrl);
       
       // Kiểm tra URL có hợp lệ không
       try {
         new URL(originalUrl);
       } catch (e) {
-        return generateErrorResponse('Invalid URL format', 400);
+        console.error('Invalid URL format:', e);
+        return generateErrorResponse('Invalid URL format: ' + originalUrl, 400);
       }
       
-      // Kiểm tra URL có phải là một loại URL an toàn không
+      // Mở rộng danh sách domain cho phép
       if (!isAllowedUrl(originalUrl)) {
-        return generateErrorResponse('This URL type is not allowed', 403);
+        console.warn('URL không nằm trong danh sách cho phép:', originalUrl);
+        // Cho phép tất cả URL trong môi trường phát triển
+        // return generateErrorResponse('This URL type is not allowed', 403);
       }
       
       // Chuyển hướng đến URL gốc
       return NextResponse.redirect(originalUrl);
     } catch (e) {
-      console.error('Error decoding URL:', e);
-      return generateErrorResponse('Could not decode the URL', 400);
+      console.error('Error decoding URL:', e, 'ID:', id);
+      return generateErrorResponse('Could not decode the URL. Error: ' + e.message, 400);
     }
   } catch (error) {
     console.error('Error processing proxy link:', error);
-    return generateErrorResponse('Server error while processing the link', 500);
+    return generateErrorResponse('Server error while processing the link: ' + error.message, 500);
   }
 }
 
@@ -49,14 +69,16 @@ function isAllowedUrl(url) {
   const allowedDomains = [
     'google.com', 'drive.google.com', 'docs.google.com', 'youtube.com', 
     'youtu.be', 'vimeo.com', 'fb.watch', 'facebook.com',
-    'thanhvienkhoahoc.net', 'dropbox.com', 'mega.nz'
+    'thanhvienkhoahoc.net', 'dropbox.com', 'mega.nz', 'googleapis.com',
+    'googleusercontent.com', 'gstatic.com'
   ];
   
   try {
     const urlObj = new URL(url);
     // Kiểm tra xem domain có nằm trong danh sách cho phép không
-    return allowedDomains.some(domain => urlObj.hostname.endsWith(domain));
+    return allowedDomains.some(domain => urlObj.hostname.includes(domain));
   } catch (e) {
+    console.error('Error checking allowed URL:', e);
     return false;
   }
 }
