@@ -445,58 +445,83 @@ export function useCourseData(id) {
       
       const data = await response.json();
       
-      if (data.success) {
-        // Xử lý các ô gộp nếu có
-        const processedData = { ...data.course };
-        
-        if (processedData.merges && processedData.merges.length > 0) {
-          // Tạo bản đồ các ô đã gộp
-          const mergedCellsMap = {};
+      // Kiểm tra nếu dữ liệu được mã hóa
+      if (data._secureData) {
+        try {
+          // Giải mã dữ liệu
+          const decryptedData = decryptData(data._secureData);
           
-          processedData.merges.forEach(merge => {
-            const startRow = merge.startRowIndex;
-            const endRow = merge.endRowIndex;
-            const startCol = merge.startColumnIndex;
-            const endCol = merge.endColumnIndex;
+          // Xử lý các ô gộp nếu có
+          const processedData = { ...decryptedData };
+          
+          if (processedData.merges && processedData.merges.length > 0) {
+            // Tạo bản đồ các ô đã gộp
+            const mergedCellsMap = {};
             
-            // Tính toán rowSpan và colSpan
-            const rowSpan = endRow - startRow;
-            const colSpan = endCol - startCol;
-            
-            // Đánh dấu ô chính (góc trên bên trái của vùng gộp)
-            if (!processedData.htmlData[startRow]) {
-              processedData.htmlData[startRow] = { values: [] };
-            }
-            
-            if (!processedData.htmlData[startRow].values) {
-              processedData.htmlData[startRow].values = [];
-            }
-            
-            if (!processedData.htmlData[startRow].values[startCol]) {
-              processedData.htmlData[startRow].values[startCol] = {};
-            }
-            
-            processedData.htmlData[startRow].values[startCol].rowSpan = rowSpan;
-            processedData.htmlData[startRow].values[startCol].colSpan = colSpan;
-            
-            // Đánh dấu các ô khác trong vùng gộp để bỏ qua khi render
-            for (let r = startRow; r < endRow; r++) {
-              for (let c = startCol; c < endCol; c++) {
-                // Bỏ qua ô chính
-                if (r === startRow && c === startCol) continue;
-                
-                const key = `${r},${c}`;
-                mergedCellsMap[key] = { mainCell: { row: startRow, col: startCol } };
+            processedData.merges.forEach(merge => {
+              const startRow = merge.startRowIndex;
+              const endRow = merge.endRowIndex;
+              const startCol = merge.startColumnIndex;
+              const endCol = merge.endColumnIndex;
+              
+              // Tính toán rowSpan và colSpan
+              const rowSpan = endRow - startRow;
+              const colSpan = endCol - startCol;
+              
+              // Đánh dấu ô chính (góc trên bên trái của vùng gộp)
+              if (!processedData.htmlData[startRow]) {
+                processedData.htmlData[startRow] = { values: [] };
               }
-            }
-          });
+              
+              if (!processedData.htmlData[startRow].values) {
+                processedData.htmlData[startRow].values = [];
+              }
+              
+              if (!processedData.htmlData[startRow].values[startCol]) {
+                processedData.htmlData[startRow].values[startCol] = {};
+              }
+              
+              processedData.htmlData[startRow].values[startCol].rowSpan = rowSpan;
+              processedData.htmlData[startRow].values[startCol].colSpan = colSpan;
+              
+              // Đánh dấu các ô khác trong vùng gộp để bỏ qua khi render
+              for (let r = startRow; r < endRow; r++) {
+                for (let c = startCol; c < endCol; c++) {
+                  // Bỏ qua ô chính
+                  if (r === startRow && c === startCol) continue;
+                  
+                  const key = `${r},${c}`;
+                  mergedCellsMap[key] = { mainCell: { row: startRow, col: startCol } };
+                }
+              }
+            });
+            
+            // Lưu bản đồ các ô đã gộp vào data
+            processedData.mergedCellsMap = mergedCellsMap;
+          }
           
-          // Lưu bản đồ các ô đã gộp vào data
-          processedData.mergedCellsMap = mergedCellsMap;
+          setCourse(processedData);
+          setFormData(processedData);
+          setPermissionChecked(true);
+          setLoading(false);
+          
+          // Hiệu ứng fade-in
+          setTimeout(() => {
+            setIsLoaded(true);
+          }, 50);
+          
+          // Lưu dữ liệu vào cache
+          saveToCache(processedData);
+        } catch (decryptError) {
+          console.error('Lỗi khi giải mã dữ liệu:', decryptError);
+          throw new Error(`Không thể giải mã dữ liệu khóa học: ${decryptError.message}`);
         }
-        
-        setCourse(processedData);
-        setFormData(processedData);
+      } else if (data.success === false) {
+        throw new Error(`Không thể tải dữ liệu khóa học: ${data.message || data.error || 'Lỗi không xác định'}`);
+      } else {
+        // Xử lý dữ liệu không được mã hóa
+        setCourse(data);
+        setFormData(data);
         setPermissionChecked(true);
         setLoading(false);
         
@@ -506,9 +531,7 @@ export function useCourseData(id) {
         }, 50);
         
         // Lưu dữ liệu vào cache
-        saveToCache(processedData);
-      } else {
-        setError(`Không thể tải dữ liệu khóa học: ${data.error || 'Lỗi không xác định'}`);
+        saveToCache(data);
       }
     } catch (error) {
       console.error('Lỗi khi tải lại dữ liệu khóa học:', error);
