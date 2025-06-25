@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import firebaseAdmin from '@/lib/firebase-admin';
+import { cookieConfig } from '@/config/env-config';
 
 // Thêm system cache cho token để tăng hiệu suất
 // Cache theo cặp {token: {user, timestamp}}
@@ -22,7 +23,7 @@ setInterval(cleanupTokenCache, 60 * 1000);
 // Hàm lấy token từ cookies (server-side)
 export async function getServerToken() {
   const cookieStore = await cookies();
-  const token = cookieStore.get('auth-token')?.value;
+  const token = cookieStore.get(cookieConfig.authCookieName)?.value;
   return token || null;
 }
 

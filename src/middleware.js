@@ -99,6 +99,16 @@ export async function middleware(request) {
   const tokenCookie = request.cookies.get(cookieConfig.authCookieName);
   const token = tokenCookie?.value;
   
+  console.log('🔍 Middleware - Cookie name being checked:', cookieConfig.authCookieName);
+  
+  // Lấy danh sách tên cookie mà không sử dụng entries()
+  let cookieNames = [];
+  request.cookies.getAll().forEach(cookie => {
+    cookieNames.push(cookie.name);
+  });
+  console.log('🔍 Middleware - Available cookies:', JSON.stringify(cookieNames));
+  console.log('🔍 Middleware - Token exists:', !!token);
+  
   // Kiểm tra token có tồn tại và không phải là chuỗi rỗng
   if (!token || token.trim() === '') {
     console.log('🔒 Token không tồn tại hoặc rỗng, chuyển hướng đến trang đăng nhập');

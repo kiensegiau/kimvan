@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { verifyServerAuthToken } from '@/utils/server-auth';
 import { connectDB } from '@/lib/mongodb';
 import mongoose from 'mongoose';
+import { cookieConfig } from '@/config/env-config';
 
 // Hàm chuyển đổi mã vai trò thành tên đầy đủ
 function getRoleDisplayName(role) {
@@ -121,7 +122,7 @@ export async function GET(request) {
   try {
     console.log('📝 API verify GET: Đang xử lý yêu cầu lấy thông tin người dùng');
     // Lấy token từ cookie
-    const token = request.cookies.get('auth-token')?.value;
+    const token = request.cookies.get(cookieConfig.authCookieName)?.value;
 
     if (!token) {
       console.log('❌ API verify GET: Không có token trong cookie');

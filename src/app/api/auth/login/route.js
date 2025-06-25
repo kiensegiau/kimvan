@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { cookieConfig } from '@/config/env-config';
+import { cookieConfig, isProduction } from '@/config/env-config';
 import { rateLimit } from '@/utils/rate-limit';
 import { trackFailedLogin, trackSuccessfulLogin, isIPBlocked, isEmailLocked } from '@/utils/auth-monitor';
 import firebaseAdmin from '@/lib/firebase-admin';
@@ -95,6 +95,26 @@ export async function POST(request) {
       
       // Thiết lập cookie token
       console.log('🍪 Đang thiết lập cookie auth token');
+      console.log('🍪 Cookie name:', cookieConfig.authCookieName);
+      
+      // Xác định domain nếu đang trong môi trường production
+      let cookieDomain = undefined;
+      if (isProduction) {
+        // Không sử dụng .kimvan.id.vn vì có thể gây vấn đề
+        // Để trống domain sẽ dùng domain hiện tại
+        console.log('🍪 Đang chạy trên production, không set domain cụ thể cho cookie');
+      }
+      
+      console.log('🍪 Cookie config:', JSON.stringify({
+        name: cookieConfig.authCookieName,
+        path: '/',
+        maxAge,
+        httpOnly: true,
+        secure: cookieConfig.secure,
+        sameSite: cookieConfig.sameSite,
+        domain: cookieDomain
+      }));
+      
       const cookieStore = await cookies();
       await cookieStore.set(cookieConfig.authCookieName, idToken, {
         path: '/',
@@ -102,6 +122,7 @@ export async function POST(request) {
         httpOnly: true,
         secure: cookieConfig.secure,
         sameSite: cookieConfig.sameSite,
+        // Không thiết lập domain để sử dụng domain hiện tại
       });
       console.log('✅ Đã thiết lập cookie thành công');
       
