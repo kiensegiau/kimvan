@@ -340,7 +340,7 @@ Lấy dữ liệu từ Google Sheet theo ID.
 
 # Kimvan Project Deployment Guide
 
-## Deployment to Ubuntu VPS
+## Deployment to Ubuntu VPS (2 vCPU, 2GB RAM)
 
 ### Method 1: Deploy from Git
 
@@ -396,9 +396,9 @@ npm run build
 npm install -g pm2
 ```
 
-11. Start the application with PM2
+11. Start the application with PM2 using the optimized configuration
 ```
-pm2 start npm --name "kimvan" -- start
+pm2 start ecosystem.config.js --env production
 ```
 
 12. Set up PM2 to start on system boot
@@ -436,6 +436,93 @@ tar -xzf /root/kimvan.tar.gz -C /var/www/kimvan
 
 6. Follow steps 5-12 from Method 1 to complete the setup
 
+## PM2 Configuration for 2 vCPU, 2GB RAM
+
+The `ecosystem.config.js` file is configured for optimal performance on your VPS:
+
+- Single instance in cluster mode to utilize multiple CPUs
+- Memory limit set to 1GB (half of available RAM)
+- Auto-restart if memory exceeds limit
+- Running on port 3000
+
+To monitor your application:
+```
+pm2 monit
+```
+
+To view logs:
+```
+pm2 logs kimvan
+```
+
+## Setting up Nginx as a Reverse Proxy
+
+1. Install Nginx
+```
+apt update
+apt install -y nginx
+```
+
+2. Create a new Nginx configuration file
+```
+nano /etc/nginx/sites-available/kimvan
+```
+
+3. Add the following configuration:
+```
+server {
+    listen 80;
+    server_name your-domain.com;
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+}
+```
+
+4. Create a symbolic link to enable the site
+```
+ln -s /etc/nginx/sites-available/kimvan /etc/nginx/sites-enabled/
+```
+
+5. Test Nginx configuration
+```
+nginx -t
+```
+
+6. Restart Nginx
+```
+systemctl restart nginx
+```
+
+## Setting up Cloudflare
+
+1. Log in to your Cloudflare account
+
+2. Add your domain if it's not already added
+
+3. Update your domain's nameservers to Cloudflare's nameservers (if not already done)
+
+4. Go to the DNS section and add an A record:
+   - Type: A
+   - Name: @ (or subdomain like "www" or "app")
+   - Content: 149.28.151.17 (your VPS IP)
+   - Proxy status: Proxied (for Cloudflare protection)
+   - TTL: Auto
+
+5. Go to the SSL/TLS section and set the encryption mode to "Full" or "Full (strict)"
+
+6. (Optional) Set up Page Rules for caching or redirects as needed
+
+7. (Optional) Enable Cloudflare's security features like WAF, rate limiting, etc.
+
 ## Updating the Deployment
 
 To update your deployment after making changes:
@@ -446,7 +533,7 @@ cd /var/www/kimvan
 git pull
 npm install
 npm run build
-pm2 restart kimvan
+pm2 reload ecosystem.config.js --env production
 ```
 
 ### Using SCP
@@ -455,5 +542,5 @@ Repeat steps 1-5 from Method 2, then:
 cd /var/www/kimvan
 npm install
 npm run build
-pm2 restart kimvan
+pm2 reload ecosystem.config.js --env production
 ```
