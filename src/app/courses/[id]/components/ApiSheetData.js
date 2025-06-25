@@ -32,6 +32,30 @@ export default function ApiSheetData({
       return null;
     }
   }, []);
+  
+  // Giải mã proxy link để lấy URL gốc
+  const decodeProxyLink = useCallback((proxyUrl) => {
+    try {
+      if (!proxyUrl || !proxyUrl.startsWith('/api/proxy-link/')) {
+        return null;
+      }
+      
+      // Lấy phần base64 từ URL
+      const base64Part = proxyUrl.replace('/api/proxy-link/', '');
+      
+      // Chuyển lại các ký tự đặc biệt
+      const normalizedBase64 = base64Part
+        .replace(/-/g, '+')  // Thay thế - thành +
+        .replace(/_/g, '/'); // Thay thế _ thành /
+      
+      // Giải mã base64
+      const decodedUrl = Buffer.from(normalizedBase64, 'base64').toString('utf-8');
+      return decodedUrl;
+    } catch (error) {
+      console.error('Lỗi khi giải mã proxy link:', error);
+      return null;
+    }
+  }, []);
 
   // Kiểm tra và tải chi tiết sheet nếu cần
   useEffect(() => {
@@ -100,10 +124,34 @@ export default function ApiSheetData({
     // Đánh dấu link đang loading
     setLoadingLinks(prev => ({ ...prev, [url]: true }));
     
-    // Xử lý proxy link trực tiếp (không cần cache)
+    // Kiểm tra nếu là proxy link, giải mã để xác định loại
     if (url.startsWith('/api/proxy-link/')) {
-      window.open(url, '_blank');
-      // Đánh dấu link đã xong loading
+      const originalUrl = decodeProxyLink(url);
+      
+      // Nếu giải mã thành công và là YouTube link
+      if (originalUrl && isYoutubeLink(originalUrl)) {
+        // Xử lý như YouTube link
+        const videoId = getYoutubeVideoId(originalUrl);
+        if (videoId) {
+          setSelectedVideo(videoId);
+          setTimeout(() => {
+            setLoadingLinks(prev => ({ ...prev, [url]: false }));
+          }, 500);
+          return;
+        }
+      }
+      
+      // Nếu giải mã thành công và là PDF
+      if (originalUrl && isPdfLink(originalUrl)) {
+        handlePdfClick(e, url, title || 'Xem tài liệu PDF');
+        setTimeout(() => {
+          setLoadingLinks(prev => ({ ...prev, [url]: false }));
+        }, 500);
+        return;
+      }
+      
+      // Nếu không phải YouTube hoặc PDF, hiển thị trong PDF Modal
+      handlePdfClick(e, url, title || 'Xem tài liệu');
       setTimeout(() => {
         setLoadingLinks(prev => ({ ...prev, [url]: false }));
       }, 500);
@@ -112,7 +160,9 @@ export default function ApiSheetData({
     
     // Handle special links directly
     if (isYoutubeLink(url)) {
+      // Xử lý YouTube thông thường
       handleYoutubeClick(e, url);
+      
       // Đánh dấu link đã xong loading
       setTimeout(() => {
         setLoadingLinks(prev => ({ ...prev, [url]: false }));
@@ -129,17 +179,18 @@ export default function ApiSheetData({
       return;
     }
     
-    // Tạo proxy URL bằng base64
+    // Tạo proxy URL bằng base64 cho các link khác
     const proxyUrl = createProxyLink(url);
     if (proxyUrl) {
-      window.open(proxyUrl, '_blank');
+      // Hiển thị trong PDF Modal thay vì mở tab mới
+      handlePdfClick(e, proxyUrl, title || 'Xem tài liệu');
     } else {
       // Fallback to original URL if proxy creation failed
       console.warn('Không thể tạo proxy link, mở URL gốc:', url);
-      window.open(url, '_blank');
+      handlePdfClick(e, url, title || 'Xem tài liệu');
     }
     
-    // Đánh dấu link đã xong loading sau khi mở tab mới
+    // Đánh dấu link đã xong loading
     setTimeout(() => {
       setLoadingLinks(prev => ({ ...prev, [url]: false }));
     }, 500);
