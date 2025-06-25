@@ -4,10 +4,8 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { routes } from '@/config/env-config';
-
-// Hằng số CSRF
-const CSRF_FORM_FIELD = '_csrf';
-const CSRF_HEADER_NAME = 'X-CSRF-Token';
+import { auth } from '@/lib/firebase';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 
 // Component con để sử dụng useSearchParams
 function LoginForm() {
@@ -23,25 +21,7 @@ function LoginForm() {
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [csrfToken, setCsrfToken] = useState('');
   const [showRegisterModal, setShowRegisterModal] = useState(false);
-  
-  // Lấy CSRF token khi component mount
-  useEffect(() => {
-    const fetchCsrfToken = async () => {
-      try {
-        const response = await fetch('/api/csrf');
-        const data = await response.json();
-        if (data.token) {
-          setCsrfToken(data.token);
-        }
-      } catch (error) {
-        console.error('Lỗi lấy CSRF token:', error);
-      }
-    };
-    
-    fetchCsrfToken();
-  }, []);
   
   // Xóa thông báo lỗi sau 5 giây
   useEffect(() => {
@@ -68,16 +48,25 @@ function LoginForm() {
     setLoading(true);
     
     try {
-      // Gọi API đăng nhập thay vì trực tiếp dùng Firebase
+      // Đăng nhập trực tiếp bằng Firebase Auth
+      const userCredential = await signInWithEmailAndPassword(
+        auth, 
+        formData.email, 
+        formData.password
+      );
+      
+      // Sau khi đăng nhập thành công, cần lấy ID token
+      const idToken = await userCredential.user.getIdToken();
+      
+      // Gửi ID token đến server để lưu vào HTTP-only cookie
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          [CSRF_HEADER_NAME]: csrfToken
         },
         body: JSON.stringify({
-          ...formData,
-          [CSRF_FORM_FIELD]: csrfToken
+          idToken,
+          rememberMe: formData.rememberMe
         })
       });
       
@@ -120,7 +109,30 @@ function LoginForm() {
       // Sử dụng window.location.href để đảm bảo chuyển hướng hoạt động
       window.location.href = redirectTo;
     } catch (error) {
-      setError(error.message);
+      console.error('Lỗi đăng nhập:', error);
+      
+      // Xử lý các lỗi Firebase Auth
+      let errorMessage = 'Email hoặc mật khẩu không đúng';
+      
+      switch (error.code) {
+        case 'auth/invalid-email':
+          errorMessage = 'Email không hợp lệ';
+          break;
+        case 'auth/user-disabled':
+          errorMessage = 'Tài khoản đã bị vô hiệu hóa';
+          break;
+        case 'auth/user-not-found':
+        case 'auth/wrong-password':
+          errorMessage = 'Email hoặc mật khẩu không đúng';
+          break;
+        case 'auth/too-many-requests':
+          errorMessage = 'Quá nhiều lần thử đăng nhập. Vui lòng thử lại sau ít phút';
+          break;
+        default:
+          errorMessage = error.message || 'Đăng nhập thất bại. Vui lòng thử lại.';
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -270,9 +282,6 @@ function LoginForm() {
             )}
             
             <form className="space-y-6" onSubmit={handleSubmit}>
-              {/* CSRF token ẩn */}
-              <input type="hidden" name={CSRF_FORM_FIELD} value={csrfToken} />
-              
               <div className="space-y-4">
                 <div>
                   <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
@@ -346,7 +355,7 @@ function LoginForm() {
               <div>
                 <button
                   type="submit"
-                  disabled={loading || !csrfToken}
+                  disabled={loading}
                   className="group relative w-full flex justify-center py-3 px-4 border border-transparent rounded-lg text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 shadow-md hover:shadow-lg transition duration-150 ease-in-out font-medium disabled:opacity-70 disabled:cursor-not-allowed"
                 >
                   {loading ? (
@@ -356,14 +365,6 @@ function LoginForm() {
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
                       Đang đăng nhập...
-                    </span>
-                  ) : !csrfToken ? (
-                    <span className="flex items-center">
-                      <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Đang khởi tạo...
                     </span>
                   ) : (
                     <>
