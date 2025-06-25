@@ -340,135 +340,147 @@ Lấy dữ liệu từ Google Sheet theo ID.
 
 # Kimvan Project Deployment Guide
 
-## Deployment to Ubuntu VPS (2 vCPU, 2GB RAM)
+## Triển khai lên VPS Ubuntu (2 vCPU, 2GB RAM)
 
-### Method 1: Deploy from Git
-
-1. SSH into your VPS
+### Bước 1: Kết nối SSH vào VPS
 ```
 ssh root@149.28.151.17
 ```
 
-2. Create the target directory
+### Bước 2: Cài đặt các phần mềm cần thiết
 ```
-mkdir -p /var/www/kimvan
-```
-
-3. Navigate to the directory
-```
-cd /var/www/kimvan
-```
-
-4. Clone your Git repository
-```
-git clone https://github.com/your-username/kimvan.git .
-```
-(Replace "your-username" with your actual GitHub username and note the dot at the end to clone into the current directory)
-
-5. Install Node.js and npm if not already installed
-```
+# Cập nhật hệ thống
 apt update
+
+# Cài đặt Node.js và npm
 apt install -y nodejs npm
+
+# Cài đặt Nginx
+apt install -y nginx
+
+# Cài đặt Git
+apt install -y git
 ```
 
-6. Install dependencies
+### Bước 3: Cấu hình DNS (nếu gặp lỗi không kết nối được GitHub)
 ```
+# Chỉnh sửa file resolv.conf
+nano /etc/resolv.conf
+
+# Thêm các dòng sau vào file
+nameserver 8.8.8.8
+nameserver 8.8.4.4
+
+# Hoặc sử dụng DNS của Cloudflare
+nameserver 1.1.1.1
+nameserver 1.0.0.1
+
+# Lưu file (Ctrl+O, sau đó Enter, rồi Ctrl+X để thoát)
+```
+
+### Bước 4: Tạo thư mục và clone dự án
+```
+# Tạo thư mục
+mkdir -p /var/www/kimvan
+
+# Di chuyển vào thư mục
+cd /var/www/kimvan
+
+# Clone dự án từ GitHub
+git clone https://github.com/kiensegiau/kimvan.git .
+```
+
+### Bước 5: Cài đặt dependencies và build dự án
+```
+# Di chuyển vào thư mục dự án (nếu chưa ở trong đó)
+cd /var/www/kimvan
+
+# Cài đặt dependencies
 npm install
-```
 
-7. Create .env file (copy from env.example)
-```
+# Tạo file .env từ file mẫu
 cp env.example .env
-```
 
-8. Edit the .env file with your configuration
-```
+# Chỉnh sửa file .env để cấu hình
 nano .env
-```
 
-9. Build the project
-```
+# Build dự án
 npm run build
 ```
 
-10. Install PM2 to manage the Node.js process
+### Bước 6: Cài đặt và cấu hình PM2
 ```
+# Cài đặt PM2 toàn cục
 npm install -g pm2
+
+# Tạo file cấu hình ecosystem.config.js
+nano ecosystem.config.js
 ```
 
-11. Start the application with PM2 using the optimized configuration
+Nội dung file `ecosystem.config.js`:
+```javascript
+module.exports = {
+  apps: [
+    {
+      name: 'kimvan',
+      script: 'npm',
+      args: 'start',
+      instances: 1,
+      exec_mode: 'cluster',
+      watch: false,
+      max_memory_restart: '1G',
+      env: {
+        NODE_ENV: 'production',
+        PORT: 3000,
+        HOST: '0.0.0.0'  // Quan trọng: Đảm bảo ứng dụng lắng nghe trên tất cả các địa chỉ IP
+      },
+      env_production: {
+        NODE_ENV: 'production',
+        PORT: 3000,
+        HOST: '0.0.0.0'  // Quan trọng: Đảm bảo ứng dụng lắng nghe trên tất cả các địa chỉ IP
+      }
+    }
+  ]
+};
 ```
+
+```
+# Chạy ứng dụng với PM2
 pm2 start ecosystem.config.js --env production
-```
 
-12. Set up PM2 to start on system boot
-```
+# Cấu hình PM2 tự động khởi động khi server khởi động lại
 pm2 startup
+
+# Lưu cấu hình hiện tại của PM2
 pm2 save
-```
 
-### Method 2: Deploy using SCP
+# Kiểm tra trạng thái của ứng dụng
+pm2 status
 
-1. Create a tar archive of your project
-```
-tar -czf kimvan.tar.gz .
-```
-
-2. Transfer the archive to your VPS
-```
-scp kimvan.tar.gz root@149.28.151.17:/root/
-```
-
-3. SSH into your VPS
-```
-ssh root@149.28.151.17
-```
-
-4. Create the target directory
-```
-mkdir -p /var/www/kimvan
-```
-
-5. Extract the archive to the target directory
-```
-tar -xzf /root/kimvan.tar.gz -C /var/www/kimvan
-```
-
-6. Follow steps 5-12 from Method 1 to complete the setup
-
-## PM2 Configuration for 2 vCPU, 2GB RAM
-
-The `ecosystem.config.js` file is configured for optimal performance on your VPS:
-
-- Single instance in cluster mode to utilize multiple CPUs
-- Memory limit set to 1GB (half of available RAM)
-- Auto-restart if memory exceeds limit
-- Running on port 3000
-
-To monitor your application:
-```
-pm2 monit
-```
-
-To view logs:
-```
+# Xem logs của ứng dụng
 pm2 logs kimvan
 ```
 
-## Setting up Nginx as a Reverse Proxy
+### Bước 7: Mở cổng trên tường lửa
+```
+# Mở cổng 3000 để kiểm tra ứng dụng trực tiếp
+sudo ufw allow 3000
 
-1. Install Nginx
-```
-apt update
-apt install -y nginx
+# Mở cổng 80 (HTTP) và 443 (HTTPS) cho Nginx
+sudo ufw allow 80
+sudo ufw allow 443
+
+# Kiểm tra trạng thái tường lửa
+sudo ufw status
 ```
 
-2. Create a new Nginx configuration file
+### Bước 8: Cấu hình Nginx
 ```
-nano /etc/nginx/sites-available/kimvan
+# Tạo file cấu hình Nginx
+sudo nano /etc/nginx/sites-available/kimvan
 ```
 
-3. Add the following configuration:
+Nội dung file cấu hình Nginx:
 ```
 server {
     listen 80;
@@ -484,63 +496,183 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     }
+
+    # Tăng kích thước tối đa cho upload file
+    client_max_body_size 100M;
+
+    # Tối ưu cho Next.js static assets
+    location /_next/static/ {
+        alias /var/www/kimvan/.next/static/;
+        expires 365d;
+        access_log off;
+    }
+
+    # Tối ưu cho public assets
+    location /public/ {
+        alias /var/www/kimvan/public/;
+        expires 365d;
+        access_log off;
+    }
+
+    # Security headers
+    add_header X-Frame-Options "SAMEORIGIN";
+    add_header X-XSS-Protection "1; mode=block";
+    add_header X-Content-Type-Options "nosniff";
 }
 ```
 
-4. Create a symbolic link to enable the site
 ```
-ln -s /etc/nginx/sites-available/kimvan /etc/nginx/sites-enabled/
+# Thay thế your-domain.com bằng tên miền thực tế của bạn
+# Lưu file (Ctrl+O, sau đó Enter, rồi Ctrl+X để thoát)
+
+# Tạo symbolic link để kích hoạt cấu hình
+sudo ln -s /etc/nginx/sites-available/kimvan /etc/nginx/sites-enabled/
+
+# Kiểm tra cấu hình Nginx
+sudo nginx -t
+
+# Khởi động lại Nginx
+sudo systemctl restart nginx
+
+# Kiểm tra trạng thái Nginx
+sudo systemctl status nginx
 ```
 
-5. Test Nginx configuration
+### Bước 9: Cấu hình Cloudflare
+
+1. Đăng nhập vào tài khoản Cloudflare
+2. Thêm tên miền của bạn (nếu chưa có)
+3. Cập nhật nameservers của tên miền sang nameservers của Cloudflare (nếu chưa làm)
+4. Vào phần DNS và thêm bản ghi A:
+   - Type: A
+   - Name: @ (hoặc subdomain như "www" hoặc "app")
+   - Content: 149.28.151.17 (IP của VPS)
+   - Proxy status: Proxied
+   - TTL: Auto
+5. Vào phần SSL/TLS và đặt chế độ mã hóa thành "Full" hoặc "Full (strict)"
+
+## Cập nhật dự án
+
+### Cập nhật từ Git
+```
+# Di chuyển vào thư mục dự án
+cd /var/www/kimvan
+
+# Lưu các thay đổi cục bộ (nếu có)
+git stash
+
+# Cập nhật code từ Git
+git pull
+
+# Cài đặt lại dependencies (nếu có thay đổi)
+npm install
+
+# Build lại ứng dụng
+npm run build
+
+# Khởi động lại ứng dụng với PM2
+pm2 reload ecosystem.config.js --env production
+
+# Kiểm tra trạng thái ứng dụng
+pm2 status
+
+# Xem logs để đảm bảo không có lỗi
+pm2 logs kimvan
+```
+
+## Các lệnh PM2 hữu ích
+
+```
+# Xem danh sách ứng dụng đang chạy
+pm2 list
+
+# Giám sát tài nguyên sử dụng
+pm2 monit
+
+# Xem logs
+pm2 logs kimvan
+
+# Khởi động lại ứng dụng
+pm2 restart kimvan
+
+# Dừng ứng dụng
+pm2 stop kimvan
+
+# Xóa ứng dụng khỏi PM2
+pm2 delete kimvan
+```
+
+## Xử lý sự cố
+
+### Lỗi không kết nối được GitHub
+Nếu gặp lỗi "Could not resolve host: github.com", hãy cấu hình DNS như trong Bước 3.
+
+### Lỗi không thể truy cập website qua cổng 3000
+1. Kiểm tra xem ứng dụng có đang lắng nghe trên tất cả các địa chỉ IP không:
+```
+netstat -tulpn | grep 3000
+```
+
+2. Đảm bảo HOST được cấu hình là '0.0.0.0' trong ecosystem.config.js:
+```
+env: {
+  NODE_ENV: 'production',
+  PORT: 3000,
+  HOST: '0.0.0.0'
+}
+```
+
+3. Kiểm tra tường lửa đã mở cổng 3000 chưa:
+```
+sudo ufw status
+```
+
+4. Khởi động lại ứng dụng với HOST rõ ràng:
+```
+pm2 stop kimvan
+HOST=0.0.0.0 PORT=3000 pm2 start ecosystem.config.js --env production
+```
+
+5. Kiểm tra xem có thể truy cập localhost trên chính server không:
+```
+curl http://localhost:3000
+```
+
+### Lỗi không thể truy cập website qua Nginx
+1. Kiểm tra trạng thái Nginx:
+```
+systemctl status nginx
+```
+
+2. Kiểm tra logs của Nginx:
+```
+tail -n 50 /var/log/nginx/error.log
+```
+
+3. Kiểm tra cấu hình Nginx:
 ```
 nginx -t
 ```
 
-6. Restart Nginx
+4. Đảm bảo symbolic link đã được tạo:
 ```
-systemctl restart nginx
-```
-
-## Setting up Cloudflare
-
-1. Log in to your Cloudflare account
-
-2. Add your domain if it's not already added
-
-3. Update your domain's nameservers to Cloudflare's nameservers (if not already done)
-
-4. Go to the DNS section and add an A record:
-   - Type: A
-   - Name: @ (or subdomain like "www" or "app")
-   - Content: 149.28.151.17 (your VPS IP)
-   - Proxy status: Proxied (for Cloudflare protection)
-   - TTL: Auto
-
-5. Go to the SSL/TLS section and set the encryption mode to "Full" or "Full (strict)"
-
-6. (Optional) Set up Page Rules for caching or redirects as needed
-
-7. (Optional) Enable Cloudflare's security features like WAF, rate limiting, etc.
-
-## Updating the Deployment
-
-To update your deployment after making changes:
-
-### Using Git
-```
-cd /var/www/kimvan
-git pull
-npm install
-npm run build
-pm2 reload ecosystem.config.js --env production
+ls -la /etc/nginx/sites-enabled/
 ```
 
-### Using SCP
-Repeat steps 1-5 from Method 2, then:
+### Lỗi Permission Denied
 ```
-cd /var/www/kimvan
-npm install
-npm run build
-pm2 reload ecosystem.config.js --env production
+# Cấp quyền cho thư mục dự án
+chown -R www-data:www-data /var/www/kimvan
+```
+
+### Lỗi "sites-available" không tồn tại
+Nếu thư mục sites-available không tồn tại, hãy tạo nó:
+```
+sudo mkdir -p /etc/nginx/sites-available
+sudo mkdir -p /etc/nginx/sites-enabled
+```
+
+Hoặc tạo cấu hình trực tiếp trong thư mục conf.d:
+```
+sudo nano /etc/nginx/conf.d/kimvan.conf
 ```
