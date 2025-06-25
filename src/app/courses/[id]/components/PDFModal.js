@@ -44,6 +44,9 @@ const PDFModal = ({ isOpen, onClose, fileUrl, title = '', isUpdating = false }) 
   );
   
   const isPDF = fileUrl && fileUrl.toLowerCase().endsWith('.pdf');
+  
+  // Xác định nếu là proxy link
+  const isProxyLink = fileUrl && fileUrl.startsWith('/api/proxy-link/');
 
   // Hiển thị thông báo khi tài liệu đang được cập nhật
   if (isUpdating) {
@@ -174,6 +177,19 @@ const PDFModal = ({ isOpen, onClose, fileUrl, title = '', isUpdating = false }) 
                 setError('Không thể tải tài liệu PDF. Vui lòng thử lại sau hoặc mở trong tab mới.');
               }}
               title={title || "PDF Document"}
+              allowFullScreen
+            ></iframe>
+          ) : isProxyLink ? (
+            <iframe
+              src={fileUrl}
+              className="w-full h-full"
+              frameBorder="0"
+              onLoad={() => setLoading(false)}
+              onError={() => {
+                setLoading(false);
+                setError('Không thể tải tài liệu từ đường dẫn proxy. Vui lòng thử lại sau hoặc mở trong tab mới.');
+              }}
+              title={title || "Proxy Document"}
               allowFullScreen
             ></iframe>
           ) : (
