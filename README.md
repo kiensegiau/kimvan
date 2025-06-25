@@ -337,3 +337,123 @@ Lấy dữ liệu từ Google Sheet theo ID.
 
 - **URL Params**: `id` - ID của Google Sheet
 - **Response**: Dữ liệu từ Google Sheet hoặc thông báo lỗi
+
+# Kimvan Project Deployment Guide
+
+## Deployment to Ubuntu VPS
+
+### Method 1: Deploy from Git
+
+1. SSH into your VPS
+```
+ssh root@149.28.151.17
+```
+
+2. Create the target directory
+```
+mkdir -p /var/www/kimvan
+```
+
+3. Navigate to the directory
+```
+cd /var/www/kimvan
+```
+
+4. Clone your Git repository
+```
+git clone https://github.com/your-username/kimvan.git .
+```
+(Replace "your-username" with your actual GitHub username and note the dot at the end to clone into the current directory)
+
+5. Install Node.js and npm if not already installed
+```
+apt update
+apt install -y nodejs npm
+```
+
+6. Install dependencies
+```
+npm install
+```
+
+7. Create .env file (copy from env.example)
+```
+cp env.example .env
+```
+
+8. Edit the .env file with your configuration
+```
+nano .env
+```
+
+9. Build the project
+```
+npm run build
+```
+
+10. Install PM2 to manage the Node.js process
+```
+npm install -g pm2
+```
+
+11. Start the application with PM2
+```
+pm2 start npm --name "kimvan" -- start
+```
+
+12. Set up PM2 to start on system boot
+```
+pm2 startup
+pm2 save
+```
+
+### Method 2: Deploy using SCP
+
+1. Create a tar archive of your project
+```
+tar -czf kimvan.tar.gz .
+```
+
+2. Transfer the archive to your VPS
+```
+scp kimvan.tar.gz root@149.28.151.17:/root/
+```
+
+3. SSH into your VPS
+```
+ssh root@149.28.151.17
+```
+
+4. Create the target directory
+```
+mkdir -p /var/www/kimvan
+```
+
+5. Extract the archive to the target directory
+```
+tar -xzf /root/kimvan.tar.gz -C /var/www/kimvan
+```
+
+6. Follow steps 5-12 from Method 1 to complete the setup
+
+## Updating the Deployment
+
+To update your deployment after making changes:
+
+### Using Git
+```
+cd /var/www/kimvan
+git pull
+npm install
+npm run build
+pm2 restart kimvan
+```
+
+### Using SCP
+Repeat steps 1-5 from Method 2, then:
+```
+cd /var/www/kimvan
+npm install
+npm run build
+pm2 restart kimvan
+```
