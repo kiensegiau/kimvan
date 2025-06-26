@@ -199,18 +199,7 @@ export default function ApiSheetData({
   // Hàm xử lý hyperlink trong table rendering
   const renderHyperlinkCell = (hyperlink, cellContent, rowIndex, cellIndex) => {
     // Xác định loại liên kết để hiển thị icon phù hợp
-    let icon = null;
-    if (isYoutubeLink(hyperlink)) {
-      icon = <span className="text-red-500 mr-1" title="YouTube Video">🎬</span>;
-    } else if (isGoogleDriveLink(hyperlink)) {
-      icon = <span className="text-blue-500 mr-1" title="Google Drive">📄</span>;
-    } else if (hyperlink.includes('docs.google.com/document')) {
-      icon = <span className="text-green-500 mr-1" title="Google Docs">📝</span>;
-    } else if (isPdfLink(hyperlink)) {
-      icon = <span className="text-red-500 mr-1" title="PDF">📕</span>;
-    } else if (hyperlink.startsWith('/api/proxy-link/')) {
-      icon = <span className="text-blue-500 mr-1" title="Secure Link">🔒</span>;
-    }
+    // Removing icon logic as requested
     
     const key = `${rowIndex}-${cellIndex}`;
     const content = cellContent || hyperlink;
@@ -233,14 +222,13 @@ export default function ApiSheetData({
     }
     
     return (
-      <td key={cellIndex} className="px-6 py-4 border-r border-gray-200 last:border-r-0">
+      <td key={cellIndex} className="px-6 py-4 border-r border-gray-200 last:border-r-0 whitespace-normal break-words">
         <div>
           <a 
             href="#" 
-            className={`text-blue-600 hover:underline ${isLoading ? 'opacity-50 cursor-wait' : ''}`}
+            className={`text-blue-600 hover:underline text-base ${isLoading ? 'opacity-50 cursor-wait' : ''}`}
             onClick={(e) => handleLinkClick(e, hyperlink, content)}
           >
-            {icon}
             {isLoading ? (
               <span>
                 {displayText}
@@ -270,25 +258,15 @@ export default function ApiSheetData({
       let url = hyperlinkMatch[1];
       const displayText = hyperlinkMatch[2] || url;
       
-      // Kiểm tra loại link để hiển thị icon phù hợp
-      let icon = null;
-      if (isYoutubeLink(url)) {
-        icon = <span className="text-red-500 mr-1" title="YouTube Video">🎬</span>;
-      } else if (isGoogleDriveLink(url)) {
-        icon = <span className="text-blue-500 mr-1" title="Google Drive">📄</span>;
-      } else if (url.includes('docs.google.com/document')) {
-        icon = <span className="text-green-500 mr-1" title="Google Docs">📝</span>;
-      } else if (isPdfLink(url)) {
-        icon = <span className="text-red-500 mr-1" title="PDF">📕</span>;
-      }
+      // Removing icon logic as requested
       
       return (
         <a 
           href="#" 
           onClick={(e) => handleLinkClick(e, url, displayText)}
-          className="text-blue-600 hover:underline"
+          className="text-blue-600 hover:underline text-base font-medium"
         >
-          {icon}{displayText}
+          {displayText}
         </a>
       );
     }
@@ -298,17 +276,7 @@ export default function ApiSheetData({
     
     // Nếu nội dung chỉ chứa URL
     if (typeof content === 'string' && urlRegex.test(content) && content.trim().match(urlRegex)[0] === content.trim()) {
-      // Xác định loại URL để hiển thị icon phù hợp
-      let icon = null;
-      if (isYoutubeLink(content)) {
-        icon = <span className="text-red-500 mr-1" title="YouTube Video">🎬</span>;
-      } else if (isGoogleDriveLink(content)) {
-        icon = <span className="text-blue-500 mr-1" title="Google Drive">📄</span>;
-      } else if (content.includes('docs.google.com/document')) {
-        icon = <span className="text-green-500 mr-1" title="Google Docs">📝</span>;
-      } else if (isPdfLink(content)) {
-        icon = <span className="text-red-500 mr-1" title="PDF">📕</span>;
-      }
+      // Removing icon logic as requested
       
       // Hiển thị domain thay vì URL đầy đủ
       let displayUrl = '';
@@ -323,14 +291,14 @@ export default function ApiSheetData({
         <a 
           href="#" 
           onClick={(e) => handleLinkClick(e, content)}
-          className="text-blue-600 hover:underline"
+          className="text-blue-600 hover:underline text-base font-medium"
         >
-          {icon}{displayUrl}
+          {displayUrl}
         </a>
       );
     }
     
-    return content;
+    return <span className="text-base">{content}</span>;
   };
 
   // Không cần kiểm tra lỗi và trạng thái loading vì đã được xử lý ở component cha
@@ -516,54 +484,60 @@ export default function ApiSheetData({
       {/* Hiển thị dữ liệu sheet */}
       <div className="px-4 sm:px-6 py-4">
         {sheetDetail?.data?.values && sheetDetail.data.values.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 border-collapse">
-              <thead className="bg-gray-50">
-                <tr>
-                  {sheetDetail.data.values[0].map((header, index) => (
-                    <th 
-                      key={index} 
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200 last:border-r-0"
-                    >
-                      {header}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {sheetDetail.data.values.slice(1).map((row, rowIndex) => {
-                  // Lấy dữ liệu HTML tương ứng nếu có
-                  const htmlRow = sheetDetail.data.htmlData?.[rowIndex + 1]?.values || [];
-                  
-                  return (
-                    <tr key={rowIndex} className="hover:bg-gray-50">
-                      {row.map((cell, cellIndex) => {
-                        // Kiểm tra xem có dữ liệu HTML không
-                        const htmlCell = htmlRow[cellIndex];
-                        const hyperlink = htmlCell?.hyperlink;
-                        
-                        // Nếu có hyperlink trong dữ liệu HTML
-                        if (hyperlink) {
-                          return renderHyperlinkCell(hyperlink, cell, rowIndex, cellIndex);
-                        }
-                        
-                        // Xử lý các cell thông thường
-                        const key = `${rowIndex}-${cellIndex}`;
-                        const cellContent = cell || '';
-                        
-                        return (
-                          <td key={cellIndex} className="px-6 py-4 border-r border-gray-200 last:border-r-0">
-                            <div>
-                              {renderCellContent(cellContent)}
-                            </div>
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          <div className="overflow-x-auto max-w-full -mx-4 sm:mx-0 px-4 sm:px-0">
+            <div className="inline-block min-w-full align-middle">
+              <table className="min-w-full divide-y divide-gray-200 border-collapse table-fixed">
+                <thead className="bg-gray-50">
+                  <tr>
+                    {sheetDetail.data.values[0].map((header, index) => (
+                      <th 
+                        key={index} 
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200 last:border-r-0 whitespace-normal break-words"
+                        style={{ minWidth: '120px' }}
+                      >
+                        {header}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {sheetDetail.data.values.slice(1).map((row, rowIndex) => {
+                    // Lấy dữ liệu HTML tương ứng nếu có
+                    const htmlRow = sheetDetail.data.htmlData?.[rowIndex + 1]?.values || [];
+                    
+                    return (
+                      <tr key={rowIndex} className="hover:bg-gray-50">
+                        {row.map((cell, cellIndex) => {
+                          // Kiểm tra xem có dữ liệu HTML không
+                          const htmlCell = htmlRow[cellIndex];
+                          const hyperlink = htmlCell?.hyperlink;
+                          
+                          // Nếu có hyperlink trong dữ liệu HTML
+                          if (hyperlink) {
+                            return renderHyperlinkCell(hyperlink, cell, rowIndex, cellIndex);
+                          }
+                          
+                          // Xử lý các cell thông thường
+                          const key = `${rowIndex}-${cellIndex}`;
+                          const cellContent = cell || '';
+                          
+                          return (
+                            <td key={cellIndex} className="px-6 py-4 border-r border-gray-200 last:border-r-0 whitespace-normal break-words text-base">
+                              <div className="text-gray-900">
+                                {renderCellContent(cellContent)}
+                              </div>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <div className="mt-4 text-center text-xs text-gray-500 sm:hidden">
+              Vuốt sang trái/phải để xem thêm dữ liệu
+            </div>
           </div>
         ) : (
           <div className="p-6 text-center bg-gray-50 rounded-lg">
