@@ -1,17 +1,18 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { 
   AcademicCapIcon,
   ExclamationCircleIcon, 
   UserCircleIcon, 
   DocumentTextIcon, 
   ClockIcon, 
-  ArrowRightIcon,
-  StarIcon
+  ArrowRightIcon
 } from '@heroicons/react/24/outline';
 import { FireIcon } from '@heroicons/react/24/solid';
+import { StarIcon } from '@heroicons/react/24/solid';
 import { useRouter } from 'next/navigation';
+import useEnrolledCourses from '@/hooks/useEnrolledCourses'; // Import hook mới
 
 // Thời gian cache - Có thể điều chỉnh dễ dàng
 const CACHE_DURATION = 12 * 60 * 60 * 1000; // 12 giờ 
@@ -19,208 +20,18 @@ const MAX_CACHE_ITEMS = 5; // Giữ tối đa 5 cache items
 
 export default function MyCoursesPage() {
   const router = useRouter();
-  const [enrolledCourses, setEnrolledCourses] = useState([]);
-  const [allCourses, setAllCourses] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [cacheStatus, setCacheStatus] = useState('');
   
   // Các danh mục Level
   const courseLevels = ['Cơ bản', 'Trung cấp', 'Nâng cao', 'Chuyên sâu'];
-
-  // Hàm lưu dữ liệu vào localStorage với quản lý cache
-  const saveToCache = (data) => {
-    try {
-      // Tạo đối tượng cache với dữ liệu và thời gian
-      const cacheItem = {
-        data: data,
-        timestamp: Date.now()
-      };
-      
-      // Lưu dữ liệu khóa học vào cache
-      localStorage.setItem('my-courses', JSON.stringify(cacheItem));
-      
-      // Dọn dẹp cache cũ
-      cleanupOldCaches();
-      
-      setCacheStatus('saved');
-    } catch (error) {
-      console.error('Lỗi khi lưu cache:', error);
-      // Thử xóa cache và lưu lại
-      try {
-        localStorage.removeItem('my-courses');
-        localStorage.setItem('my-courses', JSON.stringify({
-          data: data,
-          timestamp: Date.now()
-        }));
-      } catch (e) {
-        // Xử lý lỗi im lặng nếu vẫn không thể lưu
-      }
-    }
-  };
-
-  // Hàm dọn dẹp các cache cũ
-  const cleanupOldCaches = () => {
-    try {
-      // Lấy tất cả keys trong localStorage
-      const keys = Object.keys(localStorage);
-      
-      // Lọc các key liên quan đến cache khóa học
-      const courseCacheKeys = keys.filter(key => 
-        key.startsWith('courses-') || key === 'my-courses'
-      );
-      
-      // Nếu có quá nhiều cache (sử dụng hằng số MAX_CACHE_ITEMS)
-      if (courseCacheKeys.length > MAX_CACHE_ITEMS) {
-        // Tạo mảng các đối tượng cache với key và timestamp
-        const cacheItems = [];
-        
-        for (const key of courseCacheKeys) {
-          try {
-            const item = JSON.parse(localStorage.getItem(key));
-            if (item && item.timestamp) {
-              cacheItems.push({ key, timestamp: item.timestamp });
-            }
-          } catch (e) {
-            // Bỏ qua cache không hợp lệ
-            localStorage.removeItem(key);
-          }
-        }
-        
-        // Sắp xếp theo thời gian, cũ nhất lên đầu
-        cacheItems.sort((a, b) => a.timestamp - b.timestamp);
-        
-        // Xóa các cache cũ nhất, giữ lại số lượng cache theo MAX_CACHE_ITEMS
-        for (let i = 0; i < cacheItems.length - MAX_CACHE_ITEMS; i++) {
-          localStorage.removeItem(cacheItems[i].key);
-        }
-      }
-    } catch (e) {
-      // Bỏ qua lỗi khi dọn dẹp cache
-    }
-  };
-
-  // Hàm lấy dữ liệu từ localStorage
-  const getFromCache = () => {
-    try {
-      const cachedData = localStorage.getItem('my-courses');
-      if (!cachedData) return null;
-      
-      const cacheItem = JSON.parse(cachedData);
-      const now = Date.now();
-      
-      // Kiểm tra xem cache có còn hiệu lực không (12 giờ)
-      if (now - cacheItem.timestamp > CACHE_DURATION) {
-        localStorage.removeItem('my-courses');
-        setCacheStatus('expired');
-        return null;
-      }
-      
-      setCacheStatus('hit');
-      return cacheItem.data;
-    } catch (error) {
-      console.error('Lỗi khi đọc cache:', error);
-      // Xóa cache lỗi
-      try {
-        localStorage.removeItem('my-courses');
-        console.log('Đã xóa cache lỗi');
-      } catch (e) {
-        // Bỏ qua nếu không thể xóa
-      }
-      return null;
-    }
-  };
-
-  // Hàm để tải danh sách khóa học đã đăng ký từ API
-  const fetchEnrolledCourses = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      // Kiểm tra cache trước
-      const cachedData = getFromCache();
-      if (cachedData) {
-        setEnrolledCourses(cachedData.enrolledCourses);
-        setAllCourses(cachedData.allCourses);
-        setLoading(false);
-        return;
-      }
-
-      // Lấy danh sách khóa học đã đăng ký
-      const enrollmentsResponse = await fetch('/api/enrollments');
-      
-      if (!enrollmentsResponse.ok) {
-        if (enrollmentsResponse.status === 401) {
-          setError('Bạn cần đăng nhập để xem khóa học đã đăng ký');
-          router.push('/login');
-          return;
-        }
-        
-        const errorData = await enrollmentsResponse.json().catch(() => ({}));
-        const errorMessage = errorData.error || `Lỗi ${enrollmentsResponse.status}: ${enrollmentsResponse.statusText}`;
-        throw new Error(errorMessage);
-      }
-      
-      const enrollmentsData = await enrollmentsResponse.json();
-      if (!enrollmentsData.success || !enrollmentsData.data) {
-        throw new Error('Không thể lấy được danh sách khóa học đã đăng ký');
-      }
-      
-      const enrollments = enrollmentsData.data;
-      setEnrolledCourses(enrollments);
-      
-      // Lấy thêm thông tin chi tiết của tất cả khóa học
-      const coursesResponse = await fetch('/api/minicourses');
-      if (coursesResponse.ok) {
-        const coursesData = await coursesResponse.json();
-        if (coursesData && coursesData.success && coursesData.data && Array.isArray(coursesData.data.minicourses)) {
-          setAllCourses(coursesData.data.minicourses);
-          
-          // Lưu vào cache
-          saveToCache({
-            enrolledCourses: enrollments,
-            allCourses: coursesData.data.minicourses
-          });
-        }
-      }
-    } catch (err) {
-      setError(err.message || 'Đã xảy ra lỗi khi tải dữ liệu khóa học.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Hàm làm mới dữ liệu
-  const handleRefresh = () => {
-    setLoading(true);
-    
-    // Xóa cache khi làm mới để đảm bảo lấy dữ liệu mới
-    try {
-      localStorage.removeItem('my-courses');
-      setCacheStatus('cleared');
-      console.log('Đã xóa cache khóa học');
-    } catch (error) {
-      console.error('Lỗi khi xóa cache:', error);
-    }
-    
-    // Chờ 300ms để hiển thị trạng thái loading trước khi fetch
-    setTimeout(() => {
-      fetchEnrolledCourses();
-    }, 300);
-  };
-
-  useEffect(() => {
-    // Kiểm tra xem có dữ liệu trong cache không trước khi fetch
-    const cachedData = getFromCache();
-    if (cachedData) {
-      setEnrolledCourses(cachedData.enrolledCourses);
-      setAllCourses(cachedData.allCourses);
-      setLoading(false);
-      console.log('Đã tải dữ liệu khóa học từ cache');
-    } else {
-      fetchEnrolledCourses();
-    }
-  }, []);
+  
+  // Sử dụng hook để lấy khóa học đã đăng ký
+  const { 
+    loading, 
+    error, 
+    cacheStatus, 
+    refreshEnrollments, 
+    getEnrolledCoursesWithDetails 
+  } = useEnrolledCourses();
 
   // Tạo ngẫu nhiên đánh giá cho khóa học
   const getRandomRating = () => {
@@ -260,27 +71,7 @@ export default function MyCoursesPage() {
     return stars;
   };
 
-  // Hàm tìm thông tin chi tiết khóa học
-  const findCourseDetails = (enrolledCourse) => {
-    const courseId = enrolledCourse.courseId;
-    return allCourses.find(course => 
-      course._id === courseId || course.courseId === courseId
-    );
-  };
-
-  // Lấy các khóa học đã đăng ký với thông tin chi tiết
-  const getEnrolledCoursesWithDetails = () => {
-    if (!enrolledCourses.length) return [];
-    
-    return enrolledCourses.map(enrollment => {
-      const courseDetails = findCourseDetails(enrollment);
-      return {
-        ...enrollment,
-        details: courseDetails || null
-      };
-    });
-  };
-
+  // Lấy danh sách khóa học đã đăng ký với thông tin chi tiết
   const enrolledCoursesWithDetails = getEnrolledCoursesWithDetails();
 
   return (
@@ -309,7 +100,7 @@ export default function MyCoursesPage() {
           {/* Các con số thống kê */}
           <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
             <div className="bg-white bg-opacity-10 rounded-lg p-4">
-              <div className="text-2xl md:text-3xl font-bold text-white">{enrolledCourses.length}</div>
+              <div className="text-2xl md:text-3xl font-bold text-white">{enrolledCoursesWithDetails.length}</div>
               <div className="text-indigo-100 text-sm">Khóa học đã đăng ký</div>
             </div>
             <div className="bg-white bg-opacity-10 rounded-lg p-4">
@@ -342,7 +133,7 @@ export default function MyCoursesPage() {
           </h2>
           <div className="flex items-center">
             <button
-              onClick={handleRefresh}
+              onClick={refreshEnrollments}
               className="flex items-center px-3 py-2 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition-colors"
               title="Làm mới dữ liệu"
               disabled={loading}
@@ -376,7 +167,7 @@ export default function MyCoursesPage() {
                 </div>
                 <div className="mt-3">
                   <button
-                    onClick={handleRefresh}
+                    onClick={refreshEnrollments}
                     className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="-ml-0.5 mr-1.5 h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">

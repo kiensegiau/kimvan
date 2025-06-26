@@ -6,6 +6,7 @@ import { StarIcon, FireIcon } from '@heroicons/react/24/solid';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import useUserData from '@/hooks/useUserData';
+import useEnrolledCourses from '@/hooks/useEnrolledCourses'; // Import hook mới
 
 // Thời gian cache - Có thể điều chỉnh dễ dàng
 const CACHE_DURATION = 12 * 60 * 60 * 1000; // 12 giờ 
@@ -23,12 +24,19 @@ export default function CoursesPage() {
   const [cacheStatus, setCacheStatus] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [enrolledOnly, setEnrolledOnly] = useState(false); // Mặc định hiển thị tất cả khóa học
-  const [enrolledCourses, setEnrolledCourses] = useState([]);
   const [canViewAllCourses, setCanViewAllCourses] = useState(false); // Quyền xem tất cả khóa học
   const [viewAllMode, setViewAllMode] = useState(false); // Công tắc bật/tắt chế độ xem tất cả
   
   // Lấy thông tin người dùng từ hook useUserData
   const { userData, loading: userDataLoading } = useUserData();
+  
+  // Sử dụng hook useEnrolledCourses để lấy dữ liệu khóa học đã đăng ký
+  const { 
+    enrolledCourses,
+    loading: enrolledLoading,
+    error: enrolledError,
+    refreshEnrollments
+  } = useEnrolledCourses();
   
   // Thêm các state mới cho bộ lọc
   const [selectedLevel, setSelectedLevel] = useState('all');
@@ -180,23 +188,10 @@ export default function CoursesPage() {
       // Kiểm tra quyền xem tất cả khóa học
       const hasViewAllPermission = await checkViewAllPermission();
       
-      // Trước tiên lấy danh sách khóa học đã đăng ký
-      try {
-        const enrollmentsResponse = await fetch('/api/enrollments');
-        
-        if (enrollmentsResponse.ok) {
-          const enrollmentsData = await enrollmentsResponse.json();
-          if (enrollmentsData.success && enrollmentsData.data) {
-            setEnrolledCourses(enrollmentsData.data);
-          }
-        } else if (enrollmentsResponse.status === 401) {
-          // Người dùng chưa đăng nhập
-          setError('Bạn cần đăng nhập để xem khóa học đã đăng ký');
-          setLoading(false);
-          return;
-        }
-      } catch (enrollError) {
-        console.error('Lỗi khi lấy khóa học đã đăng ký:', enrollError);
+      // Không cần gọi API enrollments nữa vì đã sử dụng hook useEnrolledCourses
+      // Chỉ cần kiểm tra nếu có lỗi từ hook
+      if (enrolledError) {
+        console.error('Lỗi khi lấy khóa học đã đăng ký:', enrolledError);
       }
       
       // Tránh kiểm tra cache ở đây vì đã kiểm tra trong useEffect 
@@ -249,6 +244,9 @@ export default function CoursesPage() {
     } catch (error) {
       console.error('Lỗi khi xóa cache:', error);
     }
+    
+    // Làm mới dữ liệu khóa học đã đăng ký
+    refreshEnrollments();
     
     // Chờ 300ms để hiển thị trạng thái loading trước khi fetch
     setTimeout(() => {
