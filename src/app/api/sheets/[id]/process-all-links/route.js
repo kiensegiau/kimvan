@@ -10,7 +10,8 @@ import {
   extractUrlFromCell, 
   isDriveUrl, 
   createHyperlinkFormula, 
-  processLink 
+  processLink,
+  processRecursiveFolder
 } from '@/utils/drive-utils';
 
 export async function POST(request, { params }) {
@@ -289,7 +290,7 @@ export async function POST(request, { params }) {
     const BATCH_SIZE = 10;
     
     // Hàm xử lý một link và trả về kết quả
-    const processLinkWithResult = async (urlGroup) => {
+    const processLinkWithResult = async (urlGroup, sheetName) => {
       const firstCell = urlGroup.cells[0];
       try {
         console.log(`\n===== Đang xử lý URL: ${urlGroup.originalUrl} (${urlGroup.cells.length} ô) =====`);
@@ -379,22 +380,53 @@ export async function POST(request, { params }) {
         function continueProcessing() {
           console.log(`Loại file cuối cùng được xác định: ${fileType}, là folder: ${isFolder}`);
           
-          // Nếu là folder, không cần xử lý, chỉ trả về URL gốc
+          // Nếu là folder, xử lý đệ quy folder
           if (isFolder) {
-            console.log(`Link là folder, không cần xử lý: ${urlGroup.originalUrl}`);
-            return {
-              success: true,
-              urlGroup,
-              newUrl: urlGroup.originalUrl, // Giữ nguyên URL gốc cho folder
-              processResult: {
-                success: true,
-                originalLink: urlGroup.originalUrl,
-                processedLink: urlGroup.originalUrl,
-                isFolder: true
-              },
-              fileType: 'folder',
-              isFolder: true
-            };
+            console.log(`Phát hiện link là folder, tiến hành xử lý đệ quy: ${urlGroup.originalUrl}`);
+            console.log(`Sẽ lưu vào thư mục cha có tên: ${sheetName}`);
+            
+            // Xử lý đệ quy folder, truyền tên sheet làm tên thư mục cha
+            return processRecursiveFolder(urlGroup.originalUrl, 3, 0, null, 0.15, sheetName)
+              .then(folderResult => {
+                console.log(`Đã xử lý folder đệ quy thành công: ${urlGroup.originalUrl}`);
+                console.log(`Số file đã xử lý: ${folderResult.nestedFilesProcessed}, số folder đã xử lý: ${folderResult.nestedFoldersProcessed}`);
+                
+                // Trả về kết quả xử lý folder
+                return {
+                  success: true,
+                  urlGroup,
+                  newUrl: folderResult.folderStructure.processedFolderLink || urlGroup.originalUrl,
+                  processResult: {
+                    success: true,
+                    originalLink: urlGroup.originalUrl,
+                    processedLink: folderResult.folderStructure.processedFolderLink || urlGroup.originalUrl,
+                    isFolder: true,
+                    folderInfo: folderResult.folderStructure,
+                    nestedFilesProcessed: folderResult.nestedFilesProcessed,
+                    nestedFoldersProcessed: folderResult.nestedFoldersProcessed
+                  },
+                  fileType: 'folder',
+                  isFolder: true
+                };
+              })
+              .catch(folderError => {
+                console.error(`Lỗi khi xử lý folder đệ quy: ${folderError.message}`);
+                // Nếu lỗi, vẫn trả về URL gốc
+                return {
+                  success: true,
+                  urlGroup,
+                  newUrl: urlGroup.originalUrl,
+                  processResult: {
+                    success: false,
+                    originalLink: urlGroup.originalUrl,
+                    processedLink: urlGroup.originalUrl,
+                    isFolder: true,
+                    error: folderError.message
+                  },
+                  fileType: 'folder',
+                  isFolder: true
+                };
+              });
           }
           
           // Xác định xem có phải là file video không
@@ -433,8 +465,8 @@ export async function POST(request, { params }) {
             console.log(`Phát hiện file hình ảnh: ${fileType}`);
           }
           
-          // Sử dụng hàm processLink với retry và timeout, truyền thêm thông tin loại file chính xác
-          return processLink(baseUrl, urlGroup.originalUrl, cookie, 2, 500000, fileType) // 500 giây timeout, 2 lần retry
+          // Sử dụng hàm processLink với retry và timeout, truyền thêm thông tin loại file chính xác và tên sheet
+          return processLink(baseUrl, urlGroup.originalUrl, cookie, 2, 500000, fileType, sheetName) // 500 giây timeout, 2 lần retry, thêm tên sheet
             .then(processResult => {
               // Tạo giá trị mới cho ô
               const newUrl = processResult.processedLink;
@@ -483,7 +515,7 @@ export async function POST(request, { params }) {
       console.log(`\n===== Đang xử lý batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(urlGroupsArray.length / BATCH_SIZE)} (${batch.length} link) =====`);
       
       // Xử lý song song các link trong batch
-      const batchPromises = batch.map(urlGroup => processLinkWithResult(urlGroup));
+      const batchPromises = batch.map(urlGroup => processLinkWithResult(urlGroup, sheet.name));
       const batchResults = await Promise.all(batchPromises);
       
       // Xử lý kết quả của batch

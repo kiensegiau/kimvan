@@ -148,7 +148,7 @@ async function downloadFromGoogleDrive(fileId, resourceKey = null) {
 }
 
 // Hàm upload file lên Google Drive
-async function uploadToGoogleDrive(filePath, fileName, mimeType, folderId = null) {
+async function uploadToGoogleDrive(filePath, fileName, mimeType, folderId = null, courseName = null) {
   try {
     console.log(`Đang tải lên file: ${fileName} (${mimeType})`);
     
@@ -159,25 +159,68 @@ async function uploadToGoogleDrive(filePath, fileName, mimeType, folderId = null
     }
     
     // Tạo OAuth2 client
-    const oauth2Client = new google.auth.OAuth2(
-      process.env.GOOGLE_CLIENT_ID,
-      process.env.GOOGLE_CLIENT_SECRET,
-      process.env.GOOGLE_REDIRECT_URI
-    );
-    
-    // Thiết lập credentials
-    oauth2Client.setCredentials(storedToken);
+    const oauth2Client = new google.auth.GoogleAuth({
+      credentials: {
+        client_email: process.env.GOOGLE_CLIENT_EMAIL,
+        private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n')
+      },
+      scopes: ['https://www.googleapis.com/auth/drive']
+    });
     
     // Khởi tạo Drive API
     const drive = google.drive({ version: 'v3', auth: oauth2Client });
     
     // Xác định folder để lưu file
     let targetFolderId = process.env.GOOGLE_DRIVE_FOLDER_ID || null;
-    let folderExists = false;
     let folderName = 'Mặc định';
     
+    // Nếu có courseName, tìm hoặc tạo thư mục cha có tên là courseName
+    if (courseName) {
+      console.log(`Tìm hoặc tạo thư mục cha có tên: ${courseName}`);
+      
+      try {
+        // Tìm folder có tên là courseName
+        const folderResponse = await drive.files.list({
+          q: `name='${courseName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+          fields: 'files(id, name)',
+          spaces: 'drive'
+        });
+        
+        let courseFolder = null;
+        
+        // Nếu folder đã tồn tại, sử dụng nó
+        if (folderResponse.data.files && folderResponse.data.files.length > 0) {
+          courseFolder = folderResponse.data.files[0];
+          console.log(`Đã tìm thấy thư mục "${courseName}" với ID: ${courseFolder.id}`);
+        } else {
+          // Nếu folder chưa tồn tại, tạo mới
+          console.log(`Thư mục "${courseName}" chưa tồn tại, tiến hành tạo mới...`);
+          
+          const folderMetadata = {
+            name: courseName,
+            mimeType: 'application/vnd.google-apps.folder'
+          };
+          
+          const folder = await drive.files.create({
+            resource: folderMetadata,
+            fields: 'id, name, webViewLink'
+          });
+          
+          courseFolder = folder.data;
+          console.log(`Đã tạo thư mục "${courseName}" với ID: ${courseFolder.id}`);
+        }
+        
+        // Sử dụng courseFolder làm thư mục đích
+        targetFolderId = courseFolder.id;
+        folderName = courseName;
+      } catch (folderError) {
+        console.error(`Lỗi khi tìm hoặc tạo thư mục "${courseName}":`, folderError.message);
+        console.log(`Sử dụng thư mục mặc định hoặc folderId được chỉ định thay thế.`);
+      }
+    }
+    
     // Kiểm tra folder được chỉ định
-    if (folderId) {
+    if (folderId && !targetFolderId) {
       try {
         console.log(`Kiểm tra folder ID: ${folderId}`);
         const folderResponse = await drive.files.get({
@@ -188,7 +231,6 @@ async function uploadToGoogleDrive(filePath, fileName, mimeType, folderId = null
         // Kiểm tra xem đây có phải là folder không
         if (folderResponse.data.mimeType === 'application/vnd.google-apps.folder') {
           targetFolderId = folderId;
-          folderExists = true;
           folderName = folderResponse.data.name;
           console.log(`Folder tồn tại, sẽ sử dụng folder ID: ${targetFolderId} (${folderName})`);
         } else {
@@ -199,66 +241,127 @@ async function uploadToGoogleDrive(filePath, fileName, mimeType, folderId = null
       }
     }
     
-    // Xóa các file trùng lặp nếu có
-    let duplicatesDeleted = 0;
-    try {
-      const result = await checkAndDeleteDuplicates(drive, fileName, targetFolderId);
-      duplicatesDeleted = result.deletedCount;
-      if (duplicatesDeleted > 0) {
-        console.log(`Đã xóa ${duplicatesDeleted} file trùng lặp`);
+    // Nếu không có folder nào được xác định, tạo folder mới
+    if (!targetFolderId) {
+      try {
+        console.log('Không có folder nào được xác định, tạo folder mặc định...');
+        const folderMetadata = {
+          name: 'Files từ Google Drive',
+          mimeType: 'application/vnd.google-apps.folder'
+        };
+        
+        const folder = await drive.files.create({
+          resource: folderMetadata,
+          fields: 'id, name'
+        });
+        
+        targetFolderId = folder.data.id;
+        folderName = folder.data.name;
+        console.log(`Đã tạo folder mặc định: ${targetFolderId} (${folderName})`);
+      } catch (createFolderError) {
+        console.error('Lỗi khi tạo folder mặc định:', createFolderError.message);
+        throw new Error(`Không thể tạo folder mặc định: ${createFolderError.message}`);
       }
-    } catch (duplicateError) {
-      console.warn('Lỗi khi kiểm tra file trùng lặp:', duplicateError.message);
     }
     
-    // Tải file lên
+    // Kiểm tra xem file đã tồn tại trong folder chưa
+    console.log(`Kiểm tra xem file "${fileName}" đã tồn tại trong folder "${folderName}" chưa...`);
+    
+    // Xử lý tên file để sử dụng trong truy vấn
+    const escapedFileName = fileName.replace(/'/g, "\\'");
+    
+    let duplicatesDeleted = 0;
+    
     try {
-      const fileMetadata = {
-        name: fileName,
-        parents: targetFolderId ? [targetFolderId] : []
-      };
-      
-      const media = {
-        mimeType: mimeType,
-        body: fs.createReadStream(filePath)
-      };
-      
-      const uploadResponse = await drive.files.create({
-        requestBody: fileMetadata,
-        media: media,
-        fields: 'id,name,webViewLink',
-        supportsAllDrives: true
+      // Tìm các file trùng tên trong folder đích
+      const duplicatesResponse = await drive.files.list({
+        q: `name='${escapedFileName}' and '${targetFolderId}' in parents and trashed=false`,
+        fields: 'files(id, name)',
+        spaces: 'drive'
       });
       
-      console.log(`File đã được tải lên thành công! ID: ${uploadResponse.data.id}`);
-      
-      return {
-        success: true,
-        fileId: uploadResponse.data.id,
-        fileName: uploadResponse.data.name,
-        webViewLink: uploadResponse.data.webViewLink,
-        duplicatesDeleted: duplicatesDeleted
-      };
-    } catch (uploadError) {
-      console.error('Lỗi khi tải lên file:', uploadError.message);
-      throw new Error(`Không thể tải lên file: ${uploadError.message}`);
+      // Xóa các file trùng tên nếu có
+      if (duplicatesResponse.data.files && duplicatesResponse.data.files.length > 0) {
+        console.log(`Tìm thấy ${duplicatesResponse.data.files.length} file trùng tên trong folder đích, tiến hành xóa...`);
+        
+        for (const duplicate of duplicatesResponse.data.files) {
+          console.log(`Xóa file trùng tên: ${duplicate.name} (ID: ${duplicate.id})`);
+          
+          try {
+            await drive.files.delete({
+              fileId: duplicate.id
+            });
+            
+            duplicatesDeleted++;
+            console.log(`Đã xóa file trùng tên: ${duplicate.name}`);
+          } catch (deleteError) {
+            console.error(`Lỗi khi xóa file trùng tên ${duplicate.name}:`, deleteError.message);
+          }
+        }
+      } else {
+        console.log(`Không tìm thấy file trùng tên trong folder đích.`);
+      }
+    } catch (duplicatesError) {
+      console.error(`Lỗi khi tìm kiếm file trùng tên:`, duplicatesError.message);
     }
+    
+    // Tạo metadata cho file
+    const fileMetadata = {
+      name: fileName,
+      parents: [targetFolderId]
+    };
+    
+    // Tạo media cho file
+    const media = {
+      mimeType: mimeType,
+      body: fs.createReadStream(filePath)
+    };
+    
+    // Tải file lên Drive
+    console.log(`Đang tải file "${fileName}" lên thư mục "${folderName}" (ID: ${targetFolderId})...`);
+    
+    const uploadResponse = await drive.files.create({
+      resource: fileMetadata,
+      media: media,
+      fields: 'id, name, webViewLink, webContentLink'
+    });
+    
+    console.log(`File đã được tải lên thành công: ${uploadResponse.data.name} (ID: ${uploadResponse.data.id})`);
+    
+    return {
+      success: true,
+      fileId: uploadResponse.data.id,
+      fileName: uploadResponse.data.name,
+      webViewLink: uploadResponse.data.webViewLink,
+      webContentLink: uploadResponse.data.webContentLink,
+      duplicatesDeleted: duplicatesDeleted,
+      folderName: folderName,
+      folderId: targetFolderId
+    };
   } catch (error) {
-    console.error('Lỗi khi tải lên file lên Google Drive:', error);
-    throw error;
+    console.error('Lỗi khi tải file lên Google Drive:', error);
+    throw new Error(`Không thể tải file lên Google Drive: ${error.message}`);
   }
 }
 
 // API Endpoint
 export async function POST(request) {
-  console.log('============== BẮT ĐẦU API TẢI XUỐNG VÀ UPLOAD LẠI FILE (KHÔNG XỬ LÝ) ==============');
+  console.log('============== BẮT ĐẦU API TẢI XUỐNG VÀ TẢI LÊN LẠI FILE GOOGLE DRIVE ==============');
   
   let tempDir = null;
   
   try {
-    // Lấy thông tin từ request body
-    const requestData = await request.json();
-    const { driveLink, fileType, skipProcessing = true } = requestData;
+    // Parse request body
+    const requestBody = await request.json();
+    const { driveLink, folderId, fileType, skipProcessing, courseName } = requestBody;
+    
+    console.log('Thông tin request:', {
+      driveLink: driveLink || 'không có',
+      folderId: folderId || 'không có (sẽ dùng folder mặc định)',
+      fileType: fileType || 'không xác định',
+      skipProcessing: skipProcessing ? 'true' : 'false',
+      courseName: courseName || 'không có (sẽ lưu vào thư mục mặc định)'
+    });
     
     if (!driveLink) {
       return NextResponse.json(
@@ -294,7 +397,9 @@ export async function POST(request) {
     const uploadResult = await uploadToGoogleDrive(
       downloadResult.filePath,
       downloadResult.fileName,
-      downloadResult.mimeType
+      downloadResult.mimeType,
+      folderId,
+      courseName
     );
     
     // Trả về kết quả

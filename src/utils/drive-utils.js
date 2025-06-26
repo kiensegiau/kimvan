@@ -400,14 +400,21 @@ export function createHyperlinkFormula(originalCell, newUrl) {
 }
 
 // Xử lý một link với timeout và retry
-export async function processLink(baseUrl, url, cookie = '', maxRetries = 2, timeoutMs = 60000, fileType = null) {
+export async function processLink(baseUrl, url, cookie = '', maxRetries = 2, timeoutMs = 60000, fileType = null, sheetName = null) {
   let retries = 0;
   
   while (retries <= maxRetries) {
     try {
       // Xác định API endpoint dựa trên loại file
       let apiEndpoint = '/api/drive/process-and-replace';
-      let requestBody = { driveLink: url };
+      let requestBody = { 
+        driveLink: url 
+      };
+      
+      // Thêm tên sheet vào request body nếu có
+      if (sheetName) {
+        requestBody.courseName = sheetName; // Sử dụng courseName để tương thích với API hiện tại
+      }
       
       // Kiểm tra loại file chi tiết hơn
       const isVideoFile = fileType && (
@@ -448,8 +455,18 @@ export async function processLink(baseUrl, url, cookie = '', maxRetries = 2, tim
           fileType: fileType,
           skipProcessing: true
         };
+        
+        // Thêm tên sheet vào request body nếu có
+        if (sheetName) {
+          requestBody.courseName = sheetName;
+        }
       } else {
         console.log(`Xử lý file PDF: ${url}`);
+        
+        // Thêm tên sheet vào request body nếu có
+        if (sheetName) {
+          console.log(`Sẽ lưu file vào thư mục có tên: ${sheetName}`);
+        }
       }
       
       console.log(`Gửi yêu cầu xử lý link đến API: ${baseUrl}${apiEndpoint} (lần thử ${retries + 1}/${maxRetries + 1})`);
@@ -573,4 +590,7 @@ export async function processLink(baseUrl, url, cookie = '', maxRetries = 2, tim
       }
     }
   }
-} 
+}
+
+// Reexport processRecursiveFolder từ drive-service.js
+export { processRecursiveFolder } from '@/app/api/drive/remove-watermark/lib/drive-service.js'; 
