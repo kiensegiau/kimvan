@@ -76,11 +76,7 @@ export function useCourseData(id) {
     // Nếu không có dữ liệu khoá học, không có quyền truy cập
     if (!courseData) return false;
     
-    // Kiểm tra trực tiếp quyền admin
-    if (userData && userData.role === 'admin') {
-      console.log("Admin role detected, granting access");
-      return true;
-    }
+    // Không còn kiểm tra quyền admin nữa (theo yêu cầu)
     
     // Kiểm tra thuộc tính canViewAllCourses
     if (userData && userData.canViewAllCourses === true) {
@@ -362,12 +358,11 @@ export function useCourseData(id) {
       setLoading(true);
       setError(null);
 
-      // Kiểm tra sớm nếu người dùng là admin hoặc có quyền xem tất cả
-      const isAdmin = userData?.role === 'admin';
+      // Kiểm tra nếu người dùng có quyền xem tất cả (đã loại bỏ admin)
       const hasCanViewAllProperty = userData?.canViewAllCourses === true;
       
-      // Nếu là admin hoặc có quyền đặc biệt, bỏ qua các kiểm tra quyền khác
-      const hasSpecialAccess = isAdmin || hasCanViewAllProperty;
+      // Nếu có quyền đặc biệt, bỏ qua các kiểm tra quyền khác
+      const hasSpecialAccess = hasCanViewAllProperty;
 
       // Kiểm tra cache trước
       const cachedData = getFromCache();

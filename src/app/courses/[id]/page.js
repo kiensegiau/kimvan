@@ -56,10 +56,10 @@ export default function CourseDetailPage({ params }) {
     }, 500); // Delay nhỏ để tránh các yêu cầu đồng thời
   };
 
-  // Kiểm tra quyền đặc biệt và bỏ qua kiểm tra quyền thông thường nếu là admin hoặc có quyền xem tất cả
-  const isAdmin = userData?.role === 'admin';
+  // Kiểm tra quyền đặc biệt và bỏ qua kiểm tra quyền thông thường nếu có quyền xem tất cả
+  // Đã loại bỏ kiểm tra admin theo yêu cầu
   const hasViewAllPermission = userData?.canViewAllCourses === true;
-  const shouldBypassPermissionCheck = isAdmin || hasViewAllPermission;
+  const shouldBypassPermissionCheck = hasViewAllPermission;
 
   // Kiểm tra quyền truy cập với xử lý đặc biệt cho admin và canViewAllCourses
   const hasAccessDenied = !shouldBypassPermissionCheck && permissionChecked && error && error.includes("không có quyền truy cập");

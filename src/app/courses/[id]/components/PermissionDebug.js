@@ -51,8 +51,8 @@ export default function PermissionDebug({ courseId }) {
   const isEnrolled = isEnrolledInCourse(courseId);
   const courseRequiresEnrollment = courseData ? courseData.requiresEnrollment !== false : true;
   
-  // Xác định quyền truy cập dựa trên điều kiện quyền - ưu tiên admin và canViewAllCourses
-  const hasAccessToCourse = isAdmin || hasCanViewAllProperty || hasViewAllPermission || 
+  // Xác định quyền truy cập dựa trên điều kiện quyền - chỉ ưu tiên canViewAllCourses (bỏ qua admin)
+  const hasAccessToCourse = hasCanViewAllProperty || hasViewAllPermission || 
                            (!courseRequiresEnrollment || isEnrolled);
 
   const handleRefresh = async () => {
@@ -98,8 +98,8 @@ export default function PermissionDebug({ courseId }) {
             </div>
             
             <div className="font-medium">Admin role:</div>
-            <div className={isAdmin ? 'text-green-600' : 'text-red-600'}>
-              {isAdmin ? 'Có ✓' : 'Không'}
+            <div className="text-gray-600">
+              {isAdmin ? 'Có (không có đặc quyền)' : 'Không'}
             </div>
             
             <div className="font-medium">canViewAllCourses property:</div>
