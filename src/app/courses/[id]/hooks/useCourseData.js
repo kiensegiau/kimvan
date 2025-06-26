@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import CryptoJS from 'crypto-js';
 import useUserData from '@/hooks/useUserData';
+import useEnrolledCourses from '@/hooks/useEnrolledCourses';
 
 // Khóa mã hóa - phải giống với khóa ở phía server
 const ENCRYPTION_KEY = 'kimvan-secure-key-2024';
@@ -37,6 +38,15 @@ export function useCourseData(id) {
   
   // Lấy thông tin người dùng từ hook useUserData
   const { userData, loading: userDataLoading } = useUserData();
+  
+  // Sử dụng hook useEnrolledCourses để lấy danh sách khóa học đã đăng ký
+  const { 
+    enrolledCourses, 
+    loading: enrolledCoursesLoading,
+    hasAccessToCourse,
+    hasViewAllCoursesPermission,
+    isEnrolledInCourse
+  } = useEnrolledCourses();
 
   // Hàm giải mã dữ liệu với xử lý lỗi
   const decryptData = (encryptedData) => {
@@ -68,10 +78,8 @@ export function useCourseData(id) {
     // Nếu không có dữ liệu khoá học, không có quyền truy cập
     if (!courseData) return false;
     
-    // Trả về true nếu người dùng có quyền truy cập
-    return courseData.isEnrolled === true || 
-           courseData.canViewAllCourses === true ||
-           courseData.requiresEnrollment !== true;
+    // Sử dụng các hàm kiểm tra từ hook useEnrolledCourses
+    return hasAccessToCourse(id, courseData);
   };
   
   // Hàm lưu dữ liệu vào cache
@@ -319,241 +327,96 @@ export function useCourseData(id) {
 
   // Hàm lấy thông tin chi tiết của khóa học
   const fetchCourseDetail = async () => {
-    setLoading(true);
-    setError(null); // Reset error trước khi fetch
-    
     try {
-      // Kiểm tra xem đã đăng nhập hay chưa và lấy thông tin quyền truy cập
-      let hasPermissionChange = false;
-      let currentPermissions = null;
-      
-      // Sử dụng userData từ hook useUserData thay vì gọi API
-      if (!userDataLoading && userData) {
-        currentPermissions = {
-          [PERMISSION_KEYS.canViewAllCourses]: userData?.canViewAllCourses || false,
-          [PERMISSION_KEYS.isEnrolled]: userData?.enrollments?.some(e => e.courseId === id) || false
-        };
-      } else {
-        // Nếu không lấy được thông tin người dùng, giả định không có quyền
-        currentPermissions = { 
-          [PERMISSION_KEYS.canViewAllCourses]: false, 
-          [PERMISSION_KEYS.isEnrolled]: false 
-        };
-      }
+      setLoading(true);
+      setError(null);
 
       // Kiểm tra cache trước
-      const cachedCourse = getFromCache();
-      
-      // So sánh quyền hiện tại với quyền được lưu trong cache
-      if (cachedCourse) {
-        const cachedPermissions = {
-          [PERMISSION_KEYS.canViewAllCourses]: cachedCourse[PERMISSION_KEYS.canViewAllCourses] || false,
-          [PERMISSION_KEYS.isEnrolled]: cachedCourse[PERMISSION_KEYS.isEnrolled] || false
-        };
+      const cachedData = getFromCache();
+      if (cachedData) {
+        setCourse(cachedData);
         
-        // Kiểm tra xem quyền có thay đổi không
-        if (
-          (cachedPermissions[PERMISSION_KEYS.canViewAllCourses] && !currentPermissions[PERMISSION_KEYS.canViewAllCourses]) || 
-          (cachedPermissions[PERMISSION_KEYS.isEnrolled] && !currentPermissions[PERMISSION_KEYS.isEnrolled])
-        ) {
-          // Quyền đã bị thu hồi, xóa cache ngay lập tức
-          if (clearCurrentCache()) {
-            hasPermissionChange = true;
-            console.log('Phát hiện thay đổi quyền truy cập, đã xóa cache');
-          }
-        } 
-        else if (
-          (!cachedPermissions[PERMISSION_KEYS.canViewAllCourses] && !cachedPermissions[PERMISSION_KEYS.isEnrolled]) && 
-          (currentPermissions[PERMISSION_KEYS.canViewAllCourses] || currentPermissions[PERMISSION_KEYS.isEnrolled])
-        ) {
-          // Người dùng có quyền mới, cập nhật cache
-          hasPermissionChange = true;
+        // Vẫn cần kiểm tra quyền truy cập với dữ liệu từ cache
+        const hasAccess = checkPermission(cachedData);
+        if (!hasAccess) {
+          setError("Bạn không có quyền truy cập vào khóa học này");
         }
-      }
-
-      // Kiểm tra cache nếu không có thay đổi quyền
-      if (!hasPermissionChange && cachedCourse) {
-        // Cập nhật thông tin quyền truy cập vào dữ liệu cache
-        cachedCourse[PERMISSION_KEYS.canViewAllCourses] = currentPermissions[PERMISSION_KEYS.canViewAllCourses];
-        cachedCourse[PERMISSION_KEYS.isEnrolled] = currentPermissions[PERMISSION_KEYS.isEnrolled];
         
-        // Sử dụng dữ liệu cache
-        setCourse(cachedCourse);
-        setFormData(cachedCourse);
-        setPermissionChecked(true);
+        setIsLoaded(true);
         setLoading(false);
-        
-        // Hiệu ứng fade-in
-        setTimeout(() => {
-          setIsLoaded(true);
-        }, 50);
-        
-        // Tải lại dữ liệu mới trong nền để cập nhật quyền và nội dung
-        refreshCourseData(false);
+        setPermissionChecked(true);
         return;
       }
+
+      // Nếu không có cache hoặc cache hết hạn, gọi API
+      const response = await fetch(`/api/courses/${id}`);
       
-      // Nếu không có cache hoặc cache hết hạn hoặc quyền thay đổi, fetch từ API
-      await refreshCourseData(true);
-      
-    } catch (error) {
-      console.error('Lỗi khi lấy thông tin khóa học:', error);
-      setError(`Không thể lấy thông tin khóa học: ${error.message}`);
+      if (!response.ok) {
+        // Xử lý lỗi 401 (chưa đăng nhập)
+        if (response.status === 401) {
+          setError('Bạn cần đăng nhập để xem chi tiết khóa học');
+          setLoading(false);
+          setPermissionChecked(true);
+          return;
+        }
+        
+        if (response.status === 403) {
+          setError('Bạn không có quyền truy cập vào khóa học này');
+          setLoading(false);
+          setPermissionChecked(true);
+          return;
+        }
+        
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Lỗi ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        const courseData = data.course;
+        setCourse(courseData);
+        saveToCache(courseData);
+        
+        // Kiểm tra quyền truy cập
+        const hasAccess = checkPermission(courseData);
+        if (!hasAccess) {
+          setError("Bạn không có quyền truy cập vào khóa học này");
+        }
+        
+        setPermissionChecked(true);
+      } else {
+        throw new Error(data.error || 'Không thể tải dữ liệu khóa học');
+      }
+    } catch (err) {
+      setError(err.message || 'Đã xảy ra lỗi khi tải dữ liệu khóa học');
+      setCourse(null);
+      setPermissionChecked(true);
+    } finally {
       setLoading(false);
-      
-      // Xóa cache nếu có lỗi để buộc tải lại dữ liệu trong lần tới
-      clearCurrentCache();
+      setIsLoaded(true);
     }
   };
   
-  // Hàm tải lại dữ liệu từ API
-  const refreshCourseData = async (showLoading = true) => {
-    try {
-      if (showLoading) {
-        setLoading(true);
-      }
-      
-      // Tham số API đồng nhất
-      const apiParams = new URLSearchParams({
-        type: 'auto',
-        secure: 'true',
-        requireEnrollment: 'true',
-        checkViewPermission: 'true',
-        _: Date.now()
-      });
-      
-      // Sử dụng tham số secure=true để nhận dữ liệu được mã hóa hoàn toàn
-      // Thêm tham số requireEnrollment=true để kiểm tra quyền truy cập
-      const response = await fetch(`/api/courses/${id}?${apiParams.toString()}`);
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        
-        // Xử lý các mã lỗi cụ thể
-        if (response.status === 403) {
-          // Không có quyền truy cập, xóa cache ngay lập tức
-          clearCurrentCache();
-          throw new Error(`Bạn không có quyền truy cập khóa học này. Vui lòng liên hệ quản trị viên.`);
-        } else if (response.status === 400) {
-          throw new Error(`ID khóa học không hợp lệ. Vui lòng kiểm tra lại đường dẫn.`);
-        } else if (response.status === 404) {
-          throw new Error(`Khóa học không tồn tại hoặc không có quyền truy cập`);
-        } else {
-          throw new Error(`Lỗi ${response.status}: ${response.statusText}`);
-        }
-      }
-      
-      const data = await response.json();
-      
-      // Kiểm tra nếu dữ liệu được mã hóa
-      if (data._secureData) {
-        try {
-          // Giải mã dữ liệu
-          const decryptedData = decryptData(data._secureData);
-          
-          // Xử lý các ô gộp nếu có
-          const processedData = { ...decryptedData };
-          
-          if (processedData.merges && processedData.merges.length > 0) {
-            // Tạo bản đồ các ô đã gộp
-            const mergedCellsMap = {};
-            
-            processedData.merges.forEach(merge => {
-              const startRow = merge.startRowIndex;
-              const endRow = merge.endRowIndex;
-              const startCol = merge.startColumnIndex;
-              const endCol = merge.endColumnIndex;
-              
-              // Tính toán rowSpan và colSpan
-              const rowSpan = endRow - startRow;
-              const colSpan = endCol - startCol;
-              
-              // Đánh dấu ô chính (góc trên bên trái của vùng gộp)
-              if (!processedData.htmlData[startRow]) {
-                processedData.htmlData[startRow] = { values: [] };
-              }
-              
-              if (!processedData.htmlData[startRow].values) {
-                processedData.htmlData[startRow].values = [];
-              }
-              
-              if (!processedData.htmlData[startRow].values[startCol]) {
-                processedData.htmlData[startRow].values[startCol] = {};
-              }
-              
-              processedData.htmlData[startRow].values[startCol].rowSpan = rowSpan;
-              processedData.htmlData[startRow].values[startCol].colSpan = colSpan;
-              
-              // Đánh dấu các ô khác trong vùng gộp để bỏ qua khi render
-              for (let r = startRow; r < endRow; r++) {
-                for (let c = startCol; c < endCol; c++) {
-                  // Bỏ qua ô chính
-                  if (r === startRow && c === startCol) continue;
-                  
-                  const key = `${r},${c}`;
-                  mergedCellsMap[key] = { mainCell: { row: startRow, col: startCol } };
-                }
-              }
-            });
-            
-            // Lưu bản đồ các ô đã gộp vào data
-            processedData.mergedCellsMap = mergedCellsMap;
-          }
-          
-          setCourse(processedData);
-          setFormData(processedData);
-          setPermissionChecked(true);
-          setLoading(false);
-          
-          // Hiệu ứng fade-in
-          setTimeout(() => {
-            setIsLoaded(true);
-          }, 50);
-          
-          // Lưu dữ liệu vào cache
-          saveToCache(processedData);
-        } catch (decryptError) {
-          console.error('Lỗi khi giải mã dữ liệu:', decryptError);
-          throw new Error(`Không thể giải mã dữ liệu khóa học: ${decryptError.message}`);
-        }
-      } else if (data.success === false) {
-        throw new Error(`Không thể tải dữ liệu khóa học: ${data.message || data.error || 'Lỗi không xác định'}`);
-      } else {
-        // Xử lý dữ liệu không được mã hóa
-        setCourse(data);
-        setFormData(data);
-        setPermissionChecked(true);
-        setLoading(false);
-        
-        // Hiệu ứng fade-in
-        setTimeout(() => {
-          setIsLoaded(true);
-        }, 50);
-        
-        // Lưu dữ liệu vào cache
-        saveToCache(data);
-      }
-    } catch (error) {
-      console.error('Lỗi khi tải lại dữ liệu khóa học:', error);
-      setError(`Lỗi khi tải lại dữ liệu khóa học: ${error.message}`);
-      setLoading(false);
-      
-      // Xóa cache nếu có lỗi để buộc tải lại dữ liệu trong lần tới
-      clearCurrentCache();
-    }
-  };
-
-  // Hàm thay đổi sheet đang active
+  // Thêm hàm handleChangeSheet
   const handleChangeSheet = (index) => {
     setActiveSheet(index);
   };
-  
+
+  // Thêm hàm refreshCourseData
+  const refreshCourseData = async () => {
+    // Xóa cache hiện tại
+    clearCurrentCache();
+    // Tải lại dữ liệu
+    await fetchCourseDetail();
+  };
+
   // Sử dụng useEffect để tải dữ liệu khi component được mount
   useEffect(() => {
     if (id) {
       fetchCourseDetail();
     }
-  }, [id]);
+  }, [id, enrolledCourses]);
   
   // Tải danh sách sheets khi component mount
   useEffect(() => {

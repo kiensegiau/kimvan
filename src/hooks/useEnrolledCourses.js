@@ -13,6 +13,35 @@ export function useEnrolledCourses() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [cacheStatus, setCacheStatus] = useState('');
+  const [userData, setUserData] = useState(null);
+
+  // Hàm kiểm tra người dùng đã đăng ký khóa học hay chưa
+  const isEnrolledInCourse = (courseId) => {
+    if (!enrolledCourses || enrolledCourses.length === 0) return false;
+    return enrolledCourses.some(
+      course => course.courseId === courseId || course.courseId === String(courseId)
+    );
+  };
+
+  // Hàm kiểm tra người dùng có quyền xem tất cả khóa học
+  const hasViewAllCoursesPermission = () => {
+    return userData && (userData.role === 'admin' || userData.canViewAllCourses === true);
+  };
+
+  // Hàm kiểm tra quyền truy cập khóa học (đã đăng ký hoặc có quyền xem tất cả)
+  const hasAccessToCourse = (courseId, course = null) => {
+    // Kiểm tra đăng ký
+    const enrolled = isEnrolledInCourse(courseId);
+    
+    // Kiểm tra quyền xem tất cả
+    const hasFullAccess = hasViewAllCoursesPermission();
+    
+    // Kiểm tra yêu cầu đăng ký của khóa học
+    const requiresEnrollment = course ? course.requiresEnrollment !== false : true;
+    
+    // Nếu không yêu cầu đăng ký hoặc người dùng đã đăng ký hoặc có quyền xem tất cả
+    return !requiresEnrollment || enrolled || hasFullAccess;
+  };
 
   // Hàm lưu dữ liệu vào localStorage với quản lý cache
   const saveToCache = (data) => {
@@ -127,8 +156,21 @@ export function useEnrolledCourses() {
       if (cachedData) {
         setEnrolledCourses(cachedData.enrolledCourses);
         setAllCourses(cachedData.allCourses);
+        setUserData(cachedData.userData); // Lưu userData từ cache
         setLoading(false);
         return;
+      }
+
+      // Lấy thông tin người dùng
+      const userResponse = await fetch('/api/users/me');
+      let currentUserData = null;
+      
+      if (userResponse.ok) {
+        const userData = await userResponse.json();
+        if (userData.success && userData.data) {
+          currentUserData = userData.data;
+          setUserData(currentUserData);
+        }
       }
 
       // Lấy danh sách khóa học đã đăng ký
@@ -163,7 +205,8 @@ export function useEnrolledCourses() {
           // Lưu vào cache
           saveToCache({
             enrolledCourses: enrollments,
-            allCourses: coursesData.data.minicourses
+            allCourses: coursesData.data.minicourses,
+            userData: currentUserData
           });
         }
       }
@@ -218,6 +261,7 @@ export function useEnrolledCourses() {
     if (cachedData) {
       setEnrolledCourses(cachedData.enrolledCourses);
       setAllCourses(cachedData.allCourses);
+      setUserData(cachedData.userData);
       setLoading(false);
     } else {
       fetchEnrolledCourses();
@@ -227,12 +271,16 @@ export function useEnrolledCourses() {
   return {
     enrolledCourses,
     allCourses, 
+    userData,
     loading,
     error,
     cacheStatus,
     refreshEnrollments,
     getEnrolledCoursesWithDetails,
-    findCourseDetails
+    findCourseDetails,
+    isEnrolledInCourse,
+    hasViewAllCoursesPermission,
+    hasAccessToCourse
   };
 }
 

@@ -358,9 +358,36 @@ export async function GET(request, { params }) {
       }, { status: 404 });
     }
     
-    // Bypass authentication check - always return full course data
-    const isEnrolled = true;
-    const canViewAllCourses = true;
+    // Kiểm tra xác thực người dùng
+    const user = await authMiddleware(request);
+    
+    // Kiểm tra quyền truy cập
+    let isEnrolled = false;
+    let canViewAllCourses = false;
+    
+    if (user) {
+      // Kiểm tra nếu người dùng có quyền xem tất cả khóa học
+      canViewAllCourses = user.role === 'admin' || user.canViewAllCourses === true;
+      
+      // Kiểm tra nếu người dùng đã đăng ký khóa học này
+      const enrollment = await Enrollment.findOne({
+        userId: user.uid,
+        courseId: course._id
+      }).lean().exec();
+      
+      isEnrolled = !!enrollment;
+    }
+    
+    // Nếu khóa học yêu cầu đăng ký và người dùng không có quyền
+    if (course.requiresEnrollment && !isEnrolled && !canViewAllCourses) {
+      return NextResponse.json({ 
+        success: false,
+        message: 'Bạn cần đăng ký khóa học này để xem chi tiết',
+        requiresEnrollment: true,
+        isEnrolled: false,
+        canViewAllCourses: false
+      }, { status: 403 });
+    }
     
     // Tạo dữ liệu trả về
     const responseData = {
@@ -395,7 +422,10 @@ export async function GET(request, { params }) {
     }
     
     // Trả về dữ liệu không mã hóa
-    return NextResponse.json(responseData);
+    return NextResponse.json({
+      success: true,
+      course: responseData
+    });
   } catch (error) {
     console.error('Lỗi khi lấy thông tin khóa học:', error);
     return NextResponse.json({ 
