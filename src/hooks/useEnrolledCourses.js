@@ -25,22 +25,53 @@ export function useEnrolledCourses() {
 
   // Hàm kiểm tra người dùng có quyền xem tất cả khóa học
   const hasViewAllCoursesPermission = () => {
-    return userData && (userData.role === 'admin' || userData.canViewAllCourses === true);
+    // Kiểm tra role=admin hoặc canViewAllCourses=true trước tiên
+    if (userData) {
+      // Nếu là admin, luôn có quyền
+      if (userData.role === 'admin') {
+        return true;
+      }
+      
+      // Kiểm tra thuộc tính canViewAllCourses
+      if (userData.canViewAllCourses === true) {
+        return true;
+      }
+      
+      // Kiểm tra mảng permissions nếu có
+      if (userData.permissions && Array.isArray(userData.permissions)) {
+        return userData.permissions.includes('view_all_courses');
+      }
+    }
+    
+    return false;
   };
 
   // Hàm kiểm tra quyền truy cập khóa học (đã đăng ký hoặc có quyền xem tất cả)
   const hasAccessToCourse = (courseId, course = null) => {
+    // Kiểm tra role=admin trước tiên
+    if (userData && userData.role === 'admin') {
+      return true;
+    }
+    
+    // Kiểm tra thuộc tính canViewAllCourses 
+    if (userData && userData.canViewAllCourses === true) {
+      return true;
+    }
+    
+    // Kiểm tra quyền xem tất cả từ mảng permissions
+    if (userData && userData.permissions && Array.isArray(userData.permissions) && 
+        userData.permissions.includes('view_all_courses')) {
+      return true;
+    }
+    
     // Kiểm tra đăng ký
     const enrolled = isEnrolledInCourse(courseId);
-    
-    // Kiểm tra quyền xem tất cả
-    const hasFullAccess = hasViewAllCoursesPermission();
     
     // Kiểm tra yêu cầu đăng ký của khóa học
     const requiresEnrollment = course ? course.requiresEnrollment !== false : true;
     
-    // Nếu không yêu cầu đăng ký hoặc người dùng đã đăng ký hoặc có quyền xem tất cả
-    return !requiresEnrollment || enrolled || hasFullAccess;
+    // Nếu khóa học không yêu cầu đăng ký hoặc người dùng đã đăng ký
+    return !requiresEnrollment || enrolled;
   };
 
   // Hàm lưu dữ liệu vào localStorage với quản lý cache

@@ -39,12 +39,10 @@ export function useCourseData(id) {
   // Lấy thông tin người dùng từ hook useUserData
   const { userData, loading: userDataLoading } = useUserData();
   
-  // Sử dụng hook useEnrolledCourses để lấy danh sách khóa học đã đăng ký
+  // Sử dụng hook useEnrolledCourses để lấy danh sách khóa học đã đăng ký và hàm kiểm tra
   const { 
-    enrolledCourses, 
+    enrolledCourses,
     loading: enrolledCoursesLoading,
-    hasAccessToCourse,
-    hasViewAllCoursesPermission,
     isEnrolledInCourse
   } = useEnrolledCourses();
 
@@ -78,8 +76,41 @@ export function useCourseData(id) {
     // Nếu không có dữ liệu khoá học, không có quyền truy cập
     if (!courseData) return false;
     
-    // Sử dụng các hàm kiểm tra từ hook useEnrolledCourses
-    return hasAccessToCourse(id, courseData);
+    // Kiểm tra trực tiếp quyền admin
+    if (userData && userData.role === 'admin') {
+      console.log("Admin role detected, granting access");
+      return true;
+    }
+    
+    // Kiểm tra thuộc tính canViewAllCourses
+    if (userData && userData.canViewAllCourses === true) {
+      console.log("canViewAllCourses property detected, granting access");
+      return true;
+    }
+    
+    // Kiểm tra quyền từ mảng permissions
+    if (userData && userData.permissions && Array.isArray(userData.permissions) && 
+        userData.permissions.includes('view_all_courses')) {
+      console.log("view_all_courses permission detected, granting access");
+      return true;
+    }
+    
+    // Kiểm tra yêu cầu đăng ký của khóa học
+    const requiresEnrollment = courseData?.requiresEnrollment !== false;
+    if (!requiresEnrollment) {
+      console.log("Course doesn't require enrollment, granting access");
+      return true;
+    }
+    
+    // Kiểm tra đăng ký
+    const isUserEnrolled = isEnrolledInCourse ? isEnrolledInCourse(id) : false;
+    if (isUserEnrolled) {
+      console.log("User is enrolled in course, granting access");
+      return true;
+    }
+    
+    console.log("Access denied: User is not enrolled and has no special permissions");
+    return false;
   };
   
   // Hàm lưu dữ liệu vào cache
@@ -331,15 +362,27 @@ export function useCourseData(id) {
       setLoading(true);
       setError(null);
 
+      // Kiểm tra sớm nếu người dùng là admin hoặc có quyền xem tất cả
+      const isAdmin = userData?.role === 'admin';
+      const hasCanViewAllProperty = userData?.canViewAllCourses === true;
+      
+      // Nếu là admin hoặc có quyền đặc biệt, bỏ qua các kiểm tra quyền khác
+      const hasSpecialAccess = isAdmin || hasCanViewAllProperty;
+
       // Kiểm tra cache trước
       const cachedData = getFromCache();
       if (cachedData) {
         setCourse(cachedData);
         
-        // Vẫn cần kiểm tra quyền truy cập với dữ liệu từ cache
-        const hasAccess = checkPermission(cachedData);
-        if (!hasAccess) {
-          setError("Bạn không có quyền truy cập vào khóa học này");
+        // Vẫn cần kiểm tra quyền truy cập với dữ liệu từ cache, nhưng bỏ qua nếu có quyền đặc biệt
+        if (!hasSpecialAccess) {
+          const hasAccess = checkPermission(cachedData);
+          if (!hasAccess) {
+            console.log("Permission check failed with cached data");
+            setError("Bạn không có quyền truy cập vào khóa học này");
+          } else {
+            console.log("Permission check passed with cached data");
+          }
         }
         
         setIsLoaded(true);
@@ -378,10 +421,15 @@ export function useCourseData(id) {
         setCourse(courseData);
         saveToCache(courseData);
         
-        // Kiểm tra quyền truy cập
-        const hasAccess = checkPermission(courseData);
-        if (!hasAccess) {
-          setError("Bạn không có quyền truy cập vào khóa học này");
+        // Kiểm tra quyền truy cập, bỏ qua nếu có quyền đặc biệt
+        if (!hasSpecialAccess) {
+          const hasAccess = checkPermission(courseData);
+          if (!hasAccess) {
+            console.log("Permission check failed with fresh data");
+            setError("Bạn không có quyền truy cập vào khóa học này");
+          } else {
+            console.log("Permission check passed with fresh data");
+          }
         }
         
         setPermissionChecked(true);

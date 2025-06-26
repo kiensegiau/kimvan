@@ -6,17 +6,20 @@ import { use } from 'react';
 // Import hooks
 import { useCourseData } from './hooks/useCourseData';
 import { useApiSheetData } from './hooks/useApiSheetData';
+import useUserData from '@/hooks/useUserData';
 
 // Import components
 import ApiSheetData from './components/ApiSheetData';
 import ErrorState from '../components/ErrorState';
 import PermissionDenied from '../components/PermissionDenied';
 import LoadingState from '../components/LoadingState';
+import PermissionDebug from './components/PermissionDebug';
 
 export default function CourseDetailPage({ params }) {
   const router = useRouter();
   const resolvedParams = use(params);
   const id = resolvedParams.id;
+  const { userData } = useUserData();
 
   // Sử dụng các custom hooks
   const { 
@@ -53,18 +56,29 @@ export default function CourseDetailPage({ params }) {
     }, 500); // Delay nhỏ để tránh các yêu cầu đồng thời
   };
 
-  // Kiểm tra quyền truy cập
-  const hasAccessDenied = permissionChecked && error && error.includes("không có quyền truy cập");
+  // Kiểm tra quyền đặc biệt và bỏ qua kiểm tra quyền thông thường nếu là admin hoặc có quyền xem tất cả
+  const isAdmin = userData?.role === 'admin';
+  const hasViewAllPermission = userData?.canViewAllCourses === true;
+  const shouldBypassPermissionCheck = isAdmin || hasViewAllPermission;
+
+  // Kiểm tra quyền truy cập với xử lý đặc biệt cho admin và canViewAllCourses
+  const hasAccessDenied = !shouldBypassPermissionCheck && permissionChecked && error && error.includes("không có quyền truy cập");
 
   if (loading) {
     return <LoadingState message="Đang tải thông tin khóa học..." />;
   }
 
   if (hasAccessDenied) {
-    return <PermissionDenied message={error} redirectUrl="/courses" />;
+    return (
+      <>
+        <PermissionDebug courseId={id} />
+        <PermissionDenied message={error} redirectUrl="/courses" />
+      </>
+    );
   }
 
-  if (error) {
+  // Hiển thị lỗi không liên quan đến quyền truy cập
+  if (error && !error.includes("không có quyền truy cập")) {
     return <ErrorState error={error} redirectUrl="/courses" />;
   }
 
@@ -85,6 +99,9 @@ export default function CourseDetailPage({ params }) {
   return (
     <div className={`min-h-screen bg-gray-100 p-4 sm:p-6 transition-opacity duration-500 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}>
       <div className="mx-auto">
+        {/* Debug component */}
+        <PermissionDebug courseId={id} />
+        
         {/* Header và nút điều hướng */}
         <div className="bg-white shadow-sm rounded-lg p-4 mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
