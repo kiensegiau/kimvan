@@ -202,6 +202,13 @@ export function useApiSheetData(courseId) {
   const fetchApiSheetData = async () => {
     if (!courseId) return;
     
+    // Kiểm tra xem người dùng có quyền truy cập không
+    // Nếu có lỗi quyền truy cập, không tiếp tục gọi API
+    if (document.querySelector('[data-access-denied="true"]')) {
+      console.log("Không có quyền truy cập để tải sheet data");
+      return;
+    }
+    
     setLoadingApiSheet(true);
     setApiSheetError(null);
     
@@ -278,6 +285,13 @@ export function useApiSheetData(courseId) {
   const fetchSheetDetail = async (sheetId) => {
     if (!sheetId) {
       setApiSheetError('Không thể tải chi tiết: ID sheet không hợp lệ');
+      return null;
+    }
+    
+    // Kiểm tra xem người dùng có quyền truy cập không
+    // Nếu có lỗi quyền truy cập, không tiếp tục gọi API
+    if (document.querySelector('[data-access-denied="true"]')) {
+      console.log("Không có quyền truy cập để tải chi tiết sheet");
       return null;
     }
     

@@ -2,11 +2,11 @@
 
 import { useRouter } from 'next/navigation';
 
-export default function PermissionDenied({ message, redirectUrl = '/courses' }) {
+export default function PermissionDenied({ message, redirectUrl = '/courses', ...props }) {
   const router = useRouter();
   
   return (
-    <div className="min-h-screen bg-gray-100 p-6">
+    <div className="min-h-screen bg-gray-100 p-6" {...props}>
       <div className="max-w-4xl mx-auto bg-white rounded-lg shadow p-8 relative">
         <div className="bg-amber-50 p-6 rounded-lg">
           <div className="flex">

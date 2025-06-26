@@ -244,6 +244,12 @@ export function useCourseData(id) {
   const fetchLinkedSheets = async () => {
     if (!id) return;
     
+    // Kiểm tra quyền truy cập trước khi gọi API
+    if (!checkPermission(course)) {
+      console.log("Không có quyền truy cập để tải danh sách sheets");
+      return;
+    }
+    
     setLoadingSheets(true);
     try {
       const response = await fetch(`/api/courses/${id}/sheets`);
@@ -280,6 +286,12 @@ export function useCourseData(id) {
   // Hàm lấy dữ liệu của sheet
   const fetchSheetData = async (sheetId) => {
     if (!sheetId) return;
+    
+    // Kiểm tra quyền truy cập trước khi gọi API
+    if (!checkPermission(course)) {
+      console.log("Không có quyền truy cập để tải dữ liệu sheet");
+      return;
+    }
     
     setLoadingSheetData(prev => ({ ...prev, [sheetId]: true }));
     try {

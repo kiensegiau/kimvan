@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { use } from 'react';
+import { useEffect } from 'react';
 
 // Import hooks
 import { useCourseData } from './hooks/useCourseData';
@@ -64,6 +65,13 @@ export default function CourseDetailPage({ params }) {
   // Kiểm tra quyền truy cập với xử lý đặc biệt cho admin và canViewAllCourses
   const hasAccessDenied = !shouldBypassPermissionCheck && permissionChecked && error && error.includes("không có quyền truy cập");
 
+  // Tải danh sách sheets khi component mount
+  useEffect(() => {
+    if (course && !loadingApiSheet && !hasAccessDenied) {
+      fetchApiSheetData();
+    }
+  }, [course, hasAccessDenied]);
+
   if (loading) {
     return <LoadingState message="Đang tải thông tin khóa học..." />;
   }
@@ -72,7 +80,7 @@ export default function CourseDetailPage({ params }) {
     return (
       <>
         <PermissionDebug courseId={id} />
-        <PermissionDenied message={error} redirectUrl="/courses" />
+        <PermissionDenied message={error} redirectUrl="/courses" data-access-denied="true" />
       </>
     );
   }
