@@ -183,6 +183,10 @@ export async function POST(request) {
           const processingTime = Math.round((Date.now() - startTime) / 1000);
           console.log(`✅ Hoàn tất xử lý thư mục sau ${processingTime} giây`);
     
+          // Tạo URL của folder đã xử lý
+          const processedFolderLink = `https://drive.google.com/drive/folders/${targetFolderId}`;
+          console.log(`Link folder đã xử lý: ${processedFolderLink}`);
+    
     return {
             success: folderResult.success,
             isFolder: true,
@@ -193,7 +197,8 @@ export async function POST(request) {
             },
             targetFolder: {
               id: targetFolderId,
-              name: targetFolderName || 'Mặc định'
+              name: targetFolderName || 'Mặc định',
+              link: processedFolderLink
             },
             processedFiles: folderResult.processedFiles,
             processedFolders: folderResult.processedFolders,
@@ -206,7 +211,7 @@ export async function POST(request) {
             processedFile: {
               id: targetFolderId,
               name: targetFolderName || fileInfo.name,
-              link: `https://drive.google.com/drive/folders/${targetFolderId}`
+              link: processedFolderLink
             }
           };
     } else {

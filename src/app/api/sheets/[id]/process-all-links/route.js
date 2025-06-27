@@ -554,10 +554,22 @@ export async function POST(request, { params }) {
               };
             }
 
-            // Lấy URL mới từ kết quả
-            const newUrl = processResultJson.isFolder 
-              ? processResultJson.processedFile?.link 
-              : processResultJson.processedFile?.link;
+            // Lấy URL mới từ kết quả, kiểm tra xem có phải là folder không
+            let newUrl;
+            if (processResultJson.isFolder) {
+              console.log(`Kết quả là folder, sử dụng link folder đã xử lý: ${processResultJson.processedFile?.link}`);
+              newUrl = processResultJson.processedFile?.link;
+              
+              // Log chi tiết về kết quả xử lý folder
+              console.log('Chi tiết kết quả xử lý folder:', {
+                isFolder: processResultJson.isFolder,
+                targetFolder: processResultJson.targetFolder,
+                processedFile: processResultJson.processedFile
+              });
+            } else {
+              console.log(`Kết quả là file, sử dụng link file đã xử lý: ${processResultJson.processedFile?.link}`);
+              newUrl = processResultJson.processedFile?.link;
+            }
               
             if (!newUrl) {
               console.error(`Không nhận được URL mới sau khi xử lý: ${urlGroup.originalUrl}`);
