@@ -7,7 +7,10 @@ import {
   checkFileInfo,
   processFile,
   processFolder,
-  uploadToGoogleDrive 
+  uploadToGoogleDrive,
+  findOrCreateFolder,
+  updateSheetCell,
+  updateGoogleSheetCell
 } from './lib';
 
 // API Endpoint - POST
@@ -29,13 +32,38 @@ export async function POST(request) {
   try {
     // Parse request body
     const requestBody = await request.json();
-    const { driveLink, folderId, apiKey, courseName } = requestBody;
+    const { 
+      driveLink, 
+      folderId, 
+      apiKey, 
+      courseName, 
+      sheetName, 
+      isSheetDocument,
+      // Thêm các tham số cho việc cập nhật sheet
+      courseId,
+      sheetIndex,
+      rowIndex,
+      cellIndex,
+      sheetId,
+      googleSheetName,
+      updateSheet = false, // Cờ để xác định có cập nhật sheet hay không
+      displayText = null // Text hiển thị trong ô
+    } = requestBody;
     
     console.log('Thông tin request:', {
       driveLink: driveLink || 'không có',
       folderId: folderId || 'sẽ dùng folder mặc định "1Lt10aHyWp9VtPaImzInE0DmIcbrjJgpN"',
       apiKey: apiKey ? 'Đã cung cấp' : 'Sử dụng từ hệ thống quản lý API key',
-      courseName: courseName || 'không có (sẽ lưu vào thư mục mặc định)'
+      courseName: courseName || 'không có (sẽ lưu vào thư mục mặc định)',
+      sheetName: sheetName || 'không có',
+      isSheetDocument: isSheetDocument || false,
+      updateSheet: updateSheet || false,
+      courseId: courseId || 'không có',
+      sheetIndex: sheetIndex !== undefined ? sheetIndex : 'không có',
+      rowIndex: rowIndex !== undefined ? rowIndex : 'không có',
+      cellIndex: cellIndex !== undefined ? cellIndex : 'không có',
+      sheetId: sheetId || 'không có',
+      googleSheetName: googleSheetName || 'không có'
     });
     
     // Validate drive link
@@ -91,6 +119,39 @@ export async function POST(request) {
     // Tạo promise cho quá trình xử lý
     const processingPromise = (async () => {
       try {
+        // Xác định folder đích dựa trên thông tin request
+        let targetFolderId = folderId;
+        let targetFolderName = '';
+        
+        // Nếu là tài liệu sheet, tạo cấu trúc folder đặc biệt
+        if (isSheetDocument && sheetName) {
+          console.log(`Đây là tài liệu sheet: ${sheetName}, tạo cấu trúc folder đặc biệt`);
+          
+          // Tạo/tìm folder "Tài liệu sheet cũ"
+          const mainFolderName = "Tài liệu sheet cũ";
+          const mainFolderResult = await findOrCreateFolder(mainFolderName, folderId);
+          
+          if (!mainFolderResult.success) {
+            throw new Error(`Không thể tạo folder chính "${mainFolderName}": ${mainFolderResult.error || 'Lỗi không xác định'}`);
+          }
+          
+          // Tạo/tìm folder con với tên sheet
+          const sheetFolderResult = await findOrCreateFolder(sheetName, mainFolderResult.folder.id);
+          
+          if (!sheetFolderResult.success) {
+            throw new Error(`Không thể tạo folder con "${sheetName}": ${sheetFolderResult.error || 'Lỗi không xác định'}`);
+          }
+          
+          targetFolderId = sheetFolderResult.folder.id;
+          targetFolderName = sheetName;
+          
+          console.log(`Đã tạo/tìm cấu trúc folder: ${mainFolderName}/${sheetName} (ID: ${targetFolderId})`);
+        } else if (courseName) {
+          // Nếu có courseName, sử dụng nó làm folder cha
+          console.log(`Sử dụng courseName làm folder cha: ${courseName}`);
+          targetFolderName = courseName;
+        }
+        
         // Kiểm tra xem đây có phải là thư mục không
         if (mimeType === 'application/vnd.google-apps.folder') {
           console.log(`Phát hiện thư mục với ID: ${fileId}, tên: ${fileInfo.name}`);
@@ -99,13 +160,9 @@ export async function POST(request) {
           const folderResult = await processFolder(
             fileId,
             fileInfo.name,
-            folderId || null,
+            targetFolderId || null,
             apiKey
           );
-          
-          // Tính toán thời gian xử lý
-          const processingTime = Math.round((Date.now() - startTime) / 1000);
-          console.log(`✅ Hoàn tất xử lý thư mục sau ${processingTime} giây`);
           
           // Tạo thông báo tóm tắt
           let summaryMessage = '';
@@ -122,6 +179,10 @@ export async function POST(request) {
             summaryMessage = `Xử lý thư mục thất bại: ${folderResult.error || 'Lỗi không xác định'}`;
           }
           
+          // Tính toán thời gian xử lý
+          const processingTime = Math.round((Date.now() - startTime) / 1000);
+          console.log(`✅ Hoàn tất xử lý thư mục sau ${processingTime} giây`);
+          
           return {
             success: folderResult.success,
             isFolder: true,
@@ -129,6 +190,10 @@ export async function POST(request) {
               id: fileId,
               name: fileInfo.name,
               link: driveLink
+            },
+            targetFolder: {
+              id: targetFolderId,
+              name: targetFolderName || 'Mặc định'
             },
             processedFiles: folderResult.processedFiles,
             processedFolders: folderResult.processedFolders,
@@ -201,14 +266,55 @@ export async function POST(request) {
             }
           }
           
-          // Tải lên file đã xử lý, truyền courseName nếu có
+          // Tải lên file đã xử lý, truyền targetFolderId
           const uploadResult = await uploadToGoogleDrive(
             processedFilePath,
             processedFileName,
             downloadResult.mimeType,
-            folderId,
-            courseName // Truyền courseName vào hàm upload
+            targetFolderId,
+            targetFolderName || courseName // Truyền folder name
           );
+          
+          // Nếu có yêu cầu cập nhật sheet, thực hiện cập nhật
+          let sheetUpdateResult = null;
+          if (updateSheet) {
+            console.log('Yêu cầu cập nhật sheet được kích hoạt, tiến hành cập nhật...');
+            
+            // Kiểm tra xem cần cập nhật vào database hay trực tiếp vào Google Sheet
+            if (courseId && sheetIndex !== undefined && rowIndex !== undefined && cellIndex !== undefined) {
+              // Cập nhật vào database
+              sheetUpdateResult = await updateSheetCell(
+                courseId,
+                sheetIndex,
+                rowIndex,
+                cellIndex,
+                driveLink, // URL gốc
+                uploadResult.webViewLink, // URL mới
+                displayText // Text hiển thị (nếu có)
+              );
+              
+              console.log('Kết quả cập nhật sheet trong database:', sheetUpdateResult);
+            } else if (sheetId && googleSheetName && rowIndex !== undefined && cellIndex !== undefined) {
+              // Cập nhật trực tiếp vào Google Sheet
+              const cellDisplayText = displayText || 'Tài liệu đã xử lý';
+              sheetUpdateResult = await updateGoogleSheetCell(
+                sheetId,
+                googleSheetName,
+                rowIndex,
+                cellIndex,
+                cellDisplayText,
+                uploadResult.webViewLink
+              );
+              
+              console.log('Kết quả cập nhật trực tiếp vào Google Sheet:', sheetUpdateResult);
+            } else {
+              console.warn('Thiếu thông tin cần thiết để cập nhật sheet, bỏ qua bước này');
+              sheetUpdateResult = {
+                success: false,
+                error: 'Thiếu thông tin cần thiết để cập nhật sheet'
+              };
+            }
+          }
           
           // Dọn dẹp thư mục tạm
           try {
@@ -230,13 +336,22 @@ export async function POST(request) {
               id: fileId,
               link: driveLink
             },
+            targetFolder: {
+              id: targetFolderId,
+              name: targetFolderName || (courseName || 'Mặc định')
+            },
             processedFile: {
               id: uploadResult.fileId,
               name: uploadResult.fileName,
               link: uploadResult.webViewLink
             },
             duplicatesDeleted: uploadResult.duplicatesDeleted || 0,
-            processingTime: processingTime
+            processingTime: processingTime,
+            sheetUpdate: updateSheet ? {
+              success: sheetUpdateResult?.success || false,
+              message: sheetUpdateResult?.message || sheetUpdateResult?.error || 'Không có thông tin cập nhật',
+              details: sheetUpdateResult?.updatedCell || null
+            } : null
           };
         }
       } catch (error) {

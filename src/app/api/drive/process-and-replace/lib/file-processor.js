@@ -5,6 +5,7 @@ import { getNextApiKey } from '@/utils/watermark-api-keys';
 import { listFilesInFolder } from './download-service';
 import { downloadFromGoogleDrive } from './download-service';
 import { findOrCreateFolder, uploadToGoogleDrive } from './upload-service';
+import { removeHeaderFooterWatermark, addLogoToPDF } from './pdf-service';
 
 /**
  * Xử lý file (ví dụ: loại bỏ watermark)
@@ -53,6 +54,10 @@ export async function processFile(filePath, mimeType, apiKey) {
       
       const result = await processPDFWatermark(filePath, processedPath, apiKeyToUse);
       console.log(`PDF đã được xử lý thành công sau ${Math.round((Date.now() - processingStartTime)/1000)} giây`);
+      
+      // Xóa watermark dạng text ở header và footer và thêm logo
+      await removeHeaderFooterWatermark(processedPath, processedPath);
+      console.log(`Đã xóa watermark dạng text ở header và footer và thêm logo`);
       
       return {
         success: true,

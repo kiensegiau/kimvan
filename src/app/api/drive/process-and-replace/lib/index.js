@@ -12,6 +12,7 @@ import {
   createWatermarkRemovalTask, 
   checkTaskStatus 
 } from './pdf-service';
+import { updateSheetCell, updateGoogleSheetCell } from './sheet-service';
 
 export {
   // Download services
@@ -36,5 +37,9 @@ export {
   removeHeaderFooterWatermark,
   addLogoToPDF,
   createWatermarkRemovalTask,
-  checkTaskStatus
+  checkTaskStatus,
+  
+  // Sheet services
+  updateSheetCell,
+  updateGoogleSheetCell
 }; 

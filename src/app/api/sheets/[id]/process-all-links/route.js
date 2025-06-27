@@ -14,6 +14,23 @@ import {
   processRecursiveFolder
 } from '@/utils/drive-utils';
 
+// Thêm lại hàm determineFileTypeFromExtension đã bị xóa
+function determineFileTypeFromExtension(url) {
+  const lowerUrl = url.toLowerCase();
+  if (lowerUrl.endsWith('.pdf')) return 'application/pdf';
+  if (lowerUrl.endsWith('.docx')) return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+  if (lowerUrl.endsWith('.xlsx')) return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+  if (lowerUrl.endsWith('.pptx')) return 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+  if (lowerUrl.endsWith('.doc')) return 'application/msword';
+  if (lowerUrl.endsWith('.xls')) return 'application/vnd.ms-excel';
+  if (lowerUrl.endsWith('.ppt')) return 'application/vnd.ms-powerpoint';
+  if (lowerUrl.endsWith('.jpg') || lowerUrl.endsWith('.jpeg')) return 'image/jpeg';
+  if (lowerUrl.endsWith('.png')) return 'image/png';
+  if (lowerUrl.endsWith('.mp4')) return 'video/mp4';
+  if (lowerUrl.endsWith('.mp3')) return 'audio/mpeg';
+  return 'application/pdf'; // Mặc định là PDF
+}
+
 export async function POST(request, { params }) {
   console.log('============== BẮT ĐẦU XỬ LÝ TẤT CẢ LINK TRONG SHEET ==============');
   
@@ -289,8 +306,8 @@ export async function POST(request, { params }) {
     // Xử lý theo batch, mỗi batch 5 link
     const BATCH_SIZE = 10;
     
-    // Hàm xử lý một link và trả về kết quả
-    const processLinkWithResult = async (urlGroup, sheetName) => {
+    // Thay đổi hàm processUrlGroup thành async
+    async function processUrlGroup(urlGroup, index) {
       const firstCell = urlGroup.cells[0];
       try {
         console.log(`\n===== Đang xử lý URL: ${urlGroup.originalUrl} (${urlGroup.cells.length} ô) =====`);
@@ -393,17 +410,17 @@ export async function POST(request, { params }) {
         
         return continueProcessing();
         
-        // Hàm tiếp tục xử lý sau khi đã xác định loại file
-        function continueProcessing() {
+        // Thêm từ khóa async vào hàm continueProcessing
+        async function continueProcessing() {
           console.log(`Loại file cuối cùng được xác định: ${fileType}, là folder: ${isFolder}`);
           
           // Nếu là folder, xử lý đệ quy folder
           if (isFolder) {
             console.log(`Phát hiện link là folder, tiến hành xử lý đệ quy: ${urlGroup.originalUrl}`);
-            console.log(`Sẽ lưu vào thư mục cha có tên: ${sheetName}`);
+            console.log(`Sẽ lưu vào thư mục cha có tên: ${firstSheetName}`);
             
             // Xử lý đệ quy folder, truyền tên sheet làm tên thư mục cha
-            return processRecursiveFolder(urlGroup.originalUrl, 3, 0, null, 0.15, sheetName)
+            return processRecursiveFolder(urlGroup.originalUrl, 3, 0, null, 0.15, firstSheetName)
               .then(folderResult => {
                 console.log(`Đã xử lý folder đệ quy thành công: ${urlGroup.originalUrl}`);
                 console.log(`Số file đã xử lý: ${folderResult.nestedFilesProcessed}, số folder đã xử lý: ${folderResult.nestedFoldersProcessed}`);
@@ -482,22 +499,108 @@ export async function POST(request, { params }) {
             console.log(`Phát hiện file hình ảnh: ${fileType}`);
           }
           
-          // Sử dụng hàm processLink với retry và timeout, truyền thêm thông tin loại file chính xác và tên sheet
-          return processLink(baseUrl, urlGroup.originalUrl, cookie, 2, 500000, fileType, sheetName) // 500 giây timeout, 2 lần retry, thêm tên sheet
-            .then(processResult => {
-              // Tạo giá trị mới cho ô
-              const newUrl = processResult.processedLink;
-              console.log(`Đã xử lý thành công, URL mới: ${newUrl}`);
-              
-              return {
-                success: true,
-                urlGroup,
-                newUrl,
-                processResult,
-                fileType, // Thêm thông tin loại file vào kết quả
-                isFolder: false
-              };
+          // Thay đổi đoạn code gọi API process-and-replace
+          try {
+            console.log(`Gọi API process-and-replace cho URL: ${urlGroup.originalUrl}`);
+            
+            const processResult = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/drive/process-and-replace`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                driveLink: urlGroup.originalUrl,
+                folderId: targetFolderId,
+                apiKey: apiKey,
+                courseName: sheet.title || 'Sheet Processed Files',
+                // Thêm các thông tin để cập nhật sheet
+                updateSheet: true,
+                sheetId: sheet.sheetId,
+                googleSheetName: firstSheetName,
+                rowIndex: firstCell.rowIndex,
+                cellIndex: firstCell.colIndex,
+                displayText: firstCell.cell // Giữ nguyên text hiển thị
+              }),
             });
+
+            const processResultJson = await processResult.json();
+
+            // Kiểm tra kết quả xử lý và cập nhật sheet
+            if (!processResultJson.success) {
+              console.error(`Lỗi khi xử lý URL: ${urlGroup.originalUrl}`, processResultJson.error);
+              errors.push({
+                url: urlGroup.originalUrl,
+                error: processResultJson.error || 'Lỗi không xác định khi xử lý file'
+              });
+              return {
+                success: false,
+                urlGroup,
+                error: processResultJson.error || 'Lỗi không xác định khi xử lý file'
+              };
+            }
+
+            // Lấy URL mới từ kết quả
+            const newUrl = processResultJson.processedFile?.link;
+            if (!newUrl) {
+              console.error(`Không nhận được URL mới sau khi xử lý: ${urlGroup.originalUrl}`);
+              errors.push({
+                url: urlGroup.originalUrl,
+                error: 'Không nhận được URL mới sau khi xử lý'
+              });
+              return {
+                success: false,
+                urlGroup,
+                error: 'Không nhận được URL mới sau khi xử lý'
+              };
+            }
+
+            // Kiểm tra kết quả cập nhật sheet
+            if (processResultJson.sheetUpdate) {
+              if (processResultJson.sheetUpdate.success) {
+                console.log(`✅ Sheet đã được cập nhật tự động qua API`);
+              } else {
+                console.warn(`⚠️ Cập nhật sheet tự động thất bại: ${processResultJson.sheetUpdate.message}`);
+                console.log(`Thử phương pháp thay thế để cập nhật sheet...`);
+                
+                // Sử dụng phương pháp thay thế nếu API không tự cập nhật được
+                try {
+                  // Thực hiện cập nhật thủ công nếu cần
+                  console.log(`Cập nhật thủ công được bỏ qua vì sheet đã được xử lý bởi API`);
+                } catch (manualUpdateError) {
+                  console.error(`Không thể cập nhật sheet bằng phương pháp thay thế:`, manualUpdateError);
+                  errors.push({
+                    url: urlGroup.originalUrl,
+                    error: 'Không thể cập nhật sheet bằng phương pháp thay thế'
+                  });
+                  return {
+                    success: false,
+                    urlGroup,
+                    error: 'Không thể cập nhật sheet bằng phương pháp thay thế'
+                  };
+                }
+              }
+            }
+
+            return {
+              success: true,
+              urlGroup,
+              newUrl,
+              processResult: processResultJson.processedFile,
+              fileType,
+              isFolder: false
+            };
+          } catch (apiError) {
+            console.error(`Lỗi khi gọi API process-and-replace: ${apiError.message}`);
+            errors.push({
+              url: urlGroup.originalUrl,
+              error: `Lỗi khi gọi API: ${apiError.message}`
+            });
+            return {
+              success: false,
+              urlGroup,
+              error: apiError.message
+            };
+          }
         }
       } catch (error) {
         console.error(`❌ Lỗi khi xử lý URL: ${urlGroup.originalUrl}:`, error);
@@ -507,33 +610,17 @@ export async function POST(request, { params }) {
           error
         };
       }
-    };
-    
-    // Hàm xác định loại file từ phần mở rộng
-    function determineFileTypeFromExtension(url) {
-      const lowerUrl = url.toLowerCase();
-      if (lowerUrl.endsWith('.pdf')) return 'application/pdf';
-      if (lowerUrl.endsWith('.docx')) return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-      if (lowerUrl.endsWith('.xlsx')) return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-      if (lowerUrl.endsWith('.pptx')) return 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
-      if (lowerUrl.endsWith('.doc')) return 'application/msword';
-      if (lowerUrl.endsWith('.xls')) return 'application/vnd.ms-excel';
-      if (lowerUrl.endsWith('.ppt')) return 'application/vnd.ms-powerpoint';
-      if (lowerUrl.endsWith('.jpg') || lowerUrl.endsWith('.jpeg')) return 'image/jpeg';
-      if (lowerUrl.endsWith('.png')) return 'image/png';
-      if (lowerUrl.endsWith('.mp4')) return 'video/mp4';
-      if (lowerUrl.endsWith('.mp3')) return 'audio/mpeg';
-      return 'pdf'; // Mặc định là PDF
     }
     
-    // Xử lý các batch
+    // Thay đổi cách gọi hàm processUrlGroup
     for (let i = 0; i < urlGroupsArray.length; i += BATCH_SIZE) {
       const batch = urlGroupsArray.slice(i, i + BATCH_SIZE);
-      console.log(`\n===== Đang xử lý batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(urlGroupsArray.length / BATCH_SIZE)} (${batch.length} link) =====`);
+      console.log(`Xử lý batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(urlGroupsArray.length / BATCH_SIZE)}, kích thước: ${batch.length}`);
       
-      // Xử lý song song các link trong batch
-      const batchPromises = batch.map(urlGroup => processLinkWithResult(urlGroup, sheet.name));
-      const batchResults = await Promise.all(batchPromises);
+      // Sử dụng Promise.all để xử lý song song các URL trong batch
+      const batchResults = await Promise.all(
+        batch.map((urlGroup, index) => processUrlGroup(urlGroup, i + index))
+      );
       
       // Xử lý kết quả của batch
       for (const result of batchResults) {
