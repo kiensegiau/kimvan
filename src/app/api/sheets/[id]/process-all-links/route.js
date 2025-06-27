@@ -619,15 +619,66 @@ export async function POST(request, { params }) {
             // Lấy URL mới từ kết quả, kiểm tra xem có phải là folder không
             let newUrl;
             if (processResultJson.isFolder) {
-              console.log(`Kết quả là folder, sử dụng link folder đã xử lý: ${processResultJson.processedFile?.link}`);
-              newUrl = processResultJson.processedFile?.link;
+              console.log(`Kết quả là folder, kiểm tra các link có sẵn...`);
               
               // Log chi tiết về kết quả xử lý folder
               console.log('Chi tiết kết quả xử lý folder:', {
                 isFolder: processResultJson.isFolder,
                 targetFolder: processResultJson.targetFolder,
-                processedFile: processResultJson.processedFile
+                processedFile: processResultJson.processedFile,
+                filesCount: processResultJson.files?.length || 0
               });
+              
+              // Kiểm tra cấu trúc thư mục và tìm folder con phù hợp
+              if (processResultJson.files && processResultJson.files.length > 0) {
+                console.log(`Phát hiện ${processResultJson.files.length} files/folders trong kết quả`);
+                
+                // Log chi tiết về các files/folders
+                processResultJson.files.forEach((item, idx) => {
+                  console.log(`File/Folder #${idx}: ${item.name}, type: ${item.type}, link: ${item.link || 'không có link'}, newFileId: ${item.newFileId || 'không có'}`);
+                });
+                
+                // Tìm folder con
+                const processedSubfolder = processResultJson.files.find(f => f.type === 'folder');
+                if (processedSubfolder && processedSubfolder.link) {
+                  console.log(`Phát hiện folder con đã xử lý, sử dụng link folder con: ${processedSubfolder.link}`);
+                  newUrl = processedSubfolder.link;
+                } else {
+                  // Nếu không có folder con, tìm file đầu tiên có link
+                  const firstFileWithLink = processResultJson.files.find(f => f.link);
+                  if (firstFileWithLink && firstFileWithLink.link) {
+                    console.log(`Không tìm thấy folder con, sử dụng link từ file: ${firstFileWithLink.link}`);
+                    newUrl = firstFileWithLink.link;
+                  } else {
+                    // Nếu không có file nào có link, sử dụng link folder đã xử lý
+                    console.log(`Không tìm thấy file nào có link, sử dụng link folder đã xử lý: ${processResultJson.processedFile?.link}`);
+                    newUrl = processResultJson.processedFile?.link;
+                  }
+                }
+              } 
+              // Nếu không có files array hoặc array rỗng
+              else {
+                // Ưu tiên sử dụng link từ processedFile
+                if (processResultJson.processedFile && processResultJson.processedFile.link) {
+                  console.log(`Sử dụng link từ processedFile: ${processResultJson.processedFile.link}`);
+                  newUrl = processResultJson.processedFile.link;
+                }
+                // Nếu không có processedFile, tìm kiếm trong targetFolder
+                else if (processResultJson.targetFolder && 
+                    processResultJson.targetFolder.link && 
+                    processResultJson.targetFolder.name && 
+                    processResultJson.targetFolder.name !== 'Mặc định') {
+                  console.log(`Sử dụng link từ targetFolder: ${processResultJson.targetFolder.link} (${processResultJson.targetFolder.name})`);
+                  newUrl = processResultJson.targetFolder.link;
+                }
+                // Không tìm thấy link nào phù hợp
+                else {
+                  console.error(`Không tìm thấy link phù hợp trong kết quả xử lý folder`);
+                  newUrl = null;
+                }
+              }
+              
+              console.log(`URL cuối cùng được chọn: ${newUrl || 'không có URL'}`);
             } else {
               console.log(`Kết quả là file, sử dụng link file đã xử lý: ${processResultJson.processedFile?.link}`);
               newUrl = processResultJson.processedFile?.link;

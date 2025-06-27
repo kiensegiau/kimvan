@@ -231,11 +231,59 @@ export async function POST(request) {
           const processingTime = Math.round((Date.now() - startTime) / 1000);
           console.log(`✅ Hoàn tất xử lý thư mục sau ${processingTime} giây`);
           
-          // Tạo URL của folder đã xử lý
-          const processedFolderLink = `https://drive.google.com/drive/folders/${targetFolderId}`;
-          console.log(`Link folder đã xử lý: ${processedFolderLink}`);
+          // Tìm folder con quan trọng nhất để sử dụng làm link chính
+          let bestFolderLink = `https://drive.google.com/drive/folders/${targetFolderId}`;
+          let bestFolderName = targetFolderName || 'Mặc định';
+          let bestFolderId = targetFolderId;
           
-          return {
+          // Kiểm tra xem có folder con nào trong kết quả không
+          if (folderResult.files && folderResult.files.length > 0) {
+            console.log(`Tìm kiếm folder con trong ${folderResult.files.length} kết quả`);
+            
+            // Log chi tiết về tất cả các files/folders
+            console.log("=== CHI TIẾT TẤT CẢ FILES/FOLDERS TRONG KẾT QUẢ ===");
+            folderResult.files.forEach((item, idx) => {
+              console.log(`Item #${idx}: name=${item.name}, type=${item.type}, id=${item.id || 'không có'}, newFileId=${item.newFileId || 'không có'}`);
+              if (item.type === 'folder') {
+                console.log(`  -> Folder details: isEmpty=${item.isEmpty}, processedFiles=${item.processedFiles}, targetFolderId=${item.targetFolderId || 'không có'}, link=${item.link || 'không có'}`);
+              }
+            });
+            console.log("=== KẾT THÚC CHI TIẾT ===");
+            
+            // Tìm folder con đầu tiên
+            const subFolder = folderResult.files.find(f => f.type === 'folder');
+            if (subFolder) {
+              console.log(`Đã tìm thấy folder con: ${subFolder.name} (ID: ${subFolder.id})`);
+              
+              // Ưu tiên sử dụng link trực tiếp từ folder con nếu có
+              if (subFolder.link) {
+                console.log(`Sử dụng link trực tiếp từ folder con: ${subFolder.link}`);
+                bestFolderLink = subFolder.link;
+                bestFolderName = subFolder.name;
+                bestFolderId = subFolder.newFileId || subFolder.targetFolderId || subFolder.id;
+              }
+              // Nếu không có link trực tiếp, tạo link từ ID
+              else if (subFolder.newFileId || subFolder.targetFolderId) {
+                const folderId = subFolder.newFileId || subFolder.targetFolderId;
+                console.log(`Tạo link từ ID folder con: ${folderId}`);
+                bestFolderLink = `https://drive.google.com/drive/folders/${folderId}`;
+                bestFolderName = subFolder.name;
+                bestFolderId = folderId;
+              }
+              else {
+                console.log(`Không tìm thấy ID hợp lệ cho folder con, sử dụng folder cha: ${targetFolderName} (ID: ${targetFolderId})`);
+              }
+            } else {
+              console.log(`Không tìm thấy folder con, sử dụng folder cha: ${targetFolderName} (ID: ${targetFolderId})`);
+            }
+          } else {
+            console.log(`Không có files/folders trong kết quả, sử dụng folder cha: ${targetFolderName} (ID: ${targetFolderId})`);
+          }
+          
+          console.log(`Link folder được chọn: ${bestFolderLink} (${bestFolderName}, ID: ${bestFolderId})`);
+          
+          // Tạo đối tượng kết quả với đầy đủ thông tin
+          const result = {
             success: folderResult.success,
             isFolder: true,
             originalFolder: {
@@ -246,22 +294,27 @@ export async function POST(request) {
             targetFolder: {
               id: targetFolderId,
               name: targetFolderName || 'Mặc định',
-              link: processedFolderLink
+              link: `https://drive.google.com/drive/folders/${targetFolderId}`
             },
             processedFiles: folderResult.processedFiles,
             processedFolders: folderResult.processedFolders,
             skippedFiles: folderResult.skippedFiles,
             errors: folderResult.errors,
-            files: folderResult.files,
+            files: folderResult.files || [], // Đảm bảo files luôn được truyền đi
             processingTime: processingTime,
             summary: summaryMessage,
             // Thêm URL của folder đã xử lý để cập nhật trong sheet
             processedFile: {
-              id: targetFolderId,
-              name: targetFolderName || fileInfo.name,
-              link: processedFolderLink
+              id: bestFolderId,
+              name: bestFolderName,
+              link: bestFolderLink
             }
           };
+          
+          // Log thông tin chi tiết về kết quả
+          console.log(`Đã xử lý folder thành công. Số lượng files trong kết quả: ${result.files?.length || 0}`);
+          
+          return result;
         } else {
           // Xử lý file đơn lẻ
           console.log(`Phát hiện file đơn lẻ, tiến hành xử lý...`);

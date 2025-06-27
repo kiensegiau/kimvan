@@ -190,14 +190,23 @@ export async function processFolder(folderId, folderName, targetFolderId, apiKey
             results.errors = [...results.errors, ...subFolderResult.errors.map(err => `[${file.name}] ${err}`)];
           }
           
-          results.files.push({
+          // Tạo thông tin chi tiết về folder con đã xử lý
+          const folderInfo = {
             name: file.name,
             id: file.id,
             type: 'folder',
             success: subFolderResult.success,
             processedFiles: subFolderResult.processedFiles,
-            isEmpty: subFolderResult.isEmpty || false
-          });
+            isEmpty: subFolderResult.isEmpty || false,
+            link: `https://drive.google.com/drive/folders/${newTargetFolderId}`,
+            targetFolderId: newTargetFolderId,
+            newFileId: newTargetFolderId // Sử dụng ID của folder đích
+          };
+          
+          // Log thông tin chi tiết về folder con
+          console.log(`Thông tin chi tiết folder con: name=${folderInfo.name}, id=${folderInfo.id}, newFileId=${folderInfo.newFileId}, link=${folderInfo.link}`);
+          
+          results.files.push(folderInfo);
           
           console.log(`Đã xử lý folder con: ${file.name} - ${subFolderResult.processedFiles} files`);
         } else {
