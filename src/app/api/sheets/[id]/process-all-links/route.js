@@ -331,17 +331,34 @@ export async function POST(request, { params }) {
           }
           
           // Lấy thông tin file từ Drive API để xác định loại file
-          const auth = new google.auth.GoogleAuth({
-            credentials: {
-              client_email: process.env.GOOGLE_CLIENT_EMAIL,
-              private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n')
-            },
-            scopes: ['https://www.googleapis.com/auth/drive.readonly']
-          });
-          
-          const drive = google.drive({ version: 'v3', auth });
-          
+          // Sử dụng token tải xuống thay vì credentials
           try {
+            // Import hàm getTokenByType từ utils
+            const { getTokenByType } = await import('@/app/api/drive/remove-watermark/lib/utils.js');
+            
+            // Lấy token tải xuống
+            const downloadToken = getTokenByType('download');
+            if (!downloadToken) {
+              console.error('Không tìm thấy token Google Drive tải xuống');
+              throw new Error('Không tìm thấy token Google Drive tải xuống');
+            }
+            
+            console.log('Sử dụng xác thực từ token tải xuống');
+            
+            // Tạo OAuth2 client
+            const oauth2Client = new google.auth.OAuth2(
+              process.env.GOOGLE_CLIENT_ID,
+              process.env.GOOGLE_CLIENT_SECRET,
+              process.env.GOOGLE_REDIRECT_URI
+            );
+            
+            // Thiết lập credentials
+            oauth2Client.setCredentials(downloadToken);
+            
+            // Khởi tạo Google Drive API
+            const drive = google.drive({ version: 'v3', auth: oauth2Client });
+            
+            // Lấy thông tin file
             const fileMetadata = await drive.files.get({
               fileId: fileId,
               fields: 'mimeType,name',
@@ -358,7 +375,7 @@ export async function POST(request, { params }) {
                 isFolder = true;
                 fileType = 'folder';
               } else {
-                console.log(`Đã xác định loại file từ Drive API: ${fileType} (${fileMetadata.data.name || 'không có tên'})`);
+                console.log(`Đã xác định loại file từ Drive API (sử dụng token): ${fileType} (${fileMetadata.data.name || 'không có tên'})`);
               }
             } else {
               console.log('Không thể lấy thông tin MIME type từ Drive API, sử dụng mặc định là PDF');
