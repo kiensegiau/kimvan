@@ -108,16 +108,21 @@ export async function POST(request, { params }) {
         spreadsheetId: sheet.sheetId
       });
       
-      // Get the first sheet name or default to 'Sheet1'
-      firstSheetName = spreadsheetInfo.data.sheets[0]?.properties?.title || 'Sheet1';
+      // Lấy tên sheet từ thông tin trong database nếu có, nếu không thì lấy từ Google Sheets API
+      // Ưu tiên sử dụng tên sheet từ database vì đây là tên sheet thật do người dùng đặt
+      const sheetTitle = sheet.title || sheet.name;
+      firstSheetName = sheetTitle || spreadsheetInfo.data.sheets[0]?.properties?.title || 'Sheet1';
+      
       // Lấy sheetId thực tế của sheet đầu tiên
       actualSheetId = spreadsheetInfo.data.sheets[0]?.properties?.sheetId || 0;
-      console.log(`Tên sheet đầu tiên: ${firstSheetName}, SheetId: ${actualSheetId}`);
+      console.log(`Tên sheet từ database: ${sheetTitle || 'không có'}`);
+      console.log(`Tên sheet đầu tiên từ API: ${spreadsheetInfo.data.sheets[0]?.properties?.title || 'không có'}`);
+      console.log(`Tên sheet sẽ sử dụng: ${firstSheetName}, SheetId: ${actualSheetId}`);
       
-      // Now get the values using the actual sheet name
+      // Now get the values using the actual sheet name from Google Sheets API
       const response = await sheets.spreadsheets.values.get({
         spreadsheetId: sheet.sheetId,
-        range: `${firstSheetName}!A:Z`  // Use the actual sheet name
+        range: `${spreadsheetInfo.data.sheets[0]?.properties?.title || 'Sheet1'}!A:Z`  // Use the actual sheet name from API
       });
       
       values = response.data.values;
