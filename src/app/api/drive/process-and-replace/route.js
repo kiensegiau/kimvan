@@ -169,21 +169,21 @@ export async function POST(request) {
           if (folderResult.success) {
             if (folderResult.isEmpty) {
               summaryMessage = 'Thư mục trống, không có file nào để xử lý.';
-            } else {
+        } else {
               summaryMessage = `Đã xử lý ${folderResult.processedFiles} files, ${folderResult.processedFolders} thư mục con.`;
               if (folderResult.skippedFiles > 0) {
                 summaryMessage += ` Bỏ qua ${folderResult.skippedFiles} files do lỗi.`;
               }
             }
-          } else {
+    } else {
             summaryMessage = `Xử lý thư mục thất bại: ${folderResult.error || 'Lỗi không xác định'}`;
-          }
-          
+    }
+    
           // Tính toán thời gian xử lý
           const processingTime = Math.round((Date.now() - startTime) / 1000);
           console.log(`✅ Hoàn tất xử lý thư mục sau ${processingTime} giây`);
-          
-          return {
+    
+    return {
             success: folderResult.success,
             isFolder: true,
             originalFolder: {
@@ -201,9 +201,15 @@ export async function POST(request) {
             errors: folderResult.errors,
             files: folderResult.files,
             processingTime: processingTime,
-            summary: summaryMessage
+            summary: summaryMessage,
+            // Thêm URL của folder đã xử lý để cập nhật trong sheet
+            processedFile: {
+              id: targetFolderId,
+              name: targetFolderName || fileInfo.name,
+              link: `https://drive.google.com/drive/folders/${targetFolderId}`
+            }
           };
-        } else {
+    } else {
           // Xử lý file đơn lẻ
           console.log(`Phát hiện file đơn lẻ, tiến hành xử lý...`);
           
@@ -221,24 +227,24 @@ export async function POST(request) {
                     !mimeType.includes('video') && 
                     !mimeType.includes('audio')) {
             console.warn(`MIME type không được hỗ trợ: ${mimeType}, file có thể không được xử lý đúng cách`);
-          }
-          
-          // Tải xuống file
-          console.log(`Đang xử lý yêu cầu tải xuống: ${driveLink}`);
-          
+    }
+    
+    // Tải xuống file
+    console.log(`Đang xử lý yêu cầu tải xuống: ${driveLink}`);
+    
           let downloadResult = await downloadFromGoogleDrive(fileId);
-          tempDir = downloadResult.outputDir;
-          
-          let processedFilePath;
-          let processedFileName = downloadResult.fileName;
-          
-          // Kiểm tra xem file có phải là file bị chặn đã được xử lý bởi drive-fix-blockdown không
-          const isBlockedFileProcessed = downloadResult.fileName && downloadResult.fileName.includes('blocked_') && downloadResult.fileName.includes('_clean');
-          
-          if (isBlockedFileProcessed) {
-            console.log('File đã được xử lý bởi drive-fix-blockdown, bỏ qua bước xử lý thông thường');
-            processedFilePath = downloadResult.filePath;
-          } else {
+        tempDir = downloadResult.outputDir;
+        
+        let processedFilePath;
+        let processedFileName = downloadResult.fileName;
+        
+        // Kiểm tra xem file có phải là file bị chặn đã được xử lý bởi drive-fix-blockdown không
+        const isBlockedFileProcessed = downloadResult.fileName && downloadResult.fileName.includes('blocked_') && downloadResult.fileName.includes('_clean');
+        
+        if (isBlockedFileProcessed) {
+          console.log('File đã được xử lý bởi drive-fix-blockdown, bỏ qua bước xử lý thông thường');
+          processedFilePath = downloadResult.filePath;
+        } else {
             // Kiểm tra loại file và xử lý tương ứng
             const mimeType = downloadResult.mimeType;
             console.log(`Xử lý file theo loại MIME: ${mimeType}`);
@@ -248,8 +254,8 @@ export async function POST(request) {
               console.log('Phát hiện file PDF, tiến hành xử lý xóa watermark...');
               
               // Xử lý file PDF để loại bỏ watermark
-              const processResult = await processFile(downloadResult.filePath, downloadResult.mimeType, apiKey);
-              processedFilePath = processResult.processedPath;
+          const processResult = await processFile(downloadResult.filePath, downloadResult.mimeType, apiKey);
+          processedFilePath = processResult.processedPath;
             } else {
               // Các loại file khác - chỉ tải xuống và upload lại không xử lý
               console.log(`Phát hiện file không phải PDF (${mimeType}), chỉ tải xuống và upload lại không xử lý`);
@@ -267,10 +273,10 @@ export async function POST(request) {
           }
           
           // Tải lên file đã xử lý, truyền targetFolderId
-          const uploadResult = await uploadToGoogleDrive(
-            processedFilePath,
-            processedFileName,
-            downloadResult.mimeType,
+        const uploadResult = await uploadToGoogleDrive(
+          processedFilePath,
+          processedFileName,
+          downloadResult.mimeType,
             targetFolderId,
             targetFolderName || courseName // Truyền folder name
           );
@@ -315,37 +321,37 @@ export async function POST(request) {
               };
             }
           }
-          
-          // Dọn dẹp thư mục tạm
-          try {
-            fs.rmdirSync(tempDir, { recursive: true });
-            console.log(`Đã xóa thư mục tạm: ${tempDir}`);
-          } catch (cleanupError) {
-            console.error('Lỗi khi dọn dẹp thư mục tạm:', cleanupError);
-          }
-          
-          // Tính toán thời gian xử lý
-          const processingTime = Math.round((Date.now() - startTime) / 1000);
-          console.log(`✅ Hoàn tất xử lý sau ${processingTime} giây`);
-          
-          // Trả về kết quả
-          return {
-            success: true,
+        
+        // Dọn dẹp thư mục tạm
+        try {
+          fs.rmdirSync(tempDir, { recursive: true });
+          console.log(`Đã xóa thư mục tạm: ${tempDir}`);
+        } catch (cleanupError) {
+          console.error('Lỗi khi dọn dẹp thư mục tạm:', cleanupError);
+        }
+        
+        // Tính toán thời gian xử lý
+        const processingTime = Math.round((Date.now() - startTime) / 1000);
+        console.log(`✅ Hoàn tất xử lý sau ${processingTime} giây`);
+        
+        // Trả về kết quả
+        return {
+          success: true,
             isFolder: false,
-            originalFile: {
-              id: fileId,
-              link: driveLink
-            },
+          originalFile: {
+            id: fileId,
+            link: driveLink
+          },
             targetFolder: {
               id: targetFolderId,
               name: targetFolderName || (courseName || 'Mặc định')
             },
-            processedFile: {
-              id: uploadResult.fileId,
-              name: uploadResult.fileName,
-              link: uploadResult.webViewLink
-            },
-            duplicatesDeleted: uploadResult.duplicatesDeleted || 0,
+          processedFile: {
+            id: uploadResult.fileId,
+            name: uploadResult.fileName,
+            link: uploadResult.webViewLink
+          },
+          duplicatesDeleted: uploadResult.duplicatesDeleted || 0,
             processingTime: processingTime,
             sheetUpdate: updateSheet ? {
               success: sheetUpdateResult?.success || false,

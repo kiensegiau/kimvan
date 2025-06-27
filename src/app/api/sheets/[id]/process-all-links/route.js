@@ -510,8 +510,8 @@ export async function POST(request, { params }) {
               },
               body: JSON.stringify({
                 driveLink: urlGroup.originalUrl,
-                folderId: targetFolderId,
-                apiKey: apiKey,
+                folderId: "1Lt10aHyWp9VtPaImzInE0DmIcbrjJgpN", // Sử dụng folder mặc định nếu không có folder ID
+                apiKey: requestBody.apiKey || null,
                 courseName: sheet.title || 'Sheet Processed Files',
                 // Thêm các thông tin để cập nhật sheet
                 updateSheet: true,
@@ -540,7 +540,10 @@ export async function POST(request, { params }) {
             }
 
             // Lấy URL mới từ kết quả
-            const newUrl = processResultJson.processedFile?.link;
+            const newUrl = processResultJson.isFolder 
+              ? processResultJson.processedFile?.link 
+              : processResultJson.processedFile?.link;
+              
             if (!newUrl) {
               console.error(`Không nhận được URL mới sau khi xử lý: ${urlGroup.originalUrl}`);
               errors.push({
@@ -624,7 +627,7 @@ export async function POST(request, { params }) {
       
       // Xử lý kết quả của batch
       for (const result of batchResults) {
-        if (result.success) {
+        if (result && result.success) {
           const { urlGroup, newUrl, processResult } = result;
           const fileType = result.fileType || 'pdf'; // Lấy fileType nếu có, mặc định là pdf
           
@@ -703,63 +706,65 @@ export async function POST(request, { params }) {
           const { urlGroup, error } = result;
           
           // Xử lý lỗi cho tất cả các ô trong nhóm
-          for (const cellInfo of urlGroup.cells) {
-            // Kiểm tra loại lỗi để hiển thị thông báo phù hợp
-            let errorMessage = error.message;
-            
-            // Thêm thông tin về vị trí ô vào thông báo lỗi
-            errorMessage = `Ô [${cellInfo.rowIndex + 1}:${cellInfo.colIndex + 1}]: ${errorMessage}`;
-            
-            // Xử lý các loại lỗi phổ biến
-            if (error.message.includes('Không có quyền truy cập') || error.message.includes('Không có quyền tải xuống')) {
-              // Thử cập nhật ô với thông báo lỗi
-              try {
-                console.log(`Cập nhật ô với thông báo lỗi quyền truy cập...`);
-                
-                // Thêm comment vào ô để thông báo lỗi
-                await sheets.spreadsheets.batchUpdate({
-                  spreadsheetId: sheet.sheetId,
-                  requestBody: {
-                    requests: [
-                      {
-                        updateCells: {
-                          range: {
-                            sheetId: actualSheetId,
-                            startRowIndex: cellInfo.rowIndex,
-                            endRowIndex: cellInfo.rowIndex + 1,
-                            startColumnIndex: cellInfo.colIndex,
-                            endColumnIndex: cellInfo.colIndex + 1
-                          },
-                          rows: [
-                            {
-                              values: [
-                                {
-                                  note: `Lỗi: Không có quyền truy cập file này. Vui lòng kiểm tra quyền chia sẻ của file.`
-                                }
-                              ]
-                            }
-                          ],
-                          fields: 'note'
+          if (urlGroup && urlGroup.cells) {
+            for (const cellInfo of urlGroup.cells) {
+              // Kiểm tra loại lỗi để hiển thị thông báo phù hợp
+              let errorMessage = error && error.message ? error.message : 'Lỗi không xác định';
+              
+              // Thêm thông tin về vị trí ô vào thông báo lỗi
+              errorMessage = `Ô [${cellInfo.rowIndex + 1}:${cellInfo.colIndex + 1}]: ${errorMessage}`;
+              
+              // Xử lý các loại lỗi phổ biến
+              if (error && error.message && (error.message.includes('Không có quyền truy cập') || error.message.includes('Không có quyền tải xuống'))) {
+                // Thử cập nhật ô với thông báo lỗi
+                try {
+                  console.log(`Cập nhật ô với thông báo lỗi quyền truy cập...`);
+                  
+                  // Thêm comment vào ô để thông báo lỗi
+                  await sheets.spreadsheets.batchUpdate({
+                    spreadsheetId: sheet.sheetId,
+                    requestBody: {
+                      requests: [
+                        {
+                          updateCells: {
+                            range: {
+                              sheetId: actualSheetId,
+                              startRowIndex: cellInfo.rowIndex,
+                              endRowIndex: cellInfo.rowIndex + 1,
+                              startColumnIndex: cellInfo.colIndex,
+                              endColumnIndex: cellInfo.colIndex + 1
+                            },
+                            rows: [
+                              {
+                                values: [
+                                  {
+                                    note: `Lỗi: Không có quyền truy cập file này. Vui lòng kiểm tra quyền chia sẻ của file.`
+                                  }
+                                ]
+                              }
+                            ],
+                            fields: 'note'
+                          }
                         }
-                      }
-                    ]
-                  }
-                });
-                
-                console.log(`Đã thêm ghi chú lỗi vào ô [${cellInfo.rowIndex + 1}:${cellInfo.colIndex + 1}]`);
-              } catch (commentError) {
-                console.error(`Không thể thêm ghi chú lỗi:`, commentError);
+                      ]
+                    }
+                  });
+                  
+                  console.log(`Đã thêm ghi chú lỗi vào ô [${cellInfo.rowIndex + 1}:${cellInfo.colIndex + 1}]`);
+                } catch (commentError) {
+                  console.error(`Không thể thêm ghi chú lỗi:`, commentError);
+                }
               }
+              
+              errors.push({
+                rowIndex: cellInfo.rowIndex,
+                colIndex: cellInfo.colIndex,
+                url: cellInfo.url,
+                error: errorMessage,
+                timestamp: new Date().toISOString(),
+                sharedWithCells: urlGroup.cells.length - 1 // Số ô khác có cùng URL
+              });
             }
-            
-            errors.push({
-              rowIndex: cellInfo.rowIndex,
-              colIndex: cellInfo.colIndex,
-              url: cellInfo.url,
-              error: errorMessage,
-              timestamp: new Date().toISOString(),
-              sharedWithCells: urlGroup.cells.length - 1 // Số ô khác có cùng URL
-            });
           }
         }
       }
