@@ -508,11 +508,11 @@ export async function POST(request, { params }) {
                           
             console.log(`Sử dụng API URL: ${apiUrl}`);
             
-            // Chuẩn bị thông tin để tạo cấu trúc thư mục "Tài liệu sheet cũ/[tên sheet]"
+            // Chuẩn bị thông tin để tạo cấu trúc thư mục với tên sheet
             const isSheetDocument = true; // Đánh dấu là tài liệu sheet
-            const sheetName = firstSheetName; // Sử dụng tên sheet làm tên thư mục con
+            const sheetName = firstSheetName; // Sử dụng tên sheet làm tên thư mục
             
-            console.log(`Đang cấu hình để lưu vào thư mục "Tài liệu sheet cũ/${sheetName}"`);
+            console.log(`Đang cấu hình để lưu vào thư mục có tên sheet: "${sheetName}"`);
             
             const processResult = await fetch(apiUrl, {
               method: 'POST',
@@ -524,10 +524,11 @@ export async function POST(request, { params }) {
                 driveLink: urlGroup.originalUrl,
                 folderId: "1Lt10aHyWp9VtPaImzInE0DmIcbrjJgpN", // Sử dụng folder mặc định nếu không có folder ID
                 apiKey: requestBody.apiKey || null,
-                courseName: sheet.title || 'Sheet Processed Files',
-                // Thêm cấu hình cho thư mục "Tài liệu sheet cũ/[tên sheet]"
+                courseName: sheetName, // Sử dụng tên sheet trực tiếp làm tên thư mục
+                // Thêm cấu hình cho thư mục
                 isSheetDocument: isSheetDocument,
                 sheetName: sheetName,
+                useSheetNameDirectly: true, // Đánh dấu sử dụng trực tiếp tên sheet làm thư mục
                 // Thêm các thông tin để cập nhật sheet
                 updateSheet: true,
                 sheetId: sheet.sheetId,

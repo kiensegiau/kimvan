@@ -47,7 +47,8 @@ export async function POST(request) {
       sheetId,
       googleSheetName,
       updateSheet = false, // Cờ để xác định có cập nhật sheet hay không
-      displayText = null // Text hiển thị trong ô
+      displayText = null, // Text hiển thị trong ô
+      useSheetNameDirectly = false // Thêm tham số mới để xác định có sử dụng trực tiếp tên sheet làm thư mục hay không
     } = requestBody;
     
     console.log('Thông tin request:', {
@@ -63,7 +64,8 @@ export async function POST(request) {
       rowIndex: rowIndex !== undefined ? rowIndex : 'không có',
       cellIndex: cellIndex !== undefined ? cellIndex : 'không có',
       sheetId: sheetId || 'không có',
-      googleSheetName: googleSheetName || 'không có'
+      googleSheetName: googleSheetName || 'không có',
+      useSheetNameDirectly: useSheetNameDirectly || false
     });
     
     // Validate drive link
@@ -123,33 +125,63 @@ export async function POST(request) {
         let targetFolderId = folderId;
         let targetFolderName = '';
         
-        // Nếu là tài liệu sheet, tạo cấu trúc folder đặc biệt
+        // Nếu là tài liệu sheet, tạo cấu trúc folder
         if (isSheetDocument && sheetName) {
-          console.log(`Đây là tài liệu sheet: ${sheetName}, tạo cấu trúc folder đặc biệt`);
+          console.log(`Đây là tài liệu sheet: ${sheetName}, tạo thư mục với tên sheet`);
           
-          // Tạo/tìm folder "Tài liệu sheet cũ"
-          const mainFolderName = "Tài liệu sheet cũ";
-          const mainFolderResult = await findOrCreateFolder(mainFolderName, folderId);
-          
-          if (!mainFolderResult.success) {
-            throw new Error(`Không thể tạo folder chính "${mainFolderName}": ${mainFolderResult.error || 'Lỗi không xác định'}`);
+          // Kiểm tra nếu cần sử dụng trực tiếp tên sheet làm thư mục
+          if (useSheetNameDirectly) {
+            console.log(`Sử dụng trực tiếp tên sheet làm thư mục: ${sheetName}`);
+            
+            // Tạo/tìm folder với tên sheet
+            const sheetFolderResult = await findOrCreateFolder(sheetName, folderId);
+            
+            if (!sheetFolderResult.success) {
+              throw new Error(`Không thể tạo folder "${sheetName}": ${sheetFolderResult.error || 'Lỗi không xác định'}`);
+            }
+            
+            targetFolderId = sheetFolderResult.folder.id;
+            targetFolderName = sheetName;
+            
+            console.log(`Đã tạo/tìm thư mục: ${sheetName} (ID: ${targetFolderId})`);
+          } else {
+            // Tạo/tìm folder "Tài liệu sheet cũ" (cách cũ)
+            console.log(`Sử dụng cấu trúc thư mục cũ "Tài liệu sheet cũ/${sheetName}"`);
+            
+            const mainFolderName = "Tài liệu sheet cũ";
+            const mainFolderResult = await findOrCreateFolder(mainFolderName, folderId);
+            
+            if (!mainFolderResult.success) {
+              throw new Error(`Không thể tạo folder chính "${mainFolderName}": ${mainFolderResult.error || 'Lỗi không xác định'}`);
+            }
+            
+            // Tạo/tìm folder con với tên sheet
+            const sheetFolderResult = await findOrCreateFolder(sheetName, mainFolderResult.folder.id);
+            
+            if (!sheetFolderResult.success) {
+              throw new Error(`Không thể tạo folder con "${sheetName}": ${sheetFolderResult.error || 'Lỗi không xác định'}`);
+            }
+            
+            targetFolderId = sheetFolderResult.folder.id;
+            targetFolderName = sheetName;
+            
+            console.log(`Đã tạo/tìm cấu trúc folder: ${mainFolderName}/${sheetName} (ID: ${targetFolderId})`);
           }
-          
-          // Tạo/tìm folder con với tên sheet
-          const sheetFolderResult = await findOrCreateFolder(sheetName, mainFolderResult.folder.id);
-          
-          if (!sheetFolderResult.success) {
-            throw new Error(`Không thể tạo folder con "${sheetName}": ${sheetFolderResult.error || 'Lỗi không xác định'}`);
-          }
-          
-          targetFolderId = sheetFolderResult.folder.id;
-          targetFolderName = sheetName;
-          
-          console.log(`Đã tạo/tìm cấu trúc folder: ${mainFolderName}/${sheetName} (ID: ${targetFolderId})`);
         } else if (courseName) {
           // Nếu có courseName, sử dụng nó làm folder cha
           console.log(`Sử dụng courseName làm folder cha: ${courseName}`);
+          
+          // Tạo/tìm folder với tên courseName
+          const courseFolderResult = await findOrCreateFolder(courseName, folderId);
+          
+          if (!courseFolderResult.success) {
+            throw new Error(`Không thể tạo folder "${courseName}": ${courseFolderResult.error || 'Lỗi không xác định'}`);
+          }
+          
+          targetFolderId = courseFolderResult.folder.id;
           targetFolderName = courseName;
+          
+          console.log(`Đã tạo/tìm folder: ${courseName} (ID: ${targetFolderId})`);
         }
         
         // Kiểm tra xem đây có phải là thư mục không
@@ -169,25 +201,25 @@ export async function POST(request) {
           if (folderResult.success) {
             if (folderResult.isEmpty) {
               summaryMessage = 'Thư mục trống, không có file nào để xử lý.';
-        } else {
+            } else {
               summaryMessage = `Đã xử lý ${folderResult.processedFiles} files, ${folderResult.processedFolders} thư mục con.`;
               if (folderResult.skippedFiles > 0) {
                 summaryMessage += ` Bỏ qua ${folderResult.skippedFiles} files do lỗi.`;
               }
             }
-    } else {
+          } else {
             summaryMessage = `Xử lý thư mục thất bại: ${folderResult.error || 'Lỗi không xác định'}`;
-    }
-    
+          }
+          
           // Tính toán thời gian xử lý
           const processingTime = Math.round((Date.now() - startTime) / 1000);
           console.log(`✅ Hoàn tất xử lý thư mục sau ${processingTime} giây`);
-    
+          
           // Tạo URL của folder đã xử lý
           const processedFolderLink = `https://drive.google.com/drive/folders/${targetFolderId}`;
           console.log(`Link folder đã xử lý: ${processedFolderLink}`);
-    
-    return {
+          
+          return {
             success: folderResult.success,
             isFolder: true,
             originalFolder: {
@@ -214,7 +246,7 @@ export async function POST(request) {
               link: processedFolderLink
             }
           };
-    } else {
+        } else {
           // Xử lý file đơn lẻ
           console.log(`Phát hiện file đơn lẻ, tiến hành xử lý...`);
           
@@ -232,24 +264,24 @@ export async function POST(request) {
                     !mimeType.includes('video') && 
                     !mimeType.includes('audio')) {
             console.warn(`MIME type không được hỗ trợ: ${mimeType}, file có thể không được xử lý đúng cách`);
-    }
-    
-    // Tải xuống file
-    console.log(`Đang xử lý yêu cầu tải xuống: ${driveLink}`);
-    
+          }
+          
+          // Tải xuống file
+          console.log(`Đang xử lý yêu cầu tải xuống: ${driveLink}`);
+          
           let downloadResult = await downloadFromGoogleDrive(fileId);
-        tempDir = downloadResult.outputDir;
-        
-        let processedFilePath;
-        let processedFileName = downloadResult.fileName;
-        
-        // Kiểm tra xem file có phải là file bị chặn đã được xử lý bởi drive-fix-blockdown không
-        const isBlockedFileProcessed = downloadResult.fileName && downloadResult.fileName.includes('blocked_') && downloadResult.fileName.includes('_clean');
-        
-        if (isBlockedFileProcessed) {
-          console.log('File đã được xử lý bởi drive-fix-blockdown, bỏ qua bước xử lý thông thường');
-          processedFilePath = downloadResult.filePath;
-        } else {
+          tempDir = downloadResult.outputDir;
+          
+          let processedFilePath;
+          let processedFileName = downloadResult.fileName;
+          
+          // Kiểm tra xem file có phải là file bị chặn đã được xử lý bởi drive-fix-blockdown không
+          const isBlockedFileProcessed = downloadResult.fileName && downloadResult.fileName.includes('blocked_') && downloadResult.fileName.includes('_clean');
+          
+          if (isBlockedFileProcessed) {
+            console.log('File đã được xử lý bởi drive-fix-blockdown, bỏ qua bước xử lý thông thường');
+            processedFilePath = downloadResult.filePath;
+          } else {
             // Kiểm tra loại file và xử lý tương ứng
             const mimeType = downloadResult.mimeType;
             console.log(`Xử lý file theo loại MIME: ${mimeType}`);
@@ -259,8 +291,8 @@ export async function POST(request) {
               console.log('Phát hiện file PDF, tiến hành xử lý xóa watermark...');
               
               // Xử lý file PDF để loại bỏ watermark
-          const processResult = await processFile(downloadResult.filePath, downloadResult.mimeType, apiKey);
-          processedFilePath = processResult.processedPath;
+              const processResult = await processFile(downloadResult.filePath, downloadResult.mimeType, apiKey);
+              processedFilePath = processResult.processedPath;
             } else {
               // Các loại file khác - chỉ tải xuống và upload lại không xử lý
               console.log(`Phát hiện file không phải PDF (${mimeType}), chỉ tải xuống và upload lại không xử lý`);
@@ -278,10 +310,10 @@ export async function POST(request) {
           }
           
           // Tải lên file đã xử lý, truyền targetFolderId
-        const uploadResult = await uploadToGoogleDrive(
-          processedFilePath,
-          processedFileName,
-          downloadResult.mimeType,
+          const uploadResult = await uploadToGoogleDrive(
+            processedFilePath,
+            processedFileName,
+            downloadResult.mimeType,
             targetFolderId,
             targetFolderName || courseName // Truyền folder name
           );
@@ -326,37 +358,37 @@ export async function POST(request) {
               };
             }
           }
-        
-        // Dọn dẹp thư mục tạm
-        try {
-          fs.rmdirSync(tempDir, { recursive: true });
-          console.log(`Đã xóa thư mục tạm: ${tempDir}`);
-        } catch (cleanupError) {
-          console.error('Lỗi khi dọn dẹp thư mục tạm:', cleanupError);
-        }
-        
-        // Tính toán thời gian xử lý
-        const processingTime = Math.round((Date.now() - startTime) / 1000);
-        console.log(`✅ Hoàn tất xử lý sau ${processingTime} giây`);
-        
-        // Trả về kết quả
-        return {
-          success: true,
+          
+          // Dọn dẹp thư mục tạm
+          try {
+            fs.rmdirSync(tempDir, { recursive: true });
+            console.log(`Đã xóa thư mục tạm: ${tempDir}`);
+          } catch (cleanupError) {
+            console.error('Lỗi khi dọn dẹp thư mục tạm:', cleanupError);
+          }
+          
+          // Tính toán thời gian xử lý
+          const processingTime = Math.round((Date.now() - startTime) / 1000);
+          console.log(`✅ Hoàn tất xử lý sau ${processingTime} giây`);
+          
+          // Trả về kết quả
+          return {
+            success: true,
             isFolder: false,
-          originalFile: {
-            id: fileId,
-            link: driveLink
-          },
+            originalFile: {
+              id: fileId,
+              link: driveLink
+            },
             targetFolder: {
               id: targetFolderId,
               name: targetFolderName || (courseName || 'Mặc định')
             },
-          processedFile: {
-            id: uploadResult.fileId,
-            name: uploadResult.fileName,
-            link: uploadResult.webViewLink
-          },
-          duplicatesDeleted: uploadResult.duplicatesDeleted || 0,
+            processedFile: {
+              id: uploadResult.fileId,
+              name: uploadResult.fileName,
+              link: uploadResult.webViewLink
+            },
+            duplicatesDeleted: uploadResult.duplicatesDeleted || 0,
             processingTime: processingTime,
             sheetUpdate: updateSheet ? {
               success: sheetUpdateResult?.success || false,
