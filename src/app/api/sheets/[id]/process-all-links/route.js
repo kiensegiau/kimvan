@@ -503,10 +503,16 @@ export async function POST(request, { params }) {
           try {
             console.log(`Gọi API process-and-replace cho URL: ${urlGroup.originalUrl}`);
             
-            const processResult = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/drive/process-and-replace`, {
+            // Sử dụng URL đầy đủ cho API endpoint
+            const apiUrl = `${protocol}://${host}/api/drive/process-and-replace`;
+                          
+            console.log(`Sử dụng API URL: ${apiUrl}`);
+            
+            const processResult = await fetch(apiUrl, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
+                'Cookie': cookie // Truyền cookie để duy trì phiên đăng nhập
               },
               body: JSON.stringify({
                 driveLink: urlGroup.originalUrl,
