@@ -519,44 +519,70 @@ export async function POST(request, { params }) {
             
             console.log(`Đang cấu hình để lưu vào thư mục có tên sheet: "${sheetName}"`);
             
-            const processResult = await fetch(apiUrl, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Cookie': cookie // Truyền cookie để duy trì phiên đăng nhập
-              },
-              body: JSON.stringify({
-                driveLink: urlGroup.originalUrl,
-                folderId: "1Lt10aHyWp9VtPaImzInE0DmIcbrjJgpN", // Sử dụng folder mặc định nếu không có folder ID
-                apiKey: requestBody.apiKey || null,
-                courseName: sheetName, // Sử dụng tên sheet trực tiếp làm tên thư mục
-                // Thêm cấu hình cho thư mục
-                isSheetDocument: isSheetDocument,
-                sheetName: sheetName,
-                useSheetNameDirectly: true, // Đánh dấu sử dụng trực tiếp tên sheet làm thư mục
-                // Thêm các thông tin để cập nhật sheet
-                updateSheet: true,
-                sheetId: sheet.sheetId,
-                googleSheetName: firstSheetName,
-                rowIndex: firstCell.rowIndex,
-                cellIndex: firstCell.colIndex,
-                displayText: firstCell.cell // Giữ nguyên text hiển thị
-              }),
-            });
-
-            const processResultJson = await processResult.json();
-
+            // Thêm logic retry cho fetch
+            const MAX_RETRIES = 3;
+            let lastError = null;
+            let processResultJson = null;
+            
+            for (let retryCount = 0; retryCount <= MAX_RETRIES; retryCount++) {
+              try {
+                if (retryCount > 0) {
+                  console.log(`Thử lại lần ${retryCount}/${MAX_RETRIES} cho URL: ${urlGroup.originalUrl}`);
+                  // Đợi thời gian tăng dần trước khi thử lại (exponential backoff)
+                  await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000));
+                }
+                
+                const processResult = await fetch(apiUrl, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Cookie': cookie // Truyền cookie để duy trì phiên đăng nhập
+                  },
+                  body: JSON.stringify({
+                    driveLink: urlGroup.originalUrl,
+                    folderId: "1Lt10aHyWp9VtPaImzInE0DmIcbrjJgpN", // Sử dụng folder mặc định nếu không có folder ID
+                    apiKey: requestBody.apiKey || null,
+                    courseName: sheetName, // Sử dụng tên sheet trực tiếp làm tên thư mục
+                    // Thêm cấu hình cho thư mục
+                    isSheetDocument: isSheetDocument,
+                    sheetName: sheetName,
+                    useSheetNameDirectly: true, // Đánh dấu sử dụng trực tiếp tên sheet làm thư mục
+                    // Thêm các thông tin để cập nhật sheet
+                    updateSheet: true,
+                    sheetId: sheet.sheetId,
+                    googleSheetName: firstSheetName,
+                    rowIndex: firstCell.rowIndex,
+                    cellIndex: firstCell.colIndex,
+                    displayText: firstCell.cell // Giữ nguyên text hiển thị
+                  }),
+                });
+                
+                processResultJson = await processResult.json();
+                // Nếu thành công, thoát khỏi vòng lặp retry
+                break;
+              } catch (fetchError) {
+                lastError = fetchError;
+                console.error(`Lỗi fetch lần ${retryCount + 1}/${MAX_RETRIES + 1}: ${fetchError.message}`);
+                
+                // Nếu đã thử lại đủ số lần, ném lỗi
+                if (retryCount === MAX_RETRIES) {
+                  throw new Error(`Fetch failed sau ${MAX_RETRIES + 1} lần thử: ${fetchError.message}`);
+                }
+              }
+            }
+            
             // Kiểm tra kết quả xử lý và cập nhật sheet
-            if (!processResultJson.success) {
-              console.error(`Lỗi khi xử lý URL: ${urlGroup.originalUrl}`, processResultJson.error);
+            if (!processResultJson || !processResultJson.success) {
+              const errorMessage = processResultJson?.error || 'Lỗi không xác định khi xử lý file';
+              console.error(`Lỗi khi xử lý URL: ${urlGroup.originalUrl}`, errorMessage);
               errors.push({
                 url: urlGroup.originalUrl,
-                error: processResultJson.error || 'Lỗi không xác định khi xử lý file'
+                error: errorMessage
               });
               return {
                 success: false,
                 urlGroup,
-                error: processResultJson.error || 'Lỗi không xác định khi xử lý file'
+                error: errorMessage
               };
             }
 
