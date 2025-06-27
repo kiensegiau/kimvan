@@ -162,8 +162,7 @@ export async function downloadFromGoogleDrive(fileId) {
           }
           
           bytesRead += value.length;
-          console.log(`Đã tải xuống: ${bytesRead} bytes`);
-          
+         
           dest.write(Buffer.from(value));
         }
         

@@ -101,6 +101,7 @@ export async function POST(request, { params }) {
     let htmlData;
     let firstSheetName;
     let actualSheetId = 0;
+    let apiSheetName = 'Sheet1'; // Khai báo biến apiSheetName ở phạm vi ngoài để có thể truy cập từ mọi nơi
     
     try {
       // First try to get spreadsheet metadata to find sheet names
@@ -108,10 +109,10 @@ export async function POST(request, { params }) {
         spreadsheetId: sheet.sheetId
       });
       
-      // Lấy tên sheet từ thông tin trong database nếu có, nếu không thì lấy từ Google Sheets API
       // Ưu tiên sử dụng tên sheet từ database vì đây là tên sheet thật do người dùng đặt
+      // Bắt buộc sử dụng tên sheet từ database (sheet.name) để tránh sử dụng tên mặc định "Trang tính 1"
       const sheetTitle = sheet.title || sheet.name;
-      firstSheetName = sheetTitle || spreadsheetInfo.data.sheets[0]?.properties?.title || 'Sheet1';
+      firstSheetName = sheetTitle || 'Untitled Sheet'; // Không sử dụng tên sheet từ API để tránh "Trang tính 1"
       
       // Lấy sheetId thực tế của sheet đầu tiên
       actualSheetId = spreadsheetInfo.data.sheets[0]?.properties?.sheetId || 0;
@@ -120,9 +121,11 @@ export async function POST(request, { params }) {
       console.log(`Tên sheet sẽ sử dụng: ${firstSheetName}, SheetId: ${actualSheetId}`);
       
       // Now get the values using the actual sheet name from Google Sheets API
+      // Sử dụng tên sheet từ API chỉ để truy vấn dữ liệu, không dùng cho tên thư mục
+      apiSheetName = spreadsheetInfo.data.sheets[0]?.properties?.title || 'Sheet1'; // Gán giá trị cho biến đã khai báo
       const response = await sheets.spreadsheets.values.get({
         spreadsheetId: sheet.sheetId,
-        range: `${spreadsheetInfo.data.sheets[0]?.properties?.title || 'Sheet1'}!A:Z`  // Use the actual sheet name from API
+        range: `${apiSheetName}!A:Z`  // Use the actual sheet name from API for data retrieval
       });
       
       values = response.data.values;
@@ -133,7 +136,7 @@ export async function POST(request, { params }) {
         // we'll use the Sheets API to get hyperlinks directly
         const spreadsheetData = await sheets.spreadsheets.get({
           spreadsheetId: sheet.sheetId,
-          ranges: [`${firstSheetName}!A:Z`],
+          ranges: [`${apiSheetName}!A:Z`], // Use apiSheetName for data retrieval
           includeGridData: true
         });
         
@@ -556,7 +559,7 @@ export async function POST(request, { params }) {
                       // Thêm các thông tin để cập nhật sheet
                       updateSheet: true,
                       sheetId: sheet.sheetId,
-                      googleSheetName: firstSheetName,
+                      googleSheetName: apiSheetName, // Sử dụng apiSheetName cho việc cập nhật dữ liệu
                       rowIndex: firstCell.rowIndex,
                       cellIndex: firstCell.colIndex,
                       displayText: firstCell.cell // Giữ nguyên text hiển thị
@@ -764,7 +767,7 @@ export async function POST(request, { params }) {
               console.log(`Thử phương pháp thay thế với values.update, giá trị mới: ${newCellValue}`);
               await sheets.spreadsheets.values.update({
                 spreadsheetId: sheet.sheetId,
-                range: `${firstSheetName}!${String.fromCharCode(65 + cellInfo.colIndex)}${cellInfo.rowIndex + 1}`,
+                range: `${apiSheetName}!${String.fromCharCode(65 + cellInfo.colIndex)}${cellInfo.rowIndex + 1}`,
                 valueInputOption: 'USER_ENTERED',
                 requestBody: {
                   values: [[newCellValue]]

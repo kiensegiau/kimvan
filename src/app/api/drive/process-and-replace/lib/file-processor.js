@@ -156,7 +156,7 @@ export async function processFolder(folderId, folderName, targetFolderId, apiKey
     }
     
     // Tạo folder đích tương ứng
-    const targetFolderResult = await findOrCreateFolder(folderName, targetFolderId);
+    const targetFolderResult = await findOrCreateFolder(folderName, targetFolderId, true);
     
     if (!targetFolderResult.success) {
       throw new Error(`Không thể tạo folder đích: ${targetFolderResult.error || 'Lỗi không xác định'}`);

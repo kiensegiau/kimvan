@@ -133,11 +133,16 @@ export async function POST(request) {
           if (useSheetNameDirectly) {
             console.log(`Sử dụng trực tiếp tên sheet làm thư mục: ${sheetName}`);
             
-            // Tạo/tìm folder với tên sheet
-            const sheetFolderResult = await findOrCreateFolder(sheetName, folderId);
+            // Tạo/tìm folder với tên sheet và xóa các folder trùng lặp
+            const sheetFolderResult = await findOrCreateFolder(sheetName, folderId, true); // Thêm tham số true để xóa folder trùng lặp
             
             if (!sheetFolderResult.success) {
               throw new Error(`Không thể tạo folder "${sheetName}": ${sheetFolderResult.error || 'Lỗi không xác định'}`);
+            }
+            
+            // Log thông tin về folder trùng lặp nếu có
+            if (sheetFolderResult.duplicateCount > 0) {
+              console.log(`Phát hiện ${sheetFolderResult.duplicateCount} folder trùng tên "${sheetName}" đã được xử lý`);
             }
             
             targetFolderId = sheetFolderResult.folder.id;
@@ -155,11 +160,16 @@ export async function POST(request) {
               throw new Error(`Không thể tạo folder chính "${mainFolderName}": ${mainFolderResult.error || 'Lỗi không xác định'}`);
             }
             
-            // Tạo/tìm folder con với tên sheet
-            const sheetFolderResult = await findOrCreateFolder(sheetName, mainFolderResult.folder.id);
+            // Tạo/tìm folder con với tên sheet và xóa các folder trùng lặp
+            const sheetFolderResult = await findOrCreateFolder(sheetName, mainFolderResult.folder.id, true); // Thêm tham số true để xóa folder trùng lặp
             
             if (!sheetFolderResult.success) {
               throw new Error(`Không thể tạo folder con "${sheetName}": ${sheetFolderResult.error || 'Lỗi không xác định'}`);
+            }
+            
+            // Log thông tin về folder trùng lặp nếu có
+            if (sheetFolderResult.duplicateCount > 0) {
+              console.log(`Phát hiện ${sheetFolderResult.duplicateCount} folder con trùng tên "${sheetName}" đã được xử lý`);
             }
             
             targetFolderId = sheetFolderResult.folder.id;
@@ -171,11 +181,16 @@ export async function POST(request) {
           // Nếu có courseName, sử dụng nó làm folder cha
           console.log(`Sử dụng courseName làm folder cha: ${courseName}`);
           
-          // Tạo/tìm folder với tên courseName
-          const courseFolderResult = await findOrCreateFolder(courseName, folderId);
+          // Tạo/tìm folder với tên courseName và xóa các folder trùng lặp
+          const courseFolderResult = await findOrCreateFolder(courseName, folderId, true); // Thêm tham số true để xóa folder trùng lặp
           
           if (!courseFolderResult.success) {
             throw new Error(`Không thể tạo folder "${courseName}": ${courseFolderResult.error || 'Lỗi không xác định'}`);
+          }
+          
+          // Log thông tin về folder trùng lặp nếu có
+          if (courseFolderResult.duplicateCount > 0) {
+            console.log(`Phát hiện ${courseFolderResult.duplicateCount} folder trùng tên "${courseName}" đã được xử lý`);
           }
           
           targetFolderId = courseFolderResult.folder.id;

@@ -279,11 +279,20 @@ export async function findFolder(folderName, parentFolderId = null) {
     // Tìm folder
     const response = await drive.files.list({
       q: query,
-      fields: 'files(id, name, webViewLink)',
+      fields: 'files(id, name, webViewLink, createdTime)',
       spaces: 'drive'
     });
     
     if (response.data.files && response.data.files.length > 0) {
+      // Ghi log số lượng folder trùng tên được tìm thấy
+      console.log(`Tìm thấy ${response.data.files.length} folder có tên "${folderName}"`);
+      
+      if (response.data.files.length > 1) {
+        // Nếu có nhiều folder cùng tên, sắp xếp theo thời gian tạo và lấy folder mới nhất
+        response.data.files.sort((a, b) => new Date(b.createdTime) - new Date(a.createdTime));
+        console.log(`Có ${response.data.files.length} folder trùng tên, sử dụng folder mới nhất (ID: ${response.data.files[0].id})`);
+      }
+      
       const folder = response.data.files[0];
       console.log(`Đã tìm thấy folder "${folderName}" với ID: ${folder.id}`);
       
@@ -291,7 +300,8 @@ export async function findFolder(folderName, parentFolderId = null) {
         success: true,
         folderId: folder.id,
         folderName: folder.name,
-        webViewLink: folder.webViewLink
+        webViewLink: folder.webViewLink,
+        duplicateCount: response.data.files.length - 1 // Số lượng folder trùng lặp
       };
     } else {
       console.log(`Không tìm thấy folder "${folderName}"`);
@@ -315,20 +325,76 @@ export async function findFolder(folderName, parentFolderId = null) {
  * Tìm hoặc tạo folder trên Google Drive
  * @param {string} folderName - Tên folder cần tìm hoặc tạo
  * @param {string} parentFolderId - ID của folder cha (tùy chọn)
+ * @param {boolean} cleanupDuplicates - Có xóa các folder trùng lặp không (mặc định: false)
  * @returns {Promise<Object>} - Thông tin folder
  */
-export async function findOrCreateFolder(folderName, parentFolderId = null) {
+export async function findOrCreateFolder(folderName, parentFolderId = null, cleanupDuplicates = false) {
   // Tìm folder
   const findResult = await findFolder(folderName, parentFolderId);
   
   if (findResult.success) {
+    // Nếu có folder trùng lặp và cần xóa
+    if (cleanupDuplicates && findResult.duplicateCount > 0) {
+      try {
+        console.log(`Phát hiện ${findResult.duplicateCount} folder trùng lặp, tiến hành xóa...`);
+        
+        // Tạo OAuth2 client với khả năng tự động refresh token
+        const oauth2Client = createOAuth2Client(0);
+        
+        // Khởi tạo Drive API
+        const drive = google.drive({ version: 'v3', auth: oauth2Client });
+        
+        // Xây dựng query để lấy tất cả folder trùng tên
+        let query = `name='${folderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`;
+        
+        if (parentFolderId) {
+          query += ` and '${parentFolderId}' in parents`;
+        }
+        
+        // Lấy danh sách tất cả folder trùng tên
+        const response = await drive.files.list({
+          q: query,
+          fields: 'files(id, name, createdTime)',
+          spaces: 'drive'
+        });
+        
+        // Sắp xếp theo thời gian tạo, giữ lại folder mới nhất
+        if (response.data.files && response.data.files.length > 1) {
+          response.data.files.sort((a, b) => new Date(b.createdTime) - new Date(a.createdTime));
+          
+          // Giữ lại folder mới nhất, xóa các folder còn lại
+          const keepFolderId = response.data.files[0].id;
+          let deletedCount = 0;
+          
+          for (let i = 1; i < response.data.files.length; i++) {
+            const folderToDelete = response.data.files[i];
+            console.log(`Xóa folder trùng lặp: ${folderToDelete.name} (ID: ${folderToDelete.id})`);
+            
+            try {
+              await drive.files.delete({
+                fileId: folderToDelete.id
+              });
+              deletedCount++;
+            } catch (deleteError) {
+              console.error(`Lỗi khi xóa folder trùng lặp: ${deleteError.message}`);
+            }
+          }
+          
+          console.log(`Đã xóa ${deletedCount}/${findResult.duplicateCount} folder trùng lặp`);
+        }
+      } catch (cleanupError) {
+        console.error(`Lỗi khi xóa folder trùng lặp: ${cleanupError.message}`);
+      }
+    }
+    
     return {
       success: true,
       folder: {
         id: findResult.folderId,
         name: findResult.folderName,
         webViewLink: findResult.webViewLink
-      }
+      },
+      duplicateCount: findResult.duplicateCount || 0
     };
   }
   
@@ -342,7 +408,8 @@ export async function findOrCreateFolder(folderName, parentFolderId = null) {
         id: createResult.folderId,
         name: createResult.folderName,
         webViewLink: createResult.webViewLink
-      }
+      },
+      isNewFolder: true
     };
   }
   
