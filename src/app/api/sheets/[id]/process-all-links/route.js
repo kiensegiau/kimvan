@@ -520,7 +520,7 @@ export async function POST(request, { params }) {
             console.log(`Đang cấu hình để lưu vào thư mục có tên sheet: "${sheetName}"`);
             
             // Thêm logic retry cho fetch
-            const MAX_RETRIES = 3;
+            const MAX_RETRIES = 5; // Tăng số lần retry từ 3 lên 5
             let lastError = null;
             let processResultJson = null;
             
@@ -528,38 +528,61 @@ export async function POST(request, { params }) {
               try {
                 if (retryCount > 0) {
                   console.log(`Thử lại lần ${retryCount}/${MAX_RETRIES} cho URL: ${urlGroup.originalUrl}`);
-                  // Đợi thời gian tăng dần trước khi thử lại (exponential backoff)
-                  await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000));
+                  // Tăng thời gian chờ giữa các lần retry (tối thiểu 3 giây, tối đa 30 giây)
+                  const delayTime = Math.min(Math.pow(2, retryCount) * 1500, 30000);
+                  console.log(`Đợi ${delayTime/1000} giây trước khi thử lại...`);
+                  await new Promise(resolve => setTimeout(resolve, delayTime));
                 }
                 
-                const processResult = await fetch(apiUrl, {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'Cookie': cookie // Truyền cookie để duy trì phiên đăng nhập
-                  },
-                  body: JSON.stringify({
-                    driveLink: urlGroup.originalUrl,
-                    folderId: "1Lt10aHyWp9VtPaImzInE0DmIcbrjJgpN", // Sử dụng folder mặc định nếu không có folder ID
-                    apiKey: requestBody.apiKey || null,
-                    courseName: sheetName, // Sử dụng tên sheet trực tiếp làm tên thư mục
-                    // Thêm cấu hình cho thư mục
-                    isSheetDocument: isSheetDocument,
-                    sheetName: sheetName,
-                    useSheetNameDirectly: true, // Đánh dấu sử dụng trực tiếp tên sheet làm thư mục
-                    // Thêm các thông tin để cập nhật sheet
-                    updateSheet: true,
-                    sheetId: sheet.sheetId,
-                    googleSheetName: firstSheetName,
-                    rowIndex: firstCell.rowIndex,
-                    cellIndex: firstCell.colIndex,
-                    displayText: firstCell.cell // Giữ nguyên text hiển thị
-                  }),
-                });
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 60000); // Timeout 60 giây cho mỗi request
                 
-                processResultJson = await processResult.json();
-                // Nếu thành công, thoát khỏi vòng lặp retry
-                break;
+                try {
+                  const processResult = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Cookie': cookie // Truyền cookie để duy trì phiên đăng nhập
+                    },
+                    body: JSON.stringify({
+                      driveLink: urlGroup.originalUrl,
+                      folderId: "1Lt10aHyWp9VtPaImzInE0DmIcbrjJgpN", // Sử dụng folder mặc định nếu không có folder ID
+                      apiKey: requestBody.apiKey || null,
+                      courseName: sheetName, // Sử dụng tên sheet trực tiếp làm tên thư mục
+                      // Thêm cấu hình cho thư mục
+                      isSheetDocument: isSheetDocument,
+                      sheetName: sheetName,
+                      useSheetNameDirectly: true, // Đánh dấu sử dụng trực tiếp tên sheet làm thư mục
+                      // Thêm các thông tin để cập nhật sheet
+                      updateSheet: true,
+                      sheetId: sheet.sheetId,
+                      googleSheetName: firstSheetName,
+                      rowIndex: firstCell.rowIndex,
+                      cellIndex: firstCell.colIndex,
+                      displayText: firstCell.cell // Giữ nguyên text hiển thị
+                    }),
+                    signal: controller.signal // Thêm signal để có thể abort request
+                  });
+                  
+                  // Xóa timeout sau khi request hoàn thành
+                  clearTimeout(timeoutId);
+                  
+                  processResultJson = await processResult.json();
+                  // Nếu thành công, thoát khỏi vòng lặp retry
+                  break;
+                } catch (abortError) {
+                  // Xóa timeout nếu có lỗi
+                  clearTimeout(timeoutId);
+                  
+                  // Kiểm tra nếu là lỗi abort (timeout)
+                  if (abortError.name === 'AbortError') {
+                    console.error(`Request timeout sau 60 giây cho URL: ${urlGroup.originalUrl}`);
+                    throw new Error('Request timeout sau 60 giây');
+                  }
+                  
+                  // Ném lại lỗi khác
+                  throw abortError;
+                }
               } catch (fetchError) {
                 lastError = fetchError;
                 console.error(`Lỗi fetch lần ${retryCount + 1}/${MAX_RETRIES + 1}: ${fetchError.message}`);

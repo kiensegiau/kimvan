@@ -7,6 +7,9 @@ import {
 } from '@/utils/drive-utils';
 import { processPDF } from '@/app/api/drive/remove-watermark/lib/drive-fix-blockdown.js';
 import { addLogoToPDF } from './pdf-service';
+import { v4 as uuidv4 } from 'uuid';
+import { sanitizeFileName } from '@/utils/file-utils';
+import { getAccessToken } from '@/utils/auth-utils';
 
 /**
  * Tải xuống file từ Google Drive
@@ -14,223 +17,210 @@ import { addLogoToPDF } from './pdf-service';
  * @returns {Promise<Object>} - Kết quả tải xuống
  */
 export async function downloadFromGoogleDrive(fileId) {
-  console.log(`Đang tải xuống file từ Google Drive với ID: ${fileId}`);
+  console.log(`Bắt đầu tải xuống file với ID: ${fileId}`);
   
-  // Tạo thư mục tạm nếu chưa tồn tại
-  const tempDir = path.join(os.tmpdir(), 'drive-download-');
-  const outputDir = fs.mkdtempSync(tempDir);
+  // Tạo thư mục tạm để lưu file
+  const outputDir = path.join(os.tmpdir(), uuidv4());
+  fs.mkdirSync(outputDir, { recursive: true });
+  console.log(`Đã tạo thư mục tạm: ${outputDir}`);
   
-  try {
-    // Tạo OAuth2 client với khả năng tự động refresh token
-    const oauth2Client = createOAuth2Client(1); // Sử dụng token tải xuống (index 1)
-    console.log('Sử dụng token tải xuống (drive_token_download.json)');
-    
-    const drive = google.drive({ version: 'v3', auth: oauth2Client });
-    
-    console.log('Kiểm tra quyền truy cập Drive...');
-    
-    // Lấy thông tin file
-    let fileInfo;
+  // Thêm cơ chế retry
+  const MAX_RETRIES = 3;
+  let lastError = null;
+  
+  for (let retryCount = 0; retryCount <= MAX_RETRIES; retryCount++) {
     try {
-      fileInfo = await drive.files.get({
-        fileId: fileId,
-        fields: 'name,mimeType,size,capabilities'
-      });
-      
-      // Kiểm tra quyền truy cập
-      if (fileInfo.data.capabilities && !fileInfo.data.capabilities.canDownload) {
-        console.log('Phát hiện file không có quyền tải xuống, sẽ sử dụng phương pháp drive-fix-blockdown');
-        // Sử dụng phương pháp đặc biệt cho file bị chặn
-        const tempDir = path.join(os.tmpdir(), 'blocked-pdf-');
-        const blockedTempDir = fs.mkdtempSync(tempDir);
-        // Thêm tham số keepChromeOpen=true để giữ Chrome mở khi debug
-        const result = await processPDF(null, null, {
-          keepChromeOpen: true, // Giữ Chrome mở để debug
-          debugMode: true // Bật chế độ debug
-        }, true, fileId);
-        
-        if (!result.success) {
-          throw new Error(`Không thể xử lý file bị chặn: ${result.error}`);
-        }
-        
-        // Kiểm tra nếu không phát hiện trang nào
-        if (result.pageCount === 0 || !result.filePath || result.emptyFile) {
-          throw new Error(`Không phát hiện trang nào trong file PDF. Chrome đã được giữ mở để debug. File ID: ${fileId}`);
-        }
-        
-        // Lấy tên file gốc
-        let originalFileName;
-        try {
-          originalFileName = fileInfo.data.name;
-          console.log(`Tên file gốc từ Drive: ${originalFileName}`);
-        } catch (nameError) {
-          console.warn(`Không thể lấy tên file gốc: ${nameError.message}`);
-          originalFileName = result.fileName || `file_${fileId}.pdf`;
-        }
-        
-        // Thêm logo vào file PDF đã tải xuống
-        try {
-          console.log('Thêm logo vào file PDF đã tải xuống bằng Chrome (không cắt)...');
-          await addLogoToPDF(result.filePath, result.filePath);
-          console.log('Đã thêm logo thành công vào file PDF đã tải xuống bằng Chrome');
-        } catch (logoError) {
-          console.error(`Không thể thêm logo vào file PDF: ${logoError.message}`);
-        }
-        
-        return {
-          success: true,
-          filePath: result.filePath,
-          fileName: originalFileName, // Sử dụng tên file gốc
-          mimeType: 'application/pdf',
-          outputDir: blockedTempDir
-        };
-      }
-    } catch (error) {
-      // Kiểm tra lỗi 404 - File không tồn tại
-      if (error.code === 404 || error.response?.status === 404) {
-        console.error(`File không tồn tại (404): ${fileId}. Không thử lại.`);
-        throw new Error(`Không tìm thấy file với ID: ${fileId}. File có thể đã bị xóa hoặc không tồn tại.`);
-      } 
-      // Kiểm tra lỗi 403 - Không có quyền truy cập
-      else if (error.code === 403 || error.response?.status === 403) {
-        console.log(`Lỗi quyền truy cập (403): ${fileId}. Thử sử dụng Chrome để tải nhưng không xử lý watermark...`);
-        
-        try {
-          // Sử dụng phương pháp đặc biệt cho file bị chặn
-          const tempDir = path.join(os.tmpdir(), 'blocked-pdf-');
-          const blockedTempDir = fs.mkdtempSync(tempDir);
-          
-          // Thử xử lý file bằng phương pháp đặc biệt nhưng tắt xử lý watermark
-          console.log('Tải file bằng Chrome và BỎ QUA hoàn toàn bước xử lý watermark');
-          const result = await processPDF(null, null, {
-            keepChromeOpen: true,
-            debugMode: true,
-            skipWatermarkRemoval: true, // Bỏ qua bước xóa watermark
-            skipImageProcessing: true,  // Bỏ qua bước xử lý ảnh
-            preserveOriginal: true,     // Giữ nguyên nội dung gốc
-            noProcessing: true          // Flag đặc biệt để đảm bảo không xử lý
-          }, true, fileId);
-          
-          if (!result.success) {
-            throw new Error(`Không thể tải file bị chặn: ${result.error}`);
-          }
-          
-          // Kiểm tra nếu không phát hiện trang nào
-          if (result.pageCount === 0 || !result.filePath || result.emptyFile) {
-            throw new Error(`Không phát hiện trang nào trong file PDF. Chrome đã được giữ mở để debug. File ID: ${fileId}`);
-          }
-          
-          // Lấy tên file gốc từ fileInfo nếu có
-          let originalFileName;
-          try {
-            const fileInfoResponse = await drive.files.get({
-              fileId: fileId,
-              fields: 'name'
-            });
-            originalFileName = fileInfoResponse.data.name;
-            console.log(`Tên file gốc từ Drive: ${originalFileName}`);
-          } catch (nameError) {
-            console.warn(`Không thể lấy tên file gốc: ${nameError.message}`);
-            originalFileName = result.fileName || `file_${fileId}.pdf`;
-          }
-          
-          // Thêm logo vào file PDF đã tải xuống
-          try {
-            console.log('Thêm logo vào file PDF đã tải xuống bằng Chrome (403 case)...');
-            await addLogoToPDF(result.filePath, result.filePath);
-            console.log('Đã thêm logo thành công vào file PDF đã tải xuống bằng Chrome (403 case)');
-          } catch (logoError) {
-            console.error(`Không thể thêm logo vào file PDF (403 case): ${logoError.message}`);
-          }
-          
-          return {
-            success: true,
-            filePath: result.filePath,
-            fileName: originalFileName, // Sử dụng tên file gốc
-            mimeType: 'application/pdf',
-            outputDir: blockedTempDir
-          };
-        } catch (blockError) {
-          console.error(`Không thể tải file bị chặn: ${blockError.message}`);
-          throw new Error(`Không có quyền truy cập file với ID: ${fileId}. Đã thử tải bằng Chrome nhưng không thành công: ${blockError.message}`);
-        }
+      if (retryCount > 0) {
+        console.log(`Thử lại lần ${retryCount}/${MAX_RETRIES} cho file ID: ${fileId}`);
+        // Đợi thời gian tăng dần trước khi thử lại (exponential backoff)
+        const delayTime = Math.min(Math.pow(2, retryCount) * 2000, 30000); // tối đa 30 giây
+        console.log(`Đợi ${delayTime/1000} giây trước khi thử lại...`);
+        await new Promise(resolve => setTimeout(resolve, delayTime));
       }
       
-      // Các lỗi khác
-      throw error;
-    }
-    
-    const fileName = fileInfo.data.name;
-    const mimeType = fileInfo.data.mimeType;
-    const outputPath = path.join(outputDir, fileName);
-    
-    console.log(`Tên file: ${fileName}`);
-    console.log(`Loại MIME: ${mimeType}`);
-    
-    // Tải xuống file
-    console.log(`Đang tải xuống file ${fileName}...`);
-    
-    try {
-      const response = await drive.files.get(
+      // Lấy thông tin file trước khi tải xuống
+      console.log('Lấy thông tin file từ Google Drive API...');
+      const fileInfoResponse = await fetch(
+        `https://www.googleapis.com/drive/v3/files/${fileId}?fields=name,mimeType,size,fileExtension`,
         {
-          fileId: fileId,
-          alt: 'media'
-        },
-        { responseType: 'stream' }
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${await getAccessToken()}`
+          },
+          // Tăng timeout cho request
+          signal: AbortSignal.timeout(60000) // 60 giây
+        }
       );
       
-      // Lưu file vào đĩa
-      const dest = fs.createWriteStream(outputPath);
-      
-      let error = null;
-      response.data
-        .on('error', err => {
-          error = err;
-          console.error('Lỗi khi tải xuống:', err);
-        })
-        .pipe(dest);
-      
-      // Đợi cho đến khi tải xuống hoàn tất
-      await new Promise((resolve, reject) => {
-        dest.on('finish', () => {
-          console.log(`File đã được tải xuống thành công vào: ${outputPath}`);
-          resolve();
-        });
-        dest.on('error', err => {
-          console.error('Lỗi khi ghi file:', err);
-          error = err;
-          reject(err);
-        });
-      });
-      
-      if (error) {
-        throw error;
+      if (!fileInfoResponse.ok) {
+        const errorText = await fileInfoResponse.text();
+        throw new Error(`Lỗi khi lấy thông tin file (HTTP ${fileInfoResponse.status}): ${errorText}`);
       }
-    } catch (downloadError) {
-      if (downloadError.code === 403 || downloadError.response?.status === 403) {
-        throw new Error('Không thể tải xuống file. Google Drive từ chối quyền truy cập. File có thể đã bị giới hạn bởi chủ sở hữu.');
+      
+      const fileInfo = await fileInfoResponse.json();
+      console.log(`Thông tin file: ${JSON.stringify(fileInfo)}`);
+      
+      // Xác định tên file và đường dẫn
+      let fileName = fileInfo.name;
+      let fileExtension = fileInfo.fileExtension || '';
+      
+      // Xử lý trường hợp file Google Docs, Sheets, Slides
+      if (fileInfo.mimeType.includes('google-apps')) {
+        if (fileInfo.mimeType.includes('document')) {
+          fileName = `${fileName}.docx`;
+          fileExtension = 'docx';
+        } else if (fileInfo.mimeType.includes('spreadsheet')) {
+          fileName = `${fileName}.xlsx`;
+          fileExtension = 'xlsx';
+        } else if (fileInfo.mimeType.includes('presentation')) {
+          fileName = `${fileName}.pptx`;
+          fileExtension = 'pptx';
+        }
       }
-      throw downloadError;
+      
+      // Đảm bảo tên file an toàn cho hệ thống file
+      fileName = sanitizeFileName(fileName);
+      
+      const filePath = path.join(outputDir, fileName);
+      console.log(`Đường dẫn file đích: ${filePath}`);
+      
+      // Tạo writeStream để lưu file
+      const dest = fs.createWriteStream(filePath);
+      
+      // Tải xuống file với stream
+      console.log('Bắt đầu tải xuống nội dung file...');
+      
+      // Tạo controller để có thể abort request nếu cần
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 120000); // Timeout 120 giây
+      
+      let response;
+      try {
+        // Sử dụng export API cho các file Google Docs, Sheets, Slides
+        if (fileInfo.mimeType.includes('google-apps')) {
+          let exportMimeType;
+          
+          if (fileInfo.mimeType.includes('document')) {
+            exportMimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+          } else if (fileInfo.mimeType.includes('spreadsheet')) {
+            exportMimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+          } else if (fileInfo.mimeType.includes('presentation')) {
+            exportMimeType = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+          } else {
+            exportMimeType = 'application/pdf';
+          }
+          
+          console.log(`Sử dụng export API với MIME type: ${exportMimeType}`);
+          response = await fetch(
+            `https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=${encodeURIComponent(exportMimeType)}`,
+            {
+              method: 'GET',
+              headers: {
+                'Authorization': `Bearer ${await getAccessToken()}`
+              },
+              signal: controller.signal
+            }
+          );
+        } else {
+          // Tải xuống trực tiếp cho các file thông thường
+          console.log('Sử dụng API tải xuống trực tiếp');
+          response = await fetch(
+            `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
+            {
+              method: 'GET',
+              headers: {
+                'Authorization': `Bearer ${await getAccessToken()}`
+              },
+              signal: controller.signal
+            }
+          );
+        }
+        
+        // Xóa timeout sau khi request hoàn thành
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Lỗi khi tải file (HTTP ${response.status}): ${errorText}`);
+        }
+        
+        // Kiểm tra nếu response body là null hoặc undefined
+        if (!response.body) {
+          throw new Error('Response body trống');
+        }
+        
+        // Stream response vào file
+        const reader = response.body.getReader();
+        let bytesRead = 0;
+        
+        while (true) {
+          const { done, value } = await reader.read();
+          
+          if (done) {
+            console.log('Hoàn tất tải xuống');
+            break;
+          }
+          
+          bytesRead += value.length;
+          console.log(`Đã tải xuống: ${bytesRead} bytes`);
+          
+          dest.write(Buffer.from(value));
+        }
+        
+        // Đóng file
+        await new Promise((resolve, reject) => {
+          dest.end();
+          dest.on('finish', resolve);
+          dest.on('error', reject);
+        });
+        
+        console.log(`File đã được tải xuống thành công: ${filePath}`);
+        
+        // Trả về thông tin file đã tải xuống
+        return {
+          success: true,
+          filePath,
+          fileName,
+          outputDir,
+          mimeType: fileInfo.mimeType,
+          originalName: fileInfo.name,
+          fileSize: fileInfo.size
+        };
+      } catch (abortError) {
+        // Xóa timeout nếu có lỗi
+        clearTimeout(timeoutId);
+        
+        // Đóng writeStream nếu đang mở
+        dest.end();
+        
+        // Kiểm tra nếu là lỗi abort (timeout)
+        if (abortError.name === 'AbortError') {
+          console.error(`Request timeout sau 120 giây cho file ID: ${fileId}`);
+          throw new Error('Request timeout sau 120 giây');
+        }
+        
+        // Ném lại lỗi khác
+        throw abortError;
+      }
+    } catch (error) {
+      lastError = error;
+      console.error(`Lỗi khi tải xuống file (lần thử ${retryCount + 1}/${MAX_RETRIES + 1}):`, error.message);
+      
+      // Nếu đã thử lại đủ số lần, ném lỗi
+      if (retryCount === MAX_RETRIES) {
+        console.error(`Đã thử lại ${MAX_RETRIES} lần không thành công, từ bỏ.`);
+        
+        // Xóa thư mục tạm nếu có lỗi
+        try {
+          fs.rmdirSync(outputDir, { recursive: true });
+          console.log(`Đã xóa thư mục tạm do lỗi: ${outputDir}`);
+        } catch (cleanupError) {
+          console.error('Lỗi khi dọn dẹp thư mục tạm:', cleanupError);
+        }
+        
+        throw new Error(`Không thể tải xuống file sau ${MAX_RETRIES + 1} lần thử: ${error.message}`);
+      }
     }
-    
-    return {
-      success: true,
-      filePath: outputPath,
-      fileName: fileName,
-      mimeType: mimeType,
-      outputDir: outputDir
-    };
-  } catch (error) {
-    console.error('Lỗi khi tải xuống file từ Google Drive:', error);
-    
-    // Dọn dẹp thư mục tạm nếu có lỗi
-    try {
-      fs.rmdirSync(outputDir, { recursive: true });
-    } catch (cleanupError) {
-      console.error('Lỗi khi dọn dẹp thư mục tạm:', cleanupError);
-    }
-    
-    throw error;
   }
 }
 

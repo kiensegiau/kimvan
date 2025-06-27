@@ -18,8 +18,8 @@ export async function POST(request) {
   console.log('============== BẮT ĐẦU API XỬ LÝ VÀ THAY THẾ FILE GOOGLE DRIVE ==============');
   
   let tempDir = null;
-  // Đặt timeout cho toàn bộ quá trình (60 phút)
-  const GLOBAL_TIMEOUT = 60 * 60 * 1000;
+  // Đặt timeout cho toàn bộ quá trình (120 phút)
+  const GLOBAL_TIMEOUT = 120 * 60 * 1000;
   const startTime = Date.now();
   
   // Tạo promise với timeout
