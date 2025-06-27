@@ -135,33 +135,32 @@ export async function uploadToGoogleDrive(filePath, fileName, mimeType, folderId
     const escapedFileName = sanitizedFileName.replace(/'/g, "\\'");
     
     let duplicatesDeleted = 0;
+    let existingFile = null;
     
     try {
       // Tìm các file trùng tên trong folder đích
       const duplicatesResponse = await drive.files.list({
         q: `name='${escapedFileName}' and '${targetFolderId}' in parents and trashed=false`,
-        fields: 'files(id, name)',
+        fields: 'files(id, name, webViewLink, webContentLink)',
         spaces: 'drive'
       });
       
-      // Xóa các file trùng tên nếu có
+      // Kiểm tra nếu file đã tồn tại
       if (duplicatesResponse.data.files && duplicatesResponse.data.files.length > 0) {
-        console.log(`Tìm thấy ${duplicatesResponse.data.files.length} file trùng tên trong folder đích, tiến hành xóa...`);
+        // Lưu thông tin file đã tồn tại
+        existingFile = duplicatesResponse.data.files[0];
+        console.log(`File "${sanitizedFileName}" đã tồn tại trong folder đích (ID: ${existingFile.id})`);
         
-        for (const duplicate of duplicatesResponse.data.files) {
-          console.log(`Xóa file trùng tên: ${duplicate.name} (ID: ${duplicate.id})`);
-          
-          try {
-            await drive.files.delete({
-              fileId: duplicate.id
-            });
-            
-            duplicatesDeleted++;
-            console.log(`Đã xóa file trùng tên: ${duplicate.name}`);
-          } catch (deleteError) {
-            console.error(`Lỗi khi xóa file trùng tên ${duplicate.name}:`, deleteError.message);
-          }
-        }
+        // Trả về thông tin file đã tồn tại
+        return {
+          success: true,
+          fileId: existingFile.id,
+          fileName: existingFile.name,
+          webViewLink: existingFile.webViewLink,
+          webContentLink: existingFile.webContentLink,
+          duplicatesDeleted: 0,
+          fileAlreadyExists: true
+        };
       } else {
         console.log(`Không tìm thấy file trùng tên trong folder đích.`);
       }

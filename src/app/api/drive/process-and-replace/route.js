@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
-import { extractDriveFileId } from '@/utils/drive-utils';
+import { google } from 'googleapis';
+import { extractDriveFileId, createOAuth2Client } from '@/utils/drive-utils';
 import { 
   downloadFromGoogleDrive, 
   checkFileInfo,
@@ -279,6 +280,103 @@ export async function POST(request) {
                     !mimeType.includes('video') && 
                     !mimeType.includes('audio')) {
             console.warn(`MIME type không được hỗ trợ: ${mimeType}, file có thể không được xử lý đúng cách`);
+          }
+          
+          // Kiểm tra xem file đã tồn tại trong thư mục đích chưa
+          try {
+            console.log(`Kiểm tra xem file "${fileInfo.name}" đã tồn tại trong thư mục đích chưa...`);
+            
+            // Tạo OAuth2 client với khả năng tự động refresh token
+            const oauth2Client = createOAuth2Client(0);
+            
+            // Khởi tạo Drive API
+            const drive = google.drive({ version: 'v3', auth: oauth2Client });
+            
+            // Xử lý tên file để sử dụng trong truy vấn
+            const escapedFileName = fileInfo.name.replace(/'/g, "\\'");
+            
+            // Tìm các file trùng tên trong folder đích
+            const existingFileResponse = await drive.files.list({
+              q: `name='${escapedFileName}' and '${targetFolderId}' in parents and trashed=false`,
+              fields: 'files(id, name, webViewLink, webContentLink)',
+              spaces: 'drive'
+            });
+            
+            // Nếu file đã tồn tại, trả về thông tin file đó mà không cần xử lý lại
+            if (existingFileResponse.data.files && existingFileResponse.data.files.length > 0) {
+              const existingFile = existingFileResponse.data.files[0];
+              console.log(`✅ File "${fileInfo.name}" đã tồn tại trong thư mục đích (ID: ${existingFile.id}), bỏ qua xử lý`);
+              
+              // Nếu có yêu cầu cập nhật sheet, thực hiện cập nhật với link file đã tồn tại
+              let sheetUpdateResult = null;
+              if (updateSheet) {
+                console.log('Yêu cầu cập nhật sheet được kích hoạt, tiến hành cập nhật với file đã tồn tại...');
+                
+                // Kiểm tra xem cần cập nhật vào database hay trực tiếp vào Google Sheet
+                if (courseId && sheetIndex !== undefined && rowIndex !== undefined && cellIndex !== undefined) {
+                  // Cập nhật vào database
+                  sheetUpdateResult = await updateSheetCell(
+                    courseId,
+                    sheetIndex,
+                    rowIndex,
+                    cellIndex,
+                    driveLink, // URL gốc
+                    existingFile.webViewLink, // URL của file đã tồn tại
+                    displayText // Text hiển thị (nếu có)
+                  );
+                  
+                  console.log('Kết quả cập nhật sheet trong database:', sheetUpdateResult);
+                } else if (sheetId && googleSheetName && rowIndex !== undefined && cellIndex !== undefined) {
+                  // Cập nhật trực tiếp vào Google Sheet
+                  const cellDisplayText = displayText || 'Tài liệu đã xử lý';
+                  sheetUpdateResult = await updateGoogleSheetCell(
+                    sheetId,
+                    googleSheetName,
+                    rowIndex,
+                    cellIndex,
+                    cellDisplayText,
+                    existingFile.webViewLink
+                  );
+                  
+                  console.log('Kết quả cập nhật trực tiếp vào Google Sheet:', sheetUpdateResult);
+                }
+              }
+              
+              // Tính toán thời gian xử lý
+              const processingTime = Math.round((Date.now() - startTime) / 1000);
+              console.log(`✅ Hoàn tất xử lý sau ${processingTime} giây (sử dụng file đã tồn tại)`);
+              
+              // Trả về kết quả với file đã tồn tại
+              return {
+                success: true,
+                isFolder: false,
+                originalFile: {
+                  id: fileId,
+                  link: driveLink
+                },
+                targetFolder: {
+                  id: targetFolderId,
+                  name: targetFolderName || (courseName || 'Mặc định')
+                },
+                processedFile: {
+                  id: existingFile.id,
+                  name: existingFile.name,
+                  link: existingFile.webViewLink
+                },
+                processingTime: processingTime,
+                fileAlreadyExists: true,
+                sheetUpdate: updateSheet ? {
+                  success: sheetUpdateResult?.success || false,
+                  message: sheetUpdateResult?.message || sheetUpdateResult?.error || 'Không có thông tin cập nhật',
+                  details: sheetUpdateResult?.updatedCell || null
+                } : null
+              };
+            }
+            
+            console.log(`File "${fileInfo.name}" chưa tồn tại trong thư mục đích, tiến hành xử lý...`);
+          } catch (checkExistingError) {
+            console.error(`Lỗi khi kiểm tra file đã tồn tại: ${checkExistingError.message}`);
+            console.log(`Tiếp tục xử lý file...`);
           }
           
           // Tải xuống file

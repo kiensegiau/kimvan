@@ -47,8 +47,8 @@ export async function downloadFromGoogleDrive(fileId) {
           headers: {
             'Authorization': `Bearer ${await getAccessToken()}`
           },
-          // Tăng timeout cho request
-          signal: AbortSignal.timeout(60000) // 60 giây
+                // Tăng timeout cho request
+      signal: AbortSignal.timeout(180000) // 180 giây (3 phút)
         }
       );
       
@@ -92,7 +92,7 @@ export async function downloadFromGoogleDrive(fileId) {
       
       // Tạo controller để có thể abort request nếu cần
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 120000); // Timeout 120 giây
+      const timeoutId = setTimeout(() => controller.abort(), 180000); // Timeout 180 giây (3 phút)
       
       let response;
       try {
@@ -194,8 +194,8 @@ export async function downloadFromGoogleDrive(fileId) {
         
         // Kiểm tra nếu là lỗi abort (timeout)
         if (abortError.name === 'AbortError') {
-          console.error(`Request timeout sau 120 giây cho file ID: ${fileId}`);
-          throw new Error('Request timeout sau 120 giây');
+          console.error(`Request timeout sau 180 giây cho file ID: ${fileId}`);
+          throw new Error('Request timeout sau 180 giây');
         }
         
         // Ném lại lỗi khác

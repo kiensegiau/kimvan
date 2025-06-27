@@ -1,11 +1,13 @@
 import fs from 'fs';
 import path from 'path';
+import { google } from 'googleapis';
 import { processPDFWatermark } from './watermark-service';
 import { getNextApiKey } from '@/utils/watermark-api-keys';
 import { listFilesInFolder } from './download-service';
 import { downloadFromGoogleDrive } from './download-service';
 import { findOrCreateFolder, uploadToGoogleDrive } from './upload-service';
 import { removeHeaderFooterWatermark, addLogoToPDF } from './pdf-service';
+import { createOAuth2Client } from '@/utils/drive-utils';
 
 /**
  * Xử lý file (ví dụ: loại bỏ watermark)
@@ -201,6 +203,55 @@ export async function processFolder(folderId, folderName, targetFolderId, apiKey
         } else {
           // Xử lý file
           console.log(`Đang xử lý file: ${file.name} (${file.id})`);
+          
+          // Kiểm tra xem file đã tồn tại trong thư mục đích chưa
+          try {
+            console.log(`Kiểm tra xem file "${file.name}" đã tồn tại trong thư mục đích chưa...`);
+            
+            // Tạo OAuth2 client với khả năng tự động refresh token
+            const oauth2Client = createOAuth2Client(0);
+            
+            // Khởi tạo Drive API
+            const drive = google.drive({ version: 'v3', auth: oauth2Client });
+            
+            // Xử lý tên file để sử dụng trong truy vấn
+            const escapedFileName = file.name.replace(/'/g, "\\'");
+            
+            // Tìm các file trùng tên trong folder đích
+            const existingFileResponse = await drive.files.list({
+              q: `name='${escapedFileName}' and '${newTargetFolderId}' in parents and trashed=false`,
+              fields: 'files(id, name, webViewLink, webContentLink)',
+              spaces: 'drive'
+            });
+            
+            // Nếu file đã tồn tại, bỏ qua xử lý
+            if (existingFileResponse.data.files && existingFileResponse.data.files.length > 0) {
+              const existingFile = existingFileResponse.data.files[0];
+              console.log(`✅ File "${file.name}" đã tồn tại trong thư mục đích (ID: ${existingFile.id}), bỏ qua xử lý`);
+              
+              results.files.push({
+                name: file.name,
+                id: file.id,
+                type: 'file',
+                mimeType: file.mimeType,
+                success: true,
+                newFileId: existingFile.id,
+                link: existingFile.webViewLink,
+                alreadyExists: true
+              });
+              
+              // Tăng số file đã xử lý
+              results.processedFiles++;
+              
+              // Bỏ qua các bước còn lại
+              continue;
+            }
+            
+            console.log(`File "${file.name}" chưa tồn tại trong thư mục đích, tiến hành xử lý...`);
+          } catch (checkExistingError) {
+            console.error(`Lỗi khi kiểm tra file đã tồn tại: ${checkExistingError.message}`);
+            console.log(`Tiếp tục xử lý file...`);
+          }
           
           // Tải xuống file
           const downloadResult = await downloadFromGoogleDrive(file.id);

@@ -542,7 +542,7 @@ export async function POST(request, { params }) {
                 }
                 
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 60000); // Timeout 60 giây cho mỗi request
+                const timeoutId = setTimeout(() => controller.abort(), 580000); // Timeout 180 giây (3 phút) cho mỗi request
                 
                 try {
                   const processResult = await fetch(apiUrl, {
@@ -583,8 +583,8 @@ export async function POST(request, { params }) {
                   
                   // Kiểm tra nếu là lỗi abort (timeout)
                   if (abortError.name === 'AbortError') {
-                    console.error(`Request timeout sau 60 giây cho URL: ${urlGroup.originalUrl}`);
-                    throw new Error('Request timeout sau 60 giây');
+                    console.error(`Request timeout sau 180 giây cho URL: ${urlGroup.originalUrl}`);
+                    throw new Error('Request timeout sau 180 giây');
                   }
                   
                   // Ném lại lỗi khác
