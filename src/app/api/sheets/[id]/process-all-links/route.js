@@ -433,15 +433,19 @@ export async function POST(request, { params }) {
                 console.log(`Đã xử lý folder đệ quy thành công: ${urlGroup.originalUrl}`);
                 console.log(`Số file đã xử lý: ${folderResult.nestedFilesProcessed}, số folder đã xử lý: ${folderResult.nestedFoldersProcessed}`);
                 
+                // Lấy link folder đã xử lý
+                const processedFolderLink = folderResult.folderStructure.processedFolderLink || urlGroup.originalUrl;
+                console.log(`Link folder đã xử lý: ${processedFolderLink}`);
+                
                 // Trả về kết quả xử lý folder
                 return {
                   success: true,
                   urlGroup,
-                  newUrl: folderResult.folderStructure.processedFolderLink || urlGroup.originalUrl,
+                  newUrl: processedFolderLink, // Đảm bảo sử dụng link folder đã xử lý
                   processResult: {
                     success: true,
                     originalLink: urlGroup.originalUrl,
-                    processedLink: folderResult.folderStructure.processedFolderLink || urlGroup.originalUrl,
+                    processedLink: processedFolderLink,
                     isFolder: true,
                     folderInfo: folderResult.folderStructure,
                     nestedFilesProcessed: folderResult.nestedFilesProcessed,
@@ -722,6 +726,10 @@ export async function POST(request, { params }) {
           for (const cellInfo of urlGroup.cells) {
             try {
               console.log(`Cập nhật ô [${cellInfo.rowIndex + 1}:${cellInfo.colIndex + 1}] trong sheet...`);
+              console.log(`URL gốc: ${urlGroup.originalUrl}`);
+              console.log(`URL mới: ${newUrl}`);
+              console.log(`Loại file: ${fileType}, Là folder: ${result.isFolder ? 'Có' : 'Không'}`);
+              
               // Sử dụng batchUpdate để cập nhật cả giá trị và định dạng hyperlink
               await sheets.spreadsheets.batchUpdate({
                 spreadsheetId: sheet.sheetId,
