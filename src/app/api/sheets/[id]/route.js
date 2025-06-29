@@ -209,7 +209,7 @@ export async function GET(request, { params }) {
       return auth.response;
     }
 
-    const { id } = params;
+    const { id } = await params;
     await dbMiddleware(request);
     
     // Kiểm tra xem id có phải là MongoDB ObjectId hay không
@@ -321,7 +321,7 @@ export async function PUT(request, { params }) {
       return auth.response;
     }
 
-    const { id } = params;
+    const { id } = await params;
     await dbMiddleware(request);
     const data = await request.json();
     
@@ -372,7 +372,7 @@ export async function POST(request, { params }) {
       return auth.response;
     }
 
-    const { id } = params;
+    const { id } = await params;
     await dbMiddleware(request);
     const data = await request.json();
     
@@ -435,7 +435,7 @@ export async function DELETE(request, { params, nextUrl }) {
       return auth.response;
     }
 
-    const { id } = params;
+    const { id } = await params;
     await dbMiddleware(request);
     
     // Lấy relatedId từ URL
