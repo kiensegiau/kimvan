@@ -375,7 +375,8 @@ export async function POST(request) {
                     cellIndex,
                     driveLink, // URL gốc
                     existingFile.webViewLink, // URL của file đã tồn tại
-                    displayText // Text hiển thị (nếu có)
+                    displayText, // Text hiển thị
+                    request // Pass the request object
                   );
                   
                   console.log('Kết quả cập nhật sheet trong database:', sheetUpdateResult);
@@ -388,7 +389,9 @@ export async function POST(request) {
                     rowIndex,
                     cellIndex,
                     cellDisplayText,
-                    existingFile.webViewLink
+                    existingFile.webViewLink,
+                    driveLink, // URL gốc
+                    request // Pass the request object
                   );
                   
                   console.log('Kết quả cập nhật trực tiếp vào Google Sheet:', sheetUpdateResult);
@@ -499,7 +502,8 @@ export async function POST(request) {
                 cellIndex,
                 driveLink, // URL gốc
                 uploadResult.webViewLink, // URL mới
-                displayText // Text hiển thị (nếu có)
+                displayText, // Text hiển thị
+                request // Pass the request object
               );
               
               console.log('Kết quả cập nhật sheet trong database:', sheetUpdateResult);
@@ -512,7 +516,9 @@ export async function POST(request) {
                 rowIndex,
                 cellIndex,
                 cellDisplayText,
-                uploadResult.webViewLink
+                uploadResult.webViewLink,
+                driveLink, // URL gốc
+                request // Pass the request object
               );
               
               console.log('Kết quả cập nhật trực tiếp vào Google Sheet:', sheetUpdateResult);

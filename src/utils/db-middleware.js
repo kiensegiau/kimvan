@@ -23,13 +23,17 @@ export function withDatabase(handler) {
 /**
  * Middleware để tự động kết nối đến MongoDB trước khi xử lý Next.js App Router API request
  * Sử dụng cho các route.js trong App Router
- * @param {Request} request - Request object từ Next.js
+ * @param {Request} [request] - Request object từ Next.js (optional)
  */
 export async function dbMiddleware(request) {
   try {
     // Kết nối đến database
     await connectDB();
-    console.log('🔌 dbMiddleware - Đã kết nối DB tự động');
+    if (request) {
+      console.log(`🔌 dbMiddleware - Đã kết nối DB tự động cho ${request.url || 'API request'}`);
+    } else {
+      console.log('🔌 dbMiddleware - Đã kết nối DB tự động (không có request object)');
+    }
     return null; // Tiếp tục xử lý request
   } catch (error) {
     console.error('❌ Lỗi kết nối DB trong middleware:', error);

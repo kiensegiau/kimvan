@@ -20,7 +20,7 @@ function getRoleDisplayName(role) {
 }
 
 // Hàm lấy thông tin chi tiết người dùng từ MongoDB
-async function getUserDetails(uid) {
+async function getUserDetails(uid, request) {
   try {
     await dbMiddleware(request);
     const db = mongoose.connection.db;
@@ -33,10 +33,10 @@ async function getUserDetails(uid) {
 }
 
 // Hàm kết hợp thông tin người dùng từ Firebase và MongoDB
-async function enrichUserData(firebaseUser) {
+async function enrichUserData(firebaseUser, request) {
   try {
     // Lấy thông tin user từ MongoDB
-    const userDetails = await getUserDetails(firebaseUser.uid);
+    const userDetails = await getUserDetails(firebaseUser.uid, request);
     console.log('🔍 API verify: Thông tin từ MongoDB:', userDetails ? 'Tìm thấy' : 'Không tìm thấy');
     
     // Lấy vai trò từ DB nếu có, ngược lại sử dụng từ token
@@ -97,7 +97,7 @@ export async function POST(request) {
 
     console.log('✅ API verify: Token hợp lệ, lấy thông tin người dùng đầy đủ');
     // Lấy thông tin người dùng đầy đủ kết hợp từ MongoDB
-    const enrichedUser = await enrichUserData(firebaseUser);
+    const enrichedUser = await enrichUserData(firebaseUser, request);
     
     // Trả về thông tin người dùng đầy đủ
     return NextResponse.json({
@@ -146,7 +146,7 @@ export async function GET(request) {
 
     console.log('✅ API verify GET: Token hợp lệ, lấy thông tin người dùng đầy đủ');
     // Lấy thông tin người dùng đầy đủ kết hợp từ MongoDB
-    const enrichedUser = await enrichUserData(firebaseUser);
+    const enrichedUser = await enrichUserData(firebaseUser, request);
     
     // Trả về thông tin người dùng đầy đủ
     return NextResponse.json({

@@ -12,9 +12,10 @@ import Sheet from '@/models/Sheet';
  * @param {string} originalUrl - URL gốc
  * @param {string} newUrl - URL mới sau khi xử lý
  * @param {string} displayText - Text hiển thị (nếu có)
+ * @param {Request} request - Request object từ Next.js
  * @returns {Promise<Object>} - Kết quả cập nhật
  */
-export async function updateSheetCell(courseId, sheetIndex, rowIndex, cellIndex, originalUrl, newUrl, displayText = null) {
+export async function updateSheetCell(courseId, sheetIndex, rowIndex, cellIndex, originalUrl, newUrl, displayText = null, request) {
   console.log(`Cập nhật link trong sheet: Course=${courseId}, Sheet=${sheetIndex}, Row=${rowIndex}, Cell=${cellIndex}`);
   console.log(`URL gốc: ${originalUrl}`);
   console.log(`URL mới: ${newUrl}`);
@@ -130,9 +131,11 @@ export async function updateSheetCell(courseId, sheetIndex, rowIndex, cellIndex,
  * @param {number} colIndex - Index của cột (0-based)
  * @param {string} displayText - Text hiển thị
  * @param {string} url - URL cần thêm vào ô
+ * @param {string} originalUrl - URL gốc trước khi xử lý
+ * @param {Request} request - Request object từ Next.js
  * @returns {Promise<Object>} - Kết quả cập nhật
  */
-export async function updateGoogleSheetCell(sheetId, sheetName, rowIndex, colIndex, displayText, url) {
+export async function updateGoogleSheetCell(sheetId, sheetName, rowIndex, colIndex, displayText, url, originalUrl, request) {
   console.log(`Cập nhật trực tiếp vào Google Sheet: ID=${sheetId}, Sheet=${sheetName}, Row=${rowIndex + 1}, Col=${colIndex + 1}`);
   
   try {
