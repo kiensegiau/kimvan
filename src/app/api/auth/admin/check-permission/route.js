@@ -6,8 +6,6 @@ export async function POST(request) {
   try {
     const { token } = await request.json();
     
-    console.log('🔑 Check Admin Permission - Token nhận được:', token ? 'Có token' : 'Không có token');
-    
     if (!token) {
       return NextResponse.json({ 
         hasAdminAccess: false,
@@ -17,9 +15,7 @@ export async function POST(request) {
     
     // Xác thực token và lấy thông tin người dùng từ Firebase
     try {
-      console.log('🔑 Check Admin Permission - Bắt đầu xác thực token');
       const decodedToken = await verifyToken(token);
-      console.log('🔑 Check Admin Permission - Decoded token:', decodedToken ? JSON.stringify(decodedToken) : 'Không giải mã được');
       
       if (!decodedToken || !decodedToken.uid) {
         return NextResponse.json({ 
@@ -30,7 +26,6 @@ export async function POST(request) {
       
       // Kiểm tra role từ token thay vì email cụ thể
       const hasAdminAccess = decodedToken.role === 'admin';
-      console.log(`🔑 Check Admin Permission - Email: ${decodedToken.email}, Role: ${decodedToken.role}, Có quyền admin: ${hasAdminAccess}`);
       
       return NextResponse.json({
         hasAdminAccess,

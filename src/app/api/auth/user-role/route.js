@@ -12,8 +12,6 @@ export async function POST(request) {
       );
     }
     
-    console.log('🔍 API User Role - Đang truy vấn role cho UID:', uid);
-    
     // Kết nối MongoDB
     const client = await clientPromise;
     const db = client.db(process.env.MONGODB_DB || 'kimvan');
@@ -22,14 +20,12 @@ export async function POST(request) {
     const userFromDB = await db.collection('users').findOne({ firebaseId: uid });
     
     if (!userFromDB) {
-      console.log('⚠️ API User Role - Không tìm thấy user trong MongoDB');
       return NextResponse.json({
         success: true,
         role: null
       });
     }
     
-    console.log('✅ API User Role - Tìm thấy role trong MongoDB:', userFromDB.role);
     return NextResponse.json({
       success: true,
       role: userFromDB.role || 'user'

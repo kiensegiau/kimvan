@@ -19,9 +19,6 @@ export async function POST(request) {
       sameSite: cookieConfig.sameSite
     });
     
-    // Log hành động
-    console.log('🔒 Người dùng đã đăng xuất thành công');
-    
     // Trả về thành công với header xóa cookie
     const response = NextResponse.json({ success: true });
     

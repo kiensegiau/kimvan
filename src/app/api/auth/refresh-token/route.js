@@ -10,7 +10,6 @@ import { verifyServerAuthToken, tryRefreshToken } from '@/utils/server-auth';
  */
 export async function POST(request) {
   try {
-    console.log('🔄 API refresh-token: Bắt đầu quá trình làm mới token');
     // Lấy dữ liệu từ request body
     const body = await request.json();
     const { token: tokenFromBody, rememberMe } = body;
@@ -36,7 +35,6 @@ export async function POST(request) {
         if (cookieExists) {
           const cookie = await cookieStore.get(cookieName);
           if (cookie && cookie.value) {
-            console.log(`🍪 API refresh-token: Tìm thấy token trong cookie ${cookieName}`);
             tokenFromCookie = cookie.value;
             break;
           }
@@ -58,7 +56,6 @@ export async function POST(request) {
       );
     }
 
-    console.log('🔍 API refresh-token: Đang xác thực token hiện tại...');
     // Xác thực token hiện tại
     let user = await verifyServerAuthToken(currentToken);
     let newIdToken = null;
@@ -69,7 +66,6 @@ export async function POST(request) {
       const refreshResult = await tryRefreshToken(currentToken);
       
       if (refreshResult.success && refreshResult.token) {
-        console.log('✅ API refresh-token: Đã refresh token thành công');
         newIdToken = refreshResult.token;
       } else {
         console.log('❌ API refresh-token: Không thể refresh token đã hết hạn');
@@ -79,7 +75,6 @@ export async function POST(request) {
         );
       }
     } else {
-      console.log('✅ API refresh-token: Token hợp lệ, đang tạo token mới...');
       // Tạo token mới với thời gian sống dài hơn
       const customToken = await firebaseAdmin.auth().createCustomToken(user.uid);
       
@@ -90,7 +85,6 @@ export async function POST(request) {
         throw new Error('Firebase API Key không được cấu hình');
       }
       
-      console.log('🔄 API refresh-token: Đang đổi custom token thành ID token...');
       // Gọi Firebase Auth REST API để đổi custom token thành ID token
       const tokenResponse = await fetch(
         `https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=${firebaseApiKey}`,
@@ -114,12 +108,10 @@ export async function POST(request) {
       
       // Lấy ID token mới từ kết quả
       newIdToken = tokenData.idToken;
-      console.log('✅ API refresh-token: Đã tạo ID token mới thành công');
     }
     
     // Thiết lập thời gian sống của cookie
     const maxAge = rememberMe ? cookieConfig.extendedMaxAge : cookieConfig.defaultMaxAge;
-    console.log(`🍪 API refresh-token: Thiết lập cookie với thời gian sống ${maxAge} giây`);
     
     // Thiết lập cookie với token mới
     await cookieStore.set(cookieConfig.authCookieName, newIdToken, {
@@ -130,7 +122,6 @@ export async function POST(request) {
       sameSite: cookieConfig.sameSite,
     });
 
-    console.log('✅ API refresh-token: Hoàn tất quá trình làm mới token');
     // Trả về kết quả thành công với token mới
     return NextResponse.json({
       success: true,

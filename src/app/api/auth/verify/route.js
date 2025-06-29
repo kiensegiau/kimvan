@@ -37,7 +37,6 @@ async function enrichUserData(firebaseUser, request) {
   try {
     // Lấy thông tin user từ MongoDB
     const userDetails = await getUserDetails(firebaseUser.uid, request);
-    console.log('🔍 API verify: Thông tin từ MongoDB:', userDetails ? 'Tìm thấy' : 'Không tìm thấy');
     
     // Lấy vai trò từ DB nếu có, ngược lại sử dụng từ token
     const userRole = userDetails?.role || firebaseUser.role || 'user';
@@ -59,7 +58,7 @@ async function enrichUserData(firebaseUser, request) {
       phoneNumber: userDetails?.phoneNumber || null
     };
   } catch (error) {
-    console.error('❌ API verify: Lỗi khi làm giàu dữ liệu từ MongoDB:', error);
+    console.error('❌ Lỗi khi làm giàu dữ liệu từ MongoDB:', error);
     // Trả về thông tin cơ bản nếu có lỗi
     return firebaseUser;
   }
@@ -71,7 +70,6 @@ async function enrichUserData(firebaseUser, request) {
  */
 export async function POST(request) {
   try {
-    console.log('📝 API verify: Đang xử lý yêu cầu xác thực token');
     const body = await request.json();
     const { token } = body;
 
@@ -83,7 +81,6 @@ export async function POST(request) {
       );
     }
 
-    console.log('🔍 API verify: Đang xác thực token...');
     // Xác thực token với Firebase Admin
     const firebaseUser = await verifyServerAuthToken(token);
 
@@ -95,7 +92,6 @@ export async function POST(request) {
       );
     }
 
-    console.log('✅ API verify: Token hợp lệ, lấy thông tin người dùng đầy đủ');
     // Lấy thông tin người dùng đầy đủ kết hợp từ MongoDB
     const enrichedUser = await enrichUserData(firebaseUser, request);
     
@@ -120,7 +116,6 @@ export async function POST(request) {
  */
 export async function GET(request) {
   try {
-    console.log('📝 API verify GET: Đang xử lý yêu cầu lấy thông tin người dùng');
     // Lấy token từ cookie
     const token = request.cookies.get(cookieConfig.authCookieName)?.value;
 
@@ -132,7 +127,6 @@ export async function GET(request) {
       );
     }
 
-    console.log('🔍 API verify GET: Đang xác thực token từ cookie...');
     // Xác thực token với Firebase Admin
     const firebaseUser = await verifyServerAuthToken(token);
 
@@ -144,7 +138,6 @@ export async function GET(request) {
       );
     }
 
-    console.log('✅ API verify GET: Token hợp lệ, lấy thông tin người dùng đầy đủ');
     // Lấy thông tin người dùng đầy đủ kết hợp từ MongoDB
     const enrichedUser = await enrichUserData(firebaseUser, request);
     

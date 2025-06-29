@@ -44,8 +44,6 @@ export async function POST(request) {
     try {
       // Trong môi trường phát triển, giả lập gửi email đặt lại mật khẩu
       if (process.env.NODE_ENV === 'development') {
-        console.log(`[DEV] Gửi email đặt lại mật khẩu cho: ${email}`);
-        
         // Trả về thành công
         return NextResponse.json({
           success: true,

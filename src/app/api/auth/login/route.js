@@ -10,22 +10,15 @@ import firebaseAdmin from '@/lib/firebase-admin';
  */
 export async function POST(request) {
   try {
-    console.log('🔒 API đăng nhập được gọi');
-    
     // Lấy thông tin từ request
     const body = await request.json();
     const { idToken, rememberMe } = body;
-    
-    console.log('🔑 ID Token có được cung cấp:', !!idToken);
-    console.log('🔄 Remember me:', !!rememberMe);
 
     // Lấy IP của client
     const ip = request.headers.get('x-forwarded-for') || 'unknown-ip';
-    console.log('🌐 IP của client:', ip);
     
     // Kiểm tra xem IP có bị chặn không
     const ipBlocked = isIPBlocked(ip);
-    console.log('🚫 IP có bị chặn:', ipBlocked);
     if (ipBlocked) {
       return NextResponse.json(
         { error: 'Địa chỉ IP của bạn đã bị tạm thời chặn do quá nhiều lần đăng nhập thất bại. Vui lòng thử lại sau.' },
@@ -35,12 +28,9 @@ export async function POST(request) {
     
     // Kiểm tra rate limit
     const rateLimitInfo = rateLimit(ip, 5, 15 * 60 * 1000); // 5 lần/15 phút
-    console.log('⏱️ Rate limit info:', rateLimitInfo);
     
     // Nếu quá giới hạn, trả về lỗi 429
     if (rateLimitInfo.isLimited) {
-      console.log('⚠️ Rate limit exceeded');
-      
       return NextResponse.json(
         { error: 'Quá nhiều lần thử đăng nhập, vui lòng thử lại sau.' },
         { 
@@ -57,7 +47,6 @@ export async function POST(request) {
     
     // Kiểm tra thông tin đăng nhập
     if (!idToken) {
-      console.log('⚠️ Thiếu ID token');
       return NextResponse.json(
         { error: 'ID token là bắt buộc' },
         { status: 400 }
@@ -65,23 +54,16 @@ export async function POST(request) {
     }
     
     try {
-      console.log('🔧 NODE_ENV:', process.env.NODE_ENV);
-      
       // Xác thực ID token bằng Firebase Admin SDK
-      console.log('🔍 Đang xác thực ID token...');
       const decodedToken = await firebaseAdmin.auth().verifyIdToken(idToken);
       const uid = decodedToken.uid;
-      console.log('✅ Xác thực token thành công, uid:', uid);
       
       // Lấy thông tin chi tiết về người dùng từ Firebase Admin
-      console.log('👤 Đang lấy thông tin chi tiết về người dùng');
       const userRecord = await firebaseAdmin.auth().getUser(uid);
-      console.log('✅ Đã lấy thông tin người dùng thành công');
       
       // Kiểm tra xem email có bị tạm khóa không
       const email = userRecord.email;
       const emailLocked = email && isEmailLocked(email);
-      console.log('🔒 Email có bị khóa:', emailLocked);
       if (emailLocked) {
         return NextResponse.json(
           { error: 'Tài khoản này đã bị tạm thời khóa do quá nhiều lần đăng nhập thất bại. Vui lòng thử lại sau hoặc đặt lại mật khẩu.' },
@@ -91,29 +73,9 @@ export async function POST(request) {
       
       // Thiết lập thời gian sống của cookie
       const maxAge = rememberMe ? cookieConfig.extendedMaxAge : cookieConfig.defaultMaxAge;
-      console.log('⏱️ Thời gian sống của cookie:', maxAge);
-      
-      // Thiết lập cookie token
-      console.log('🍪 Đang thiết lập cookie auth token');
-      console.log('🍪 Cookie name:', cookieConfig.authCookieName);
       
       // Xác định domain nếu đang trong môi trường production
       let cookieDomain = undefined;
-      if (isProduction) {
-        // Không sử dụng .kimvan.id.vn vì có thể gây vấn đề
-        // Để trống domain sẽ dùng domain hiện tại
-        console.log('🍪 Đang chạy trên production, không set domain cụ thể cho cookie');
-      }
-      
-      console.log('🍪 Cookie config:', JSON.stringify({
-        name: cookieConfig.authCookieName,
-        path: '/',
-        maxAge,
-        httpOnly: true,
-        secure: cookieConfig.secure,
-        sameSite: cookieConfig.sameSite,
-        domain: cookieDomain
-      }));
       
       const cookieStore = await cookies();
       await cookieStore.set(cookieConfig.authCookieName, idToken, {
@@ -124,7 +86,6 @@ export async function POST(request) {
         sameSite: cookieConfig.sameSite,
         // Không thiết lập domain để sử dụng domain hiện tại
       });
-      console.log('✅ Đã thiết lập cookie thành công');
       
       // Ghi nhận đăng nhập thành công
       trackSuccessfulLogin(email, ip, uid);
@@ -143,8 +104,6 @@ export async function POST(request) {
     } catch (error) {
       // Ghi nhận lần đăng nhập thất bại
       console.error('❌ Lỗi xác thực:', error);
-      console.error('❌ Error message:', error.message);
-      console.error('❌ Error stack:', error.stack);
       
       // Xử lý lỗi Firebase Auth
       let message = 'Token không hợp lệ hoặc hết hạn';
