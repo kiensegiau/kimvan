@@ -16,20 +16,15 @@ export async function GET(request) {
     
     try {
       // Truy cập cookies một cách an toàn
-      const cookieList = await Promise.all([
-        cookieStore.has('admin_access'),
-        cookieStore.has('ctv_access')
-      ]);
-      
-      adminAccess = cookieList[0];
-      ctvAccess = cookieList[1];
+      adminAccess = await cookieStore.has('admin_access');
+      ctvAccess = await cookieStore.has('ctv_access');
     } catch (cookieError) {
       console.error('Error accessing cookies:', cookieError);
     }
     
     // Kiểm tra quyền admin từ header 
     const headersList = headers();
-    const userRole = headersList.get('x-user-role');
+    const userRole = await headersList.get('x-user-role');
     
     // Cho phép truy cập nếu là admin/ctv thông qua cookie hoặc header
     const hasAdminAccess = adminAccess || userRole === 'admin';
@@ -87,7 +82,7 @@ export async function POST(request) {
     
     // Kiểm tra quyền admin từ header 
     const headersList = headers();
-    const userRole = headersList.get('x-user-role');
+    const userRole = await headersList.get('x-user-role');
     
     // Cho phép truy cập nếu là admin
     if (adminAccess || userRole === 'admin') {
