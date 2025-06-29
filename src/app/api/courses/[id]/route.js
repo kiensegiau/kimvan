@@ -54,7 +54,6 @@ function normalizeUrl(url) {
       normalizedUrl = urlObj.toString();
     } catch (e) {
       // Nếu không phân tích được URL, giữ nguyên
-      console.log(`⚠️ Không thể phân tích URL: ${url}`);
     }
     
     // Xử lý các URL Google Drive
@@ -124,7 +123,6 @@ function findProcessedUrl(originalUrl, processedFiles) {
   // Tìm kiếm khớp chính xác trước
   const exactMatch = processedFiles.find(file => normalizeUrl(file.originalUrl) === normalizedUrl);
   if (exactMatch) {
-    console.log(`✅ [PATCH] Tìm thấy khớp chính xác cho URL: ${originalUrl.substring(0, 50)}...`);
     return exactMatch;
   }
   
@@ -143,7 +141,6 @@ function findProcessedUrl(originalUrl, processedFiles) {
         const fileId = fileIdMatch ? fileIdMatch[1] : null;
         
         if (fileId && fileId === urlDriveId) {
-          console.log(`✅ [PATCH] Tìm thấy khớp ID Google Drive cho URL: ${originalUrl.substring(0, 50)}...`);
           return file;
         }
       }
@@ -165,7 +162,6 @@ function findProcessedUrl(originalUrl, processedFiles) {
   }
   
   if (bestMatch) {
-    console.log(`✅ [PATCH] Tìm thấy URL tương tự (${highestSimilarity.toFixed(2)}%) cho: ${originalUrl.substring(0, 50)}...`);
     return bestMatch;
   }
   
@@ -192,24 +188,16 @@ function createPositionMap(originalData) {
   const positionMap = new Map();
   
   if (!originalData || !originalData.sheets || !Array.isArray(originalData.sheets)) {
-    console.log('⚠️ [PATCH] Không có dữ liệu sheets trong dữ liệu gốc để tạo bản đồ vị trí');
     return positionMap;
   }
-  
-  console.log(`📊 [PATCH] Bắt đầu tạo bản đồ vị trí từ dữ liệu gốc với ${originalData.sheets.length} sheets`);
   
   // Duyệt qua toàn bộ dữ liệu để tìm vị trí của link đã xử lý
   originalData.sheets.forEach((sheet, sheetIndex) => {
     const sheetTitle = sheet?.properties?.title || `Sheet ${sheetIndex + 1}`;
-    console.log(`🔍 [PATCH] Đang quét sheet "${sheetTitle}"`);
     
     if (sheet.data && Array.isArray(sheet.data)) {
       sheet.data.forEach((sheetData, dataIndex) => {
-        console.log(`🔍 [PATCH] Đang quét data #${dataIndex} trong sheet "${sheetTitle}"`);
-        
         if (sheetData.rowData && Array.isArray(sheetData.rowData)) {
-          console.log(`🔍 [PATCH] Số hàng trong data #${dataIndex}: ${sheetData.rowData.length}`);
-          
           sheetData.rowData.forEach((row, rowIndex) => {
             if (row.values && Array.isArray(row.values)) {
               row.values.forEach((cell, cellIndex) => {

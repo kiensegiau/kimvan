@@ -25,16 +25,12 @@ export async function GET(request, { params }) {
           hasAdminAccess = true;
         }
       }
-      
-      console.log('🔑 Cookie check - adminAccess:', hasAdminAccess);
     } catch (cookieError) {
       console.error('Error accessing cookies:', cookieError);
     }
     
     // Nếu có cookie admin_access, cho phép truy cập
     if (hasAdminAccess) {
-      console.log('🔒 Admin API - Đã có cookie admin_access, cho phép truy cập');
-      
       // Đảm bảo kết nối đến MongoDB trước khi truy vấn
       await dbMiddleware(request);
       
@@ -64,7 +60,6 @@ export async function GET(request, { params }) {
     const hasAccess = await checkAuthAndRole(request, 'admin');
     
     if (!hasAccess) {
-      console.log('❌ Admin API - Không có quyền admin');
       return NextResponse.json({ 
         success: false,
         message: 'Bạn không có quyền truy cập vào tài nguyên này' 
@@ -124,16 +119,12 @@ export async function PUT(request, { params }) {
           hasAdminAccess = true;
         }
       }
-      
-      console.log('🔑 Cookie check - adminAccess:', hasAdminAccess);
     } catch (cookieError) {
       console.error('Error accessing cookies:', cookieError);
     }
     
     // Nếu có cookie admin_access, cho phép truy cập
     if (hasAdminAccess) {
-      console.log('🔒 Admin API - Đã có cookie admin_access, cho phép truy cập');
-      
       const body = await request.json();
       
       // Đảm bảo kết nối đến MongoDB trước khi truy vấn
@@ -175,7 +166,6 @@ export async function PUT(request, { params }) {
     const hasAccess = await checkAuthAndRole(request, 'admin');
     
     if (!hasAccess) {
-      console.log('❌ Admin API - Không có quyền admin');
       return NextResponse.json({ 
         success: false,
         message: 'Bạn không có quyền thực hiện hành động này' 
@@ -247,16 +237,12 @@ export async function DELETE(request, { params }) {
           hasAdminAccess = true;
         }
       }
-      
-      console.log('🔑 Cookie check - adminAccess:', hasAdminAccess);
     } catch (cookieError) {
       console.error('Error accessing cookies:', cookieError);
     }
     
     // Nếu có cookie admin_access, cho phép truy cập
     if (hasAdminAccess) {
-      console.log('🔒 Admin API - Đã có cookie admin_access, cho phép truy cập');
-      
       // Đảm bảo kết nối đến MongoDB trước khi truy vấn
       await dbMiddleware(request);
       
@@ -288,7 +274,6 @@ export async function DELETE(request, { params }) {
     const hasAccess = await checkAuthAndRole(request, 'admin');
     
     if (!hasAccess) {
-      console.log('❌ Admin API - Không có quyền admin');
       return NextResponse.json({ 
         success: false,
         message: 'Bạn không có quyền thực hiện hành động này' 

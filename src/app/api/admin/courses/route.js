@@ -8,8 +8,6 @@ import { dbMiddleware } from '@/utils/db-middleware';
 // GET: Lấy tất cả khóa học cho admin và CTV (không mã hóa)
 export async function GET(request) {
   try {
-    console.log('🔒 Admin/CTV API - Kiểm tra quyền truy cập');
-    
     // Kiểm tra quyền từ cookie
     const cookieStore = cookies();
     // Sử dụng phương thức truy cập cookie an toàn
@@ -25,8 +23,6 @@ export async function GET(request) {
       
       adminAccess = cookieList[0];
       ctvAccess = cookieList[1];
-      
-      console.log(`🔑 Cookie check - adminAccess: ${adminAccess}, ctvAccess: ${ctvAccess}`);
     } catch (cookieError) {
       console.error('Error accessing cookies:', cookieError);
     }
@@ -35,50 +31,34 @@ export async function GET(request) {
     const headersList = headers();
     const userRole = headersList.get('x-user-role');
     
-    console.log(`🔑 Header check - userRole: ${userRole}`);
-    
     // Cho phép truy cập nếu là admin/ctv thông qua cookie hoặc header
     const hasAdminAccess = adminAccess || userRole === 'admin';
     const hasCTVAccess = ctvAccess;
     
     if (hasAdminAccess || hasCTVAccess) {
-      if (hasAdminAccess) {
-        console.log('🔒 Admin API - Người dùng có quyền admin, cho phép truy cập');
-      } else {
-        console.log('🔒 CTV API - Người dùng có quyền CTV, cho phép truy cập');
-      }
-      
       // Kết nối đến MongoDB
       await dbMiddleware(request);
       
       // Lấy tất cả khóa học
       const courses = await Course.find({}).sort({ createdAt: -1 }).lean();
       
-      console.log(`✅ Lấy thành công ${courses.length} khóa học`);
-      
       // Trả về thông tin khóa học
       return NextResponse.json({ courses });
     } else {
       // Thử check authorization header cho API
-      console.log('🔍 Checking auth through headers...');
       const hasAccess = await checkAuthAndRole(request, ['admin', 'ctv']);
       
       if (hasAccess) {
-        console.log('✅ Access granted through auth header');
-        
         // Kết nối đến MongoDB
         await dbMiddleware(request);
         
         // Lấy tất cả khóa học
         const courses = await Course.find({}).sort({ createdAt: -1 }).lean();
         
-        console.log(`✅ Lấy thành công ${courses.length} khóa học`);
-        
         // Trả về thông tin khóa học
         return NextResponse.json({ courses });
       }
       
-      console.log('⚠️ Admin/CTV API - Không có quyền truy cập, từ chối');
       return NextResponse.json(
         { error: 'Không có quyền truy cập' },
         { status: 403 }
@@ -93,8 +73,6 @@ export async function GET(request) {
 // POST: Tạo khóa học mới cho admin
 export async function POST(request) {
   try {
-    console.log('🔒 Admin API - Kiểm tra quyền truy cập');
-    
     // Kiểm tra quyền admin từ cookie
     const cookieStore = cookies();
     // Sử dụng phương thức truy cập cookie an toàn
@@ -103,7 +81,6 @@ export async function POST(request) {
     try {
       // Truy cập cookies một cách an toàn
       adminAccess = await cookieStore.has('admin_access');
-      console.log(`🔑 Cookie check - adminAccess: ${adminAccess}`);
     } catch (cookieError) {
       console.error('Error accessing cookies:', cookieError);
     }
@@ -114,8 +91,6 @@ export async function POST(request) {
     
     // Cho phép truy cập nếu là admin
     if (adminAccess || userRole === 'admin') {
-      console.log('🔒 Admin API - Người dùng có quyền admin, cho phép truy cập');
-      
       // Kết nối đến MongoDB
       await dbMiddleware(request);
       
@@ -172,7 +147,6 @@ export async function POST(request) {
         await dbMiddleware(request);
         
         // Parse body request và xử lý giống như trên...
-        // [code tương tự phần trên]
         const requestBody = await request.json();
         const {
           name,
@@ -218,7 +192,6 @@ export async function POST(request) {
         });
       }
       
-      console.log('⚠️ Admin API - Không có quyền admin, từ chối truy cập');
       return NextResponse.json({
         error: 'Không có quyền truy cập'
       }, { status: 403 });

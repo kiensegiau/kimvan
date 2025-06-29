@@ -16,7 +16,6 @@ function getStoredToken() {
   try {
     if (fs.existsSync(TOKEN_PATH)) {
       const tokenContent = fs.readFileSync(TOKEN_PATH, 'utf8');
-      console.log('Đọc token từ file:', TOKEN_PATH);
       if (tokenContent.length === 0) {
         console.error('File token tồn tại nhưng trống');
         return null;
@@ -24,8 +23,6 @@ function getStoredToken() {
       
       try {
         const parsedToken = JSON.parse(tokenContent);
-        console.log('Phân tích token thành công. Trường có sẵn:', Object.keys(parsedToken).join(', '));
-        console.log('Token scope:', parsedToken.scope);
         return parsedToken;
       } catch (parseError) {
         console.error('Lỗi phân tích JSON token:', parseError);
@@ -46,8 +43,6 @@ async function fetchWithRetry(url, options = {}, maxRetries = 3) {
   
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      console.log(`Tải xuống từ URL (lần thử ${attempt}/${maxRetries}): ${url}`);
-      
       // Thiết lập timeout cho fetch
       const fetchOptions = {
         ...options,
@@ -68,7 +63,6 @@ async function fetchWithRetry(url, options = {}, maxRetries = 3) {
       // Nếu không phải lần thử cuối, đợi trước khi thử lại
       if (attempt < maxRetries) {
         const delayMs = 1000 * attempt; // Tăng thời gian chờ theo số lần thử
-        console.log(`Chờ ${delayMs}ms trước khi thử lại...`);
         await new Promise(resolve => setTimeout(resolve, delayMs));
       }
     }
@@ -81,8 +75,6 @@ async function fetchWithRetry(url, options = {}, maxRetries = 3) {
 // Tạo hàm tải file từ URL và lưu vào thư mục tạm
 async function downloadFileToTemp(url, fileName) {
   try {
-    console.log(`Bắt đầu tải file từ URL: ${url}`);
-    
     // Xử lý URL đặc biệt (Google Drive, YouTube, v.v.)
     let processedUrl = url;
     let isGoogleDriveUrl = false;
@@ -96,7 +88,6 @@ async function downloadFileToTemp(url, fileName) {
         googleDriveFileId = fileIdMatch[1].split('?')[0]; // Loại bỏ các tham số URL
         processedUrl = `https://drive.google.com/uc?export=download&id=${googleDriveFileId}`;
         isGoogleDriveUrl = true;
-        console.log(`Phát hiện link Google Drive, ID file (đã làm sạch): ${googleDriveFileId}`);
       }
     } else if (url.includes('drive.google.com/open')) {
       // Format: https://drive.google.com/open?id=FILE_ID
@@ -105,7 +96,6 @@ async function downloadFileToTemp(url, fileName) {
         googleDriveFileId = fileIdMatch[1].split('&')[0]; // Loại bỏ các tham số khác
         processedUrl = `https://drive.google.com/uc?export=download&id=${googleDriveFileId}`;
         isGoogleDriveUrl = true;
-        console.log(`Phát hiện link Google Drive, ID file (đã làm sạch): ${googleDriveFileId}`);
       }
     } else if (url.includes('docs.google.com/document')) {
       // Format: https://docs.google.com/document/d/FILE_ID/edit
@@ -114,7 +104,6 @@ async function downloadFileToTemp(url, fileName) {
         googleDriveFileId = fileIdMatch[1].split('?')[0]; // Loại bỏ các tham số URL
         processedUrl = `https://docs.google.com/document/d/${googleDriveFileId}/export?format=pdf`;
         isGoogleDriveUrl = true;
-        console.log(`Phát hiện Google Docs, ID (đã làm sạch): ${googleDriveFileId}`);
       }
     }
     
@@ -134,8 +123,6 @@ async function downloadFileToTemp(url, fileName) {
     
     // CHỈNH SỬA: Nếu là Google Drive URL, CHỈ sử dụng Drive API
     if (isGoogleDriveUrl && googleDriveFileId) {
-      console.log(`Đang xử lý file Google Drive với ID: ${googleDriveFileId}`);
-      
       // Lấy token đã lưu
       const storedToken = getStoredToken();
       if (!storedToken) {
@@ -152,39 +139,18 @@ async function downloadFileToTemp(url, fileName) {
       oauth2Client.setCredentials(storedToken);
       const drive = google.drive({ version: 'v3', auth: oauth2Client });
       
-      console.log('Kiểm tra quyền truy cập Drive...');
       try {
         // Kiểm tra xem token có quyền truy cập Drive không
         const aboutResponse = await drive.about.get({
           fields: 'user'
         });
         
-        console.log(`Token Drive hợp lệ. Người dùng: ${aboutResponse.data.user?.displayName || 'Không xác định'}`);
-        console.log(`Email người dùng: ${aboutResponse.data.user?.emailAddress || 'Không xác định'}`);
-        
         // Thử lấy thông tin file
         try {
-          console.log(`Lấy thông tin file Google Drive: ${googleDriveFileId}`);
           const fileInfo = await drive.files.get({
             fileId: googleDriveFileId,
             fields: 'id,name,mimeType,size,owners,permissions,capabilities,shared,sharingUser'
           });
-          
-          console.log('Thông tin file Google Drive:');
-          console.log(`- Tên: ${fileInfo.data.name}`);
-          console.log(`- Loại: ${fileInfo.data.mimeType}`);
-          console.log(`- Kích thước: ${fileInfo.data.size || 'Không xác định'}`);
-          console.log(`- Được chia sẻ: ${fileInfo.data.shared ? 'Có' : 'Không'}`);
-          
-          if (fileInfo.data.owners && fileInfo.data.owners.length > 0) {
-            console.log(`- Chủ sở hữu: ${fileInfo.data.owners[0].displayName} (${fileInfo.data.owners[0].emailAddress})`);
-          }
-          
-          if (fileInfo.data.capabilities) {
-            console.log('- Quyền của bạn:');
-            console.log(`  - Chỉnh sửa: ${fileInfo.data.capabilities.canEdit ? 'Có' : 'Không'}`);
-            console.log(`  - Tải xuống: ${fileInfo.data.capabilities.canDownload ? 'Có' : 'Không'}`);
-          }
           
           if (fileInfo.data.name) {
             fileName = fileInfo.data.name;
@@ -195,12 +161,8 @@ async function downloadFileToTemp(url, fileName) {
           
           // Kiểm tra xem có thể tải xuống không
           if (fileInfo.data.capabilities && !fileInfo.data.capabilities.canDownload) {
-            console.warn('CẢNH BÁO: Bạn không có quyền tải xuống file này!');
-            
             // Thử tạo bản sao nếu có thể
             if (fileInfo.data.capabilities.canCopy) {
-              console.log('Thử tạo bản sao file...');
-              
               const copyResult = await drive.files.copy({
                 fileId: googleDriveFileId,
                 resource: {
@@ -209,7 +171,6 @@ async function downloadFileToTemp(url, fileName) {
                 fields: 'id,name,mimeType,size'
               });
               
-              console.log('Đã tạo bản sao thành công:', copyResult.data);
               googleDriveFileId = copyResult.data.id; // Cập nhật ID mới
               
               if (copyResult.data.name) {
@@ -224,7 +185,6 @@ async function downloadFileToTemp(url, fileName) {
           }
           
           // Tải xuống file
-          console.log(`Tải xuống file Google Drive: ${googleDriveFileId}`);
           const response = await drive.files.get({
             fileId: googleDriveFileId,
             alt: 'media'
@@ -233,51 +193,20 @@ async function downloadFileToTemp(url, fileName) {
           });
           
           fileBuffer = Buffer.from(response.data);
-          console.log(`Tải file Google Drive thành công (${fileBuffer.length} bytes)`);
           
         } catch (fileError) {
           console.error(`Lỗi truy cập file: ${fileError.message}`);
           
           if (fileError.message.includes('File not found') || 
               fileError.message.includes('not found')) {
-            throw new Error(`File ID "${googleDriveFileId}" không tồn tại hoặc bạn không có quyền truy cập. 
-            
-            Có thể do:
-            1. File ID không chính xác
-            2. File thuộc về tài khoản Google khác mà không được chia sẻ với bạn
-            3. File đã bị xóa
-            
-            Giải pháp:
-            - Kiểm tra lại link và ID file
-            - Nếu file thuộc về bạn, đảm bảo đang sử dụng đúng tài khoản Google
-            - Nếu file thuộc về người khác, yêu cầu họ chia sẻ file với quyền chỉnh sửa`);
-          }
-          
-          if (fileError.message.includes('Insufficient Permission')) {
-            throw new Error(`Bạn không có đủ quyền truy cập file "${googleDriveFileId}".
-            
-            Giải pháp:
-            - Nếu file thuộc về bạn: Đảm bảo đang sử dụng đúng tài khoản Google
-            - Nếu file thuộc về người khác: Yêu cầu họ chia sẻ file với quyền chỉnh sửa (không chỉ quyền xem)
-            - Thử truy cập file trực tiếp trong trình duyệt: https://drive.google.com/file/d/${googleDriveFileId}/view`);
+            throw new Error(`File ID "${googleDriveFileId}" không tồn tại hoặc bạn không có quyền truy cập.`);
           }
           
           throw fileError;
         }
       } catch (driveError) {
-        console.error('Lỗi Drive API:', driveError.message);
-        
-        if (driveError.message.includes('invalid_grant') || 
-            driveError.message.includes('token')) {
-          throw new Error(`Token Google Drive không hợp lệ hoặc đã hết hạn. Vui lòng thiết lập lại API trong trang cài đặt.`);
-        }
-        
-        throw driveError;
-      }
-      
-      // Nếu đã tới đây mà vẫn chưa có fileBuffer, báo lỗi
-      if (!fileBuffer || fileBuffer.length === 0) {
-        throw new Error(`Không thể tải file Google Drive ID: ${googleDriveFileId} qua API. Vui lòng đảm bảo file tồn tại và bạn có quyền truy cập.`);
+        console.error('Lỗi khi sử dụng Drive API:', driveError);
+        throw new Error(`Lỗi khi truy cập Google Drive: ${driveError.message}`);
       }
       
     } else {

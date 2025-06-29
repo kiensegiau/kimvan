@@ -125,10 +125,7 @@ export async function POST(request, { params }) {
     
     // Duyệt qua tất cả sheets và rows để tìm các link PDF
     if (course.originalData && course.originalData.sheets) {
-      // Log thông tin về các sheets
       course.originalData.sheets.forEach((sheet, sheetIndex) => {
-        console.log(`Sheet ${sheetIndex}: ${sheet?.properties?.title || 'Không có tiêu đề'}, có data: ${!!sheet.data}, có rowData: ${sheet.data?.[0]?.rowData?.length || 0} rows`);
-        
         const sheetTitle = sheet?.properties?.title || `Sheet ${sheetIndex + 1}`;
         
         if (sheet.data && sheet.data[0] && sheet.data[0].rowData) {
@@ -141,14 +138,8 @@ export async function POST(request, { params }) {
                 const url = cell.userEnteredFormat?.textFormat?.link?.uri || cell.hyperlink;
                 const displayName = cell.formattedValue || `Tài liệu ${rowIndex}`;
                 
-                // Log ra URL để debug
-                if (url) {
-                  console.log(`Tìm thấy URL ở Sheet ${sheetIndex}, Row ${rowIndex}, Cell ${cellIndex}: ${url.substring(0, 50)}...`);
-                }
-                
                 // Kiểm tra nếu là Google Drive PDF với điều kiện rộng hơn
                 if (url && isGoogleDrivePdf(url)) {
-                  console.log(`Tìm thấy link Google Drive PDF: ${url.substring(0, 50)}...`);
                   drivePdfLinks.push({
                     url,
                     sheetIndex,
@@ -178,8 +169,6 @@ export async function POST(request, { params }) {
         if (!fileIdMap.has(fileId)) {
           fileIdMap.set(fileId, link);
           uniqueLinks.push(link);
-        } else {
-          console.log(`Bỏ qua link trùng lặp: ${link.url} (trùng fileId: ${fileId})`);
         }
       } catch (error) {
         console.error(`Lỗi khi trích xuất fileId từ ${link.url}: ${error.message}`);
@@ -230,7 +219,6 @@ export async function POST(request, { params }) {
         );
 
         if (isCurrentlyProcessing) {
-          console.log(`Link đang được xử lý bởi request khác: ${link.url}`);
           results.push({
             originalUrl: link.url,
             displayName: link.displayName,
