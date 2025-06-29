@@ -978,7 +978,8 @@ export default function UsersPage() {
                     {filteredUsers.length > 0 ? (
                       filteredUsers.map((user) => (
                         <tr key={user.id} className={`hover:bg-gray-50 ${
-                          (user.createdBy === currentCtvEmail || user.phoneNumber === currentCtvEmail) ? 'bg-red-50' : ''
+                          (user.createdBy === currentCtvEmail || user.phoneNumber === currentCtvEmail) ? 'bg-red-50' : 
+                          user.createdBy ? 'bg-blue-50' : 'bg-purple-50'
                         }`}>
                           <td className="px-6 py-4 whitespace-nowrap hidden">
                             <div className="flex items-center">
@@ -1020,10 +1021,20 @@ export default function UsersPage() {
                               {/* Hiển thị thông tin người phụ trách */}
                               <div className="mt-1 flex items-center text-xs text-indigo-600">
                                 <UserIcon className="h-3 w-3 mr-1" />
-                                <span>Người phụ trách: {user.createdBy || user.phoneNumber}</span>
+                                <span>Người phụ trách: {user.createdBy || 'Admin'}</span>
                                 {(user.createdBy === currentCtvEmail || user.phoneNumber === currentCtvEmail) && (
                                   <span className="ml-1 px-1.5 py-0.5 bg-red-100 text-red-800 rounded-full text-xs font-medium">
                                     Của bạn
+                                  </span>
+                                )}
+                                {user.createdBy && user.createdBy !== currentCtvEmail && (
+                                  <span className="ml-1 px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                                    CTV
+                                  </span>
+                                )}
+                                {!user.createdBy && (
+                                  <span className="ml-1 px-1.5 py-0.5 bg-purple-100 text-purple-800 rounded-full text-xs font-medium">
+                                    Admin
                                   </span>
                                 )}
                               </div>
@@ -1193,7 +1204,7 @@ export default function UsersPage() {
                       <div key={user.id} className={`bg-white rounded-lg border border-gray-200 shadow-sm p-4 ${
                         (user.createdBy === currentCtvEmail || user.phoneNumber === currentCtvEmail) 
                           ? 'bg-red-50 border-red-200' 
-                          : ''
+                          : user.createdBy ? 'bg-blue-50 border-blue-200' : 'bg-purple-50 border-purple-200'
                       }`}>
                         <div className="mb-2">
                           <div className="text-sm font-medium text-gray-900">{user.email}</div>
@@ -1213,10 +1224,20 @@ export default function UsersPage() {
                             {/* Hiển thị thông tin người phụ trách trên mobile */}
                             <div className="mt-1 flex items-center text-xs text-indigo-600">
                               <UserIcon className="h-3 w-3 mr-1" />
-                              <span>Người phụ trách: {user.createdBy || user.phoneNumber}</span>
+                              <span>Người phụ trách: {user.createdBy || 'Admin'}</span>
                               {(user.createdBy === currentCtvEmail || user.phoneNumber === currentCtvEmail) && (
                                 <span className="ml-1 px-1.5 py-0.5 bg-red-100 text-red-800 rounded-full text-xs font-medium">
                                   Của bạn
+                                </span>
+                              )}
+                              {user.createdBy && user.createdBy !== currentCtvEmail && (
+                                <span className="ml-1 px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                                  CTV
+                                </span>
+                              )}
+                              {!user.createdBy && (
+                                <span className="ml-1 px-1.5 py-0.5 bg-purple-100 text-purple-800 rounded-full text-xs font-medium">
+                                  Admin
                                 </span>
                               )}
                             </div>
