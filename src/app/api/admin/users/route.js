@@ -2,6 +2,38 @@ import { NextResponse } from 'next/server';
 import { adminAuthMiddleware } from '../middleware';
 import clientPromise from '@/lib/mongodb';
 
+// Hàm gọi API thêm người dùng vào Google Group
+async function addUserToGoogleGroup(email) {
+  try {
+    const groupEmail = 'kha-hc-60@googlegroups.com'; // Email của Google Group
+    
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/google-group`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email,
+        groupEmail,
+        role: 'MEMBER'
+      }),
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      console.error('Lỗi khi thêm người dùng vào Google Group:', data.error);
+      return false;
+    }
+    
+    console.log(`Đã thêm người dùng ${email} vào Google Group ${groupEmail} thành công`);
+    return true;
+  } catch (error) {
+    console.error('Lỗi khi gọi API Google Group:', error);
+    return false;
+  }
+}
+
 export async function GET(request) {
   // Kiểm tra xác thực admin
   const authResult = await adminAuthMiddleware(request);
@@ -86,6 +118,11 @@ export async function POST(request) {
     };
     
     const result = await db.collection('users').insertOne(newUser);
+    
+    // Thêm người dùng vào Google Group nếu được yêu cầu
+    if (body.addToGoogleGroup) {
+      await addUserToGoogleGroup(body.email);
+    }
     
     return NextResponse.json({
       success: true,

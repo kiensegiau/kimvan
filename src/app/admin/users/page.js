@@ -28,8 +28,10 @@ export default function UsersPage() {
   const [selectedCourseId, setSelectedCourseId] = useState('');
   const [addingCourse, setAddingCourse] = useState(false);
   const [courseError, setCourseError] = useState(null);
-  const [trialHours, setTrialHours] = useState(1); // Số giờ dùng thử mặc định (1 giờ)
+  const [trialHours, setTrialHours] = useState(24);
   const [checkingExpired, setCheckingExpired] = useState(false);
+  const [addToGoogleGroup, setAddToGoogleGroup] = useState(false);
+  const [googleGroupEmail, setGoogleGroupEmail] = useState('');
 
   // Hàm lấy danh sách người dùng
   const fetchUsers = async () => {
@@ -113,7 +115,9 @@ export default function UsersPage() {
       accountType: 'regular', // Loại tài khoản mặc định
       trialEndsAt: null, // Ngày hết hạn dùng thử
     });
-    setTrialHours(1); // Đặt lại thời gian dùng thử mặc định
+    setTrialHours(24); // Đặt lại thời gian dùng thử mặc định
+    setAddToGoogleGroup(false); // Đặt lại trạng thái thêm vào Google Group
+    setGoogleGroupEmail(''); // Đặt lại email Google Group
     setShowModal(true);
     setApiError(null);
   };
@@ -195,6 +199,12 @@ export default function UsersPage() {
           const trialEndDate = new Date();
           trialEndDate.setHours(trialEndDate.getHours() + trialHours);
           requestBody.trialEndsAt = trialEndDate;
+        }
+
+        // Thêm thông tin Google Group nếu được chọn
+        if (addToGoogleGroup && googleGroupEmail) {
+          requestBody.addToGoogleGroup = true;
+          requestBody.googleGroupEmail = googleGroupEmail;
         }
         
         response = await fetch('/api/users', {
@@ -637,6 +647,43 @@ export default function UsersPage() {
         const diffMinutes = Math.ceil(diffTime / (1000 * 60));
         return `Còn ${diffMinutes} phút`;
       }
+    }
+  };
+
+  const saveUser = async () => {
+    try {
+      setSaving(true);
+      setApiError(null);
+      
+      // Validate form
+      if (!currentUser.name || !currentUser.email) {
+        setApiError('Vui lòng nhập đầy đủ thông tin');
+        return;
+      }
+      
+      if (!currentUser.id && !currentUser.password) {
+        setApiError('Vui lòng nhập mật khẩu');
+        return;
+      }
+      
+      // Prepare data
+      const userData = {
+        name: currentUser.name,
+        email: currentUser.email,
+        role: currentUser.role,
+        accountType: currentUser.accountType,
+        trialHours: currentUser.accountType === 'trial' ? trialHours : undefined,
+        addToGoogleGroup: !currentUser.id ? addToGoogleGroup : undefined,
+      };
+      
+      // Add password only for new users
+      if (!currentUser.id) {
+        userData.password = currentUser.password;
+      }
+      
+      // ... existing code ...
+    } catch (error) {
+      // ... existing code ...
     }
   };
 
@@ -1438,6 +1485,82 @@ export default function UsersPage() {
                       </select>
                     </div>
                   </>
+                )}
+
+                              {currentUser.accountType === 'trial' && (
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Thời gian dùng thử (giờ)
+                  </label>
+                  <div className="mt-1">
+                    <input
+                      type="number"
+                      value={trialHours}
+                      onChange={(e) => setTrialHours(parseInt(e.target.value) || 1)}
+                      min="1"
+                      className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                    />
+                  </div>
+                </div>
+              )}
+              
+              {/* Thêm vào Google Group */}
+              {!currentUser.id && (
+                <div className="mt-4">
+                  <div className="flex items-center">
+                    <input
+                      id="addToGoogleGroup"
+                      name="addToGoogleGroup"
+                      type="checkbox"
+                      checked={addToGoogleGroup}
+                      onChange={(e) => setAddToGoogleGroup(e.target.checked)}
+                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor="addToGoogleGroup" className="ml-2 block text-sm text-gray-900">
+                      Tự động thêm vào Google Group (kha-hc-60@googlegroups.com)
+                    </label>
+                  </div>
+                </div>
+              )}
+
+                {!currentUser.id && (
+                  <div className="mt-4">
+                    <div className="flex items-start">
+                      <div className="flex items-center h-5">
+                        <input
+                          id="addToGoogleGroup"
+                          name="addToGoogleGroup"
+                          type="checkbox"
+                          checked={addToGoogleGroup}
+                          onChange={(e) => setAddToGoogleGroup(e.target.checked)}
+                          className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"
+                        />
+                      </div>
+                      <div className="ml-3 text-sm">
+                        <label htmlFor="addToGoogleGroup" className="font-medium text-gray-700">
+                          Thêm vào Google Group
+                        </label>
+                        <p className="text-gray-500">Tự động thêm người dùng vào Google Group sau khi tạo</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {addToGoogleGroup && !currentUser.id && (
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Email Google Group
+                    </label>
+                    <div className="mt-1">
+                      <input
+                        type="email"
+                        value={googleGroupEmail}
+                        onChange={(e) => setGoogleGroupEmail(e.target.value)}
+                        placeholder="example@googlegroups.com"
+                        className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                      />
+                    </div>
+                  </div>
                 )}
               </div>
               

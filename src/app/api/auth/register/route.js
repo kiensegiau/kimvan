@@ -10,6 +10,38 @@ const CSRF_COOKIE_NAME = 'csrf-token';
 const CSRF_FORM_FIELD = '_csrf';
 const CSRF_HEADER_NAME = 'X-CSRF-Token';
 
+// Hàm gọi API thêm người dùng vào Google Group
+async function addUserToGoogleGroup(email) {
+  try {
+    const groupEmail = 'kha-hc-60@googlegroups.com'; // Email của Google Group
+    
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/google-group`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email,
+        groupEmail,
+        role: 'MEMBER'
+      }),
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      console.error('Lỗi khi thêm người dùng vào Google Group:', data.error);
+      return false;
+    }
+    
+    console.log(`Đã thêm người dùng ${email} vào Google Group ${groupEmail} thành công`);
+    return true;
+  } catch (error) {
+    console.error('Lỗi khi gọi API Google Group:', error);
+    return false;
+  }
+}
+
 /**
  * Kiểm tra CSRF token
  */
@@ -44,7 +76,7 @@ function timingSafeEqual(a, b) {
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { email, password, [CSRF_FORM_FIELD]: csrfToken } = body;
+    const { email, password, [CSRF_FORM_FIELD]: csrfToken, addToGoogleGroup = false } = body;
     
     // Lấy IP của client để áp dụng rate limiting
     const ip = request.headers.get('x-forwarded-for') || 'unknown-ip';
@@ -111,6 +143,11 @@ export async function POST(request) {
           sameSite: cookieConfig.sameSite,
         });
         
+        // Tự động thêm người dùng vào Google Group nếu được yêu cầu
+        if (addToGoogleGroup || process.env.AUTO_ADD_TO_GOOGLE_GROUP === 'true') {
+          await addUserToGoogleGroup(email);
+        }
+        
         // Trả về thông tin người dùng (không bao gồm thông tin nhạy cảm)
         return NextResponse.json({
           success: true,
@@ -137,6 +174,11 @@ export async function POST(request) {
           secure: cookieConfig.secure,
           sameSite: cookieConfig.sameSite,
         });
+        
+        // Tự động thêm người dùng vào Google Group nếu được yêu cầu
+        if (addToGoogleGroup || process.env.AUTO_ADD_TO_GOOGLE_GROUP === 'true') {
+          await addUserToGoogleGroup(email);
+        }
         
         // Trả về thông tin người dùng (không bao gồm thông tin nhạy cảm)
         return NextResponse.json({

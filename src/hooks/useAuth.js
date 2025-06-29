@@ -122,6 +122,35 @@ export function useAuth(options = {}) {
     return null;
   };
 
+  // Đăng ký người dùng mới
+  const register = async (email, password, csrfToken, addToGoogleGroup = false) => {
+    try {
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+          _csrf: csrfToken,
+          addToGoogleGroup
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Đăng ký không thành công');
+      }
+
+      return { success: true, user: data.user };
+    } catch (error) {
+      console.error('Lỗi đăng ký:', error);
+      return { success: false, error: error.message };
+    }
+  };
+
   // Các phương thức tiện ích
   return {
     user,
@@ -130,6 +159,7 @@ export function useAuth(options = {}) {
     isAuthenticated: !!user,
     isAdmin: user?.role === 'admin',
     hasRole: (role) => user?.role === role || user?.role === 'admin',
-    getIdToken
+    getIdToken,
+    register
   };
 } 

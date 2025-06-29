@@ -14,7 +14,8 @@ import {
   HomeIcon,
   TableCellsIcon,
   UsersIcon,
-  KeyIcon
+  KeyIcon,
+  UserPlusIcon
 } from '@heroicons/react/24/outline';
 
 export default function AdminLayout({ children }) {
@@ -87,6 +88,7 @@ export default function AdminLayout({ children }) {
     { name: 'Khóa học', href: '/admin/courses', icon: BookOpenIcon },
     { name: 'Sheets', href: '/admin/sheets', icon: TableCellsIcon },
     { name: 'Người dùng', href: '/admin/users', icon: UsersIcon },
+    { name: 'Google Group', href: '/admin/users/google-group', icon: UserPlusIcon },
     { name: 'API Keys', href: '/admin/watermark-api-keys', icon: KeyIcon },
     { name: 'Cài đặt', href: '/admin/settings', icon: Cog6ToothIcon },
   ];
