@@ -137,8 +137,6 @@ export async function middleware(request) {
   
   // Kiểm tra token có tồn tại và không phải là chuỗi rỗng
   if (!token || token.trim() === '') {
-    console.log('🔒 Token không tồn tại hoặc rỗng, chuyển hướng đến trang đăng nhập');
-    
     const redirectUrl = new URL(routes.login, request.url);
     // Thêm returnUrl và đảm bảo không bị mã hóa hai lần
     const rawPathname = pathname; // Lưu lại đường dẫn gốc
@@ -167,8 +165,6 @@ export async function middleware(request) {
 
     // Nếu token không hợp lệ hoặc đã hết hạn, thử làm mới token
     if (!verifyResponse.ok) {
-      console.log('⚠️ Middleware - API xác thực không thành công, thử làm mới token');
-      
       // Thử làm mới token
       const refreshResponse = await fetch(`${baseUrl}${TOKEN_REFRESH_API}`, {
         method: 'POST',
@@ -183,8 +179,6 @@ export async function middleware(request) {
       
       // Nếu không thể làm mới token, chuyển hướng đến trang đăng nhập
       if (!refreshResponse.ok) {
-        console.log('❌ Middleware - Không thể làm mới token, chuyển hướng đến trang đăng nhập');
-        
         const redirectUrl = new URL(routes.login, request.url);
         redirectUrl.searchParams.set('returnUrl', pathname);
         const redirectResponse = NextResponse.redirect(redirectUrl);
@@ -204,8 +198,6 @@ export async function middleware(request) {
       const refreshData = await refreshResponse.json();
       
       if (!refreshData.success || !refreshData.token) {
-        console.log('❌ Middleware - Làm mới token không thành công, chuyển hướng đến trang đăng nhập');
-        
         const redirectUrl = new URL(routes.login, request.url);
         redirectUrl.searchParams.set('returnUrl', pathname);
         const redirectResponse = NextResponse.redirect(redirectUrl);
@@ -246,8 +238,6 @@ export async function middleware(request) {
       });
       
       if (!reVerifyResponse.ok) {
-        console.log('❌ Middleware - Xác thực với token mới không thành công, chuyển hướng đến trang đăng nhập');
-        
         const redirectUrl = new URL(routes.login, request.url);
         redirectUrl.searchParams.set('returnUrl', pathname);
         const redirectResponse = NextResponse.redirect(redirectUrl);
@@ -258,8 +248,6 @@ export async function middleware(request) {
       
       // Nếu token mới không hợp lệ, chuyển hướng đến trang đăng nhập
       if (!verifyData.valid) {
-        console.log('❌ Middleware - Token mới không hợp lệ, chuyển hướng đến trang đăng nhập');
-        
         const redirectUrl = new URL(routes.login, request.url);
         redirectUrl.searchParams.set('returnUrl', pathname);
         const redirectResponse = NextResponse.redirect(redirectUrl);
@@ -286,10 +274,10 @@ export async function middleware(request) {
             userRole = roleData.role;
           }
         } else {
-          console.error('❌ Middleware - Lỗi khi gọi API role:', await roleResponse.text());
+          console.error('Lỗi khi gọi API role:', await roleResponse.text());
         }
       } catch (roleError) {
-        console.error('❌ Middleware - Lỗi khi lấy role từ API:', roleError);
+        console.error('Lỗi khi lấy role từ API:', roleError);
         // Không làm gián đoạn luồng nếu lỗi API, tiếp tục sử dụng role từ token
       }
   
@@ -301,8 +289,6 @@ export async function middleware(request) {
       
       // Nếu token sắp hết hạn (còn dưới 30 phút), làm mới token
       if (timeLeft < 30 * 60 * 1000) {
-        console.log('🔄 Token sắp hết hạn, tiến hành làm mới token');
-        
         try {
           // Gọi API làm mới token
           const refreshResponse = await fetch(`${baseUrl}${TOKEN_REFRESH_API}`, {
@@ -334,10 +320,10 @@ export async function middleware(request) {
               });
             }
           } else {
-            console.error('❌ Không thể làm mới token:', refreshData.error);
+            console.error('Không thể làm mới token:', refreshData.error);
           }
         } catch (refreshError) {
-          console.error('❌ Lỗi khi làm mới token:', refreshError);
+          console.error('Lỗi khi làm mới token:', refreshError);
         }
       }
       
@@ -351,8 +337,6 @@ export async function middleware(request) {
       
       // Nếu token không hợp lệ, chuyển hướng đến trang đăng nhập
       if (!verifyData.valid) {
-        console.log('🔒 Token không hợp lệ, chuyển hướng đến trang đăng nhập');
-        
         const redirectUrl = new URL(routes.login, request.url);
         redirectUrl.searchParams.set('returnUrl', pathname);
         const redirectResponse = NextResponse.redirect(redirectUrl);
@@ -387,10 +371,10 @@ export async function middleware(request) {
             userRole = roleData.role;
           }
         } else {
-          console.error('❌ Middleware - Lỗi khi gọi API role:', await roleResponse.text());
+          console.error('Lỗi khi gọi API role:', await roleResponse.text());
         }
       } catch (roleError) {
-        console.error('❌ Middleware - Lỗi khi lấy role từ API:', roleError);
+        console.error('Lỗi khi lấy role từ API:', roleError);
         // Không làm gián đoạn luồng nếu lỗi API, tiếp tục sử dụng role từ token
       }
   
@@ -402,8 +386,6 @@ export async function middleware(request) {
       
       // Nếu token sắp hết hạn (còn dưới 30 phút), làm mới token
       if (timeLeft < 30 * 60 * 1000) {
-        console.log('🔄 Token sắp hết hạn, tiến hành làm mới token');
-        
         try {
           // Gọi API làm mới token
           const refreshResponse = await fetch(`${baseUrl}${TOKEN_REFRESH_API}`, {
@@ -435,10 +417,10 @@ export async function middleware(request) {
               });
             }
           } else {
-            console.error('❌ Không thể làm mới token:', refreshData.error);
+            console.error('Không thể làm mới token:', refreshData.error);
           }
         } catch (refreshError) {
-          console.error('❌ Lỗi khi làm mới token:', refreshError);
+          console.error('Lỗi khi làm mới token:', refreshError);
         }
       }
       
@@ -460,7 +442,6 @@ export async function middleware(request) {
       
       // Kiểm tra user có quyền admin không
       if (userRole !== 'admin') {
-        console.log('⚠️ Middleware - Không phải là admin, chuyển hướng đến trang chủ');
         const redirectResponse = NextResponse.redirect(new URL('/', request.url));
         return addSecurityHeaders(redirectResponse);
       }
@@ -486,7 +467,6 @@ export async function middleware(request) {
       
       // Kiểm tra user có quyền ctv (công tác viên) hay không
       if (userRole !== 'ctv') {
-        console.log('⚠️ Middleware - Không phải là CTV, chuyển hướng đến trang chủ');
         const redirectResponse = NextResponse.redirect(new URL('/', request.url));
         return addSecurityHeaders(redirectResponse);
       }
@@ -545,7 +525,6 @@ export async function middleware(request) {
           
           return addSecurityHeaders(response);
         } else {
-          console.log(`⚠️ Middleware - Không phải admin hoặc ctv, từ chối truy cập API ${pathname}`);
           return NextResponse.json(
             { error: 'Không có quyền truy cập API này' },
             { status: 403 }
@@ -556,7 +535,6 @@ export async function middleware(request) {
       // Các API admin khác (không phải /api/admin/enrollments hoặc /api/admin/courses)
       // chỉ cho phép admin truy cập
       if (userRole !== 'admin') {
-        console.log('⚠️ Middleware - Không phải là admin, từ chối truy cập API');
         return NextResponse.json(
           { error: 'Không có quyền truy cập API admin' },
           { status: 403 }
@@ -584,7 +562,6 @@ export async function middleware(request) {
       
       // Kiểm tra user có quyền CTV không
       if (userRole !== 'ctv') {
-        console.log('⚠️ Middleware - Không phải là CTV, từ chối truy cập API');
         return NextResponse.json(
           { error: 'Không có quyền truy cập API công tác viên' },
           { status: 403 }
@@ -606,7 +583,7 @@ export async function middleware(request) {
     // Cho phép truy cập các đường dẫn khác nếu đã xác thực thành công
     return addSecurityHeaders(response);
   } catch (error) {
-    console.error('❌ Middleware - Lỗi khi xác thực token:', error);
+    console.error('Lỗi khi xác thực token:', error);
     
     const redirectUrl = new URL(routes.login, request.url);
     redirectUrl.searchParams.set('returnUrl', pathname);

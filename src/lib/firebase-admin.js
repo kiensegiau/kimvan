@@ -6,15 +6,6 @@ let firebaseAdmin;
 
 if (!admin.apps.length) {
   try {
-    // Log thông tin cấu hình để debug
-    console.log('Firebase Admin Config:', {
-      projectId: firebaseAdminConfig.projectId,
-      clientEmail: firebaseAdminConfig.clientEmail,
-      hasPrivateKey: !!firebaseAdminConfig.privateKey,
-      privateKeyLength: firebaseAdminConfig.privateKey?.length,
-      databaseURL: firebaseAdminConfig.databaseURL,
-    });
-    
     // Nếu có cấu hình đầy đủ, khởi tạo Firebase Admin
     if (firebaseAdminConfig.projectId && firebaseAdminConfig.clientEmail && firebaseAdminConfig.privateKey) {
       firebaseAdmin = admin.initializeApp({
@@ -173,14 +164,12 @@ if (!admin.apps.length) {
         
         // Thêm chức năng createCustomToken
         createCustomToken: async (uid, claims = {}) => {
-          console.log(`Tạo custom token giả lập cho uid: ${uid}`);
           // Trả về một token giả lập cho môi trường phát triển
           return `dev-custom-token-${uid}-${Date.now()}`;
         },
         
         // Thêm chức năng generatePasswordResetLink
         generatePasswordResetLink: async (email) => {
-          console.log(`Tạo link đặt lại mật khẩu giả lập cho email: ${email}`);
           // Trả về một link giả lập cho môi trường phát triển
           return `https://example.com/reset-password?email=${encodeURIComponent(email)}&token=dev-reset-token-${Date.now()}`;
         }

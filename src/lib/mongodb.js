@@ -12,9 +12,6 @@ if (!global._mongoConnection) {
   };
 }
 
-// Cờ để đảm bảo chỉ log một lần
-let connectionLoggedOnce = false;
-
 // Kiểm tra nếu đang trong worker thread - không kết nối đến MongoDB trong worker thread
 const isWorkerThread = process.env.WORKER_THREAD === 'true';
 if (isWorkerThread) {
@@ -46,7 +43,6 @@ if (!process.env.MONGODB_URI) {
 export const getMongoClient = async () => {
   // Không kết nối nếu đang trong worker thread
   if (isWorkerThread) {
-    console.log('⚠️ Bỏ qua kết nối MongoDB trong worker thread');
     return null;
   }
 
@@ -55,18 +51,11 @@ export const getMongoClient = async () => {
   // Trả về ngay nếu client đã được tạo và hoạt động
   if (global._mongoConnection.client) {
     global._mongoConnection.connectionsCounter++;
-    // Chỉ log khi đang ở development và số lần gọi chia hết cho 10
-    if (process.env.NODE_ENV === 'development' && global._mongoConnection.connectionsCounter % 10 === 0) {
-      console.log(`✅ Sử dụng kết nối MongoDB đã cache (lần ${global._mongoConnection.connectionsCounter})`);
-    }
     return global._mongoConnection.client;
   }
 
   // Nếu đang trong quá trình kết nối, đợi đến khi hoàn thành
   if (global._mongoConnection.isConnecting) {
-    // Log khi bắt đầu đợi
-    console.log('⏳ Đang đợi kết nối MongoDB hiện tại hoàn thành...');
-    
     // Đặt timeout để không đợi vô hạn
     const waitTimeout = setTimeout(() => {
       global._mongoConnection.isConnecting = false; // Reset trạng thái nếu đợi quá lâu
@@ -87,7 +76,6 @@ export const getMongoClient = async () => {
   // Kiểm tra thời gian tái kết nối
   const now = Date.now();
   if (now - global._mongoConnection.lastReconnectAttempt < RECONNECT_COOLDOWN) {
-    console.log('⏳ Đợi thêm trước khi thử kết nối lại MongoDB...');
     await new Promise(resolve => setTimeout(resolve, RECONNECT_COOLDOWN));
   }
   global._mongoConnection.lastReconnectAttempt = now;
@@ -101,7 +89,6 @@ export const getMongoClient = async () => {
       throw new Error('MONGODB_URI không được cấu hình trong biến môi trường');
     }
     
-    // Log một lần duy nhất cho mỗi lần khởi động ứng dụng
     console.log('🔄 Đang khởi tạo kết nối MongoDB mới...');
 
     // Tạo client với các thông số tối ưu
@@ -172,24 +159,17 @@ function setupGracefulShutdown(client) {
 export const connectDB = async () => {
   // Không kết nối nếu đang trong worker thread
   if (isWorkerThread) {
-    console.log('⚠️ Bỏ qua kết nối Mongoose trong worker thread');
     return null;
   }
 
   // Kiểm tra nếu Mongoose đã kết nối
   if (mongoose.connection.readyState === 1) {
     global._mongoConnection.connectionsCounter++;
-    // Chỉ log khi đang ở development và số lần gọi chia hết cho 10
-    if (process.env.NODE_ENV === 'development' && global._mongoConnection.connectionsCounter % 10 === 0) {
-      console.log(`✅ Sử dụng kết nối Mongoose đã cache (lần ${global._mongoConnection.connectionsCounter})`);
-    }
     return mongoose.connection;
   }
 
   // Nếu đang kết nối, đợi đến khi hoàn thành
   if (global._mongoConnection.isConnecting) {
-    console.log('⏳ Đang đợi kết nối Mongoose hiện tại hoàn thành...');
-    
     // Đặt timeout để không đợi vô hạn
     const waitTimeout = setTimeout(() => {
       global._mongoConnection.isConnecting = false; // Reset trạng thái nếu đợi quá lâu
@@ -250,75 +230,64 @@ export const connectDB = async () => {
  * Thiết lập các sự kiện cho kết nối Mongoose
  */
 function setupMongooseEventHandlers() {
-  // Chỉ thiết lập một lần
-  if (mongoose.connection._hasSetupEvents) return;
-  mongoose.connection._hasSetupEvents = true;
-  
-  // Bắt sự kiện kết nối thành công
+  // Đã kết nối
   mongoose.connection.on('connected', () => {
-    console.log('✅ Mongoose đã kết nối với MongoDB');
+    console.log('Mongoose đã kết nối thành công');
   });
-  
-  // Bắt sự kiện ngắt kết nối và tự động thử kết nối lại
+
+  // Đã ngắt kết nối
   mongoose.connection.on('disconnected', () => {
-    console.log('❌ Mongoose đã ngắt kết nối từ MongoDB');
-    
-    // Reset để lần sau sẽ tạo kết nối mới
-    global._mongoConnection.mongoosePromise = null;
-    connectionLoggedOnce = false;
-    
-    // Thử kết nối lại sau một khoảng thời gian
-    setTimeout(async () => {
-      try {
-        if (mongoose.connection.readyState !== 1) {
-          console.log('🔄 Đang thử kết nối lại Mongoose...');
-          await connectDB();
-        }
-      } catch (reconnectError) {
-        console.error('❌ Không thể tái kết nối Mongoose:', reconnectError.message);
-      }
-    }, RECONNECT_COOLDOWN);
+    console.log('Mongoose đã ngắt kết nối');
   });
-  
-  // Bắt sự kiện lỗi để tránh crash ứng dụng
+
+  // Lỗi kết nối
   mongoose.connection.on('error', (err) => {
-    console.error('❌ Lỗi kết nối Mongoose:', err.message);
+    console.error('Lỗi kết nối Mongoose:', err);
   });
 }
 
-// Hàm để lấy số lượng kết nối hiện tại (debug)
+/**
+ * Lấy thống kê kết nối MongoDB
+ */
 export const getConnectionStats = async () => {
   try {
-    // Thông tin cơ bản
+    // Kiểm tra nếu không có kết nối
+    if (!global._mongoConnection.client) {
+      return {
+        isConnected: false,
+        stats: null,
+        mongooseState: mongoose.connection.readyState
+      };
+    }
+
+    // Lấy thông tin từ admin database
+    const admin = global._mongoConnection.client.db().admin();
+    const serverStatus = await admin.serverStatus();
+
+    // Trả về thông tin kết nối
     return {
-      // Trạng thái kết nối mongoose (0: đang ngắt kết nối, 1: đã kết nối, 2: đang kết nối, 3: đang ngắt kết nối)
-      mongooseState: mongoose.connection.readyState,
-      mongooseStateText: ['disconnected', 'connected', 'connecting', 'disconnecting'][mongoose.connection.readyState],
-      
-      // Thông tin từ bộ đếm nội bộ
-      cachedConnectionCounter: global._mongoConnection.connectionsCounter,
-      
-      // Có kết nối MongoDB Client không
-      hasMongoClient: global._mongoConnection.client !== null,
-      
-      // Có Promise kết nối Mongoose không
-      hasMongoosePromise: global._mongoConnection.mongoosePromise !== null,
-      
-      // Đang trong quá trình kết nối không
-      isConnecting: global._mongoConnection.isConnecting,
-      
-      // Thời gian kiểm tra
-      checkedAt: new Date().toISOString(),
-      
-      // Thời gian kể từ lần tái kết nối cuối
-      timeSinceLastReconnect: Date.now() - global._mongoConnection.lastReconnectAttempt
+      isConnected: true,
+      stats: {
+        connections: serverStatus.connections,
+        uptime: serverStatus.uptime,
+        version: serverStatus.version,
+        process: serverStatus.process
+      },
+      mongooseState: mongoose.connection.readyState
     };
   } catch (error) {
-    return { error: error.message };
+    console.error('Lỗi khi lấy thống kê kết nối:', error);
+    return {
+      isConnected: false,
+      error: error.message,
+      mongooseState: mongoose.connection.readyState
+    };
   }
 };
 
-// Phương thức tương thích ngược
+/**
+ * Hàm kết nối đến cơ sở dữ liệu, ưu tiên sử dụng Mongoose
+ */
 export const connectToDatabase = async () => {
   return await getMongoClient();
 };
