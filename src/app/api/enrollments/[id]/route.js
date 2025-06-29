@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { connectDB } from '@/lib/mongodb';
+import { dbMiddleware } from '@/utils/db-middleware';
 import Enrollment from '@/models/Enrollment';
 import { authMiddleware } from '@/lib/auth';
 import mongoose from 'mongoose';
@@ -27,7 +27,7 @@ export async function GET(request, { params }) {
     }
     
     // Kết nối đến MongoDB
-    await connectDB();
+    await dbMiddleware(request);
     
     // Tìm đăng ký và populate thông tin khóa học
     const enrollment = await Enrollment.findById(id)
@@ -105,7 +105,7 @@ export async function PATCH(request, { params }) {
     const { progress, completedLessons, totalTimeSpent, notes } = body;
     
     // Kết nối đến MongoDB
-    await connectDB();
+    await dbMiddleware(request);
     
     // Tìm đăng ký
     const enrollment = await Enrollment.findById(id).exec();

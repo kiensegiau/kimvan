@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
-import { connectDB } from '@/lib/mongodb';
+import { dbMiddleware } from '@/utils/db-middleware';
 import Sheet from '@/models/Sheet';
 import { ObjectId } from 'mongodb';
 
 // GET /api/sheets - Lấy danh sách tất cả sheets
 export async function GET(request) {
   try {
-    await connectDB();
+    await dbMiddleware(request);
     
     // Lấy danh sách sheets từ database sử dụng model
     const sheets = await Sheet.find().sort({ createdAt: -1 });
@@ -25,7 +25,7 @@ export async function GET(request) {
 // POST /api/sheets - Tạo sheet mới
 export async function POST(request) {
   try {
-    await connectDB();
+    await dbMiddleware(request);
     const data = await request.json();
     
     // Kiểm tra dữ liệu đầu vào

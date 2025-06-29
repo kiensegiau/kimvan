@@ -5,7 +5,7 @@ import mongoose from 'mongoose';
 import Course from '@/models/Course';
 import Enrollment from '@/models/Enrollment';
 import { authMiddleware } from '@/lib/auth';
-import { connectDB } from '@/lib/mongodb';
+import { dbMiddleware } from '@/utils/db-middleware';
 
 // Khóa mã hóa - phải giống với khóa ở phía client
 const ENCRYPTION_KEY = 'kimvan-secure-key-2024';
@@ -28,7 +28,7 @@ const encryptData = (data) => {
 // GET: Lấy tất cả khóa học
 export async function GET(request) {
   try {
-    await connectDB();
+    await dbMiddleware(request);
     
     // Lấy danh sách courses từ database
     const courses = await Course.find().sort({ createdAt: -1 });
@@ -46,7 +46,7 @@ export async function GET(request) {
 // POST: Tạo khóa học mới
 export async function POST(request) {
   try {
-    await connectDB();
+    await dbMiddleware(request);
     const data = await request.json();
     
     // Kiểm tra dữ liệu đầu vào

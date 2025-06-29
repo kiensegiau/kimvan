@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { connectDB } from '@/lib/mongodb';
+import { dbMiddleware } from '@/utils/db-middleware';
 import Sheet from '@/models/Sheet';
 import { ObjectId } from 'mongodb';
 import { google } from 'googleapis';
@@ -7,7 +7,7 @@ import fs from 'fs';
 
 export async function PUT(request, { params }) {
   try {
-    await connectDB();
+    await dbMiddleware(request);
     const { id } = params;
     const { rowIndex, columnIndex, value, url } = await request.json();
 

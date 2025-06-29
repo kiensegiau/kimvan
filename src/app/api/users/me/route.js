@@ -5,7 +5,7 @@ import { verifyServerAuthToken } from '@/utils/server-auth';
 import { cookieConfig } from '@/config/env-config';
 import { ObjectId } from 'mongodb';
 import { authMiddleware } from '@/lib/auth';
-import { connectDB } from '@/lib/mongodb';
+import { dbMiddleware } from '@/utils/db-middleware';
 import mongoose from 'mongoose';
 
 export async function GET(request) {
@@ -43,7 +43,7 @@ export async function GET(request) {
     });
     
     // Kết nối đến MongoDB để lấy thêm thông tin
-    await connectDB();
+    await dbMiddleware(request);
     
     // Tìm thông tin người dùng trong MongoDB
     const db = mongoose.connection.db;
@@ -115,7 +115,7 @@ export async function PATCH(request) {
     const { displayName, phoneNumber, additionalInfo } = requestData;
     
     // Kết nối đến MongoDB
-    await connectDB();
+    await dbMiddleware(request);
     const db = mongoose.connection.db;
     const userCollection = db.collection('users');
     

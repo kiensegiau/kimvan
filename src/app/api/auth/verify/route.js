@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { verifyServerAuthToken } from '@/utils/server-auth';
-import { connectDB } from '@/lib/mongodb';
+import { dbMiddleware } from '@/utils/db-middleware';
 import mongoose from 'mongoose';
 import { cookieConfig } from '@/config/env-config';
 
@@ -22,7 +22,7 @@ function getRoleDisplayName(role) {
 // Hàm lấy thông tin chi tiết người dùng từ MongoDB
 async function getUserDetails(uid) {
   try {
-    await connectDB();
+    await dbMiddleware(request);
     const db = mongoose.connection.db;
     const userCollection = db.collection('users');
     return await userCollection.findOne({ firebaseId: uid });

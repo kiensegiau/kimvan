@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { connectDB } from '@/lib/mongodb';
+import { dbMiddleware } from '@/utils/db-middleware';
 import Course from '@/models/Course';
 import Sheet from '@/models/Sheet';
 import { ObjectId } from 'mongodb';
@@ -9,7 +9,7 @@ import mongoose from 'mongoose';
 export async function POST(request, { params }) {
   try {
     const { id } = params;
-    await connectDB();
+    await dbMiddleware(request);
     const data = await request.json();
     
     // Kiểm tra dữ liệu đầu vào
@@ -81,7 +81,7 @@ export async function GET(request, { params }) {
     // Đảm bảo params được awaited
     const resolvedParams = await Promise.resolve(params);
     const { id } = resolvedParams;
-    await connectDB();
+    await dbMiddleware(request);
     
     // Tạo query dựa trên loại ID
     let query = {};

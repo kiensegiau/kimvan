@@ -1,5 +1,5 @@
 import { google } from 'googleapis';
-import { connectDB } from '@/lib/mongodb';
+import { dbMiddleware } from '@/utils/db-middleware';
 import Course from '@/models/Course';
 import Sheet from '@/models/Sheet';
 
@@ -20,7 +20,7 @@ export async function updateSheetCell(courseId, sheetIndex, rowIndex, cellIndex,
   console.log(`URL mới: ${newUrl}`);
   
   try {
-    await connectDB();
+    await dbMiddleware(request);
     
     // Tìm khóa học trong database
     const course = await Course.findById(courseId);
@@ -137,7 +137,7 @@ export async function updateGoogleSheetCell(sheetId, sheetName, rowIndex, colInd
   
   try {
     // Tìm sheet trong database để lấy thông tin xác thực
-    await connectDB();
+    await dbMiddleware(request);
     const sheet = await Sheet.findOne({ sheetId });
     
     if (!sheet) {

@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
-import { connectDB } from '@/lib/mongodb';
+import { dbMiddleware } from '@/utils/db-middleware';
 import MiniCourse from '@/models/MiniCourse';
 
 export async function GET(request) {
   try {
     // Kết nối đến MongoDB
-    await connectDB();
+    await dbMiddleware(request);
     
     // Lấy tham số tìm kiếm từ URL nếu có
     const { searchParams } = new URL(request.url);
@@ -61,7 +61,7 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     // Kết nối đến MongoDB
-    await connectDB();
+    await dbMiddleware(request);
     
     // Lấy dữ liệu từ request
     const miniCourseData = await request.json();
@@ -125,7 +125,7 @@ export async function POST(request) {
 export async function DELETE(request) {
   try {
     // Kết nối đến MongoDB
-    await connectDB();
+    await dbMiddleware(request);
     
     // Lấy dữ liệu từ request
     const data = await request.json();

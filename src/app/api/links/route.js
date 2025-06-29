@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { authMiddleware } from '@/lib/auth';
 import { v4 as uuidv4 } from 'uuid';
-import { connectDB } from '@/lib/mongodb';
+import { dbMiddleware } from '@/utils/db-middleware';
 import mongoose from 'mongoose';
 
 // Create Link schema if it doesn't exist
@@ -65,7 +65,7 @@ export async function POST(request) {
       );
     }
 
-    await connectDB();
+    await dbMiddleware(request);
     
     // Create a unique ID for the link
     const linkId = uuidv4();
@@ -115,7 +115,7 @@ export async function GET(request) {
       );
     }
 
-    await connectDB();
+    await dbMiddleware(request);
     
     // Get all links
     const links = await Link.find({})

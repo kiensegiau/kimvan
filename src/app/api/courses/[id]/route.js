@@ -4,7 +4,7 @@ import { ObjectId } from 'mongodb';
 import CryptoJS from 'crypto-js';
 import mongoose from 'mongoose';
 import Course from '@/models/Course';
-import { connectDB } from '@/lib/mongodb';
+import { dbMiddleware } from '@/utils/db-middleware';
 import Enrollment from '@/models/Enrollment';
 import { authMiddleware } from '@/lib/auth';
 
@@ -317,7 +317,7 @@ export async function GET(request, { params }) {
     const { id } = resolvedParams;
     
     // Đảm bảo kết nối đến MongoDB trước khi truy vấn
-    await connectDB();
+    await dbMiddleware(request);
     
     // Kiểm tra xem có tham số type=_id không
     const { searchParams } = new URL(request.url);
@@ -444,7 +444,7 @@ export async function PUT(request, { params }) {
     const { id } = resolvedParams;
     
     // Đảm bảo kết nối đến MongoDB trước khi truy vấn
-    await connectDB();
+    await dbMiddleware(request);
     
     if (!id) {
       return NextResponse.json(
@@ -539,7 +539,7 @@ export async function DELETE(request, { params }) {
     const { id } = resolvedParams;
     
     // Đảm bảo kết nối đến MongoDB trước khi truy vấn
-    await connectDB();
+    await dbMiddleware(request);
     
     // Kiểm tra xem có tham số type=_id không
     const { searchParams } = new URL(request.url);
@@ -630,7 +630,7 @@ export async function PATCH(request, { params }) {
     }
     
     // Đảm bảo kết nối đến MongoDB trước khi truy vấn
-    await connectDB();
+    await dbMiddleware(request);
     
     if (!id) {
       return NextResponse.json(

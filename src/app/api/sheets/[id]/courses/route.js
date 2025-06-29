@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { connectDB } from '@/lib/mongodb';
+import { dbMiddleware } from '@/utils/db-middleware';
 import Course from '@/models/Course';
 import Sheet from '@/models/Sheet';
 import { ObjectId } from 'mongodb';
@@ -8,7 +8,7 @@ import { ObjectId } from 'mongodb';
 export async function GET(request, { params }) {
   try {
     const { id } = params;
-    await connectDB();
+    await dbMiddleware(request);
     
     // Kiểm tra xem sheet có tồn tại không
     const sheet = await Sheet.findById(id);

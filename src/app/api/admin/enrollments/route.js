@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { connectDB } from '@/lib/mongodb';
+import { dbMiddleware } from '@/utils/db-middleware';
 import Enrollment from '@/models/Enrollment';
 import Course from '@/models/Course';
 import { authMiddleware, checkAuthAndRole } from '@/lib/auth';
@@ -82,7 +82,7 @@ export async function GET(request) {
     }
     
     // Kết nối đến MongoDB
-    await connectDB();
+    await dbMiddleware(request);
     
     // Lấy danh sách đăng ký khóa học của người dùng
     const enrollments = await Enrollment.find({ userId })
@@ -198,7 +198,7 @@ export async function POST(request) {
     }
     
     // Kết nối đến MongoDB
-    await connectDB();
+    await dbMiddleware(request);
     
     // Kiểm tra khóa học tồn tại
     const course = await Course.findById(courseId).lean().exec();
@@ -337,7 +337,7 @@ export async function DELETE(request) {
     }
     
     // Kết nối đến MongoDB
-    await connectDB();
+    await dbMiddleware(request);
     
     // Tìm và xóa đăng ký
     const result = await Enrollment.findByIdAndDelete(enrollmentId);

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { connectDB } from '@/lib/mongodb';
+import { dbMiddleware } from '@/utils/db-middleware';
 import mongoose from 'mongoose';
 
 // Get Link model if it exists
@@ -33,7 +33,7 @@ export async function GET(request, { params }) {
   try {
     const { id } = params;
 
-    await connectDB();
+    await dbMiddleware(request);
     
     // Find link by ID
     const link = await Link.findOne({ linkId: id });

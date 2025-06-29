@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
-import { connectDB } from '@/lib/mongodb';
+import { dbMiddleware } from '@/utils/db-middleware';
 import clientPromise from '@/lib/mongodb';
 import MiniCourse from '@/models/MiniCourse';
 
 export async function POST(request) {
   try {
     // Kết nối đến MongoDB
-    await connectDB();
+    await dbMiddleware(request);
     const mongoClient = await clientPromise;
     const db = mongoClient.db('kimvan');
     const miniCoursesCollection = db.collection('minicourses');

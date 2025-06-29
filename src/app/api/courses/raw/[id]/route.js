@@ -4,7 +4,7 @@ import Course from '@/models/Course';
 import { ObjectId } from 'mongodb';
 import { checkAuthAndRole } from '@/lib/auth';
 import { cookies } from 'next/headers';
-import { connectDB } from '@/lib/mongodb';
+import { dbMiddleware } from '@/utils/db-middleware';
 import { adminAuthMiddleware } from '@/app/api/admin/middleware';
 
 // GET: Lấy một khóa học theo ID mà không mã hóa dữ liệu - CHỈ CHO ADMIN
@@ -27,7 +27,7 @@ export async function GET(request, { params }) {
       const type = searchParams.get('type') || 'slug';
       
       // Đảm bảo kết nối đến MongoDB trước khi truy vấn
-      await connectDB();
+      await dbMiddleware(request);
       
       // Tìm khóa học theo ID hoặc slug
       let course;
@@ -86,7 +86,7 @@ export async function GET(request, { params }) {
     const type = searchParams.get('type') || 'slug';
     
     // Đảm bảo kết nối đến MongoDB trước khi truy vấn
-    await connectDB();
+    await dbMiddleware(request);
     
     // Tìm khóa học theo ID hoặc slug
     let course;

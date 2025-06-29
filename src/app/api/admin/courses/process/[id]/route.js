@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 import Course from '@/models/Course';
 import { authMiddleware, checkAuthAndRole } from '@/lib/auth';
 import { cookies } from 'next/headers';
-import { connectDB } from '@/lib/mongodb';
+import { dbMiddleware } from '@/utils/db-middleware';
 
 // POST: Xử lý một khóa học cụ thể
 export async function POST(request, { params }) {
@@ -37,7 +37,7 @@ export async function POST(request, { params }) {
       }
       
       // Đảm bảo kết nối đến MongoDB trước khi truy vấn
-      await connectDB();
+      await dbMiddleware(request);
       
       // Tìm khóa học theo ID
       const course = await Course.findById(id).lean().exec();
@@ -171,7 +171,7 @@ export async function POST(request, { params }) {
     }
     
     // Đảm bảo kết nối đến MongoDB trước khi truy vấn
-    await connectDB();
+    await dbMiddleware(request);
     
     // Tìm khóa học theo ID
     const course = await Course.findById(id).lean().exec();

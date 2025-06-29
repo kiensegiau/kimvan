@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 import Course from '@/models/Course';
 import { authMiddleware, checkAuthAndRole } from '@/lib/auth';
 import { headers, cookies } from 'next/headers';
-import { connectDB } from '@/lib/mongodb';
+import { dbMiddleware } from '@/utils/db-middleware';
 
 // GET: Lấy tất cả khóa học cho admin và CTV (không mã hóa)
 export async function GET(request) {
@@ -49,7 +49,7 @@ export async function GET(request) {
       }
       
       // Kết nối đến MongoDB
-      await connectDB();
+      await dbMiddleware(request);
       
       // Lấy tất cả khóa học
       const courses = await Course.find({}).sort({ createdAt: -1 }).lean();
@@ -67,7 +67,7 @@ export async function GET(request) {
         console.log('✅ Access granted through auth header');
         
         // Kết nối đến MongoDB
-        await connectDB();
+        await dbMiddleware(request);
         
         // Lấy tất cả khóa học
         const courses = await Course.find({}).sort({ createdAt: -1 }).lean();
@@ -117,7 +117,7 @@ export async function POST(request) {
       console.log('🔒 Admin API - Người dùng có quyền admin, cho phép truy cập');
       
       // Kết nối đến MongoDB
-      await connectDB();
+      await dbMiddleware(request);
       
       // Parse body request
       const requestBody = await request.json();
@@ -169,7 +169,7 @@ export async function POST(request) {
       
       if (hasAccess) {
         // Kết nối đến MongoDB
-        await connectDB();
+        await dbMiddleware(request);
         
         // Parse body request và xử lý giống như trên...
         // [code tương tự phần trên]

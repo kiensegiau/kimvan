@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { connectDB } from '@/lib/mongodb';
+import { dbMiddleware } from '@/utils/db-middleware';
 import Course from '@/models/Course';
 
 export async function PUT(request, { params }) {
   try {
-    await connectDB();
+    await dbMiddleware(request);
     const { id } = params;
     const { sheetIndex, rowIndex, rowData } = await request.json();
 

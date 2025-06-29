@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { google } from 'googleapis';
 import fs from 'fs';
 import path from 'path';
-import { connectDB } from '@/lib/mongodb';
+import { dbMiddleware } from '@/utils/db-middleware';
 import Sheet from '@/models/Sheet';
 import { ObjectId } from 'mongodb';
 import { 
@@ -35,7 +35,7 @@ export async function POST(request, { params }) {
   console.log('============== BẮT ĐẦU XỬ LÝ TẤT CẢ LINK TRONG SHEET ==============');
   
   try {
-    await connectDB();
+    await dbMiddleware(request);
     const { id } = await params;
     // Xử lý trường hợp request không có body hoặc body không hợp lệ
     let requestBody = {};

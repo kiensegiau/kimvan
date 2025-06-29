@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
-import { connectDB } from '@/lib/mongodb';
+import { dbMiddleware } from '@/utils/db-middleware';
 import Sheet from '@/models/Sheet';
 import { ObjectId } from 'mongodb';
 import { google } from 'googleapis';
@@ -210,7 +210,7 @@ export async function GET(request, { params }) {
     }
 
     const { id } = params;
-    await connectDB();
+    await dbMiddleware(request);
     
     // Kiểm tra xem id có phải là MongoDB ObjectId hay không
     let sheet;
@@ -322,7 +322,7 @@ export async function PUT(request, { params }) {
     }
 
     const { id } = params;
-    await connectDB();
+    await dbMiddleware(request);
     const data = await request.json();
     
     // Kiểm tra xem sheet có tồn tại không
@@ -373,7 +373,7 @@ export async function POST(request, { params }) {
     }
 
     const { id } = params;
-    await connectDB();
+    await dbMiddleware(request);
     const data = await request.json();
     
     // Kiểm tra xem sheet có tồn tại không
@@ -436,7 +436,7 @@ export async function DELETE(request, { params, nextUrl }) {
     }
 
     const { id } = params;
-    await connectDB();
+    await dbMiddleware(request);
     
     // Lấy relatedId từ URL
     const url = new URL(request.url);

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { connectDB } from '@/lib/mongodb';
+import { dbMiddleware } from '@/utils/db-middleware';
 import Course from '@/models/Course';
 import Sheet from '@/models/Sheet';
 import { ObjectId } from 'mongodb';
@@ -8,7 +8,7 @@ import { ObjectId } from 'mongodb';
 export async function DELETE(request, { params }) {
   try {
     const { id, sheetId } = params;
-    await connectDB();
+    await dbMiddleware(request);
     
     // Kiểm tra xem khóa học có tồn tại không
     const course = await Course.findById(id);

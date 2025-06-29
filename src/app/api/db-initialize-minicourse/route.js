@@ -1,6 +1,6 @@
  import { NextResponse } from 'next/server';
 import clientPromise from '@/lib/mongodb';
-import { connectDB } from '@/lib/mongodb';
+import { dbMiddleware } from '@/utils/db-middleware';
 import Course from '@/models/Course';
 import MiniCourse from '@/models/MiniCourse';
 import mongoose from 'mongoose';
@@ -10,7 +10,7 @@ export async function GET() {
     // Kết nối đến MongoDB
     const mongoClient = await clientPromise;
     const db = mongoClient.db('kimvan');
-    await connectDB(); // Đảm bảo kết nối Mongoose
+    await dbMiddleware(request); // Đảm bảo kết nối Mongoose
 
     // Kiểm tra xem collection minicourses đã tồn tại chưa
     const collections = await db.listCollections({ name: 'minicourses' }).toArray();
