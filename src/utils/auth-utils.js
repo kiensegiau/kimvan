@@ -10,11 +10,8 @@ import fetch from 'node-fetch';
  */
 export async function verifyToken(token) {
   try {
-    console.log('🔐 Auth Utils - Bắt đầu xác thực token');
-    
     // Xác thực token bằng Firebase Admin
     const decodedToken = await admin.auth().verifyIdToken(token);
-    console.log('🔐 Auth Utils - Token hợp lệ, uid:', decodedToken.uid);
     return decodedToken;
   } catch (error) {
     console.error('❌ Auth Utils - Lỗi xác thực token:', error);
@@ -29,7 +26,6 @@ export async function verifyToken(token) {
  */
 export function isAdminEmail(email) {
   const isAdmin = email === 'phanhuukien2001@gmail.com';
-  console.log(`🔐 Auth Utils - Kiểm tra email admin: ${email}, Kết quả: ${isAdmin}`);
   return isAdmin;
 }
 
@@ -44,10 +40,8 @@ export async function getAccessToken() {
   for (let retryCount = 0; retryCount <= MAX_RETRIES; retryCount++) {
     try {
       if (retryCount > 0) {
-        console.log(`Thử lại lần ${retryCount}/${MAX_RETRIES} để lấy access token`);
         // Đợi thời gian tăng dần trước khi thử lại (exponential backoff)
         const delayTime = Math.min(Math.pow(2, retryCount) * 1000, 10000); // tối đa 10 giây
-        console.log(`Đợi ${delayTime/1000} giây trước khi thử lại...`);
         await new Promise(resolve => setTimeout(resolve, delayTime));
       }
       
@@ -65,7 +59,6 @@ export async function getAccessToken() {
       }
       
       // Nếu token hết hạn, refresh token
-      console.log('Token hết hạn, đang refresh...');
       const refreshToken = tokenData.refresh_token;
       
       const response = await fetch('https://oauth2.googleapis.com/token', {
@@ -97,7 +90,6 @@ export async function getAccessToken() {
       
       // Lưu token mới vào file
       fs.writeFileSync(tokenPath, JSON.stringify(updatedTokenData, null, 2));
-      console.log('Đã refresh và lưu token mới');
       
       return newTokenData.access_token;
     } catch (error) {

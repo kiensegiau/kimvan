@@ -21,7 +21,6 @@ function loadApiKeys() {
       .map(key => key.trim())
       .filter(key => key && !key.startsWith('#'));
     
-    console.log(`Loaded ${keys.length} API keys from file`);
     return keys;
   } catch (error) {
     console.error('Error loading API keys:', error);
@@ -33,7 +32,6 @@ function loadApiKeys() {
 function saveApiKeys(keys) {
   try {
     fs.writeFileSync(API_KEYS_FILE, keys.join('\n'));
-    console.log(`Saved ${keys.length} API keys to file`);
     return true;
   } catch (error) {
     console.error('Error saving API keys:', error);
@@ -47,7 +45,6 @@ function removeApiKey(keyToRemove) {
   const newKeys = keys.filter(key => key !== keyToRemove);
   
   if (keys.length !== newKeys.length) {
-    console.log(`Removing API key: ${keyToRemove.substring(0, 5)}...`);
     return saveApiKeys(newKeys);
   }
   
@@ -57,8 +54,6 @@ function removeApiKey(keyToRemove) {
 // Function to check credits for an API key
 async function checkApiKeyCredits(apiKey) {
   try {
-    console.log(`Đang kiểm tra API key: ${apiKey.substring(0, 5)}...`);
-    
     const axios = require('axios');
     
     // Thiết lập timeout cho request
@@ -69,12 +64,7 @@ async function checkApiKeyCredits(apiKey) {
       timeout: 10000 // 10 giây timeout
     });
     
-    // Log toàn bộ phản hồi để debug
-    console.log(`Phản hồi từ API cho key ${apiKey.substring(0, 5)}...:`);
-    console.log(JSON.stringify(response.data, null, 2));
-    
     // Luôn trả về 50 credit bất kể phản hồi API như thế nào
-    console.log(`API key ${apiKey.substring(0, 5)}... được giả định có 50 credits`);
     return 50;
   } catch (error) {
     console.error(`Error checking API key ${apiKey.substring(0, 5)}...`, error.message);
@@ -94,7 +84,6 @@ async function getNextApiKey() {
   
   // Luôn trả về API key đầu tiên trong danh sách
   const key = keys[0];
-  console.log(`Using API key ${key.substring(0, 5)}...`);
   return key;
 }
 
