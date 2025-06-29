@@ -46,6 +46,25 @@ const TOKEN_VERIFY_API = '/api/auth/verify';
 const TOKEN_REFRESH_API = '/api/auth/refresh-token';
 const USER_ROLE_API = '/api/auth/user-role';
 
+// Đường dẫn API không cần kết nối DB
+const NO_DB_API_PATHS = [
+  '/api/auth/verify',
+  '/api/auth/refresh-token',
+  '/api/auth/user-role',
+  '/api/auth/logout',
+  '/api/auth/admin/check-permission',
+  '/api/drive/check-file-type',
+  '/api/drive/download',
+  '/api/drive/download-direct',
+  '/api/drive/refresh-tokens',
+  '/api/test-browser'
+];
+
+// Kiểm tra xem đường dẫn có cần kết nối DB không
+const needsDatabaseConnection = (path) => {
+  return path.startsWith('/api/') && !NO_DB_API_PATHS.some(apiPath => path.startsWith(apiPath));
+};
+
 // Email được phép truy cập trang admin - không còn cần thiết vì sẽ kiểm tra theo role
 // const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'phanhuukien2001@gmail.com';
 // console.log('🔧 Middleware - Email admin được cấu hình:', ADMIN_EMAIL);
@@ -77,6 +96,21 @@ export async function middleware(request) {
       pathname === '/api/auth/logout' || 
       pathname === '/api/auth/admin/check-permission') {
     return response;
+  }
+
+  // Kết nối DB tự động cho các API routes
+  if (needsDatabaseConnection(pathname)) {
+    try {
+      // Import dbMiddleware động để tránh lỗi khi ứng dụng khởi động
+      const { dbMiddleware } = await import('@/utils/db-middleware');
+      
+      // Kết nối đến database sử dụng dbMiddleware
+      await dbMiddleware(request);
+      console.log(`🔌 Middleware - Đã kết nối DB tự động cho API: ${pathname}`);
+    } catch (dbError) {
+      console.error(`❌ Middleware - Lỗi kết nối DB cho API ${pathname}:`, dbError);
+      // Không chặn request nếu kết nối DB thất bại
+    }
   }
 
   // Kiểm tra và cache kết quả cho đường dẫn công khai
