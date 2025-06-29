@@ -16,6 +16,8 @@ export default function ApiSheetData({
   const [selectedPDF, setSelectedPDF] = useState(null);
   const [pdfTitle, setPdfTitle] = useState('');
   const [loadingLinks, setLoadingLinks] = useState({});
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
+  const [hoveredHeader, setHoveredHeader] = useState(null);
   
   // Tạo proxy link từ URL thông qua Base64 encoding
   const createProxyLink = useCallback((url) => {
@@ -198,9 +200,6 @@ export default function ApiSheetData({
   
   // Hàm xử lý hyperlink trong table rendering
   const renderHyperlinkCell = (hyperlink, cellContent, rowIndex, cellIndex) => {
-    // Xác định loại liên kết để hiển thị icon phù hợp
-    // Removing icon logic as requested
-    
     const key = `${rowIndex}-${cellIndex}`;
     const content = cellContent || hyperlink;
     const isLoading = loadingLinks[hyperlink];
@@ -221,26 +220,67 @@ export default function ApiSheetData({
       }
     }
     
+    // Determine link type for icon
+    let linkIcon = null;
+    if (isYoutubeLink(hyperlink) || (hyperlink.startsWith('/api/proxy-link/') && isYoutubeLink(decodeProxyLink(hyperlink)))) {
+      linkIcon = (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-500" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/>
+        </svg>
+      );
+    } else if (isPdfLink(hyperlink) || (hyperlink.startsWith('/api/proxy-link/') && isPdfLink(decodeProxyLink(hyperlink)))) {
+      linkIcon = (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-600" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M8.267 14.68c-.184 0-.308.018-.372.036v1.178c.076.018.171.023.302.023.479 0 .774-.242.774-.651 0-.366-.254-.586-.704-.586zm3.487.012c-.2 0-.33.018-.407.036v2.61c.077.018.201.018.313.018.817.006 1.349-.444 1.349-1.396.006-.83-.479-1.268-1.255-1.268z"/>
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM9.498 16.19c-.309.29-.765.42-1.296.42a2.23 2.23 0 0 1-.308-.018v1.426H7v-3.936A7.558 7.558 0 0 1 8.219 14c.557 0 .953.106 1.22.319.254.202.426.533.426.923-.001.392-.131.723-.367.948zm3.807 1.355c-.42.349-1.059.515-1.84.515-.468 0-.799-.03-1.024-.06v-3.917A7.947 7.947 0 0 1 11.66 14c.757 0 1.249.136 1.633.426.415.308.675.799.675 1.504 0 .763-.279 1.29-.663 1.615zM17 14.77h-1.532v.911H16.9v.734h-1.432v1.604h-.906V14.03H17v.74zM14 9h-1V4l5 5h-4z"/>
+        </svg>
+      );
+    } else if (isGoogleDriveLink(hyperlink) || (hyperlink.startsWith('/api/proxy-link/') && isGoogleDriveLink(decodeProxyLink(hyperlink)))) {
+      linkIcon = (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24">
+          <path fill="#4285F4" d="M4.433 22l-2.933-5h17l2.933 5z"/>
+          <path fill="#0F9D58" d="M15.5 7l-8 14h16l-8-14z"/>
+          <path fill="#FFCD32" d="M8.5 2l-6.5 10 6.5 10 6.5-10z"/>
+        </svg>
+      );
+    } else {
+      linkIcon = (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+        </svg>
+      );
+    }
+    
     return (
-      <td key={cellIndex} className="px-6 py-4 border-r border-gray-200 last:border-r-0 whitespace-normal break-words">
-        <div>
-          <a 
-            href="#" 
-            className={`text-blue-600 hover:underline text-base ${isLoading ? 'opacity-50 cursor-wait' : ''}`}
-            onClick={(e) => handleLinkClick(e, hyperlink, content)}
-          >
-            {isLoading ? (
-              <span>
-                {displayText}
-                <span className="inline-block ml-2">
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                </span>
-              </span>
-            ) : displayText}
-          </a>
+      <td key={cellIndex} className="px-6 py-4 whitespace-normal break-words border-b border-gray-50 border-r-2 border-gray-400 last:border-r-0 group-hover:bg-blue-50/80 transition-colors duration-150">
+        <div className="flex items-center">
+          <div className="flex-shrink-0 mr-2">
+            {linkIcon}
+          </div>
+          <div>
+            <a 
+              href="#" 
+              className={`text-blue-600 hover:text-blue-800 text-base font-medium transition-colors duration-200 ${isLoading ? 'opacity-50 cursor-wait' : ''}`}
+              onClick={(e) => handleLinkClick(e, hyperlink, content)}
+            >
+              {isLoading ? (
+                <div className="flex items-center">
+                  <span>{displayText}</span>
+                  <span className="inline-block ml-2">
+                    <svg className="animate-spin h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  </span>
+                </div>
+              ) : (
+                <div className="relative group">
+                  <span className="group-hover:border-b border-blue-600">{displayText}</span>
+                  <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-600 group-hover:w-full transition-all duration-300"></span>
+                </div>
+              )}
+            </a>
+          </div>
         </div>
       </td>
     );
@@ -258,16 +298,43 @@ export default function ApiSheetData({
       let url = hyperlinkMatch[1];
       const displayText = hyperlinkMatch[2] || url;
       
-      // Removing icon logic as requested
+      // Determine link type for icon
+      let linkIcon = null;
+      if (isYoutubeLink(url)) {
+        linkIcon = (
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-500 mr-2" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/>
+          </svg>
+        );
+      } else if (isPdfLink(url)) {
+        linkIcon = (
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-600 mr-2" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M8.267 14.68c-.184 0-.308.018-.372.036v1.178c.076.018.171.023.302.023.479 0 .774-.242.774-.651 0-.366-.254-.586-.704-.586zm3.487.012c-.2 0-.33.018-.407.036v2.61c.077.018.201.018.313.018.817.006 1.349-.444 1.349-1.396.006-.83-.479-1.268-1.255-1.268z"/>
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM9.498 16.19c-.309.29-.765.42-1.296.42a2.23 2.23 0 0 1-.308-.018v1.426H7v-3.936A7.558 7.558 0 0 1 8.219 14c.557 0 .953.106 1.22.319.254.202.426.533.426.923-.001.392-.131.723-.367.948zm3.807 1.355c-.42.349-1.059.515-1.84.515-.468 0-.799-.03-1.024-.06v-3.917A7.947 7.947 0 0 1 11.66 14c.757 0 1.249.136 1.633.426.415.308.675.799.675 1.504 0 .763-.279 1.29-.663 1.615zM17 14.77h-1.532v.911H16.9v.734h-1.432v1.604h-.906V14.03H17v.74zM14 9h-1V4l5 5h-4z"/>
+          </svg>
+        );
+      } else {
+        linkIcon = (
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+          </svg>
+        );
+      }
       
       return (
-        <a 
-          href="#" 
-          onClick={(e) => handleLinkClick(e, url, displayText)}
-          className="text-blue-600 hover:underline text-base font-medium"
-        >
-          {displayText}
-        </a>
+        <div className="flex items-center">
+          {linkIcon}
+          <a 
+            href="#" 
+            onClick={(e) => handleLinkClick(e, url, displayText)}
+            className="text-blue-600 hover:text-blue-800 text-base font-medium transition-colors duration-200"
+          >
+            <div className="relative group">
+              <span className="group-hover:border-b border-blue-600">{displayText}</span>
+              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-600 group-hover:w-full transition-all duration-300"></span>
+            </div>
+          </a>
+        </div>
       );
     }
     
@@ -276,8 +343,6 @@ export default function ApiSheetData({
     
     // Nếu nội dung chỉ chứa URL
     if (typeof content === 'string' && urlRegex.test(content) && content.trim().match(urlRegex)[0] === content.trim()) {
-      // Removing icon logic as requested
-      
       // Hiển thị domain thay vì URL đầy đủ
       let displayUrl = '';
       try {
@@ -287,17 +352,75 @@ export default function ApiSheetData({
         displayUrl = content.substring(0, 30) + (content.length > 30 ? '...' : '');
       }
       
+      // Determine link type for icon
+      let linkIcon = null;
+      if (isYoutubeLink(content)) {
+        linkIcon = (
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-500 mr-2" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/>
+          </svg>
+        );
+      } else if (isPdfLink(content)) {
+        linkIcon = (
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-600 mr-2" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M8.267 14.68c-.184 0-.308.018-.372.036v1.178c.076.018.171.023.302.023.479 0 .774-.242.774-.651 0-.366-.254-.586-.704-.586zm3.487.012c-.2 0-.33.018-.407.036v2.61c.077.018.201.018.313.018.817.006 1.349-.444 1.349-1.396.006-.83-.479-1.268-1.255-1.268z"/>
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM9.498 16.19c-.309.29-.765.42-1.296.42a2.23 2.23 0 0 1-.308-.018v1.426H7v-3.936A7.558 7.558 0 0 1 8.219 14c.557 0 .953.106 1.22.319.254.202.426.533.426.923-.001.392-.131.723-.367.948zm3.807 1.355c-.42.349-1.059.515-1.84.515-.468 0-.799-.03-1.024-.06v-3.917A7.947 7.947 0 0 1 11.66 14c.757 0 1.249.136 1.633.426.415.308.675.799.675 1.504 0 .763-.279 1.29-.663 1.615zM17 14.77h-1.532v.911H16.9v.734h-1.432v1.604h-.906V14.03H17v.74zM14 9h-1V4l5 5h-4z"/>
+          </svg>
+        );
+      } else {
+        linkIcon = (
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+          </svg>
+        );
+      }
+      
       return (
-        <a 
-          href="#" 
-          onClick={(e) => handleLinkClick(e, content)}
-          className="text-blue-600 hover:underline text-base font-medium"
-        >
-          {displayUrl}
-        </a>
+        <div className="flex items-center">
+          {linkIcon}
+          <a 
+            href="#" 
+            onClick={(e) => handleLinkClick(e, content)}
+            className="text-blue-600 hover:text-blue-800 text-base font-medium transition-colors duration-200"
+          >
+            <div className="relative group">
+              <span className="group-hover:border-b border-blue-600">{displayUrl}</span>
+              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-600 group-hover:w-full transition-all duration-300"></span>
+            </div>
+          </a>
+        </div>
       );
     }
     
+    // Format numbers with commas if it's a number
+    if (typeof content === 'string' && !isNaN(content) && content.trim() !== '') {
+      try {
+        const num = parseFloat(content);
+        if (!isNaN(num)) {
+          // If it's a whole number
+          if (Number.isInteger(num)) {
+            return <span className="text-base font-medium">{num.toLocaleString()}</span>;
+          } else {
+            // If it has decimal places
+            return <span className="text-base font-medium">{num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>;
+          }
+        }
+      } catch (e) {
+        // If parsing fails, just return the content
+      }
+    }
+    
+    // Check if content might be a date
+    if (typeof content === 'string' && content.match(/^\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}$/)) {
+      return <span className="text-base font-medium text-purple-700">{content}</span>;
+    }
+    
+    // For percentage values
+    if (typeof content === 'string' && content.endsWith('%')) {
+      return <span className="text-base font-medium text-green-700">{content}</span>;
+    }
+    
+    // For regular text content
     return <span className="text-base">{content}</span>;
   };
 
@@ -361,6 +484,53 @@ export default function ApiSheetData({
   }
   
   const sheetDetail = currentSheet?.detail;
+  
+  // Sorting function
+  const requestSort = (key) => {
+    let direction = 'ascending';
+    if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+  };
+  
+  // Get sorted data
+  const getSortedData = (data) => {
+    if (!data || !sortConfig.key) {
+      return data;
+    }
+    
+    const sortableData = [...data];
+    const headerRow = sortableData[0]; // Save header row
+    const dataRows = sortableData.slice(1); // Get only data rows
+    
+    const sortedDataRows = dataRows.sort((a, b) => {
+      const columnIndex = headerRow.findIndex((col, idx) => idx === sortConfig.key);
+      if (columnIndex === -1) return 0;
+      
+      const aValue = a[columnIndex];
+      const bValue = b[columnIndex];
+      
+      // Check if values are numbers
+      const aNum = parseFloat(aValue);
+      const bNum = parseFloat(bValue);
+      
+      if (!isNaN(aNum) && !isNaN(bNum)) {
+        return sortConfig.direction === 'ascending' ? aNum - bNum : bNum - aNum;
+      }
+      
+      // Otherwise sort as strings
+      if (aValue < bValue) {
+        return sortConfig.direction === 'ascending' ? -1 : 1;
+      }
+      if (aValue > bValue) {
+        return sortConfig.direction === 'ascending' ? 1 : -1;
+      }
+      return 0;
+    });
+    
+    return [headerRow, ...sortedDataRows];
+  };
 
   // Kiểm tra chi tiết sheet
   if (!sheetDetail) {
@@ -485,58 +655,136 @@ export default function ApiSheetData({
       <div className="px-4 sm:px-6 py-4">
         {sheetDetail?.data?.values && sheetDetail.data.values.length > 0 ? (
           <div className="overflow-x-auto max-w-full -mx-4 sm:mx-0 px-4 sm:px-0">
-            <div className="inline-block min-w-full align-middle">
-              <table className="min-w-full divide-y divide-gray-200 border-collapse table-fixed">
-                <thead className="bg-gray-50">
-                  <tr>
-                    {sheetDetail.data.values[0].map((header, index) => (
-                      <th 
-                        key={index} 
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200 last:border-r-0 whitespace-normal break-words"
-                        style={{ minWidth: '120px' }}
-                      >
-                        {header}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {sheetDetail.data.values.slice(1).map((row, rowIndex) => {
-                    // Lấy dữ liệu HTML tương ứng nếu có
-                    const htmlRow = sheetDetail.data.htmlData?.[rowIndex + 1]?.values || [];
-                    
-                    return (
-                      <tr key={rowIndex} className="hover:bg-gray-50">
-                        {row.map((cell, cellIndex) => {
-                          // Kiểm tra xem có dữ liệu HTML không
-                          const htmlCell = htmlRow[cellIndex];
-                          const hyperlink = htmlCell?.hyperlink;
-                          
-                          // Nếu có hyperlink trong dữ liệu HTML
-                          if (hyperlink) {
-                            return renderHyperlinkCell(hyperlink, cell, rowIndex, cellIndex);
-                          }
-                          
-                          // Xử lý các cell thông thường
-                          const key = `${rowIndex}-${cellIndex}`;
-                          const cellContent = cell || '';
-                          
-                          return (
-                            <td key={cellIndex} className="px-6 py-4 border-r border-gray-200 last:border-r-0 whitespace-normal break-words text-base">
-                              <div className="text-gray-900">
-                                {renderCellContent(cellContent)}
-                              </div>
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-            <div className="mt-4 text-center text-xs text-gray-500 sm:hidden">
-              Vuốt sang trái/phải để xem thêm dữ liệu
+                          <div className="inline-block min-w-full align-middle rounded-lg shadow-md">
+                <div className="overflow-hidden border-2 border-gray-300 sm:rounded-lg bg-white shadow-md" style={{ boxShadow: '0 0 0 1px rgba(0, 0, 0, 0.05), 0 2px 8px 0 rgba(0, 0, 0, 0.1)' }}>
+                                  <table className="min-w-full divide-y divide-gray-200 table-fixed border-collapse border-x border-gray-300" style={{ borderSpacing: 0 }}>
+                  <thead className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b-2 border-gray-300">
+                    <tr>
+                      {sheetDetail.data.values[0].map((header, index) => (
+                        <th 
+                          key={index} 
+                          className={`group px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider whitespace-normal break-words border-b-2 border-r-2 border-gray-400 last:border-r-0 transition-all duration-200 ${
+                            sortConfig.key === index 
+                              ? 'text-indigo-900 border-b-indigo-500 bg-indigo-50' 
+                              : 'text-indigo-800 border-b-indigo-100 hover:bg-indigo-50/50'
+                          }`}
+                          style={{ minWidth: '120px' }}
+                          onClick={() => requestSort(index)}
+                          onMouseEnter={() => setHoveredHeader(index)}
+                          onMouseLeave={() => setHoveredHeader(null)}
+                        >
+                          <div className="flex items-center justify-between cursor-pointer">
+                            <span>{header}</span>
+                            <div className="flex items-center">
+                              {sortConfig.key === index ? (
+                                <svg 
+                                  xmlns="http://www.w3.org/2000/svg" 
+                                  className={`h-4 w-4 text-indigo-800 transition-transform duration-200 ${
+                                    sortConfig.direction === 'ascending' ? 'transform rotate-180' : ''
+                                  }`} 
+                                  fill="none" 
+                                  viewBox="0 0 24 24" 
+                                  stroke="currentColor"
+                                >
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                              ) : (
+                                <svg 
+                                  xmlns="http://www.w3.org/2000/svg" 
+                                  className={`h-4 w-4 text-indigo-300 opacity-0 ${hoveredHeader === index ? 'opacity-100' : ''} transition-opacity duration-200`} 
+                                  fill="none" 
+                                  viewBox="0 0 24 24" 
+                                  stroke="currentColor"
+                                >
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
+                                </svg>
+                              )}
+                            </div>
+                          </div>
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {getSortedData(sheetDetail.data.values).slice(1).map((row, rowIndex) => {
+                      // Lấy dữ liệu HTML tương ứng nếu có
+                      const htmlRow = sheetDetail.data.htmlData?.[rowIndex + 1]?.values || [];
+                      const isEvenRow = rowIndex % 2 === 0;
+                      
+                      return (
+                        <tr 
+                          key={rowIndex} 
+                          className={`${isEvenRow ? 'bg-white' : 'bg-blue-50/30'} hover:bg-blue-50 hover:shadow-sm transition-all duration-150 ease-in-out group`}
+                        >
+                          {row.map((cell, cellIndex) => {
+                            // Kiểm tra xem có dữ liệu HTML không
+                            const htmlCell = htmlRow[cellIndex];
+                            const hyperlink = htmlCell?.hyperlink;
+                            
+                            // Nếu có hyperlink trong dữ liệu HTML
+                            if (hyperlink) {
+                              return renderHyperlinkCell(hyperlink, cell, rowIndex, cellIndex);
+                            }
+                            
+                            // Xử lý các cell thông thường
+                            const key = `${rowIndex}-${cellIndex}`;
+                            const cellContent = cell || '';
+                            
+                            return (
+                              <td 
+                                key={cellIndex} 
+                                className="px-6 py-4 whitespace-normal break-words text-base border-b border-gray-50 border-r-2 border-gray-400 last:border-r-0 group-hover:bg-blue-50/80 transition-colors duration-150"
+                              >
+                                <div className="text-gray-700 font-medium">
+                                  {renderCellContent(cellContent)}
+                                </div>
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <div className="bg-white px-4 py-3 flex items-center justify-between border-t-2 border-gray-300 sm:px-6">
+                <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm text-gray-700">
+                      Hiển thị <span className="font-medium">{sheetDetail.data.values.length - 1}</span> dòng dữ liệu
+                    </p>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <button 
+                      className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
+                      disabled={sortConfig.key === null}
+                      onClick={() => setSortConfig({ key: null, direction: 'ascending' })}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      Xóa sắp xếp
+                    </button>
+                    <div className="border-l border-gray-200 h-6"></div>
+                    <div className="flex items-center space-x-1">
+                      <button className="inline-flex items-center justify-center w-8 h-8 border border-gray-300 rounded-md bg-white text-gray-500 hover:bg-gray-50 transition-colors duration-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                      </button>
+                      <span className="px-3 py-1 text-sm text-gray-700">1</span>
+                      <button className="inline-flex items-center justify-center w-8 h-8 border border-gray-300 rounded-md bg-white text-gray-500 hover:bg-gray-50 transition-colors duration-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-2 text-center text-xs text-gray-500 sm:hidden">
+                  Vuốt sang trái/phải để xem thêm dữ liệu
+                </div>
+              </div>
             </div>
           </div>
         ) : (
