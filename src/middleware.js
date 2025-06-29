@@ -96,8 +96,25 @@ export async function middleware(request) {
   }
 
   // Lấy token từ cookie cho tất cả các đường dẫn được bảo vệ
-  const tokenCookie = request.cookies.get(cookieConfig.authCookieName);
-  const token = tokenCookie?.value;
+  // Danh sách các tên cookie có thể chứa token
+  const possibleCookieNames = [
+    cookieConfig.authCookieName,
+    'auth-token',
+    'authToken',
+    '__Secure-authjs.session-token'
+  ];
+  
+  let token = null;
+  
+  // Kiểm tra từng cookie có thể chứa token
+  for (const cookieName of possibleCookieNames) {
+    const cookieValue = request.cookies.get(cookieName)?.value;
+    if (cookieValue && cookieValue.trim() !== '') {
+      console.log(`🍪 Middleware - Tìm thấy token trong cookie ${cookieName}`);
+      token = cookieValue;
+      break;
+    }
+  }
   
   console.log('🔍 Middleware - Cookie name being checked:', cookieConfig.authCookieName);
   
@@ -135,115 +152,290 @@ export async function middleware(request) {
       body: JSON.stringify({ token }),
     });
 
+    // Nếu token không hợp lệ hoặc đã hết hạn, thử làm mới token
     if (!verifyResponse.ok) {
-      console.log('❌ Middleware - API xác thực không thành công');
-      const redirectUrl = new URL(routes.login, request.url);
-      redirectUrl.searchParams.set('returnUrl', pathname);
-      const redirectResponse = NextResponse.redirect(redirectUrl);
-      return addSecurityHeaders(redirectResponse);
-    }
-
-    const verifyData = await verifyResponse.json();
-    
-    // Nếu token không hợp lệ, chuyển hướng đến trang đăng nhập
-    if (!verifyData.valid) {
-      console.log('🔒 Token không hợp lệ, chuyển hướng đến trang đăng nhập');
+      console.log('⚠️ Middleware - API xác thực không thành công, thử làm mới token');
       
-      const redirectUrl = new URL(routes.login, request.url);
-      redirectUrl.searchParams.set('returnUrl', pathname);
-      const redirectResponse = NextResponse.redirect(redirectUrl);
-      
-      // Xóa cookie token không hợp lệ
-      redirectResponse.cookies.set({
-        name: cookieConfig.authCookieName,
-        value: '',
-        expires: new Date(0),
-        path: '/',
+      // Thử làm mới token
+      const refreshResponse = await fetch(`${baseUrl}${TOKEN_REFRESH_API}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+          token, // Truyền token hiện tại vào body
+          rememberMe: true // Mặc định sử dụng thời gian sống dài
+        })
       });
       
-      return addSecurityHeaders(redirectResponse);
-    }
-
-    const user = verifyData.user;
-    
-    // Lấy role từ MongoDB thông qua API
-    let userRole = user.role || 'user';
-    try {
-      const roleResponse = await fetch(`${baseUrl}${USER_ROLE_API}`, {
+      // Nếu không thể làm mới token, chuyển hướng đến trang đăng nhập
+      if (!refreshResponse.ok) {
+        console.log('❌ Middleware - Không thể làm mới token, chuyển hướng đến trang đăng nhập');
+        
+        const redirectUrl = new URL(routes.login, request.url);
+        redirectUrl.searchParams.set('returnUrl', pathname);
+        const redirectResponse = NextResponse.redirect(redirectUrl);
+        
+        // Xóa cookie token không hợp lệ
+        redirectResponse.cookies.set({
+          name: cookieConfig.authCookieName,
+          value: '',
+          expires: new Date(0),
+          path: '/',
+        });
+        
+        return addSecurityHeaders(redirectResponse);
+      }
+      
+      // Nếu làm mới token thành công, lấy token mới và tiếp tục
+      const refreshData = await refreshResponse.json();
+      
+      if (!refreshData.success || !refreshData.token) {
+        console.log('❌ Middleware - Làm mới token không thành công, chuyển hướng đến trang đăng nhập');
+        
+        const redirectUrl = new URL(routes.login, request.url);
+        redirectUrl.searchParams.set('returnUrl', pathname);
+        const redirectResponse = NextResponse.redirect(redirectUrl);
+        
+        // Xóa cookie token không hợp lệ
+        redirectResponse.cookies.set({
+          name: cookieConfig.authCookieName,
+          value: '',
+          expires: new Date(0),
+          path: '/',
+        });
+        
+        return addSecurityHeaders(redirectResponse);
+      }
+      
+      // Cập nhật token mới vào cookie
+      const maxAge = 60 * 60 * 24 * 30; // 30 ngày
+      response.cookies.set({
+        name: cookieConfig.authCookieName,
+        value: refreshData.token,
+        path: '/',
+        maxAge: maxAge,
+        httpOnly: true,
+        secure: cookieConfig.secure,
+        sameSite: cookieConfig.sameSite,
+      });
+      
+      // Cập nhật token để sử dụng cho các bước tiếp theo
+      token = refreshData.token;
+      
+      // Gọi lại API xác thực với token mới
+      const reVerifyResponse = await fetch(`${baseUrl}${TOKEN_VERIFY_API}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ uid: user.uid }),
+        body: JSON.stringify({ token }),
       });
       
-      if (roleResponse.ok) {
-        const roleData = await roleResponse.json();
-        if (roleData.success && roleData.role) {
-          userRole = roleData.role;
-        }
-      } else {
-        console.error('❌ Middleware - Lỗi khi gọi API role:', await roleResponse.text());
+      if (!reVerifyResponse.ok) {
+        console.log('❌ Middleware - Xác thực với token mới không thành công, chuyển hướng đến trang đăng nhập');
+        
+        const redirectUrl = new URL(routes.login, request.url);
+        redirectUrl.searchParams.set('returnUrl', pathname);
+        const redirectResponse = NextResponse.redirect(redirectUrl);
+        return addSecurityHeaders(redirectResponse);
       }
-    } catch (roleError) {
-      console.error('❌ Middleware - Lỗi khi lấy role từ API:', roleError);
-      // Không làm gián đoạn luồng nếu lỗi API, tiếp tục sử dụng role từ token
-    }
-
-    // Kiểm tra xem token có sắp hết hạn không
-    // Lấy thời gian hết hạn từ payload token
-    const tokenExpiration = user.tokenExpiration;
-    const now = Date.now();
-    const timeLeft = tokenExpiration - now;
-    
-    // Nếu token sắp hết hạn (còn dưới 30 phút), làm mới token
-    if (timeLeft < 30 * 60 * 1000) {
-      console.log('🔄 Token sắp hết hạn, tiến hành làm mới token');
       
+      const verifyData = await reVerifyResponse.json();
+      
+      // Nếu token mới không hợp lệ, chuyển hướng đến trang đăng nhập
+      if (!verifyData.valid) {
+        console.log('❌ Middleware - Token mới không hợp lệ, chuyển hướng đến trang đăng nhập');
+        
+        const redirectUrl = new URL(routes.login, request.url);
+        redirectUrl.searchParams.set('returnUrl', pathname);
+        const redirectResponse = NextResponse.redirect(redirectUrl);
+        return addSecurityHeaders(redirectResponse);
+      }
+      
+      // Sử dụng dữ liệu từ token mới đã được xác thực
+      const user = verifyData.user;
+      
+      // Lấy role từ MongoDB thông qua API
+      let userRole = user.role || 'user';
       try {
-        // Gọi API làm mới token
-        const refreshResponse = await fetch(`${baseUrl}${TOKEN_REFRESH_API}`, {
+        const roleResponse = await fetch(`${baseUrl}${USER_ROLE_API}`, {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ 
-            token, // Truyền token hiện tại vào body
-            rememberMe: true // Mặc định sử dụng thời gian sống dài
-          })
+          body: JSON.stringify({ uid: user.uid }),
         });
         
-        const refreshData = await refreshResponse.json();
-        
-        if (refreshResponse.ok) {
-          // Cập nhật cookie với token mới
-          if (refreshData.token) {
-            // Thiết lập cookie mới cho response
-            const maxAge = 60 * 60 * 24 * 30; // 30 ngày
-            response.cookies.set({
-              name: cookieConfig.authCookieName,
-              value: refreshData.token,
-              path: '/',
-              maxAge: maxAge,
-              httpOnly: true,
-              secure: cookieConfig.secure,
-              sameSite: cookieConfig.sameSite,
-            });
+        if (roleResponse.ok) {
+          const roleData = await roleResponse.json();
+          if (roleData.success && roleData.role) {
+            userRole = roleData.role;
           }
         } else {
-          console.error('❌ Không thể làm mới token:', refreshData.error);
+          console.error('❌ Middleware - Lỗi khi gọi API role:', await roleResponse.text());
         }
-      } catch (refreshError) {
-        console.error('❌ Lỗi khi làm mới token:', refreshError);
+      } catch (roleError) {
+        console.error('❌ Middleware - Lỗi khi lấy role từ API:', roleError);
+        // Không làm gián đoạn luồng nếu lỗi API, tiếp tục sử dụng role từ token
       }
+  
+      // Kiểm tra xem token có sắp hết hạn không
+      // Lấy thời gian hết hạn từ payload token
+      const tokenExpiration = user.tokenExpiration;
+      const now = Date.now();
+      const timeLeft = tokenExpiration - now;
+      
+      // Nếu token sắp hết hạn (còn dưới 30 phút), làm mới token
+      if (timeLeft < 30 * 60 * 1000) {
+        console.log('🔄 Token sắp hết hạn, tiến hành làm mới token');
+        
+        try {
+          // Gọi API làm mới token
+          const refreshResponse = await fetch(`${baseUrl}${TOKEN_REFRESH_API}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ 
+              token, // Truyền token hiện tại vào body
+              rememberMe: true // Mặc định sử dụng thời gian sống dài
+            })
+          });
+          
+          const refreshData = await refreshResponse.json();
+          
+          if (refreshResponse.ok) {
+            // Cập nhật cookie với token mới
+            if (refreshData.token) {
+              // Thiết lập cookie mới cho response
+              const maxAge = 60 * 60 * 24 * 30; // 30 ngày
+              response.cookies.set({
+                name: cookieConfig.authCookieName,
+                value: refreshData.token,
+                path: '/',
+                maxAge: maxAge,
+                httpOnly: true,
+                secure: cookieConfig.secure,
+                sameSite: cookieConfig.sameSite,
+              });
+            }
+          } else {
+            console.error('❌ Không thể làm mới token:', refreshData.error);
+          }
+        } catch (refreshError) {
+          console.error('❌ Lỗi khi làm mới token:', refreshError);
+        }
+      }
+      
+      // Nếu token hợp lệ, đặt header
+      response.headers.set('x-middleware-active', 'true');
+      response.headers.set('x-auth-token', token);
+      response.headers.set('x-user-id', user.uid);
+      response.headers.set('x-user-role', userRole);
+    } else {
+      const verifyData = await verifyResponse.json();
+      
+      // Nếu token không hợp lệ, chuyển hướng đến trang đăng nhập
+      if (!verifyData.valid) {
+        console.log('🔒 Token không hợp lệ, chuyển hướng đến trang đăng nhập');
+        
+        const redirectUrl = new URL(routes.login, request.url);
+        redirectUrl.searchParams.set('returnUrl', pathname);
+        const redirectResponse = NextResponse.redirect(redirectUrl);
+        
+        // Xóa cookie token không hợp lệ
+        redirectResponse.cookies.set({
+          name: cookieConfig.authCookieName,
+          value: '',
+          expires: new Date(0),
+          path: '/',
+        });
+        
+        return addSecurityHeaders(redirectResponse);
+      }
+      
+      const user = verifyData.user;
+      
+      // Lấy role từ MongoDB thông qua API
+      let userRole = user.role || 'user';
+      try {
+        const roleResponse = await fetch(`${baseUrl}${USER_ROLE_API}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ uid: user.uid }),
+        });
+        
+        if (roleResponse.ok) {
+          const roleData = await roleResponse.json();
+          if (roleData.success && roleData.role) {
+            userRole = roleData.role;
+          }
+        } else {
+          console.error('❌ Middleware - Lỗi khi gọi API role:', await roleResponse.text());
+        }
+      } catch (roleError) {
+        console.error('❌ Middleware - Lỗi khi lấy role từ API:', roleError);
+        // Không làm gián đoạn luồng nếu lỗi API, tiếp tục sử dụng role từ token
+      }
+  
+      // Kiểm tra xem token có sắp hết hạn không
+      // Lấy thời gian hết hạn từ payload token
+      const tokenExpiration = user.tokenExpiration;
+      const now = Date.now();
+      const timeLeft = tokenExpiration - now;
+      
+      // Nếu token sắp hết hạn (còn dưới 30 phút), làm mới token
+      if (timeLeft < 30 * 60 * 1000) {
+        console.log('🔄 Token sắp hết hạn, tiến hành làm mới token');
+        
+        try {
+          // Gọi API làm mới token
+          const refreshResponse = await fetch(`${baseUrl}${TOKEN_REFRESH_API}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ 
+              token, // Truyền token hiện tại vào body
+              rememberMe: true // Mặc định sử dụng thời gian sống dài
+            })
+          });
+          
+          const refreshData = await refreshResponse.json();
+          
+          if (refreshResponse.ok) {
+            // Cập nhật cookie với token mới
+            if (refreshData.token) {
+              // Thiết lập cookie mới cho response
+              const maxAge = 60 * 60 * 24 * 30; // 30 ngày
+              response.cookies.set({
+                name: cookieConfig.authCookieName,
+                value: refreshData.token,
+                path: '/',
+                maxAge: maxAge,
+                httpOnly: true,
+                secure: cookieConfig.secure,
+                sameSite: cookieConfig.sameSite,
+              });
+            }
+          } else {
+            console.error('❌ Không thể làm mới token:', refreshData.error);
+          }
+        } catch (refreshError) {
+          console.error('❌ Lỗi khi làm mới token:', refreshError);
+        }
+      }
+      
+      // Nếu token hợp lệ, đặt header
+      response.headers.set('x-middleware-active', 'true');
+      response.headers.set('x-auth-token', token);
+      response.headers.set('x-user-id', user.uid);
+      response.headers.set('x-user-role', userRole);
     }
     
-    // Nếu token hợp lệ, đặt header
-    response.headers.set('x-middleware-active', 'true');
-    response.headers.set('x-auth-token', token);
-    response.headers.set('x-user-id', user.uid);
-    response.headers.set('x-user-role', userRole); // Dùng userRole từ MongoDB hoặc token
-
     // ==== Kiểm tra quyền truy cập cho các đường dẫn cụ thể ====
     
     // 1. Kiểm tra nếu yêu cầu là cho trang admin
@@ -381,9 +573,8 @@ export async function middleware(request) {
     // Cho phép truy cập các đường dẫn khác nếu đã xác thực thành công
     return addSecurityHeaders(response);
   } catch (error) {
-    console.error('❌ Lỗi khi xác thực token:', error);
+    console.error('❌ Middleware - Lỗi khi xác thực token:', error);
     
-    // Trong trường hợp lỗi, chuyển hướng đến trang đăng nhập để an toàn
     const redirectUrl = new URL(routes.login, request.url);
     redirectUrl.searchParams.set('returnUrl', pathname);
     const redirectResponse = NextResponse.redirect(redirectUrl);

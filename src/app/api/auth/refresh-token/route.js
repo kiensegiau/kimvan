@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { cookieConfig } from '@/config/env-config';
 import firebaseAdmin from '@/lib/firebase-admin';
-import { verifyServerAuthToken } from '@/utils/server-auth';
+import { verifyServerAuthToken, tryRefreshToken } from '@/utils/server-auth';
 
 /**
  * API route để làm mới token xác thực
@@ -20,16 +20,30 @@ export async function POST(request) {
     
     // Kiểm tra cookie auth một cách an toàn
     let tokenFromCookie = null;
-    try {
-      const authCookieExists = await cookieStore.has(cookieConfig.authCookieName);
-      if (authCookieExists) {
-        const authCookie = await cookieStore.get(cookieConfig.authCookieName);
-        if (authCookie) {
-          tokenFromCookie = authCookie.value;
+    
+    // Danh sách các tên cookie có thể chứa token
+    const possibleCookieNames = [
+      cookieConfig.authCookieName,
+      'auth-token',
+      'authToken',
+      '__Secure-authjs.session-token'
+    ];
+    
+    // Kiểm tra từng cookie có thể chứa token
+    for (const cookieName of possibleCookieNames) {
+      try {
+        const cookieExists = await cookieStore.has(cookieName);
+        if (cookieExists) {
+          const cookie = await cookieStore.get(cookieName);
+          if (cookie && cookie.value) {
+            console.log(`🍪 API refresh-token: Tìm thấy token trong cookie ${cookieName}`);
+            tokenFromCookie = cookie.value;
+            break;
+          }
         }
+      } catch (cookieError) {
+        console.error(`Error accessing cookie ${cookieName}:`, cookieError);
       }
-    } catch (cookieError) {
-      console.error('Error accessing auth cookie:', cookieError);
     }
     
     // Ưu tiên sử dụng token từ body nếu có
@@ -46,52 +60,62 @@ export async function POST(request) {
 
     console.log('🔍 API refresh-token: Đang xác thực token hiện tại...');
     // Xác thực token hiện tại
-    const user = await verifyServerAuthToken(currentToken);
+    let user = await verifyServerAuthToken(currentToken);
+    let newIdToken = null;
     
+    // Nếu token không hợp lệ hoặc đã hết hạn, thử refresh
     if (!user) {
-      console.log('❌ API refresh-token: Token không hợp lệ hoặc đã hết hạn');
-      return NextResponse.json(
-        { success: false, error: 'Token không hợp lệ hoặc đã hết hạn' },
-        { status: 401 }
-      );
-    }
-
-    console.log('✅ API refresh-token: Token hợp lệ, đang tạo token mới...');
-    // Tạo token mới với thời gian sống dài hơn
-    const customToken = await firebaseAdmin.auth().createCustomToken(user.uid);
-    
-    // Đổi custom token thành ID token bằng cách gọi Firebase Auth REST API
-    const firebaseApiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
-    if (!firebaseApiKey) {
-      console.log('❌ API refresh-token: Firebase API Key không được cấu hình');
-      throw new Error('Firebase API Key không được cấu hình');
-    }
-    
-    console.log('🔄 API refresh-token: Đang đổi custom token thành ID token...');
-    // Gọi Firebase Auth REST API để đổi custom token thành ID token
-    const tokenResponse = await fetch(
-      `https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=${firebaseApiKey}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          token: customToken,
-          returnSecureToken: true,
-        }),
+      console.log('⚠️ API refresh-token: Token không hợp lệ hoặc đã hết hạn, thử refresh trực tiếp');
+      const refreshResult = await tryRefreshToken(currentToken);
+      
+      if (refreshResult.success && refreshResult.token) {
+        console.log('✅ API refresh-token: Đã refresh token thành công');
+        newIdToken = refreshResult.token;
+      } else {
+        console.log('❌ API refresh-token: Không thể refresh token đã hết hạn');
+        return NextResponse.json(
+          { success: false, error: 'Token không hợp lệ hoặc đã hết hạn và không thể làm mới' },
+          { status: 401 }
+        );
       }
-    );
-    
-    const tokenData = await tokenResponse.json();
-    if (!tokenResponse.ok) {
-      console.error('❌ API refresh-token: Lỗi khi đổi custom token thành ID token:', tokenData.error);
-      throw new Error('Không thể tạo ID token mới');
+    } else {
+      console.log('✅ API refresh-token: Token hợp lệ, đang tạo token mới...');
+      // Tạo token mới với thời gian sống dài hơn
+      const customToken = await firebaseAdmin.auth().createCustomToken(user.uid);
+      
+      // Đổi custom token thành ID token bằng cách gọi Firebase Auth REST API
+      const firebaseApiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+      if (!firebaseApiKey) {
+        console.log('❌ API refresh-token: Firebase API Key không được cấu hình');
+        throw new Error('Firebase API Key không được cấu hình');
+      }
+      
+      console.log('🔄 API refresh-token: Đang đổi custom token thành ID token...');
+      // Gọi Firebase Auth REST API để đổi custom token thành ID token
+      const tokenResponse = await fetch(
+        `https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=${firebaseApiKey}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            token: customToken,
+            returnSecureToken: true,
+          }),
+        }
+      );
+      
+      const tokenData = await tokenResponse.json();
+      if (!tokenResponse.ok) {
+        console.error('❌ API refresh-token: Lỗi khi đổi custom token thành ID token:', tokenData.error);
+        throw new Error('Không thể tạo ID token mới');
+      }
+      
+      // Lấy ID token mới từ kết quả
+      newIdToken = tokenData.idToken;
+      console.log('✅ API refresh-token: Đã tạo ID token mới thành công');
     }
-    
-    // Lấy ID token mới từ kết quả
-    const newIdToken = tokenData.idToken;
-    console.log('✅ API refresh-token: Đã tạo ID token mới thành công');
     
     // Thiết lập thời gian sống của cookie
     const maxAge = rememberMe ? cookieConfig.extendedMaxAge : cookieConfig.defaultMaxAge;

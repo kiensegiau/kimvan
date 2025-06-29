@@ -264,22 +264,55 @@ export const onAuthStateChanged = (callback) => {
 export const refreshToken = async (rememberMe = true) => {
   try {
     console.log('🔄 Bắt đầu quá trình làm mới token');
+    
+    // Lấy token hiện tại từ localStorage hoặc cookie
+    let currentToken = null;
+    
+    // Thử lấy từ localStorage trước
+    if (typeof window !== 'undefined') {
+      currentToken = localStorage.getItem('auth-token');
+    }
+    
     // Gọi API làm mới token
     const response = await fetch('/api/auth/refresh-token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ rememberMe }),
+      body: JSON.stringify({ 
+        rememberMe,
+        token: currentToken // Truyền token hiện tại (nếu có) để hỗ trợ refresh
+      }),
       credentials: 'same-origin'
     });
     
     console.log('🔄 Đã nhận phản hồi từ API làm mới token:', response.status, response.statusText);
+    
+    if (!response.ok) {
+      // Nếu lỗi 401 (Unauthorized), người dùng cần đăng nhập lại
+      if (response.status === 401) {
+        console.log('⚠️ Token không hợp lệ hoặc đã hết hạn, cần đăng nhập lại');
+        // Xóa token hiện tại khỏi localStorage nếu có
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('auth-token');
+        }
+        return false;
+      }
+      
+      const errorText = await response.text();
+      throw new Error(`Lỗi HTTP ${response.status}: ${errorText}`);
+    }
+    
     const data = await response.json();
     console.log('🔄 Dữ liệu phản hồi:', data);
     
-    if (!response.ok) {
+    if (!data.success) {
       throw new Error(data.error || 'Không thể làm mới token');
+    }
+    
+    // Lưu token mới vào localStorage nếu có
+    if (data.token && typeof window !== 'undefined') {
+      localStorage.setItem('auth-token', data.token);
     }
     
     console.log('✅ Làm mới token thành công');
@@ -298,46 +331,91 @@ export const refreshToken = async (rememberMe = true) => {
 export const checkAndRefreshTokenIfNeeded = async (thresholdMinutes = 30) => {
   try {
     console.log('🔍 Bắt đầu kiểm tra token...');
-    // Gọi API kiểm tra token
-    const response = await fetch('/api/auth/verify', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'same-origin'
-    });
     
-    console.log('🔍 Đã nhận phản hồi từ API verify:', response.status, response.statusText);
-    const data = await response.json();
-    console.log('🔍 Dữ liệu phản hồi verify:', data);
-    
-    if (!response.ok || !data.valid) {
-      console.log('❌ Token không hợp lệ hoặc đã hết hạn');
-      return false;
+    // Thử tối đa 2 lần
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      if (attempt > 1) {
+        console.log(`🔄 Đang thử lại lần ${attempt}...`);
+      }
+      
+      // Gọi API kiểm tra token
+      const response = await fetch('/api/auth/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'same-origin'
+      });
+      
+      console.log('🔍 Đã nhận phản hồi từ API verify:', response.status, response.statusText);
+      
+      // Nếu lỗi 401, token không hợp lệ, thử refresh token
+      if (response.status === 401) {
+        if (attempt === 1) {
+          console.log('⚠️ Token không hợp lệ, thử làm mới token...');
+          const refreshed = await refreshToken(true);
+          if (!refreshed) {
+            console.log('❌ Không thể làm mới token');
+            return false;
+          }
+          // Tiếp tục vòng lặp để thử lại
+          continue;
+        } else {
+          console.log('❌ Token vẫn không hợp lệ sau khi làm mới');
+          return false;
+        }
+      }
+      
+      // Xử lý lỗi khác
+      if (!response.ok) {
+        console.log('❌ Lỗi khi kiểm tra token:', response.status);
+        return false;
+      }
+      
+      const data = await response.json();
+      console.log('🔍 Dữ liệu phản hồi verify:', data);
+      
+      if (!data.valid) {
+        if (attempt === 1) {
+          console.log('❌ Token không hợp lệ, thử làm mới token...');
+          const refreshed = await refreshToken(true);
+          if (!refreshed) {
+            console.log('❌ Không thể làm mới token');
+            return false;
+          }
+          // Tiếp tục vòng lặp để thử lại
+          continue;
+        } else {
+          console.log('❌ Token vẫn không hợp lệ sau khi làm mới');
+          return false;
+        }
+      }
+      
+      // Kiểm tra thời gian còn lại của token
+      const user = data.user;
+      if (!user || !user.tokenExpiration) {
+        console.log('❓ Không có thông tin về thời hạn token');
+        return false;
+      }
+      
+      const now = Date.now();
+      const thresholdMs = thresholdMinutes * 60 * 1000;
+      const timeLeft = user.tokenExpiration - now;
+      
+      console.log(`🕒 Thời gian còn lại của token: ${Math.floor(timeLeft / 60000)} phút (ngưỡng: ${thresholdMinutes} phút)`);
+      
+      // Nếu token sắp hết hạn, làm mới token
+      if (timeLeft < thresholdMs) {
+        console.log(`⚠️ Token sắp hết hạn (còn ${Math.floor(timeLeft / 60000)} phút), tiến hành làm mới`);
+        return await refreshToken(true); // Sử dụng thời gian sống dài
+      }
+      
+      // Token vẫn còn hiệu lực và chưa cần làm mới
+      console.log(`✅ Token còn hiệu lực (còn ${Math.floor(timeLeft / 60000)} phút)`);
+      return true;
     }
     
-    // Kiểm tra thời gian còn lại của token
-    const user = data.user;
-    if (!user || !user.tokenExpiration) {
-      console.log('❓ Không có thông tin về thời hạn token');
-      return false;
-    }
-    
-    const now = Date.now();
-    const thresholdMs = thresholdMinutes * 60 * 1000;
-    const timeLeft = user.tokenExpiration - now;
-    
-    console.log(`🕒 Thời gian còn lại của token: ${Math.floor(timeLeft / 60000)} phút (ngưỡng: ${thresholdMinutes} phút)`);
-    
-    // Nếu token sắp hết hạn, làm mới token
-    if (timeLeft < thresholdMs) {
-      console.log(`⚠️ Token sắp hết hạn (còn ${Math.floor(timeLeft / 60000)} phút), tiến hành làm mới`);
-      return await refreshToken(true); // Sử dụng thời gian sống dài
-    }
-    
-    // Token vẫn còn hiệu lực và chưa cần làm mới
-    console.log(`✅ Token còn hiệu lực (còn ${Math.floor(timeLeft / 60000)} phút)`);
-    return true;
+    return false;
   } catch (error) {
     console.error('❌ Lỗi kiểm tra thời hạn token:', error);
     return false;

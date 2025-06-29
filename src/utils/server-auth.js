@@ -52,7 +52,21 @@ export async function verifyServerAuthToken(token) {
     
     console.log('🔄 verifyServerAuthToken: Đang xác thực token với Firebase Admin...');
     // Xác thực token với Firebase Admin
-    const decodedToken = await firebaseAdmin.auth().verifyIdToken(token);
+    let decodedToken;
+    try {
+      decodedToken = await firebaseAdmin.auth().verifyIdToken(token);
+    } catch (tokenError) {
+      console.error('❌ verifyServerAuthToken: Lỗi xác thực token:', tokenError.message);
+      
+      // Kiểm tra nếu lỗi là do token hết hạn
+      if (tokenError.code === 'auth/id-token-expired') {
+        console.log('⏱️ verifyServerAuthToken: Token đã hết hạn, thử refresh token');
+        return null;
+      }
+      
+      throw tokenError;
+    }
+    
     const uid = decodedToken.uid;
     
     console.log(`✅ verifyServerAuthToken: Token hợp lệ cho người dùng ${uid}`);
@@ -101,6 +115,71 @@ export async function verifyServerAuthToken(token) {
   } catch (error) {
     console.error('❌ verifyServerAuthToken: Lỗi xác thực token:', error.message);
     return null;
+  }
+}
+
+/**
+ * Thử refresh token khi token hiện tại đã hết hạn
+ * @param {string} currentToken - Token hiện tại đã hết hạn
+ * @returns {Promise<{success: boolean, token: string|null}>} - Kết quả refresh token
+ */
+export async function tryRefreshToken(currentToken) {
+  try {
+    console.log('�� tryRefreshToken: Đang thử refresh token đã hết hạn');
+    
+    // Lấy thông tin từ token đã hết hạn
+    let uid = null;
+    try {
+      // Giải mã token mà không kiểm tra chữ ký hoặc thời gian hết hạn
+      const decodedToken = firebaseAdmin.auth().verifyIdToken(currentToken, true);
+      uid = decodedToken.uid;
+    } catch (decodeError) {
+      console.error('❌ tryRefreshToken: Không thể giải mã token:', decodeError.message);
+    }
+    
+    if (!uid) {
+      console.log('❌ tryRefreshToken: Không thể lấy UID từ token hết hạn');
+      return { success: false, token: null };
+    }
+    
+    console.log(`🔑 tryRefreshToken: Đã lấy được UID ${uid}, tạo token mới`);
+    
+    // Tạo custom token mới
+    const customToken = await firebaseAdmin.auth().createCustomToken(uid);
+    
+    // Đổi custom token thành ID token
+    const firebaseApiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+    if (!firebaseApiKey) {
+      throw new Error('Firebase API Key không được cấu hình');
+    }
+    
+    const tokenResponse = await fetch(
+      `https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=${firebaseApiKey}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          token: customToken,
+          returnSecureToken: true,
+        }),
+      }
+    );
+    
+    const tokenData = await tokenResponse.json();
+    if (!tokenResponse.ok) {
+      throw new Error(`Không thể tạo ID token mới: ${JSON.stringify(tokenData.error)}`);
+    }
+    
+    // Lấy ID token mới
+    const newIdToken = tokenData.idToken;
+    console.log('✅ tryRefreshToken: Đã tạo ID token mới thành công');
+    
+    return { success: true, token: newIdToken };
+  } catch (error) {
+    console.error('❌ tryRefreshToken: Lỗi khi refresh token:', error.message);
+    return { success: false, token: null, error: error.message };
   }
 }
 
