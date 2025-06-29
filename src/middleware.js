@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { publicPaths, routes, cookieConfig } from '@/config/env-config';
+// Không import config từ middleware.config.js
 
 // Các Security Headers cơ bản
 const securityHeaders = [
@@ -82,6 +83,8 @@ function addSecurityHeaders(response) {
 
 export async function middleware(request) {
   const { pathname } = request.nextUrl;
+  // Không khai báo userRole với giá trị mặc định ở đây
+  // Sẽ lấy từ API khi xác thực token
 
   // Áp dụng security headers cho tất cả các request
   const response = NextResponse.next();
@@ -98,7 +101,9 @@ export async function middleware(request) {
     return response;
   }
 
-  // Kết nối DB tự động cho các API routes
+  // QUAN TRỌNG: Đã vô hiệu hóa kết nối DB tự động trong middleware để tránh lỗi Edge Runtime
+  // Kết nối DB sẽ được thực hiện trong từng API route thay vì trong middleware
+  /*
   if (needsDatabaseConnection(pathname)) {
     try {
       // Import dbMiddleware động để tránh lỗi khi ứng dụng khởi động
@@ -112,6 +117,7 @@ export async function middleware(request) {
       // Không chặn request nếu kết nối DB thất bại
     }
   }
+  */
 
   // Kiểm tra và cache kết quả cho đường dẫn công khai
   if (publicPathCache.has(pathname)) {
@@ -185,6 +191,10 @@ export async function middleware(request) {
       },
       body: JSON.stringify({ token }),
     });
+
+    // Khai báo biến user và userRole ở đây để có phạm vi trong toàn bộ khối try
+    let user;
+    let userRole;
 
     // Nếu token không hợp lệ hoặc đã hết hạn, thử làm mới token
     if (!verifyResponse.ok) {
@@ -288,10 +298,10 @@ export async function middleware(request) {
       }
       
       // Sử dụng dữ liệu từ token mới đã được xác thực
-      const user = verifyData.user;
+      user = verifyData.user;
       
       // Lấy role từ MongoDB thông qua API
-      let userRole = user.role || 'user';
+      userRole = user.role || 'user';
       try {
         const roleResponse = await fetch(`${baseUrl}${USER_ROLE_API}`, {
           method: 'POST',
@@ -389,10 +399,10 @@ export async function middleware(request) {
         return addSecurityHeaders(redirectResponse);
       }
       
-      const user = verifyData.user;
+      user = verifyData.user;
       
       // Lấy role từ MongoDB thông qua API
-      let userRole = user.role || 'user';
+      userRole = user.role || 'user';
       try {
         const roleResponse = await fetch(`${baseUrl}${USER_ROLE_API}`, {
           method: 'POST',
@@ -620,14 +630,12 @@ export async function middleware(request) {
 export const config = {
   matcher: [
     /*
-     * Match all request paths except for:
-     * 1. The ones in publicPaths (defined in env-config.js)
-     * 2. _next/static (static files)
-     * 3. _next/image (image optimization files)
-     * 4. favicon.ico, images, fonts, assets (static assets)
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public (public files)
      */
-    '/((?!api/auth/verify|api/auth/refresh-token|api/auth/user-role|api/auth/logout|api/auth/admin/check-permission|api/spreadsheets|api/drive/remove-watermark|api/drive/check-file-type|api/drive/upload|api/courses/process-all-drive|login|admin/login|ctv/login|register|forgot-password|reset-password|_next/static|_next/image|favicon.ico|images|fonts|assets).*)',
-  ],
-  // Edge runtime settings
-  skipMiddlewareUrlNormalize: true
+    '/((?!_next/static|_next/image|favicon.ico|public).*)',
+  ]
 }; 
