@@ -802,7 +802,9 @@ export default function UsersPage() {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {filteredUsers.length > 0 ? (
                       filteredUsers.map((user) => (
-                        <tr key={user.id} className="hover:bg-gray-50">
+                        <tr key={user.id} className={`hover:bg-gray-50 ${
+                          user.createdBy ? 'bg-blue-50' : ''
+                        }`}>
                           <td className="px-6 py-4 whitespace-nowrap hidden">
                             <div className="flex items-center">
                               <div className="flex-shrink-0 h-10 w-10">
@@ -839,6 +841,18 @@ export default function UsersPage() {
                                     <EnvelopeIcon className="h-4 w-4" />
                                   </button>
                                 </span>}
+                              
+                              {/* Hiển thị thông tin người phụ trách */}
+                              {user.createdBy && (
+                                <div className="mt-1 flex items-center text-xs text-indigo-600">
+                                  <UserIcon className="h-3 w-3 mr-1" />
+                                  <span>Người tạo: {user.createdBy}</span>
+                                  <span className="ml-1 px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                                    CTV
+                                  </span>
+                                </div>
+                              )}
+                              
                               {user.accountType === 'trial' && user.trialEndsAt && (
                                 <div className="mt-1 flex items-center text-xs">
                                   <ClockIcon className="h-3 w-3 mr-1 text-orange-500" />
@@ -849,6 +863,16 @@ export default function UsersPage() {
                                   }`}>
                                     {formatRemainingTime(user.trialEndsAt)}
                                   </span>
+                                </div>
+                              )}
+                              
+                              {/* Hiển thị số điện thoại nếu có */}
+                              {user.phoneNumber && !user.phoneNumber.includes('@') && (
+                                <div className="mt-1 flex items-center text-xs text-gray-600">
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                                  </svg>
+                                  <span>SĐT: {user.phoneNumber}</span>
                                 </div>
                               )}
                             </div>
@@ -990,7 +1014,9 @@ export default function UsersPage() {
                 {filteredUsers.length > 0 ? (
                   <div className="grid grid-cols-1 gap-4">
                     {filteredUsers.map((user) => (
-                      <div key={user.id} className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
+                      <div key={user.id} className={`bg-white rounded-lg border border-gray-200 shadow-sm p-4 ${
+                        user.createdBy ? 'bg-blue-50 border-blue-200' : ''
+                      }`}>
                         <div className="mb-2">
                           <div className="text-sm font-medium text-gray-900">{user.email}</div>
                           <div className="text-xs text-gray-500">
@@ -1005,6 +1031,18 @@ export default function UsersPage() {
                                   <EnvelopeIcon className="h-4 w-4" />
                                 </button>
                               </span>}
+                              
+                            {/* Hiển thị thông tin người phụ trách trên mobile */}
+                            {user.createdBy && (
+                              <div className="mt-1 flex items-center text-xs text-indigo-600">
+                                <UserIcon className="h-3 w-3 mr-1" />
+                                <span>Người tạo: {user.createdBy}</span>
+                                <span className="ml-1 px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                                  CTV
+                                </span>
+                              </div>
+                            )}
+                            
                             {user.accountType === 'trial' && user.trialEndsAt && (
                               <div className="mt-1 flex items-center text-xs">
                                 <ClockIcon className="h-3 w-3 mr-1 text-orange-500" />
@@ -1015,6 +1053,16 @@ export default function UsersPage() {
                                 }`}>
                                   {formatRemainingTime(user.trialEndsAt)}
                                 </span>
+                              </div>
+                            )}
+                            
+                            {/* Hiển thị số điện thoại nếu có */}
+                            {user.phoneNumber && !user.phoneNumber.includes('@') && (
+                              <div className="mt-1 flex items-center text-xs text-gray-600">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                                </svg>
+                                <span>SĐT: {user.phoneNumber}</span>
                               </div>
                             )}
                           </div>
@@ -1323,6 +1371,21 @@ export default function UsersPage() {
                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm text-gray-900"
                       />
                     </div>
+                    
+                    {/* Hiển thị thông tin người tạo tài khoản */}
+                    {currentUser.createdBy && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Người tạo tài khoản
+                        </label>
+                        <div className="mt-1 flex items-center w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-50 text-sm text-gray-700">
+                          {currentUser.createdBy}
+                          <span className="ml-2 px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                            CTV
+                          </span>
+                        </div>
+                      </div>
+                    )}
                     
                     {/* Số điện thoại */}
                     <div>
