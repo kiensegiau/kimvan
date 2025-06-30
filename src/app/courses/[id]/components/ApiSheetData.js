@@ -276,9 +276,9 @@ export default function ApiSheetData({
       const finalUrl = hyperlink.startsWith('/api/proxy-link/') ? decodeProxyLink(hyperlink) : hyperlink;
       
       return (
-        <td key={cellIndex} className="px-6 py-4 whitespace-normal break-words border-b border-gray-50 border-r-2 border-gray-400 last:border-r-0 group-hover:bg-blue-50/80 transition-colors duration-150">
+        <td key={cellIndex} className="px-6 py-4 whitespace-normal break-words border-r border-gray-100 last:border-r-0 group-hover:bg-blue-50/80 transition-colors duration-150">
           <div className="flex items-center">
-            <div className="flex-shrink-0 mr-2">
+            <div className="flex-shrink-0 mr-2 bg-blue-50 p-1.5 rounded-full">
               {linkIcon}
             </div>
             <div>
@@ -308,7 +308,7 @@ export default function ApiSheetData({
                   </div>
                 ) : (
                   <div className="relative group">
-                    <span className="group-hover:border-b border-blue-600">{displayText}</span>
+                    <span className="group-hover:text-blue-700">{displayText}</span>
                     <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-600 group-hover:w-full transition-all duration-300"></span>
                   </div>
                 )}
@@ -320,15 +320,15 @@ export default function ApiSheetData({
     }
     
     return (
-      <td key={cellIndex} className="px-6 py-4 whitespace-normal break-words border-b border-gray-50 border-r-2 border-gray-400 last:border-r-0 group-hover:bg-blue-50/80 transition-colors duration-150">
+      <td key={cellIndex} className="px-6 py-4 whitespace-normal break-words border-r border-gray-100 last:border-r-0 group-hover:bg-blue-50/80 transition-colors duration-150">
         <div className="flex items-center">
-          <div className="flex-shrink-0 mr-2">
+          <div className="flex-shrink-0 mr-2 bg-blue-50 p-1.5 rounded-full">
             {linkIcon}
           </div>
           <div>
             <a 
               href="#" 
-              className={`text-blue-600 hover:text-blue-800 text-base font-medium transition-colors duration-200 ${isLoading ? 'opacity-50 cursor-wait' : ''}`}
+              className={`text-blue-600 hover:text-blue-800 text-base font-medium transition-colors duration-200 ${isLoading ? 'opacity-70 cursor-wait' : ''}`}
               onClick={(e) => handleLinkClick(e, hyperlink, content)}
             >
               {isLoading ? (
@@ -343,7 +343,7 @@ export default function ApiSheetData({
                 </div>
               ) : (
                 <div className="relative group">
-                  <span className="group-hover:border-b border-blue-600">{displayText}</span>
+                  <span className="group-hover:text-blue-700">{displayText}</span>
                   <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-600 group-hover:w-full transition-all duration-300"></span>
                 </div>
               )}
@@ -393,7 +393,9 @@ export default function ApiSheetData({
       if (isGoogleDriveLink(url)) {
         return (
           <div className="flex items-center">
-            {linkIcon}
+            <div className="flex-shrink-0 mr-2 bg-blue-50 p-1.5 rounded-full">
+              {linkIcon}
+            </div>
             <a 
               href={url}
               onClick={(e) => {
@@ -405,7 +407,7 @@ export default function ApiSheetData({
               rel="noopener noreferrer"
             >
               <div className="relative group">
-                <span className="group-hover:border-b border-blue-600">{displayText}</span>
+                <span className="group-hover:text-blue-700">{displayText}</span>
                 <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-600 group-hover:w-full transition-all duration-300"></span>
               </div>
             </a>
@@ -415,14 +417,16 @@ export default function ApiSheetData({
       
       return (
         <div className="flex items-center">
-          {linkIcon}
+          <div className="flex-shrink-0 mr-2 bg-blue-50 p-1.5 rounded-full">
+            {linkIcon}
+          </div>
           <a 
             href="#" 
             onClick={(e) => handleLinkClick(e, url, displayText)}
             className="text-blue-600 hover:text-blue-800 text-base font-medium transition-colors duration-200"
           >
             <div className="relative group">
-              <span className="group-hover:border-b border-blue-600">{displayText}</span>
+              <span className="group-hover:text-blue-700">{displayText}</span>
               <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-600 group-hover:w-full transition-all duration-300"></span>
             </div>
           </a>
@@ -471,7 +475,9 @@ export default function ApiSheetData({
       if (isGoogleDriveLink(content)) {
         return (
           <div className="flex items-center">
-            {linkIcon}
+            <div className="flex-shrink-0 mr-2 bg-blue-50 p-1.5 rounded-full">
+              {linkIcon}
+            </div>
             <a 
               href={content}
               onClick={(e) => {
@@ -483,7 +489,7 @@ export default function ApiSheetData({
               rel="noopener noreferrer"
             >
               <div className="relative group">
-                <span className="group-hover:border-b border-blue-600">{displayUrl}</span>
+                <span className="group-hover:text-blue-700">{displayUrl}</span>
                 <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-600 group-hover:w-full transition-all duration-300"></span>
               </div>
             </a>
@@ -493,14 +499,16 @@ export default function ApiSheetData({
       
       return (
         <div className="flex items-center">
-          {linkIcon}
+          <div className="flex-shrink-0 mr-2 bg-blue-50 p-1.5 rounded-full">
+            {linkIcon}
+          </div>
           <a 
             href="#" 
             onClick={(e) => handleLinkClick(e, content)}
             className="text-blue-600 hover:text-blue-800 text-base font-medium transition-colors duration-200"
           >
             <div className="relative group">
-              <span className="group-hover:border-b border-blue-600">{displayUrl}</span>
+              <span className="group-hover:text-blue-700">{displayUrl}</span>
               <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-600 group-hover:w-full transition-all duration-300"></span>
             </div>
           </a>
@@ -515,10 +523,10 @@ export default function ApiSheetData({
         if (!isNaN(num)) {
           // If it's a whole number
           if (Number.isInteger(num)) {
-            return <span className="text-base font-medium">{num.toLocaleString()}</span>;
+            return <span className="text-base font-medium text-gray-800">{num.toLocaleString()}</span>;
           } else {
             // If it has decimal places
-            return <span className="text-base font-medium">{num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>;
+            return <span className="text-base font-medium text-gray-800">{num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>;
           }
         }
       } catch (e) {
@@ -528,38 +536,43 @@ export default function ApiSheetData({
     
     // Check if content might be a date
     if (typeof content === 'string' && content.match(/^\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}$/)) {
-      return <span className="text-base font-medium text-purple-700">{content}</span>;
+      return <span className="text-base font-medium text-purple-700 bg-purple-50 px-2 py-0.5 rounded">{content}</span>;
     }
     
     // For percentage values
     if (typeof content === 'string' && content.endsWith('%')) {
-      return <span className="text-base font-medium text-green-700">{content}</span>;
+      return <span className="text-base font-medium text-green-700 bg-green-50 px-2 py-0.5 rounded">{content}</span>;
     }
     
     // For regular text content
-    return <span className="text-base">{content}</span>;
+    return <span className="text-base text-gray-700">{content}</span>;
   };
 
   // Không cần kiểm tra lỗi và trạng thái loading vì đã được xử lý ở component cha
   if (!apiSheetData || !apiSheetData.sheets || apiSheetData.sheets.length === 0) {
     return (
-      <div className="bg-white shadow rounded-lg overflow-hidden">
-        <div className="px-4 py-5 border-b border-gray-200 bg-gray-50">
-          <h3 className="text-lg font-medium text-gray-900">Dữ liệu khóa học</h3>
+      <div className="bg-white shadow-lg rounded-lg overflow-hidden border border-gray-200">
+        <div className="px-4 py-5 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+          <h3 className="text-lg font-medium text-gray-900 flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Dữ liệu khóa học
+          </h3>
         </div>
         <div className="text-center p-8">
-          <div className="inline-block p-4 rounded-full bg-gray-100 mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="inline-block p-6 rounded-full bg-blue-50 mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
             </svg>
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Không có dữ liệu khóa học</h3>
-          <p className="text-gray-600 max-w-md mx-auto mb-4">
+          <h3 className="text-xl font-medium text-gray-900 mb-2">Không có dữ liệu khóa học</h3>
+          <p className="text-gray-600 max-w-md mx-auto mb-6">
             Khóa học này chưa có sheets nào được liên kết.
           </p>
           <button
             onClick={fetchApiSheetData}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors duration-200 shadow-sm"
           >
             <ArrowPathIcon className="h-4 w-4 mr-2" />
             Làm mới dữ liệu
@@ -575,25 +588,30 @@ export default function ApiSheetData({
   // Kiểm tra xem currentSheet có tồn tại không
   if (!currentSheet) {
     return (
-      <div className="bg-white shadow rounded-lg overflow-hidden">
-        <div className="px-4 py-5 border-b border-gray-200 bg-gray-50">
-          <h3 className="text-lg font-medium text-gray-900">Dữ liệu khóa học</h3>
+      <div className="bg-white shadow-lg rounded-lg overflow-hidden border border-gray-200">
+        <div className="px-4 py-5 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+          <h3 className="text-lg font-medium text-gray-900 flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Dữ liệu khóa học
+          </h3>
         </div>
-        <div className="p-6 text-center">
-          <div className="bg-yellow-50 p-4 rounded-lg inline-block">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-yellow-400 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="p-8 text-center">
+          <div className="bg-yellow-50 p-6 rounded-full inline-block mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
-            <p className="text-yellow-800 mb-2 font-medium">Không tìm thấy dữ liệu</p>
-            <p className="text-yellow-700 mb-4">Không tìm thấy sheet đang chọn (index: {activeApiSheet})</p>
-            <button
-              onClick={fetchApiSheetData}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-yellow-600 hover:bg-yellow-700"
-            >
-              <ArrowPathIcon className="h-4 w-4 mr-2" />
-              Làm mới dữ liệu
-            </button>
           </div>
+          <h3 className="text-xl font-medium text-gray-900 mb-2">Không tìm thấy dữ liệu</h3>
+          <p className="text-yellow-700 mb-6">Không tìm thấy sheet đang chọn (index: {activeApiSheet})</p>
+          <button
+            onClick={fetchApiSheetData}
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-yellow-500 hover:bg-yellow-600 transition-colors duration-200 shadow-sm"
+          >
+            <ArrowPathIcon className="h-4 w-4 mr-2" />
+            Làm mới dữ liệu
+          </button>
         </div>
       </div>
     );
@@ -609,7 +627,7 @@ export default function ApiSheetData({
     }
     setSortConfig({ key, direction });
   };
-  
+
   // Get sorted data
   const getSortedData = (data) => {
     if (!data || !sortConfig.key) {
@@ -635,6 +653,13 @@ export default function ApiSheetData({
         return sortConfig.direction === 'ascending' ? aNum - bNum : bNum - aNum;
       }
       
+      // Check if values are dates
+      const aDate = new Date(aValue);
+      const bDate = new Date(bValue);
+      if (!isNaN(aDate) && !isNaN(bDate)) {
+        return sortConfig.direction === 'ascending' ? aDate - bDate : bDate - aDate;
+      }
+      
       // Otherwise sort as strings
       if (aValue < bValue) {
         return sortConfig.direction === 'ascending' ? -1 : 1;
@@ -651,13 +676,18 @@ export default function ApiSheetData({
   // Kiểm tra chi tiết sheet
   if (!sheetDetail) {
     return (
-      <div className="bg-white shadow rounded-lg overflow-hidden">
-        <div className="px-4 sm:px-6 py-4 border-b border-gray-200 bg-gray-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-          <h3 className="text-lg font-medium text-gray-900">Dữ liệu khóa học</h3>
+      <div className="bg-white shadow-lg rounded-lg overflow-hidden border border-gray-200">
+        <div className="px-4 sm:px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+          <h3 className="text-lg font-medium text-gray-900 flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Dữ liệu khóa học
+          </h3>
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => fetchSheetDetail(currentSheet._id)}
-              className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-700 bg-gray-100 hover:bg-gray-200"
+              className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors duration-200"
             >
               <ArrowPathIcon className="h-4 w-4 mr-1" />
               Tải dữ liệu
@@ -666,18 +696,18 @@ export default function ApiSheetData({
         </div>
         
         <div className="p-8 text-center">
-          <div className="inline-block p-4 rounded-full bg-yellow-100 mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          <div className="inline-block p-6 rounded-full bg-blue-50 mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
             </svg>
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Chưa có dữ liệu chi tiết</h3>
-          <p className="text-gray-600 max-w-md mx-auto mb-4">
-            Đã tìm thấy sheet <strong>{currentSheet.name}</strong> nhưng chưa tải được dữ liệu chi tiết.
+          <h3 className="text-xl font-medium text-gray-900 mb-2">Chưa có dữ liệu chi tiết</h3>
+          <p className="text-gray-600 max-w-md mx-auto mb-6">
+            Đã tìm thấy sheet <strong className="font-semibold">{currentSheet.name}</strong> nhưng chưa tải được dữ liệu chi tiết.
           </p>
           <button
             onClick={() => fetchSheetDetail(currentSheet._id)}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-yellow-500 hover:bg-yellow-600"
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors duration-200 shadow-sm"
           >
             <ArrowPathIcon className="h-4 w-4 mr-2" />
             Tải dữ liệu chi tiết
@@ -688,7 +718,7 @@ export default function ApiSheetData({
   }
 
   return (
-    <div className="bg-white shadow rounded-lg overflow-hidden">
+    <div className="bg-white shadow-lg rounded-lg overflow-hidden border border-gray-200">
       {/* YouTube Modal */}
       <YouTubeModal
         isOpen={!!selectedVideo}
@@ -704,12 +734,17 @@ export default function ApiSheetData({
         onClose={() => setSelectedPDF(null)}
       />
       
-      <div className="px-4 sm:px-6 py-4 border-b border-gray-200 bg-gray-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-        <h3 className="text-lg font-medium text-gray-900">Dữ liệu khóa học</h3>
+      <div className="px-4 sm:px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <h3 className="text-lg font-medium text-gray-900 flex items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          Dữ liệu khóa học
+        </h3>
         <div className="flex flex-wrap gap-2">
           <button
             onClick={fetchApiSheetData}
-            className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-700 bg-gray-100 hover:bg-gray-200"
+            className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors duration-200"
           >
             <ArrowPathIcon className="h-4 w-4 mr-1" />
             Làm mới dữ liệu
@@ -719,7 +754,7 @@ export default function ApiSheetData({
 
       {/* Chọn khóa học khi có nhiều sheet */}
       {apiSheetData.sheets.length > 1 && (
-        <div className="border-b border-gray-200 px-4 sm:px-6 py-4 bg-gray-50">
+        <div className="border-b border-gray-200 px-4 sm:px-6 py-4 bg-white">
           <h3 className="text-base font-medium text-gray-800 mb-3">Chọn sheet:</h3>
           <div className="flex flex-wrap gap-2 overflow-x-auto pb-2">
             {apiSheetData.sheets.map((sheet, index) => (
@@ -729,8 +764,8 @@ export default function ApiSheetData({
                 className={`
                   px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap
                   ${activeApiSheet === index 
-                    ? 'bg-blue-600 text-white' 
-                    : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                    ? 'bg-blue-600 text-white shadow-md' 
+                    : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:shadow'
                   }
                 `}
               >
@@ -760,7 +795,7 @@ export default function ApiSheetData({
         </div>
         <div className="flex items-center gap-2">
           {sheetDetail?.data?.values && (
-            <div className="text-sm text-gray-600">
+            <div className="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
               {sheetDetail.data.values.length - 1} dòng dữ liệu
             </div>
           )}
@@ -771,31 +806,31 @@ export default function ApiSheetData({
       <div className="px-4 sm:px-6 py-4">
         {sheetDetail?.data?.values && sheetDetail.data.values.length > 0 ? (
           <div className="overflow-x-auto max-w-full -mx-4 sm:mx-0 px-4 sm:px-0">
-                          <div className="inline-block min-w-full align-middle rounded-lg shadow-md">
-                <div className="overflow-hidden border-2 border-gray-300 sm:rounded-lg bg-white shadow-md" style={{ boxShadow: '0 0 0 1px rgba(0, 0, 0, 0.05), 0 2px 8px 0 rgba(0, 0, 0, 0.1)' }}>
-                                  <table className="min-w-full divide-y divide-gray-200 table-fixed border-collapse border-x border-gray-300" style={{ borderSpacing: 0 }}>
-                  <thead className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b-2 border-gray-300">
+            <div className="inline-block min-w-full align-middle">
+              <div className="overflow-hidden rounded-lg bg-white" style={{ boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}>
+                <table className="min-w-full divide-y divide-gray-200 table-fixed border-collapse" style={{ borderSpacing: 0 }}>
+                  <thead className="bg-gradient-to-r from-blue-600 to-indigo-600">
                     <tr>
                       {sheetDetail.data.values[0].map((header, index) => (
                         <th 
                           key={index} 
-                          className={`group px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider whitespace-normal break-words border-b-2 border-r-2 border-gray-400 last:border-r-0 transition-all duration-200 ${
+                          className={`group px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider whitespace-normal break-words transition-all duration-200 text-white border-r border-blue-500/30 last:border-r-0 ${
                             sortConfig.key === index 
-                              ? 'text-indigo-900 border-b-indigo-500 bg-indigo-50' 
-                              : 'text-indigo-800 border-b-indigo-100 hover:bg-indigo-50/50'
-                          }`}
-                          style={{ minWidth: '120px' }}
+                              ? 'bg-indigo-700' 
+                              : 'hover:bg-blue-700'
+                          } ${index === 0 ? 'bg-gradient-to-r from-indigo-800 to-indigo-700 min-w-[180px]' : ''}`}
+                          style={{ minWidth: index === 0 ? '180px' : '120px' }}
                           onClick={() => requestSort(index)}
                           onMouseEnter={() => setHoveredHeader(index)}
                           onMouseLeave={() => setHoveredHeader(null)}
                         >
                           <div className="flex items-center justify-between cursor-pointer">
-                            <span>{header}</span>
+                            <span className={index === 0 ? 'font-bold text-sm' : ''}>{header}</span>
                             <div className="flex items-center">
                               {sortConfig.key === index ? (
                                 <svg 
                                   xmlns="http://www.w3.org/2000/svg" 
-                                  className={`h-4 w-4 text-indigo-800 transition-transform duration-200 ${
+                                  className={`h-4 w-4 text-white transition-transform duration-200 ${
                                     sortConfig.direction === 'ascending' ? 'transform rotate-180' : ''
                                   }`} 
                                   fill="none" 
@@ -807,7 +842,7 @@ export default function ApiSheetData({
                               ) : (
                                 <svg 
                                   xmlns="http://www.w3.org/2000/svg" 
-                                  className={`h-4 w-4 text-indigo-300 opacity-0 ${hoveredHeader === index ? 'opacity-100' : ''} transition-opacity duration-200`} 
+                                  className={`h-4 w-4 text-white/50 opacity-0 ${hoveredHeader === index ? 'opacity-100' : ''} transition-opacity duration-200`} 
                                   fill="none" 
                                   viewBox="0 0 24 24" 
                                   stroke="currentColor"
@@ -821,7 +856,7 @@ export default function ApiSheetData({
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody className="bg-white divide-y divide-gray-100">
                     {getSortedData(sheetDetail.data.values).slice(1).map((row, rowIndex) => {
                       // Lấy dữ liệu HTML tương ứng nếu có
                       const htmlRow = sheetDetail.data.htmlData?.[rowIndex + 1]?.values || [];
@@ -830,7 +865,7 @@ export default function ApiSheetData({
                       return (
                         <tr 
                           key={rowIndex} 
-                          className={`${isEvenRow ? 'bg-white' : 'bg-blue-50/30'} hover:bg-blue-50 hover:shadow-sm transition-all duration-150 ease-in-out group`}
+                          className={`${isEvenRow ? 'bg-white' : 'bg-blue-50/40'} hover:bg-blue-50 transition-all duration-150 ease-in-out group`}
                         >
                           {row.map((cell, cellIndex) => {
                             // Kiểm tra xem có dữ liệu HTML không
@@ -846,10 +881,24 @@ export default function ApiSheetData({
                             const key = `${rowIndex}-${cellIndex}`;
                             const cellContent = cell || '';
                             
+                            // Định dạng đặc biệt cho cột đầu tiên
+                            if (cellIndex === 0) {
+                              return (
+                                <td 
+                                  key={cellIndex} 
+                                  className="px-6 py-4 whitespace-normal break-words text-base border-r border-gray-100 last:border-r-0 group-hover:bg-blue-50/80 transition-colors duration-150 bg-indigo-50/70"
+                                >
+                                  <div className="text-indigo-800 font-semibold">
+                                    {renderCellContent(cellContent)}
+                                  </div>
+                                </td>
+                              );
+                            }
+                            
                             return (
                               <td 
                                 key={cellIndex} 
-                                className="px-6 py-4 whitespace-normal break-words text-base border-b border-gray-50 border-r-2 border-gray-400 last:border-r-0 group-hover:bg-blue-50/80 transition-colors duration-150"
+                                className="px-6 py-4 whitespace-normal break-words text-base border-r border-gray-100 last:border-r-0 group-hover:bg-blue-50/80 transition-colors duration-150"
                               >
                                 <div className="text-gray-700 font-medium">
                                   {renderCellContent(cellContent)}
@@ -863,7 +912,7 @@ export default function ApiSheetData({
                   </tbody>
                 </table>
               </div>
-              <div className="bg-white px-4 py-3 flex items-center justify-between border-t-2 border-gray-300 sm:px-6">
+              <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6 rounded-b-lg shadow-inner">
                 <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                   <div>
                     <p className="text-sm text-gray-700">
@@ -872,7 +921,11 @@ export default function ApiSheetData({
                   </div>
                   <div className="flex items-center space-x-2">
                     <button 
-                      className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
+                      className={`inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-sm font-medium rounded-md ${
+                        sortConfig.key === null 
+                          ? 'text-gray-400 bg-gray-50 cursor-not-allowed' 
+                          : 'text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
+                      } transition-colors duration-200`}
                       disabled={sortConfig.key === null}
                       onClick={() => setSortConfig({ key: null, direction: 'ascending' })}
                     >
@@ -888,7 +941,7 @@ export default function ApiSheetData({
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                         </svg>
                       </button>
-                      <span className="px-3 py-1 text-sm text-gray-700">1</span>
+                      <span className="px-3 py-1 text-sm text-gray-700 bg-gray-100 rounded-md">1</span>
                       <button className="inline-flex items-center justify-center w-8 h-8 border border-gray-300 rounded-md bg-white text-gray-500 hover:bg-gray-50 transition-colors duration-200">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
