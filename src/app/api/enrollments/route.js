@@ -27,20 +27,28 @@ export async function GET(request) {
       .lean()
       .exec();
     
-    // Trả về kết quả
-    return NextResponse.json({
-      success: true,
-      data: enrollments.map(enrollment => ({
+    // Lấy thông tin khóa học cho mỗi đăng ký
+    const enrolledCoursesPromises = enrollments.map(async (enrollment) => {
+      const course = await Course.findById(enrollment.courseId).lean().exec();
+      return {
         id: enrollment._id,
-        courseId: enrollment.courseId._id,
-        courseName: enrollment.courseId.name,
-        courseDescription: enrollment.courseId.description,
-        courseImage: enrollment.courseId.image,
+        courseId: enrollment.courseId,
+        kimvanId: course ? course.kimvanId : null,
+        courseName: course ? course.name : 'Khóa học không tồn tại',
+        courseDescription: course ? course.description : '',
+        courseImage: course ? course.image : '',
         enrolledAt: enrollment.enrolledAt,
         lastAccessedAt: enrollment.lastAccessedAt,
         progress: enrollment.progress,
         status: enrollment.status
-      }))
+      };
+    });
+    
+    // Trả về kết quả
+    const enrolledCourses = await Promise.all(enrolledCoursesPromises);
+    return NextResponse.json({
+      success: true,
+      data: enrolledCourses
     });
   } catch (error) {
     console.error('Lỗi khi lấy danh sách khóa học đã đăng ký:', error);

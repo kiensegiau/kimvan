@@ -24,6 +24,10 @@ const courseSchema = new mongoose.Schema({
     enum: ['active', 'inactive'],
     default: 'active'
   },
+  requiresEnrollment: {
+    type: Boolean,
+    default: true
+  },
   kimvanId: {
     type: String,
     trim: true

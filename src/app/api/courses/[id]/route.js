@@ -358,12 +358,45 @@ export async function GET(request, { params }) {
       canViewAllCourses = user.role === 'admin' || user.canViewAllCourses === true;
       
       // Kiểm tra nếu người dùng đã đăng ký khóa học này
-      const enrollment = await Enrollment.findOne({
+      // Kiểm tra đăng ký bằng MongoDB ID
+      const enrollmentByMongoId = await Enrollment.findOne({
         userId: user.uid,
         courseId: course._id
       }).lean().exec();
       
-      isEnrolled = !!enrollment;
+      // Kiểm tra đăng ký bằng kimvanId (nếu có)
+      let enrollmentByKimvanId = null;
+      if (course.kimvanId) {
+        // Tìm tất cả các khóa học có kimvanId này
+        const coursesWithKimvanId = await Course.find({
+          kimvanId: course.kimvanId
+        }).lean().exec();
+        
+        // Lấy danh sách các MongoDB ID của các khóa học có cùng kimvanId
+        const courseIds = coursesWithKimvanId.map(c => c._id);
+        
+        // Tìm đăng ký với bất kỳ khóa học nào trong danh sách
+        if (courseIds.length > 0) {
+          enrollmentByKimvanId = await Enrollment.findOne({
+            userId: user.uid,
+            courseId: { $in: courseIds }
+          }).lean().exec();
+        }
+      }
+      
+      // Người dùng được coi là đã đăng ký nếu tìm thấy đăng ký bằng một trong hai cách
+      isEnrolled = !!(enrollmentByMongoId || enrollmentByKimvanId);
+      
+      // Ghi log để debug
+      console.log(
+        'Enrollment check: ' +
+        '- User ID: ' + user.uid +
+        '- Course ID: ' + course._id +
+        '- Course kimvanId: ' + (course.kimvanId || 'N/A') +
+        '- Found by MongoDB ID: ' + !!enrollmentByMongoId +
+        '- Found by kimvanId: ' + !!enrollmentByKimvanId +
+        '- Is enrolled: ' + isEnrolled
+      );
     }
     
     // Nếu khóa học yêu cầu đăng ký và người dùng không có quyền

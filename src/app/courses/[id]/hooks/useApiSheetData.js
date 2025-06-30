@@ -48,11 +48,23 @@ export function useApiSheetData(courseId) {
         timestamp: Date.now()
       };
       
-      // Lưu dữ liệu chi tiết sheet vào cache
-      const cacheKey = `sheet-detail-${sheetId}`;
-      localStorage.setItem(cacheKey, JSON.stringify(cacheItem));
-      
-      setCacheStatus(`saved-detail-${sheetId}`);
+      // Kiểm tra kích thước dữ liệu trước khi lưu
+      try {
+        const jsonData = JSON.stringify(cacheItem);
+        const dataSize = new Blob([jsonData]).size;
+        
+        // Nếu dữ liệu quá lớn (> 1MB), không lưu cache
+        if (dataSize > 1024 * 1024) {
+          return;
+        }
+        
+        // Lưu dữ liệu chi tiết sheet vào cache nếu đủ nhỏ
+        const cacheKey = `sheet-detail-${sheetId}`;
+        localStorage.setItem(cacheKey, jsonData);
+        setCacheStatus(`saved-detail-${sheetId}`);
+      } catch (storageError) {
+        // Nếu gặp lỗi storage, bỏ qua việc lưu cache
+      }
     } catch (error) {
       console.error('Lỗi khi lưu cache sheet detail:', error);
     }
@@ -96,18 +108,24 @@ export function useApiSheetData(courseId) {
       const cachedData = localStorage.getItem(cacheKey);
       if (!cachedData) return null;
       
-      const cacheItem = JSON.parse(cachedData);
-      const now = Date.now();
-      
-      // Kiểm tra xem cache có còn hiệu lực không
-      if (now - cacheItem.timestamp > CACHE_DURATION) {
+      try {
+        const cacheItem = JSON.parse(cachedData);
+        const now = Date.now();
+        
+        // Kiểm tra xem cache có còn hiệu lực không
+        if (now - cacheItem.timestamp > CACHE_DURATION) {
+          localStorage.removeItem(cacheKey);
+          setCacheStatus(`expired-detail-${sheetId}`);
+          return null;
+        }
+        
+        setCacheStatus(`hit-detail-${sheetId}`);
+        return cacheItem.data;
+      } catch (parseError) {
+        // Nếu không parse được JSON, xóa cache lỗi
         localStorage.removeItem(cacheKey);
-        setCacheStatus(`expired-detail-${sheetId}`);
         return null;
       }
-      
-      setCacheStatus(`hit-detail-${sheetId}`);
-      return cacheItem.data;
     } catch (error) {
       console.error('Lỗi khi đọc cache chi tiết sheet:', error);
       return null;
@@ -198,6 +216,20 @@ export function useApiSheetData(courseId) {
     }
   };
   
+  // Hàm xóa tất cả cache liên quan đến sheet
+  const clearAllSheetCaches = () => {
+    try {
+      const keys = Object.keys(localStorage);
+      keys.forEach(key => {
+        if (key.startsWith('sheet-list-') || key.startsWith('sheet-detail-')) {
+          localStorage.removeItem(key);
+        }
+      });
+    } catch (e) {
+      console.error('Lỗi khi xóa tất cả cache sheet:', e);
+    }
+  };
+  
   // Hàm lấy dữ liệu sheet từ API
   const fetchApiSheetData = async () => {
     if (!courseId) return;
@@ -205,7 +237,6 @@ export function useApiSheetData(courseId) {
     // Kiểm tra xem người dùng có quyền truy cập không
     // Nếu có lỗi quyền truy cập, không tiếp tục gọi API
     if (document.querySelector('[data-access-denied="true"]')) {
-      console.log("Không có quyền truy cập để tải sheet data");
       return;
     }
     
@@ -291,7 +322,6 @@ export function useApiSheetData(courseId) {
     // Kiểm tra xem người dùng có quyền truy cập không
     // Nếu có lỗi quyền truy cập, không tiếp tục gọi API
     if (document.querySelector('[data-access-denied="true"]')) {
-      console.log("Không có quyền truy cập để tải chi tiết sheet");
       return null;
     }
     
@@ -331,8 +361,19 @@ export function useApiSheetData(courseId) {
       const result = await response.json();
       
       if (result.success) {
-        // Lưu vào cache
-        saveSheetDetailToCache(sheetId, result.sheet);
+        // Lưu vào cache (nếu kích thước cho phép)
+        try {
+          saveSheetDetailToCache(sheetId, result.sheet);
+        } catch (cacheError) {
+          // Nếu gặp lỗi khi lưu cache, chỉ log lỗi và tiếp tục
+          console.error('Lỗi khi lưu cache:', cacheError);
+          
+          // Nếu lỗi liên quan đến quota, xóa tất cả cache
+          if (cacheError.name === 'QuotaExceededError' || 
+              cacheError.message.includes('exceeded the quota')) {
+            clearAllSheetCaches();
+          }
+        }
         
         // Cập nhật dữ liệu sheet trong state
         setApiSheetData(prevData => {
@@ -396,6 +437,7 @@ export function useApiSheetData(courseId) {
     setActiveApiSheet: changeActiveSheet,
     fetchApiSheetData,
     fetchSheetDetail,
-    clearCache: clearCurrentCache
+    clearCache: clearCurrentCache,
+    clearAllSheetCaches
   };
 } 

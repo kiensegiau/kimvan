@@ -74,7 +74,10 @@ export function useCourseData(id) {
   // Hàm kiểm tra quyền truy cập
   const checkPermission = (courseData) => {
     // Nếu không có dữ liệu khoá học, không có quyền truy cập
-    if (!courseData) return false;
+    if (!courseData) {
+      console.log("Permission check failed: No course data");
+      return false;
+    }
     
     // Không còn kiểm tra quyền admin nữa (theo yêu cầu)
     
@@ -93,13 +96,45 @@ export function useCourseData(id) {
     
     // Kiểm tra yêu cầu đăng ký của khóa học
     const requiresEnrollment = courseData?.requiresEnrollment !== false;
+    console.log(`Course requires enrollment: ${requiresEnrollment}`);
+    
     if (!requiresEnrollment) {
       console.log("Course doesn't require enrollment, granting access");
       return true;
     }
     
-    // Kiểm tra đăng ký
-    const isUserEnrolled = isEnrolledInCourse ? isEnrolledInCourse(id) : false;
+    // Kiểm tra đăng ký - kiểm tra cả MongoDB ID và kimvanId
+    console.log(`Checking enrollment for course ID: ${id}, type: ${typeof id}`);
+    
+    // Lấy thông tin MongoDB ID và kimvanId từ dữ liệu khóa học
+    const mongoDbId = courseData._id ? String(courseData._id) : null;
+    const kimvanId = courseData.kimvanId ? String(courseData.kimvanId) : null;
+    
+    console.log(`Course MongoDB ID: ${mongoDbId}, KimvanID: ${kimvanId}`);
+    console.log(`User enrolled courses: ${JSON.stringify(enrolledCourses)}`);
+    
+    // Kiểm tra đăng ký với cả hai loại ID
+    let isUserEnrolled = false;
+    
+    if (isEnrolledInCourse) {
+      // Kiểm tra với ID hiện tại (có thể là MongoDB ID hoặc kimvanId)
+      isUserEnrolled = isEnrolledInCourse(id);
+      
+      // Nếu không tìm thấy, thử kiểm tra với MongoDB ID
+      if (!isUserEnrolled && mongoDbId && mongoDbId !== id) {
+        console.log(`Trying with MongoDB ID: ${mongoDbId}`);
+        isUserEnrolled = isEnrolledInCourse(mongoDbId);
+      }
+      
+      // Nếu vẫn không tìm thấy, thử kiểm tra với kimvanId
+      if (!isUserEnrolled && kimvanId && kimvanId !== id) {
+        console.log(`Trying with kimvanId: ${kimvanId}`);
+        isUserEnrolled = isEnrolledInCourse(kimvanId);
+      }
+    }
+    
+    console.log(`User is enrolled: ${isUserEnrolled}`);
+    
     if (isUserEnrolled) {
       console.log("User is enrolled in course, granting access");
       return true;
@@ -379,6 +414,11 @@ export function useCourseData(id) {
       // Kiểm tra cache trước
       const cachedData = getFromCache();
       if (cachedData) {
+        // Đảm bảo rằng trường requiresEnrollment được đặt đúng
+        if (cachedData.requiresEnrollment === undefined) {
+          cachedData.requiresEnrollment = true; // Mặc định yêu cầu đăng ký
+        }
+        
         setCourse(cachedData);
         
         // Vẫn cần kiểm tra quyền truy cập với dữ liệu từ cache, nhưng bỏ qua nếu có quyền đặc biệt
@@ -425,6 +465,12 @@ export function useCourseData(id) {
 
       if (data.success) {
         const courseData = data.course;
+        
+        // Đảm bảo rằng trường requiresEnrollment được đặt đúng
+        if (courseData.requiresEnrollment === undefined) {
+          courseData.requiresEnrollment = true; // Mặc định yêu cầu đăng ký
+        }
+        
         setCourse(courseData);
         saveToCache(courseData);
         

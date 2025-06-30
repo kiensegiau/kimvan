@@ -17,10 +17,35 @@ export function useEnrolledCourses() {
 
   // Hàm kiểm tra người dùng đã đăng ký khóa học hay chưa
   const isEnrolledInCourse = (courseId) => {
-    if (!enrolledCourses || enrolledCourses.length === 0) return false;
-    return enrolledCourses.some(
-      course => course.courseId === courseId || course.courseId === String(courseId)
-    );
+    if (!enrolledCourses || enrolledCourses.length === 0) {
+      console.log("No enrolled courses found");
+      return false;
+    }
+    
+    // Chuyển đổi courseId thành string để đảm bảo so sánh chính xác
+    const courseIdStr = String(courseId);
+    console.log(`Checking enrollment for course ID: ${courseIdStr}`);
+    
+    // Kiểm tra trong danh sách khóa học đã đăng ký
+    const isEnrolled = enrolledCourses.some(course => {
+      // So sánh với courseId (MongoDB ID)
+      const enrolledCourseId = String(course.courseId);
+      const matchesMongoId = enrolledCourseId === courseIdStr;
+      
+      // So sánh với kimvanId (nếu courseIdStr có thể là kimvanId)
+      const matchesKimvanId = course.kimvanId && String(course.kimvanId) === courseIdStr;
+      
+      // Ghi log để debug
+      console.log(`Comparing: MongoDB ID ${enrolledCourseId} with ${courseIdStr}, match: ${matchesMongoId}`);
+      if (course.kimvanId) {
+        console.log(`Comparing: KimvanID ${course.kimvanId} with ${courseIdStr}, match: ${matchesKimvanId}`);
+      }
+      
+      // Trả về true nếu khớp với bất kỳ ID nào
+      return matchesMongoId || matchesKimvanId;
+    });
+    
+    return isEnrolled;
   };
 
   // Hàm kiểm tra người dùng có quyền xem tất cả khóa học
