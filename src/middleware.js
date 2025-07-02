@@ -142,7 +142,8 @@ export async function middleware(request) {
   // Kiểm tra token có tồn tại và không phải là chuỗi rỗng
   if (!token || token.trim() === '') {
     if (pathname.startsWith('/api/')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      // Với API, trả về 401 JSON, KHÔNG redirect
+      return NextResponse.json({ success: false, error: 'Unauthorized', message: 'Missing or invalid token' }, { status: 401 });
     } else {
       const redirectUrl = new URL(routes.login, request.url);
       redirectUrl.searchParams.set('returnUrl', pathname);
@@ -602,10 +603,16 @@ export async function middleware(request) {
     // Cho phép truy cập các đường dẫn khác nếu đã xác thực thành công
     return addSecurityHeaders(response);
   } catch (error) {
-    // Nếu là API, trả về JSON lỗi 401
-    if (pathname && pathname.startsWith('/api/')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    console.error('Middleware error:', error);
+    
+    // Nếu là API, trả về JSON lỗi 401 mà KHÔNG redirect
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized', message: 'Error processing authentication' },
+        { status: 401 }
+      );
     }
+    
     // Nếu là route thường, redirect về login
     const redirectUrl = new URL(routes.login, request.url);
     redirectUrl.searchParams.set('returnUrl', pathname);

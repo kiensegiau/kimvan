@@ -37,7 +37,9 @@ const useUserData = () => {
             'Content-Type': 'application/json',
             'Accept': 'application/json'
           },
-          credentials: 'same-origin'
+          credentials: 'include', // Thay same-origin bằng include để đảm bảo gửi cookie
+          // Thêm timeout để tránh fetch quá lâu
+          signal: AbortSignal.timeout(10000) // 10 giây timeout
         });
         
         if (response.ok) {
@@ -209,10 +211,10 @@ const useUserData = () => {
     fetchUserData();
 
     // Thiết lập kiểm tra định kỳ dữ liệu người dùng
-    // Kiểm tra mỗi 2 phút để đảm bảo dữ liệu người dùng được cập nhật
+    // Tăng khoảng thời gian kiểm tra để giảm tải máy chủ
     const intervalId = setInterval(() => {
       fetchUserData();
-    }, 2 * 60 * 1000); // 2 phút
+    }, 5 * 60 * 1000); // 5 phút thay vì 2 phút
 
     // Cleanup function để đánh dấu component đã unmounted và hủy interval
     return () => {
@@ -234,7 +236,8 @@ const useUserData = () => {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
-        credentials: 'same-origin'
+        credentials: 'include', // Đổi từ same-origin sang include
+        signal: AbortSignal.timeout(10000) // 10 giây timeout
       });
       
       if (response.ok) {
