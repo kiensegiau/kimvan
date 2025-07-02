@@ -83,6 +83,8 @@ function addSecurityHeaders(response) {
 
 export async function middleware(request) {
   const { pathname } = request.nextUrl;
+  // Debug: log pathname để kiểm tra
+  console.log('🔎 middleware pathname:', pathname);
 
   // Áp dụng security headers cho tất cả các request
   const response = NextResponse.next();
@@ -90,12 +92,14 @@ export async function middleware(request) {
     response.headers.set(header.key, header.value);
   });
 
-  // Bỏ qua middleware cho API verify token, refresh token và user-role để tránh vòng lặp vô hạn
-  if (pathname === TOKEN_VERIFY_API || 
-      pathname === TOKEN_REFRESH_API ||
-      pathname === USER_ROLE_API ||
-      pathname === '/api/auth/logout' || 
-      pathname === '/api/auth/admin/check-permission') {
+  // Loại trừ các API xác thực khỏi middleware để tránh lặp
+  if (
+    pathname.startsWith(TOKEN_VERIFY_API) ||
+    pathname.startsWith(TOKEN_REFRESH_API) ||
+    pathname.startsWith(USER_ROLE_API) ||
+    pathname.startsWith('/api/auth/logout') ||
+    pathname.startsWith('/api/auth/admin/check-permission')
+  ) {
     return response;
   }
 
