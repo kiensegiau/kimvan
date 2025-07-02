@@ -41,81 +41,168 @@ export function updateStoredToken(accountIndex, token) {
   }
 }
 
-// Trích xuất ID từ URL Google Drive - Hàm thống nhất
+/**
+ * Extract the file ID from a Google Drive URL
+ * @param {string} url - The Google Drive URL
+ * @returns {string|null} The file ID or null if not found
+ */
 export function extractDriveFileId(url) {
   if (!url) return null;
   
-  // Handle Google redirects (google.com/url?q=...)
-  if (url.includes('google.com/url?q=')) {
-    try {
-      // Extract the encoded URL from the redirect
-      const match = url.match(/google\.com\/url\?q=([^&]+)/);
-      if (match && match[1]) {
-        // Decode the URL
-        const decodedUrl = decodeURIComponent(match[1]);
-        
-        // Now extract the ID from the decoded URL
-        return extractDriveFileId(decodedUrl);
-      }
-    } catch (error) {
-      console.error('Lỗi khi giải mã URL:', error);
-    }
-  }
-  
-  // Handle URL encoded parameters (id%3D...)
-  if (url.includes('id%3D')) {
-    try {
-      const match = url.match(/id%3D([a-zA-Z0-9_-]+)/);
+  try {
+    // Try to extract ID using common patterns
+    const patterns = [
+      /\/file\/d\/([^/]+)/,        // Standard format: /file/d/ID/
+      /id=([^&]+)/,                // id parameter: ?id=ID
+      /folders\/([^/]+)/,          // Folders: /folders/ID
+      /drive\.google\.com\/open\?id=([^&]+)/ // Open link format
+    ];
+    
+    for (const pattern of patterns) {
+      const match = url.match(pattern);
       if (match && match[1]) {
         return match[1];
       }
-    } catch (error) {
-      console.error('Lỗi khi trích xuất ID từ URL có mã hóa:', error);
     }
-  }
-  
-  // Handle URL encoded parameters with additional encoding (id%253D...)
-  if (url.includes('id%253D')) {
-    try {
-      const match = url.match(/id%253D([a-zA-Z0-9_-]+)/);
-      if (match && match[1]) {
-        return match[1];
-      }
-    } catch (error) {
-      console.error('Lỗi khi trích xuất ID từ URL có mã hóa kép:', error);
+    
+    // Check if URL is just the ID itself (at least 25 chars of alphanumeric and dashes/underscores)
+    if (/^[a-zA-Z0-9_-]{25,}$/.test(url)) {
+      return url;
     }
+    
+    return null;
+  } catch (error) {
+    console.error('Error extracting Drive file ID:', error);
+    return null;
   }
+}
+
+/**
+ * Check if a URL is a Google Drive URL
+ * @param {string} url - The URL to check
+ * @returns {boolean} Whether it's a Drive URL
+ */
+export function isDriveUrl(url) {
+  if (!url) return false;
   
-  // Mẫu URL Google Drive
-  const patterns = [
-    /\/d\/([a-zA-Z0-9-_]+)/,                // Format: /d/FILE_ID
-    /id=([a-zA-Z0-9-_]+)/,                  // Format: id=FILE_ID
-    /drive\.google\.com\/file\/d\/([a-zA-Z0-9-_]+)/,  // Format: drive.google.com/file/d/FILE_ID
-    /drive\.google\.com\/open\?id=([a-zA-Z0-9-_]+)/,  // Format: drive.google.com/open?id=FILE_ID
-    /docs\.google\.com\/\w+\/d\/([a-zA-Z0-9-_]+)/,    // Format: docs.google.com/document/d/FILE_ID
-    /spreadsheets\/d\/([a-zA-Z0-9-_]+)/,              // Format: spreadsheets/d/FILE_ID
-    /presentation\/d\/([a-zA-Z0-9-_]+)/,              // Format: presentation/d/FILE_ID
-    /^([a-zA-Z0-9-_]{25,40})$/              // Direct ID (25-40 chars)
+  // Check for common Google Drive patterns
+  const drivePatterns = [
+    'drive.google.com',
+    'docs.google.com',
+    'googleusercontent.com'
   ];
   
-  for (const pattern of patterns) {
-    const match = url.match(pattern);
-    if (match && match[1]) {
-      return match[1];
-    }
+  return drivePatterns.some(pattern => url.includes(pattern)) || 
+         extractDriveFileId(url) !== null;
+}
+
+/**
+ * Extract a URL from a cell content (text)
+ * @param {string} cellContent - The content of the cell
+ * @returns {string|null} Extracted URL or null
+ */
+export function extractUrlFromCell(cellContent) {
+  if (!cellContent || typeof cellContent !== 'string') return null;
+  
+  // Look for URLs in the cell content
+  const urlRegex = /(https?:\/\/[^\s"]+)/g;
+  const matches = cellContent.match(urlRegex);
+  
+  if (matches && matches.length > 0) {
+    return matches[0]; // Return the first URL found
   }
   
-  // Try one more time with double decoding if we haven't found anything yet
-  try {
-    const doubleDecodedUrl = decodeURIComponent(decodeURIComponent(url));
-    if (doubleDecodedUrl !== url) {
-      return extractDriveFileId(doubleDecodedUrl);
-    }
-  } catch (error) {
-    console.error('Lỗi khi giải mã URL hai lần:', error);
+  // Look for HYPERLINK formula
+  const hyperlinkRegex = /=HYPERLINK\("([^"]+)"/;
+  const hyperlinkMatch = cellContent.match(hyperlinkRegex);
+  
+  if (hyperlinkMatch && hyperlinkMatch[1]) {
+    return hyperlinkMatch[1];
   }
   
   return null;
+}
+
+/**
+ * Create a Google Sheets HYPERLINK formula
+ * @param {string} url - The URL to link to
+ * @param {string} displayText - The text to display
+ * @returns {string} HYPERLINK formula
+ */
+export function createHyperlinkFormula(url, displayText) {
+  // Ensure the URL is properly quoted
+  const safeUrl = url.replace(/"/g, '""');
+  const safeDisplayText = displayText.replace(/"/g, '""');
+  
+  return `=HYPERLINK("${safeUrl}","${safeDisplayText}")`;
+}
+
+/**
+ * Clean a Google URL (remove tracking parameters)
+ * @param {string} url - The URL to clean
+ * @returns {string} Cleaned URL
+ */
+export function cleanGoogleUrl(url) {
+  if (!url) return url;
+  
+  try {
+    // Handle Google redirect URLs
+    if (url.startsWith('https://www.google.com/url?q=')) {
+      const urlObj = new URL(url);
+      const redirectUrl = urlObj.searchParams.get('q');
+      if (redirectUrl) {
+        // Decode URL (Google often encodes URLs twice)
+        let decodedUrl = redirectUrl;
+        try {
+          decodedUrl = decodeURIComponent(redirectUrl);
+        } catch (e) {
+          console.error('Error decoding URL:', e);
+        }
+        
+        // Clean the decoded URL
+        return cleanGoogleUrl(decodedUrl);
+      }
+    }
+    
+    // Process normal URLs
+    const urlObj = new URL(url);
+    
+    // Remove tracking parameters
+    const paramsToRemove = ['usp', 'utm_source', 'utm_medium', 'utm_campaign', 'sa', 'usg', 'ust'];
+    paramsToRemove.forEach(param => {
+      urlObj.searchParams.delete(param);
+    });
+    
+    return urlObj.toString();
+  } catch (error) {
+    // If there's an error parsing the URL, return the original
+    console.error('Error cleaning URL:', error);
+    return url;
+  }
+}
+
+/**
+ * Placeholder function for processing a link (to be implemented)
+ */
+export async function processLink(url) {
+  // This is a placeholder for future implementation
+  console.log('Processing link:', url);
+  return { 
+    url,
+    processed: true
+  };
+}
+
+/**
+ * Placeholder function for processing a recursive folder (to be implemented)
+ */
+export async function processRecursiveFolder(folderId) {
+  // This is a placeholder for future implementation
+  console.log('Processing folder:', folderId);
+  return { 
+    folderId,
+    processed: true
+  };
 }
 
 // Tạo OAuth2 client với khả năng tự động refresh token
@@ -301,66 +388,4 @@ export async function validateAndRefreshToken(oauth2Client) {
   }
 }
 
-// Trích xuất URL từ nội dung ô
-export function extractUrlFromCell(cellContent) {
-  if (!cellContent) return null;
-  
-  // Nếu là công thức HYPERLINK
-  if (typeof cellContent === 'string' && cellContent.startsWith('=HYPERLINK(')) {
-    const match = cellContent.match(/=HYPERLINK\("([^"]+)"[^)]*\)/);
-    if (match && match[1]) {
-      return match[1];
-    }
-  }
-  
-  // Nếu là URL thông thường
-  return cellContent;
-}
-
-// Kiểm tra xem URL có phải là URL Google Drive không
-export function isDriveUrl(url) {
-  if (!url || typeof url !== 'string') return false;
-  
-  return (
-    url.includes('drive.google.com') || 
-    url.includes('docs.google.com')
-  );
-}
-
-// Tạo công thức HYPERLINK
-export function createHyperlinkFormula(originalCell, newUrl) {
-  // Nếu ô ban đầu là công thức HYPERLINK
-  if (typeof originalCell === 'string' && originalCell.startsWith('=HYPERLINK(')) {
-    // Trích xuất phần hiển thị của công thức
-    const displayTextMatch = originalCell.match(/=HYPERLINK\("[^"]+",\s*"([^"]+)"\)/);
-    
-    if (displayTextMatch && displayTextMatch[1]) {
-      // Giữ nguyên phần hiển thị, chỉ thay đổi URL
-      return `=HYPERLINK("${newUrl}", "${displayTextMatch[1]}")`;
-    } else {
-      // Nếu không có phần hiển thị, tạo công thức mới với URL là phần hiển thị
-      const fileName = newUrl.split('/').pop() || newUrl;
-      return `=HYPERLINK("${newUrl}", "${fileName}")`;
-    }
-  }
-  
-  // Nếu ô ban đầu không phải công thức, tạo công thức mới
-  // Sử dụng nội dung ô ban đầu làm phần hiển thị nếu có
-  if (originalCell && typeof originalCell === 'string' && !originalCell.startsWith('http')) {
-    return `=HYPERLINK("${newUrl}", "${originalCell}")`;
-  }
-  
-  // Mặc định: tạo công thức với URL là phần hiển thị
-  const fileName = newUrl.split('/').pop() || newUrl;
-  return `=HYPERLINK("${newUrl}", "${fileName}")`;
-}
-
-// Xử lý link
-export async function processLink(baseUrl, url, cookie = '', maxRetries = 2, timeoutMs = 60000, fileType = null, sheetName = null) {
-  // Triển khai xử lý link theo yêu cầu
-  // Đây là hàm phức tạp cần triển khai theo nghiệp vụ cụ thể
-  // ...
-}
-
-// Reexport processRecursiveFolder từ drive-service.js
-export { processRecursiveFolder } from '@/app/api/drive/remove-watermark/lib/drive-service.js'; 
+// Không cần import processRecursiveFolder từ drive-service.js vì chúng ta đã định nghĩa nó ở trên 

@@ -52,6 +52,11 @@ export default function SheetDetailPage({ params }) {
   const [processLinksResult, setProcessLinksResult] = useState(null);
   const [showProcessLinksModal, setShowProcessLinksModal] = useState(false);
   const [testDriveLink, setTestDriveLink] = useState('');
+  
+  // State cho xử lý dữ liệu vào database
+  const [processingToDb, setProcessingToDb] = useState(false);
+  const [dbProcessingStatus, setDbProcessingStatus] = useState(null);
+  const [showDbProcessingModal, setShowDbProcessingModal] = useState(false);
 
   useEffect(() => {
     fetchSheetDetail();
@@ -206,24 +211,49 @@ export default function SheetDetailPage({ params }) {
     }
   };
 
-  const fetchSheetData = async (sheetId = null) => {
+  const fetchSheetData = async (sheetId = null, options = {}) => {
     if (!sheet && !sheetId) return;
     
     const targetId = sheetId || id;
     
     setLoadingData(true);
     try {
-      const response = await fetch(`/api/sheets/${targetId}?fetchData=true`);
+      // Thử lấy dữ liệu từ database trước
+      const useDb = options.useDb !== false;
+      let response;
+      
+      if (useDb) {
+        console.log('Đang lấy dữ liệu từ database...');
+        response = await fetch(`/api/sheets/${targetId}/from-db?fallbackToApi=true`);
+      } else {
+        // Lấy trực tiếp từ Google Sheets API nếu không dùng DB
+        console.log('Đang lấy dữ liệu trực tiếp từ Google Sheets API...');
+        response = await fetch(`/api/sheets/${targetId}?fetchData=true`);
+      }
+      
       if (!response.ok) {
         throw new Error(`Lỗi ${response.status}: ${response.statusText}`);
       }
+      
       const result = await response.json();
       
       if (!result.success) {
         throw new Error(result.error || 'Có lỗi xảy ra khi lấy dữ liệu');
       }
       
-      setSheetData(result.sheet.data);
+      // Log nguồn dữ liệu nếu có
+      if (useDb && result.source) {
+        console.log(`Dữ liệu được lấy từ: ${result.source}`);
+      }
+      
+      // Đối với dữ liệu từ database, nó đã được định dạng giống Google Sheets API
+      if (result.data) {
+        setSheetData(result.data);
+      } else if (result.sheet && result.sheet.data) {
+        setSheetData(result.sheet.data);
+      } else {
+        console.warn('Không tìm thấy dữ liệu trong kết quả trả về');
+      }
     } catch (error) {
       console.error('Lỗi khi lấy dữ liệu sheet:', error);
       setError(error.message);
@@ -685,6 +715,72 @@ export default function SheetDetailPage({ params }) {
     }
   };
 
+  // Hàm xử lý dữ liệu vào database
+  const handleProcessToDatabase = async (options = {}) => {
+    if (!confirm('Bạn có chắc chắn muốn xử lý dữ liệu sheet vào database? Quá trình này có thể mất nhiều thời gian.')) {
+      return;
+    }
+    
+    try {
+      setProcessingToDb(true);
+      setDbProcessingStatus({
+        inProgress: true,
+        message: 'Đang xử lý dữ liệu vào database...'
+      });
+      
+      const response = await fetch(`/api/sheets/${id}/process-to-db`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          background: options.background !== false,
+          forceRefresh: options.forceRefresh || false,
+          batchSize: options.batchSize || 50
+        }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Không thể xử lý dữ liệu sheet vào database');
+      }
+      
+      const result = await response.json();
+      
+      setDbProcessingStatus({
+        inProgress: false,
+        success: true,
+        message: result.message || 'Đã xử lý dữ liệu vào database thành công',
+        stats: result.stats || {}
+      });
+      
+      // Đóng modal sau một khoảng thời gian nếu thành công
+      if (result.success) {
+        // Tải dữ liệu từ database sau khi xử lý thành công
+        if (options.background === false) {
+          // Chỉ tải lại dữ liệu nếu là xử lý đồng bộ
+          await fetchSheetData(null, { useDb: true });
+        }
+        
+        setTimeout(() => {
+          if (options.closeModalOnSuccess !== false) {
+            setShowDbProcessingModal(false);
+          }
+        }, 3000);
+      }
+      
+    } catch (error) {
+      console.error('Lỗi khi xử lý dữ liệu vào database:', error);
+      setDbProcessingStatus({
+        inProgress: false,
+        success: false,
+        message: `Lỗi: ${error.message}`
+      });
+    } finally {
+      setProcessingToDb(false);
+    }
+  };
+
   // Hàm xử lý tất cả link trong sheet
   const handleProcessAllLinks = async () => {
     if (!confirm('Bạn có chắc chắn muốn xử lý tất cả link Google Drive trong sheet này? Quá trình này có thể mất nhiều thời gian.')) {
@@ -788,25 +884,47 @@ export default function SheetDetailPage({ params }) {
                   >
                     Mở Google Sheet
                   </button>
-                  <button
-                    onClick={() => fetchSheetData()}
-                    disabled={loadingData}
-                    className={`bg-blue-600 text-white px-4 py-2 rounded-md w-full flex items-center justify-center ${
-                      loadingData ? 'opacity-70 cursor-not-allowed' : ''
-                    }`}
-                  >
-                    {loadingData ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
-                        Đang tải dữ liệu...
-                      </>
-                    ) : (
-                      <>
-                        <ArrowPathIcon className="h-5 w-5 mr-2" />
-                        Tải dữ liệu Sheet
-                      </>
-                    )}
-                  </button>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => fetchSheetData(null, { useDb: true })}
+                      disabled={loadingData}
+                      className={`bg-green-600 text-white px-4 py-2 rounded-md w-full flex items-center justify-center ${
+                        loadingData ? 'opacity-70 cursor-not-allowed' : ''
+                      }`}
+                    >
+                      {loadingData ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+                          Đang tải dữ liệu...
+                        </>
+                      ) : (
+                        <>
+                          <ArrowPathIcon className="h-5 w-5 mr-2" />
+                          Tải từ DB
+                        </>
+                      )}
+                    </button>
+                    
+                    <button
+                      onClick={() => fetchSheetData(null, { useDb: false })}
+                      disabled={loadingData}
+                      className={`bg-blue-600 text-white px-4 py-2 rounded-md w-full flex items-center justify-center ${
+                        loadingData ? 'opacity-70 cursor-not-allowed' : ''
+                      }`}
+                    >
+                      {loadingData ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+                          Đang tải dữ liệu...
+                        </>
+                      ) : (
+                        <>
+                          <ArrowPathIcon className="h-5 w-5 mr-2" />
+                          Tải từ API
+                        </>
+                      )}
+                    </button>
+                  </div>
                   {sheetData && (
                     <button
                       onClick={handleExportData}
@@ -839,6 +957,17 @@ export default function SheetDetailPage({ params }) {
                   >
                     <LinkIcon className="h-5 w-5 mr-2" />
                     Xử lý tất cả link Drive
+                  </button>
+                  
+                  <button
+                    onClick={() => setShowDbProcessingModal(true)}
+                    disabled={!sheet || processingToDb}
+                    className={`bg-green-600 text-white px-4 py-2 rounded-md w-full flex items-center justify-center ${
+                      (!sheet || processingToDb) ? 'opacity-70 cursor-not-allowed' : ''
+                    }`}
+                  >
+                    <ArrowPathIcon className="h-5 w-5 mr-2" />
+                    Xử lý dữ liệu vào DB
                   </button>
                 </div>
               </div>
@@ -1533,6 +1662,115 @@ export default function SheetDetailPage({ params }) {
                   </button>
                 )}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Modal xử lý dữ liệu vào DB */}
+      {showDbProcessingModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg max-w-xl w-full mx-4 overflow-hidden">
+            <div className="bg-blue-600 text-white px-4 py-3 flex justify-between items-center">
+              <h3 className="text-lg font-semibold">Xử lý dữ liệu sheet vào database</h3>
+              <button 
+                onClick={() => setShowDbProcessingModal(false)}
+                className="text-white hover:text-gray-200"
+                disabled={processingToDb}
+              >
+                &times;
+              </button>
+            </div>
+            
+            <div className="p-6">
+              <p className="mb-4 text-gray-700">
+                Tính năng này sẽ xử lý dữ liệu từ Google Sheet và lưu vào database để giảm tải cho server.
+              </p>
+              
+              <div className="mb-6 space-y-4">
+                <div className="flex justify-between">
+                  <button
+                    onClick={() => handleProcessToDatabase({ background: true })}
+                    disabled={processingToDb}
+                    className={`px-4 py-2 rounded ${processingToDb ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'} text-white w-48`}
+                  >
+                    {processingToDb ? 'Đang xử lý...' : 'Xử lý (nền)'}
+                  </button>
+                  
+                  <button
+                    onClick={() => handleProcessToDatabase({ background: false })}
+                    disabled={processingToDb}
+                    className={`px-4 py-2 rounded ${processingToDb ? 'bg-gray-400' : 'bg-green-600 hover:bg-green-700'} text-white w-48`}
+                  >
+                    {processingToDb ? 'Đang xử lý...' : 'Xử lý (đồng bộ)'}
+                  </button>
+                </div>
+                
+                <div className="flex justify-between">
+                  <button
+                    onClick={() => handleProcessToDatabase({ forceRefresh: true })}
+                    disabled={processingToDb}
+                    className={`px-4 py-2 rounded ${processingToDb ? 'bg-gray-400' : 'bg-yellow-600 hover:bg-yellow-700'} text-white w-48`}
+                  >
+                    {processingToDb ? 'Đang xử lý...' : 'Bỏ qua cache'}
+                  </button>
+                  
+                  <button
+                    onClick={async () => {
+                      if (!confirm('Bạn có chắc chắn muốn xóa tất cả dữ liệu đã xử lý của sheet này?')) {
+                        return;
+                      }
+                      
+                      try {
+                        setProcessingToDb(true);
+                        
+                        const response = await fetch(`/api/sheets/${id}/process-to-db`, {
+                          method: 'DELETE'
+                        });
+                        
+                        if (!response.ok) {
+                          throw new Error('Không thể xóa dữ liệu');
+                        }
+                        
+                        const result = await response.json();
+                        alert(`Đã xóa ${result.deleted} bản ghi từ database.`);
+                        
+                      } catch (error) {
+                        console.error('Lỗi khi xóa dữ liệu:', error);
+                        alert(`Lỗi: ${error.message}`);
+                      } finally {
+                        setProcessingToDb(false);
+                      }
+                    }}
+                    disabled={processingToDb}
+                    className={`px-4 py-2 rounded ${processingToDb ? 'bg-gray-400' : 'bg-red-600 hover:bg-red-700'} text-white w-48`}
+                  >
+                    {processingToDb ? 'Đang xử lý...' : 'Xóa dữ liệu'}
+                  </button>
+                </div>
+              </div>
+              
+              {dbProcessingStatus && (
+                <div className={`mt-4 p-4 rounded-md ${
+                  dbProcessingStatus.inProgress ? 'bg-blue-50 text-blue-700' :
+                  dbProcessingStatus.success ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+                }`}>
+                  <p className="font-medium">{dbProcessingStatus.message}</p>
+                  
+                  {dbProcessingStatus.inProgress && (
+                    <div className="flex justify-center mt-4">
+                      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-700"></div>
+                    </div>
+                  )}
+                  
+                  {dbProcessingStatus.stats && (
+                    <div className="mt-2 text-sm">
+                      <p>Số hàng đã xử lý: {dbProcessingStatus.stats.processedCount || 0}</p>
+                      <p>Số lỗi: {dbProcessingStatus.stats.errors || 0}</p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
