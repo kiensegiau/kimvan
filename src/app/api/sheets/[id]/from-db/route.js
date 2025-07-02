@@ -6,6 +6,7 @@ import { ObjectId } from 'mongodb';
 import { authMiddleware } from '@/lib/auth';
 import { getProcessedSheetData } from '@/utils/sheet-processing-worker';
 import { fetchSheetDataWithCache } from '@/utils/sheet-cache-manager';
+import { processSheetToDatabase } from '@/utils/sheet-processing-worker';
 
 // Middleware helper function to verify user authentication
 async function checkAuth(request) {
@@ -27,7 +28,9 @@ function formatSheetDataFromDb(sheetContent) {
   if (!sheetContent || !sheetContent.rows || sheetContent.rows.length === 0) {
     return {
       values: [],
-      htmlData: []
+      htmlData: [],
+      optimizedHtmlData: null,
+      storageMode: 'full'
     };
   }
   
@@ -42,12 +45,39 @@ function formatSheetDataFromDb(sheetContent) {
     values.push(row.data);
   });
   
-  // Create htmlData structure if available
+  // Handle HTML data based on storage mode
   let htmlData = [];
-  if (sheetContent.htmlData && sheetContent.htmlData.length > 0) {
+  let optimizedHtmlData = null;
+  let storageMode = sheetContent.metadata?.storageMode || 'full';
+  
+  if (storageMode === 'optimized' && sheetContent.optimizedHtmlData) {
+    // Use optimized HTML data
+    optimizedHtmlData = sheetContent.optimizedHtmlData;
+    
+    // Create compatible htmlData structure for backward compatibility
+    const maxRows = Math.max(...sheetContent.optimizedHtmlData.map(row => row.rowIndex)) + 1;
+    htmlData = Array(maxRows).fill(null).map(() => ({ values: [] }));
+    
+    // Fill in hyperlinks
+    sheetContent.optimizedHtmlData.forEach(row => {
+      if (!row.hyperlinks || !row.rowIndex) return;
+      
+      if (!htmlData[row.rowIndex]) {
+        htmlData[row.rowIndex] = { values: [] };
+      }
+      
+      row.hyperlinks.forEach(link => {
+        if (!htmlData[row.rowIndex].values[link.col]) {
+          htmlData[row.rowIndex].values[link.col] = {};
+        }
+        htmlData[row.rowIndex].values[link.col].hyperlink = link.url;
+      });
+    });
+  } else if (sheetContent.htmlData) {
+    // Use full HTML data
     htmlData = sheetContent.htmlData;
   } else {
-    // Create basic htmlData from rows if not available
+    // Create basic htmlData from rows if no HTML data available
     htmlData = values.map(row => ({
       values: row.map(cell => ({ formattedValue: cell }))
     }));
@@ -56,6 +86,8 @@ function formatSheetDataFromDb(sheetContent) {
   return {
     values,
     htmlData,
+    optimizedHtmlData,
+    storageMode,
     fetchedAt: sheetContent.processedAt
   };
 }
@@ -63,6 +95,12 @@ function formatSheetDataFromDb(sheetContent) {
 // GET /api/sheets/[id]/from-db - Get sheet data from database
 export async function GET(request, { params }) {
   try {
+    // Check authentication
+    const auth = await checkAuth(request);
+    if (!auth.isAuthorized) {
+      return auth.response;
+    }
+
     await dbMiddleware(request);
     
     // Get parameters
@@ -103,8 +141,38 @@ export async function GET(request, { params }) {
     // Find processed content
     const sheetContent = await SheetContent.findOne({ sheetId }).lean();
     
-    // If no content in database and fallback is requested
+    // If no content in database, try to process it first
     if (!sheetContent) {
+      try {
+        // Process the sheet data
+        const result = await processSheetToDatabase(sheetId);
+        
+        if (result.success) {
+          // Get the newly processed content
+          const newSheetContent = await SheetContent.findOne({ sheetId }).lean();
+          
+          if (newSheetContent) {
+            // Format and return the newly processed data
+            const formattedData = formatSheetDataFromDb(newSheetContent);
+            
+            return NextResponse.json({
+              success: true,
+              source: 'database',
+              sheet: formattedData,
+              pagination: {
+                page: 1,
+                limit,
+                total: newSheetContent.rows?.length || 0,
+                pages: Math.ceil((newSheetContent.rows?.length || 0) / limit)
+              }
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error processing sheet data:', error);
+      }
+      
+      // If processing failed or no data was found
       if (fallbackToApi) {
         return NextResponse.json({
           success: true,
@@ -120,74 +188,19 @@ export async function GET(request, { params }) {
       );
     }
     
-    // Apply pagination
-    const skip = (page - 1) * limit;
-    const paginatedRows = sheetContent.rows.slice(skip, skip + limit);
-    
-    // Convert data to Google Sheets API format
-    const values = [sheetContent.header || []];
-    
-    // Add rows data
-    paginatedRows.forEach(row => {
-      if (row.data && Array.isArray(row.data)) {
-        values.push(row.data);
-      }
-    });
-    
-    // Format HTML data based on storage mode
-    let htmlData = [];
-    
-    // Chế độ lưu trữ đầy đủ
-    if (sheetContent.htmlData && Array.isArray(sheetContent.htmlData)) {
-      htmlData = sheetContent.htmlData;
-    } 
-    // Chế độ lưu trữ tối ưu
-    else if (sheetContent.optimizedHtmlData && sheetContent.optimizedHtmlData.length > 0) {
-      // Tạo cấu trúc tương thích với cấu trúc cũ
-      // Mỗi hàng là một mảng chứa các đối tượng ô có thuộc tính values
-      const maxRows = Math.max(...sheetContent.optimizedHtmlData.map(row => row.rowIndex)) + 1;
-      htmlData = Array(maxRows).fill(null).map(() => ({ values: [] }));
-      
-      // Điền thông tin hyperlink vào cấu trúc
-      sheetContent.optimizedHtmlData.forEach(row => {
-        if (!row.hyperlinks || !row.rowIndex) return;
-        
-        // Đảm bảo hàng tồn tại
-        if (!htmlData[row.rowIndex]) {
-          htmlData[row.rowIndex] = { values: [] };
-        }
-        
-        // Điền hyperlink vào các ô tương ứng
-        row.hyperlinks.forEach(link => {
-          if (!htmlData[row.rowIndex].values[link.col]) {
-            htmlData[row.rowIndex].values[link.col] = {};
-          }
-          htmlData[row.rowIndex].values[link.col].hyperlink = link.url;
-        });
-      });
-    }
-    
-    // Format response similar to Google Sheets API
-    const responseData = {
-      values,
-      htmlData,
-      optimizedHtmlData: sheetContent.optimizedHtmlData || null, // Giữ cả cấu trúc tối ưu để client sử dụng trực tiếp
-      totalRows: sheetContent.totalRows,
-      processedAt: sheetContent.processedAt,
-      storageMode: sheetContent.metadata?.storageMode || 'full'
-    };
+    // Format data using helper function
+    const formattedData = formatSheetDataFromDb(sheetContent);
     
     // Return response
     return NextResponse.json({
       success: true,
       source: 'database',
-      sheet: sheet || { sheetId },
-      data: responseData,
+      sheet: formattedData,
       pagination: {
         page,
         limit,
-        total: sheetContent.totalRows || 0,
-        pages: Math.ceil((sheetContent.totalRows || 0) / limit)
+        total: sheetContent.rows?.length || 0,
+        pages: Math.ceil((sheetContent.rows?.length || 0) / limit)
       }
     });
   } catch (error) {

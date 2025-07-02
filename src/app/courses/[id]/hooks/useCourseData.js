@@ -318,82 +318,100 @@ export function useCourseData(id) {
     }
   };
   
-  // Hàm lấy dữ liệu của sheet
-  const fetchSheetData = async (sheetId) => {
-    if (!sheetId) return;
-    
-    // Kiểm tra quyền truy cập trước khi gọi API
-    if (!checkPermission(course)) {
-      console.log("Không có quyền truy cập để tải dữ liệu sheet");
-      return;
-    }
-    
-    setLoadingSheetData(prev => ({ ...prev, [sheetId]: true }));
+  // Hàm xử lý dữ liệu sheet vào database
+  const processSheetToDb = async (sheetId) => {
     try {
-      const response = await fetch(`/api/sheets/${sheetId}?fetchData=true`);
+      console.log(`🔄 [Course] Bắt đầu xử lý sheet ${sheetId} vào database...`);
+      
+      const response = await fetch(`/api/sheets/${sheetId}/process-to-db`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ background: false })
+      });
       
       if (!response.ok) {
         throw new Error(`Lỗi ${response.status}: ${response.statusText}`);
       }
       
-      const data = await response.json();
+      const result = await response.json();
+      console.log(`✅ [Course] Kết quả xử lý sheet ${sheetId}:`, result);
+      return result.success;
+    } catch (error) {
+      console.error('❌ [Course] Lỗi khi xử lý dữ liệu sheet:', error);
+      return false;
+    }
+  };
+
+  // Hàm lấy dữ liệu sheet từ database
+  const fetchSheetFromDb = async (sheetId) => {
+    try {
+      console.log(`🔍 [Course] Đang lấy dữ liệu sheet ${sheetId} từ database...`);
       
-      if (data.success) {
-        // Xử lý các ô gộp nếu có
-        const processedData = { ...data.sheet };
-        
-        if (processedData.merges && processedData.merges.length > 0) {
-          // Tạo bản đồ các ô đã gộp
-          const mergedCellsMap = {};
-          
-          processedData.merges.forEach(merge => {
-            const startRow = merge.startRowIndex;
-            const endRow = merge.endRowIndex;
-            const startCol = merge.startColumnIndex;
-            const endCol = merge.endColumnIndex;
-            
-            // Tính toán rowSpan và colSpan
-            const rowSpan = endRow - startRow;
-            const colSpan = endCol - startCol;
-            
-            // Đánh dấu ô chính (góc trên bên trái của vùng gộp)
-            if (!processedData.htmlData[startRow]) {
-              processedData.htmlData[startRow] = { values: [] };
-            }
-            
-            if (!processedData.htmlData[startRow].values) {
-              processedData.htmlData[startRow].values = [];
-            }
-            
-            if (!processedData.htmlData[startRow].values[startCol]) {
-              processedData.htmlData[startRow].values[startCol] = {};
-            }
-            
-            processedData.htmlData[startRow].values[startCol].rowSpan = rowSpan;
-            processedData.htmlData[startRow].values[startCol].colSpan = colSpan;
-            
-            // Đánh dấu các ô khác trong vùng gộp để bỏ qua khi render
-            for (let r = startRow; r < endRow; r++) {
-              for (let c = startCol; c < endCol; c++) {
-                // Bỏ qua ô chính
-                if (r === startRow && c === startCol) continue;
-                
-                const key = `${r},${c}`;
-                mergedCellsMap[key] = { mainCell: { row: startRow, col: startCol } };
-              }
-            }
-          });
-          
-          // Lưu bản đồ các ô đã gộp vào data
-          processedData.mergedCellsMap = mergedCellsMap;
+      const response = await fetch(`/api/sheets/${sheetId}/from-db`, {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
         }
-        
-        setSheetData(prev => ({ ...prev, [sheetId]: processedData }));
-      } else {
-        setError(`Không thể tải dữ liệu sheet: ${data.error || 'Lỗi không xác định'}`);
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Lỗi ${response.status}: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      console.log(`📥 [Course] Dữ liệu nhận được từ database cho sheet ${sheetId}:`, result);
+      
+      if (result.success) {
+        console.log(`✅ [Course] Dữ liệu sheet ${sheetId}:`, {
+          totalRows: result.sheet.values?.length || 0,
+          hasHtmlData: !!result.sheet.htmlData,
+          hasOptimizedData: !!result.sheet.optimizedHtmlData,
+          storageMode: result.sheet.storageMode
+        });
+        return result.sheet;
+      } else if (result.needsFallback) {
+        console.log(`⚠️ [Course] Sheet ${sheetId} cần được xử lý vào database`);
+        // Nếu cần xử lý dữ liệu
+        const processed = await processSheetToDb(sheetId);
+        if (processed) {
+          console.log(`🔄 [Course] Thử lấy lại dữ liệu sau khi xử lý cho sheet ${sheetId}`);
+          // Thử lấy lại dữ liệu sau khi xử lý
+          return await fetchSheetFromDb(sheetId);
+        }
+      }
+      
+      throw new Error(result.error || 'Không thể lấy dữ liệu sheet');
+    } catch (error) {
+      console.error(`❌ [Course] Lỗi khi lấy dữ liệu sheet ${sheetId}:`, error);
+      throw error;
+    }
+  };
+
+  // Hàm lấy dữ liệu sheet
+  const fetchSheetData = async (sheetId) => {
+    if (!sheetId) return;
+    
+    setLoadingSheetData(prev => ({ ...prev, [sheetId]: true }));
+    try {
+      console.log(`🔍 [Course] Bắt đầu lấy dữ liệu sheet ${sheetId}...`);
+      
+      // Lấy dữ liệu từ database
+      const data = await fetchSheetFromDb(sheetId);
+      
+      if (data) {
+        console.log(`✅ [Course] Đã nhận dữ liệu sheet ${sheetId}:`, {
+          totalRows: data.values?.length || 0,
+          hasHtmlData: !!data.htmlData,
+          hasOptimizedData: !!data.optimizedHtmlData,
+          storageMode: data.storageMode
+        });
+        setSheetData(prev => ({ ...prev, [sheetId]: data }));
       }
     } catch (error) {
-      setError(`Lỗi khi tải dữ liệu sheet: ${error.message}`);
+      console.error(`❌ [Course] Lỗi khi lấy dữ liệu sheet ${sheetId}:`, error);
     } finally {
       setLoadingSheetData(prev => ({ ...prev, [sheetId]: false }));
     }

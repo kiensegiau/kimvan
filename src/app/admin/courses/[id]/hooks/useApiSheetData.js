@@ -14,7 +14,12 @@ export function useApiSheetData(courseId) {
     setApiSheetError(null);
     
     try {
-      const response = await fetch(`/api/courses/${courseId}/sheets`);
+      const response = await fetch(`/api/courses/${courseId}/sheets`, {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
       
       if (!response.ok) {
         throw new Error(`Lỗi ${response.status}: ${response.statusText}`);
@@ -49,7 +54,13 @@ export function useApiSheetData(courseId) {
     if (!sheetId) return;
     
     try {
-      const response = await fetch(`/api/sheets/${sheetId}?fetchData=true`);
+      // Sử dụng endpoint from-db thay vì endpoint gốc
+      const response = await fetch(`/api/sheets/${sheetId}/from-db`, {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
       
       if (!response.ok) {
         throw new Error(`Lỗi ${response.status}: ${response.statusText}`);
@@ -58,7 +69,10 @@ export function useApiSheetData(courseId) {
       const result = await response.json();
       
       if (result.success) {
-        console.log(`Chi tiết sheet ${sheetId}:`, result.sheet);
+        console.log(`Chi tiết sheet ${sheetId} từ database:`, result.sheet);
+        
+        // Xử lý dữ liệu HTML tối ưu nếu có
+        const processedData = result.sheet;
         
         // Cập nhật dữ liệu sheet trong state
         setApiSheetData(prevData => {
@@ -66,7 +80,7 @@ export function useApiSheetData(courseId) {
           
           const updatedSheets = prevData.sheets.map(sheet => {
             if (sheet._id === sheetId) {
-              return { ...sheet, detail: result.sheet };
+              return { ...sheet, detail: processedData };
             }
             return sheet;
           });
@@ -74,7 +88,7 @@ export function useApiSheetData(courseId) {
           return { ...prevData, sheets: updatedSheets };
         });
         
-        return result.sheet;
+        return processedData;
       } else {
         console.error(`Không thể lấy chi tiết sheet ${sheetId}:`, result.message);
       }
@@ -116,4 +130,4 @@ export function useApiSheetData(courseId) {
     fetchApiSheetData,
     fetchSheetDetail
   };
-} 
+}

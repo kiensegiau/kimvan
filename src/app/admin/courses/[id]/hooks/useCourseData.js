@@ -25,7 +25,12 @@ export function useCourseData(id) {
     
     setLoadingSheets(true);
     try {
-      const response = await fetch(`/api/courses/${id}/sheets`);
+      const response = await fetch(`/api/courses/${id}/sheets`, {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
       
       if (!response.ok) {
         throw new Error(`Lỗi ${response.status}: ${response.statusText}`);
@@ -60,7 +65,13 @@ export function useCourseData(id) {
     
     setLoadingSheetData(prev => ({ ...prev, [sheetId]: true }));
     try {
-      const response = await fetch(`/api/sheets/${sheetId}?fetchData=true`);
+      // Sử dụng endpoint from-db thay vì endpoint gốc
+      const response = await fetch(`/api/sheets/${sheetId}/from-db`, {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
       
       if (!response.ok) {
         throw new Error(`Lỗi ${response.status}: ${response.statusText}`);
@@ -69,56 +80,10 @@ export function useCourseData(id) {
       const data = await response.json();
       
       if (data.success) {
-        console.log(`Dữ liệu sheet ${sheetId}:`, data.sheet);
+        console.log(`Dữ liệu sheet ${sheetId} từ database:`, data.sheet);
         
         // Xử lý các ô gộp nếu có
-        const processedData = { ...data.sheet };
-        
-        if (processedData.merges && processedData.merges.length > 0) {
-          // Tạo bản đồ các ô đã gộp
-          const mergedCellsMap = {};
-          
-          processedData.merges.forEach(merge => {
-            const startRow = merge.startRowIndex;
-            const endRow = merge.endRowIndex;
-            const startCol = merge.startColumnIndex;
-            const endCol = merge.endColumnIndex;
-            
-            // Tính toán rowSpan và colSpan
-            const rowSpan = endRow - startRow;
-            const colSpan = endCol - startCol;
-            
-            // Đánh dấu ô chính (góc trên bên trái của vùng gộp)
-            if (!processedData.htmlData[startRow]) {
-              processedData.htmlData[startRow] = { values: [] };
-            }
-            
-            if (!processedData.htmlData[startRow].values) {
-              processedData.htmlData[startRow].values = [];
-            }
-            
-            if (!processedData.htmlData[startRow].values[startCol]) {
-              processedData.htmlData[startRow].values[startCol] = {};
-            }
-            
-            processedData.htmlData[startRow].values[startCol].rowSpan = rowSpan;
-            processedData.htmlData[startRow].values[startCol].colSpan = colSpan;
-            
-            // Đánh dấu các ô khác trong vùng gộp để bỏ qua khi render
-            for (let r = startRow; r < endRow; r++) {
-              for (let c = startCol; c < endCol; c++) {
-                // Bỏ qua ô chính
-                if (r === startRow && c === startCol) continue;
-                
-                const key = `${r},${c}`;
-                mergedCellsMap[key] = { mainCell: { row: startRow, col: startCol } };
-              }
-            }
-          });
-          
-          // Lưu bản đồ các ô đã gộp vào data
-          processedData.mergedCellsMap = mergedCellsMap;
-        }
+        const processedData = data.sheet;
         
         setSheetData(prev => ({ ...prev, [sheetId]: processedData }));
       } else {
@@ -137,7 +102,13 @@ export function useCourseData(id) {
     
     setLoading(true);
     try {
-      const response = await fetch(`/api/courses/raw/${id}?type=_id`);
+      const response = await fetch(`/api/courses/raw/${id}?type=_id`, {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
       if (!response.ok) {
         throw new Error(`Lỗi ${response.status}: ${response.statusText}`);
       }

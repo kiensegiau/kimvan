@@ -39,6 +39,60 @@ export default function ApiSheetData({
     return url.includes('drive.google.com') || url.includes('docs.google.com');
   };
 
+  // Hàm lấy hyperlink từ dữ liệu HTML
+  const getHyperlink = (rowIndex, cellIndex, sheetDetail) => {
+    // Kiểm tra dữ liệu HTML tối ưu trước
+    if (sheetDetail.optimizedHtmlData && sheetDetail.optimizedHtmlData.length > 0) {
+      const optimizedRow = sheetDetail.optimizedHtmlData.find(row => row.rowIndex === rowIndex);
+      if (optimizedRow && optimizedRow.hyperlinks) {
+        const hyperlink = optimizedRow.hyperlinks.find(link => link.col === cellIndex);
+        if (hyperlink) return hyperlink.url;
+      }
+    }
+    
+    // Nếu không có dữ liệu tối ưu, thử lấy từ dữ liệu HTML đầy đủ
+    const htmlRow = sheetDetail.htmlData?.[rowIndex]?.values || [];
+    const htmlCell = htmlRow[cellIndex];
+    return htmlCell?.hyperlink;
+  };
+
+  // Hàm render cell có hyperlink
+  const renderHyperlinkCell = (hyperlink, cellContent, rowIndex, cellIndex) => {
+    const isExpanded = expandedCells[`${rowIndex}-${cellIndex}`];
+    const displayContent = isExpanded ? cellContent : (
+      cellContent?.length > 50 ? cellContent.substring(0, 47) + '...' : cellContent
+    );
+    
+    let icon = null;
+    if (isYoutubeLink(hyperlink)) {
+      icon = <span className="text-red-500 mr-1" title="YouTube Video">🎬</span>;
+    } else if (isPdfLink(hyperlink)) {
+      icon = <span className="text-blue-500 mr-1" title="PDF">📄</span>;
+    } else if (isGoogleDriveLink(hyperlink)) {
+      icon = <span className="text-green-500 mr-1" title="Google Drive">📝</span>;
+    }
+    
+    return (
+      <div className="flex items-start">
+        {icon}
+        <a
+          href={hyperlink}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-600 hover:text-blue-800 hover:underline"
+          onClick={(e) => {
+            if (cellContent?.length > 50) {
+              e.preventDefault();
+              toggleCellExpansion(rowIndex, cellIndex);
+            }
+          }}
+        >
+          {displayContent || hyperlink}
+        </a>
+      </div>
+    );
+  };
+
   if (apiSheetError) {
     return (
       <div className="mt-6 bg-white rounded-lg border border-red-200 overflow-hidden w-full p-4">
@@ -198,203 +252,74 @@ export default function ApiSheetData({
             <p className="text-gray-600 mb-4">Không có dữ liệu trong sheet này.</p>
           </div>
         ) : (
-          <div className="relative overflow-x-auto">
-            {/* Chỉ báo cuộn ngang cho điện thoại */}
-            <div className="md:hidden bg-blue-50 p-2 border-b border-blue-100 flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-              <span className="text-blue-600 text-sm">Vuốt ngang để xem thêm</span>
-            </div>
-            
-            {/* Bảng hiển thị dữ liệu */}
-            <table className="min-w-full border-collapse border border-gray-300 shadow-lg rounded-lg overflow-hidden">
-              <thead>
-                <tr className="bg-gradient-to-r from-blue-600 to-indigo-600">
-                  <th className="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider border border-indigo-500">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Hành động
                   </th>
-                  
-                  {/* Hiển thị header từ dữ liệu */}
-                  {sheetDetail.data.values[0] && sheetDetail.data.values[0].map((header, idx) => {
-                    // Bỏ qua cột STT nếu cần
-                    if (idx === 0 && (header === 'STT' || header === '#' || header === 'No.' || 
-                                  header === 'No' || header === 'Số TT' || header === 'Số thứ tự')) {
-                      return null;
-                    }
-                    
-                    return (
-                      <th 
-                        key={idx}
-                        className="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider border border-indigo-500"
-                      >
-                        <div className="flex items-center">
-                          {header}
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
-                          </svg>
-                        </div>
-                      </th>
-                    );
-                  })}
+                  {sheetDetail.data.values[0].map((header, index) => (
+                    <th
+                      key={index}
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      {header}
+                    </th>
+                  ))}
                 </tr>
               </thead>
-              <tbody className="bg-white">
-                {sheetDetail.data.values.slice(1).map((row, rowIndex) => (
-                  <tr 
-                    key={rowIndex} 
-                    className="border-b hover:bg-blue-50 transition-colors duration-150 bg-white group"
-                  >
-                    {/* Cột hành động */}
-                    <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500 border-r">
-                      <div className="flex items-center space-x-1">
-                        <button 
-                          onClick={() => handleOpenEditRowModal(rowIndex)}
-                          className="p-1 text-gray-400 hover:text-indigo-600 rounded-full hover:bg-indigo-50"
-                          title="Sửa hàng"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                          </svg>
-                        </button>
+              <tbody className="bg-white divide-y divide-gray-100">
+                {sheetDetail.data.values.slice(1).map((row, rowIndex) => {
+                  return (
+                    <tr key={rowIndex} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => handleOpenEditRowModal(rowIndex, row)}
+                            className="text-blue-600 hover:text-blue-800"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={() => handleInsertRow(rowIndex)}
+                            className="text-green-600 hover:text-green-800"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            </svg>
+                          </button>
+                        </div>
+                      </td>
+                      {row.map((cell, cellIndex) => {
+                        // Lấy hyperlink từ dữ liệu HTML
+                        const hyperlink = getHyperlink(rowIndex + 1, cellIndex, sheetDetail);
                         
-                        <button 
-                          onClick={() => handleInsertRow(rowIndex)}
-                          className="p-1 text-gray-400 hover:text-green-600 rounded-full hover:bg-green-50"
-                          title="Chèn hàng sau"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
-                          </svg>
-                        </button>
-                      </div>
-                    </td>
-                    
-                    {/* Hiển thị các ô dữ liệu */}
-                    {row.map((cell, cellIndex) => {
-                      // Bỏ qua cột STT (thường là cột đầu tiên)
-                      if (cellIndex === 0 && sheetDetail.data.values[0] && 
-                         (sheetDetail.data.values[0][0] === 'STT' || 
-                          sheetDetail.data.values[0][0] === '#' || 
-                          sheetDetail.data.values[0][0] === 'No.' || 
-                          sheetDetail.data.values[0][0] === 'No' || 
-                          sheetDetail.data.values[0][0] === 'Số TT' ||
-                          sheetDetail.data.values[0][0] === 'Số thứ tự')) {
-                        return null;
-                      }
-                      
-                      // Xác định nếu ô có link (dựa trên mẫu dữ liệu như https://...)
-                      const urlRegex = /https?:\/\/[^\s]+/;
-                      const cellText = cell || '';
-                      const url = typeof cellText === 'string' && urlRegex.test(cellText) 
-                        ? cellText.match(urlRegex)[0] 
-                        : null;
-                      const hasLink = !!url;
-                      
-                      // Xác định loại link (youtube, pdf, drive)
-                      const linkType = hasLink 
-                        ? isYoutubeLink(url) 
-                          ? 'youtube' 
-                          : isPdfLink(url) 
-                            ? 'pdf' 
-                            : isGoogleDriveLink(url) 
-                              ? 'drive' 
-                              : 'external'
-                        : null;
-                      
-                      // Kiểm tra xem nội dung có dài không để quyết định có nên hiển thị chế độ thu gọn
-                      const content = cell || '';
-                      const isLongContent = typeof content === 'string' && content.length > 50;
-                      const key = `${rowIndex}-${cellIndex}`;
-                      const isExpanded = expandedCells[key] || false;
-                      
-                      return (
-                        <td 
-                          key={cellIndex}
-                          className={`${
-                            hasLink ? 'has-link cursor-pointer' : ''
-                          } px-4 py-3 text-sm text-gray-800 border group-hover:bg-blue-50`}
-                        >
-                          <div className="relative group/cell">
-                            {/* Nút sửa nhanh */}
-                            <button
-                              className="absolute right-1 top-1 opacity-0 group-hover/cell:opacity-100 p-1 bg-white rounded-full shadow hover:bg-blue-100 transition-opacity duration-200"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleQuickEdit(
-                                  rowIndex,
-                                  cellIndex,
-                                  cell || '',
-                                  url || '',
-                                  sheetDetail.data.values[0][cellIndex] || ''
-                                );
-                              }}
-                              title="Sửa nhanh"
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-blue-600" viewBox="0 0 20 20" fill="currentColor">
-                                <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                              </svg>
-                            </button>
-                            
-                            {/* Nội dung ô */}
-                            <div className={`${isLongContent && !isExpanded ? 'line-clamp-2' : ''}`}>
-                              {hasLink ? (
-                                <div className={`flex items-start ${linkType ? `link-${linkType}` : ''}`}>
-                                  {linkType === 'youtube' && (
-                                    <span className="mr-2 text-red-600 flex-shrink-0">
-                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/>
-                                      </svg>
-                                    </span>
-                                  )}
-                                  {linkType === 'pdf' && (
-                                    <span className="mr-2 text-red-600 flex-shrink-0">
-                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M11.363 2c4.155 0 2.637 6 2.637 6s6-1.65 6 2.457v11.543h-16v-20h7.363zm.826-2h-10.189v24h20v-14.386c0-2.391-6.648-9.614-9.811-9.614zm4.811 13h-2.628v3.686h.907v-1.472h1.49v-.732h-1.49v-.698h1.721v-.784zm-4.9 0h-1.599v3.686h1.599c.537 0 .961-.181 1.262-.535.555-.648.587-2.568-.062-3.025-.298-.21-.712-.126-1.2-.126zm-.692.783h.496c.473 0 .802.173.915.644.162.673.046 1.633-.457 1.633h-.954v-2.277zm-2.74-.783h-1.668v3.686h.907v-1.277h.761c.619 0 1.064-.277 1.064-.901 0-.622-.454-.908-1.064-.908zm-.761.732h.546c.235 0 .467.028.467.384 0 .344-.224.394-.467.394h-.546v-.778z"/>
-                                      </svg>
-                                    </span>
-                                  )}
-                                  {linkType === 'drive' && (
-                                    <span className="mr-2 text-blue-600 flex-shrink-0">
-                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M7.71 3.52L1.15 15l3.42 5.99 6.56-11.47L7.71 3.52zm-.46 10.42l-1.66 2.91H15.1l1.66-2.91H7.25zm8.79-8.71L13.04 10h5.43l3.1-5.42c-.34-.61-.67-1.24-1.85-1.24h-8.76l-.91 1.59h5.99zm5.9 6.32l-3.89 6.84-.01.01h.01C18.97 19.07 20 17.9 20 16.37v-6.76l-1.94 3.38z"/>
-                                      </svg>
-                                    </span>
-                                  )}
-                                  {linkType === 'external' && (
-                                    <span className="mr-2 text-blue-600 flex-shrink-0">
-                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                      </svg>
-                                    </span>
-                                  )}
-                                  <span className={`${hasLink ? 'text-blue-600 hover:underline' : ''}`}>
-                                    {content || <em className="text-gray-400">Trống</em>}
-                                  </span>
-                                </div>
-                              ) : (
-                                <span>{content || <em className="text-gray-400">Trống</em>}</span>
-                              )}
-                            </div>
-                            
-                            {/* Nút xem thêm/rút gọn */}
-                            {isLongContent && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  toggleCellExpansion(rowIndex, cellIndex);
-                                }}
-                                className="mt-1 text-xs font-medium text-blue-600 hover:text-blue-800 hover:underline"
-                              >
-                                {isExpanded ? 'Thu gọn' : 'Xem thêm...'}
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
+                        // Nếu có hyperlink
+                        if (hyperlink) {
+                          return (
+                            <td key={cellIndex} className="px-6 py-4 text-sm">
+                              {renderHyperlinkCell(hyperlink, cell, rowIndex, cellIndex)}
+                            </td>
+                          );
+                        }
+                        
+                        // Xử lý cell thông thường
+                        return (
+                          <td 
+                            key={cellIndex} 
+                            className="px-6 py-4 text-sm text-gray-900"
+                            onClick={() => handleQuickEdit(rowIndex, cellIndex, cell)}
+                          >
+                            {cell || ''}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

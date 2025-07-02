@@ -230,111 +230,106 @@ export function useApiSheetData(courseId) {
     }
   };
   
-  // Hàm lấy dữ liệu sheet từ API
-  const fetchApiSheetData = async () => {
-    if (!courseId) return;
-    
-    // Kiểm tra xem người dùng có quyền truy cập không
-    // Nếu có lỗi quyền truy cập, không tiếp tục gọi API
-    if (document.querySelector('[data-access-denied="true"]')) {
-      return;
-    }
-    
-    setLoadingApiSheet(true);
-    setApiSheetError(null);
-    
-    // Kiểm tra cache trước
-    const cachedData = getSheetListFromCache();
-    if (cachedData) {
-      setApiSheetData(cachedData);
-      
-      // Nếu có sheets và có sheet đầu tiên, kiểm tra xem có chi tiết đã cache chưa
-      if (cachedData.sheets && cachedData.sheets.length > 0) {
-        const firstSheetId = cachedData.sheets[0]._id;
-        const cachedDetail = getSheetDetailFromCache(firstSheetId);
-        
-        if (cachedDetail) {
-          // Cập nhật dữ liệu sheet trong state với dữ liệu từ cache
-          setApiSheetData(prevData => {
-            if (!prevData || !prevData.sheets) return prevData;
-            
-            const updatedSheets = prevData.sheets.map(sheet => {
-              if (sheet._id === firstSheetId) {
-                return { ...sheet, detail: cachedDetail };
-              }
-              return sheet;
-            });
-            
-            return { ...prevData, sheets: updatedSheets };
-          });
-        } else {
-          // Nếu không có cache chi tiết, tải từ API
-          await fetchSheetDetail(firstSheetId);
-        }
-      }
-      
-      setLoadingApiSheet(false);
-      return;
-    }
-    
+  // Hàm xử lý dữ liệu sheet vào database
+  const processSheetToDb = async (sheetId) => {
     try {
-      // The API endpoint handles both MongoDB ObjectIDs and kimvanIds
-      const response = await fetch(`/api/courses/${courseId}/sheets`);
+      console.log(`🔄 Bắt đầu xử lý sheet ${sheetId} vào database...`);
+      
+      const response = await fetch(`/api/sheets/${sheetId}/process-to-db`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ background: false })
+      });
       
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        const errorMessage = errorData.error || `Lỗi ${response.status}: ${response.statusText}`;
-        throw new Error(errorMessage);
+        throw new Error(`Lỗi ${response.status}: ${response.statusText}`);
       }
       
       const result = await response.json();
-      
-      if (result.success) {
-        // Lưu kết quả vào cache
-        saveSheetListToCache(result);
-        
-        setApiSheetData(result);
-        
-        // Nếu có sheets
-        if (result.sheets && result.sheets.length > 0) {
-          // Lấy dữ liệu chi tiết của sheet đầu tiên
-          const firstSheetId = result.sheets[0]._id;
-          await fetchSheetDetail(firstSheetId);
-        }
-      } else {
-        setApiSheetError(result.error || result.message || 'Không thể lấy dữ liệu sheet từ API');
-      }
+      console.log(`✅ Kết quả xử lý sheet ${sheetId}:`, result);
+      return result.success;
     } catch (error) {
-      console.error('Lỗi khi lấy dữ liệu sheet từ API:', error);
-      setApiSheetError(error.message || 'Đã xảy ra lỗi khi lấy dữ liệu sheet');
-    } finally {
-      setLoadingApiSheet(false);
+      console.error('❌ Lỗi khi xử lý dữ liệu sheet:', error);
+      return false;
     }
   };
-  
+
+  // Hàm lấy dữ liệu sheet từ database
+  const fetchSheetFromDb = async (sheetId) => {
+    try {
+      console.log(`🔍 Đang lấy dữ liệu sheet ${sheetId} từ database...`);
+      
+      const response = await fetch(`/api/sheets/${sheetId}/from-db`, {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Lỗi ${response.status}: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      console.log(`📥 Dữ liệu nhận được từ database cho sheet ${sheetId}:`, result);
+      
+      if (result.success) {
+        console.log(`✅ Dữ liệu sheet ${sheetId}:`, {
+          totalRows: result.sheet.values?.length || 0,
+          hasHtmlData: !!result.sheet.htmlData,
+          hasOptimizedData: !!result.sheet.optimizedHtmlData,
+          storageMode: result.sheet.storageMode
+        });
+        return result.sheet;
+      } else if (result.needsFallback) {
+        console.log(`⚠️ Sheet ${sheetId} cần được xử lý vào database`);
+        // Nếu cần xử lý dữ liệu
+        const processed = await processSheetToDb(sheetId);
+        if (processed) {
+          console.log(`🔄 Thử lấy lại dữ liệu sau khi xử lý cho sheet ${sheetId}`);
+          // Thử lấy lại dữ liệu sau khi xử lý
+          return await fetchSheetFromDb(sheetId);
+        }
+      }
+      
+      throw new Error(result.error || 'Không thể lấy dữ liệu sheet');
+    } catch (error) {
+      console.error(`❌ Lỗi khi lấy dữ liệu sheet ${sheetId}:`, error);
+      throw error;
+    }
+  };
+
   // Hàm lấy chi tiết của một sheet
   const fetchSheetDetail = async (sheetId) => {
-    if (!sheetId) {
-      setApiSheetError('Không thể tải chi tiết: ID sheet không hợp lệ');
-      return null;
-    }
+    if (!sheetId) return;
     
-    // Kiểm tra xem người dùng có quyền truy cập không
-    // Nếu có lỗi quyền truy cập, không tiếp tục gọi API
-    if (document.querySelector('[data-access-denied="true"]')) {
-      return null;
-    }
-    
-    // Kiểm tra cache trước
-    const cachedDetail = getSheetDetailFromCache(sheetId);
-    if (cachedDetail) {
-      // Cập nhật dữ liệu sheet trong state với dữ liệu từ cache
+    try {
+      console.log(`🔍 Bắt đầu lấy chi tiết sheet ${sheetId}...`);
+      
+      // Thử lấy từ cache trước
+      const cachedData = getSheetDetailFromCache(sheetId);
+      if (cachedData) {
+        console.log(`📦 Sử dụng dữ liệu cache cho sheet ${sheetId}`);
+        return cachedData;
+      }
+      
+      // Lấy dữ liệu từ database
+      const sheetData = await fetchSheetFromDb(sheetId);
+      
+      // Lưu vào cache
+      saveSheetDetailToCache(sheetId, sheetData);
+      console.log(`💾 Đã lưu dữ liệu sheet ${sheetId} vào cache`);
+      
+      // Cập nhật dữ liệu sheet trong state
       setApiSheetData(prevData => {
         if (!prevData || !prevData.sheets) return prevData;
         
         const updatedSheets = prevData.sheets.map(sheet => {
           if (sheet._id === sheetId) {
-            return { ...sheet, detail: cachedDetail };
+            return { ...sheet, detail: sheetData };
           }
           return sheet;
         });
@@ -342,63 +337,72 @@ export function useApiSheetData(courseId) {
         return { ...prevData, sheets: updatedSheets };
       });
       
-      setApiSheetError(null);
-      return cachedDetail;
+      return sheetData;
+    } catch (error) {
+      console.error(`❌ Lỗi khi lấy chi tiết sheet ${sheetId}:`, error);
+      throw error;
     }
+  };
+  
+  // Hàm lấy dữ liệu sheet từ API
+  const fetchApiSheetData = async () => {
+    if (!courseId) return;
     
     setLoadingApiSheet(true);
+    setApiSheetError(null);
     
     try {
-      // Sử dụng tham số fetchData=true để lấy đầy đủ dữ liệu bao gồm cả HTML
-      const response = await fetch(`/api/sheets/${sheetId}?fetchData=true`);
+      console.log(`🔍 Bắt đầu lấy danh sách sheets cho khóa học ${courseId}...`);
+      
+      // Thử lấy từ cache trước
+      const cachedData = getSheetListFromCache();
+      if (cachedData) {
+        console.log(`📦 Sử dụng danh sách sheets từ cache`);
+        setApiSheetData(cachedData);
+        return;
+      }
+      
+      // Lấy danh sách sheets
+      const response = await fetch(`/api/courses/${courseId}/sheets`, {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
       
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        const errorMessage = errorData.error || `Lỗi ${response.status}: ${response.statusText}`;
-        throw new Error(errorMessage);
+        throw new Error(`Lỗi ${response.status}: ${response.statusText}`);
       }
       
       const result = await response.json();
       
       if (result.success) {
-        // Lưu vào cache (nếu kích thước cho phép)
-        try {
-          saveSheetDetailToCache(sheetId, result.sheet);
-        } catch (cacheError) {
-          // Nếu gặp lỗi khi lưu cache, chỉ log lỗi và tiếp tục
-          console.error('Lỗi khi lưu cache:', cacheError);
-          
-          // Nếu lỗi liên quan đến quota, xóa tất cả cache
-          if (cacheError.name === 'QuotaExceededError' || 
-              cacheError.message.includes('exceeded the quota')) {
-            clearAllSheetCaches();
-          }
-        }
-        
-        // Cập nhật dữ liệu sheet trong state
-        setApiSheetData(prevData => {
-          if (!prevData || !prevData.sheets) return prevData;
-          
-          const updatedSheets = prevData.sheets.map(sheet => {
-            if (sheet._id === sheetId) {
-              return { ...sheet, detail: result.sheet };
-            }
-            return sheet;
-          });
-          
-          return { ...prevData, sheets: updatedSheets };
+        console.log(`📥 Danh sách sheets nhận được:`, {
+          totalSheets: result.sheets?.length || 0,
+          sheets: result.sheets?.map(s => ({
+            id: s._id,
+            name: s.name
+          }))
         });
         
-        setApiSheetError(null);
-        return result.sheet;
+        // Lưu vào cache
+        saveSheetListToCache(result);
+        console.log(`💾 Đã lưu danh sách sheets vào cache`);
+        
+        // Cập nhật state
+        setApiSheetData(result);
+        
+        // Nếu có sheets, lấy chi tiết của sheet đầu tiên
+        if (result.sheets && result.sheets.length > 0) {
+          console.log(`🔄 Lấy chi tiết của sheet đầu tiên:`, result.sheets[0]._id);
+          await fetchSheetDetail(result.sheets[0]._id);
+        }
       } else {
-        setApiSheetError(result.error || result.message || `Không thể lấy chi tiết sheet`);
-        return null;
+        setApiSheetError(result.error || 'Không thể tải dữ liệu sheet');
       }
     } catch (error) {
-      console.error('Lỗi khi tải chi tiết sheet:', error);
-      setApiSheetError(`Lỗi khi tải chi tiết sheet: ${error.message}`);
-      return null;
+      console.error('❌ Lỗi khi tải dữ liệu sheet:', error);
+      setApiSheetError(error.message);
     } finally {
       setLoadingApiSheet(false);
     }
