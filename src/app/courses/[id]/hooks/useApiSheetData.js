@@ -296,8 +296,21 @@ export function useApiSheetData(courseId) {
         let hyperlinkCount = 0;
         if (result.sheet?.htmlData) {
           result.sheet.htmlData.forEach((row, rowIndex) => {
-            if (row && row.values) {
+            // Kiểm tra cấu trúc dữ liệu
+            if (!row) return;
+            
+            // Kiểm tra nếu row là một đối tượng có thuộc tính values là mảng
+            if (row.values && Array.isArray(row.values)) {
               row.values.forEach((cell, cellIndex) => {
+                if (cell && cell.hyperlink) {
+                  hyperlinkCount++;
+                  console.log(`🔗 Hyperlink tại [${rowIndex},${cellIndex}]: ${cell.hyperlink}`);
+                }
+              });
+            } 
+            // Trường hợp row là một mảng (cấu trúc khác)
+            else if (Array.isArray(row)) {
+              row.forEach((cell, cellIndex) => {
                 if (cell && cell.hyperlink) {
                   hyperlinkCount++;
                   console.log(`🔗 Hyperlink tại [${rowIndex},${cellIndex}]: ${cell.hyperlink}`);

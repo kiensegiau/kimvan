@@ -153,7 +153,7 @@ export async function GET(request, { params }) {
     await dbMiddleware(request);
     
     // Get parameters
-    const { id } = params;
+    const { id } = await params;
     if (!id) {
       return NextResponse.json(
         { success: false, error: 'Missing sheet ID' },
