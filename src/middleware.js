@@ -141,12 +141,17 @@ export async function middleware(request) {
   
   // Kiểm tra token có tồn tại và không phải là chuỗi rỗng
   if (!token || token.trim() === '') {
-    const redirectUrl = new URL(routes.login, request.url);
-    // Thêm returnUrl và đảm bảo không bị mã hóa hai lần
-    const rawPathname = pathname; // Lưu lại đường dẫn gốc
-    redirectUrl.searchParams.set('returnUrl', rawPathname);
-    const redirectResponse = NextResponse.redirect(redirectUrl);
-    return addSecurityHeaders(redirectResponse);
+    const rawPathname = pathname;
+    if (pathname.startsWith('/api/')) {
+      // Nếu là API, trả về JSON lỗi 401
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    } else {
+      // Nếu là route thường, redirect về login
+      const redirectUrl = new URL(routes.login, request.url);
+      redirectUrl.searchParams.set('returnUrl', rawPathname);
+      const redirectResponse = NextResponse.redirect(redirectUrl);
+      return addSecurityHeaders(redirectResponse);
+    }
   }
 
   // Xác thực token với server trước khi cho phép truy cập
