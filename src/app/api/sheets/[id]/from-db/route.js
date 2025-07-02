@@ -76,12 +76,61 @@ function formatSheetDataFromDb(sheetContent) {
   } else if (sheetContent.htmlData) {
     // Use full HTML data
     htmlData = sheetContent.htmlData;
+    
+    // Đảm bảo các liên kết được truyền đúng định dạng
+    if (Array.isArray(htmlData)) {
+      htmlData.forEach((row, rowIndex) => {
+        // Kiểm tra cấu trúc dữ liệu
+        if (!row) return;
+        
+        // Kiểm tra nếu row là một đối tượng có thuộc tính values là mảng
+        if (row.values && Array.isArray(row.values)) {
+          row.values.forEach((cell, cellIndex) => {
+            // Đảm bảo hyperlink được giữ nguyên
+            if (cell && cell.hyperlink) {
+              console.log(`Tìm thấy hyperlink tại [${rowIndex},${cellIndex}]: ${cell.hyperlink}`);
+            }
+          });
+        } 
+        // Trường hợp row là một mảng (cấu trúc khác)
+        else if (Array.isArray(row)) {
+          row.forEach((cell, cellIndex) => {
+            if (cell && cell.hyperlink) {
+              console.log(`Tìm thấy hyperlink tại [${rowIndex},${cellIndex}]: ${cell.hyperlink}`);
+            }
+          });
+        }
+      });
+    }
   } else {
     // Create basic htmlData from rows if no HTML data available
     htmlData = values.map(row => ({
       values: row.map(cell => ({ formattedValue: cell }))
     }));
   }
+  
+  // Log số lượng hyperlink được tìm thấy để debug
+  let hyperlinkCount = 0;
+  if (Array.isArray(htmlData)) {
+    htmlData.forEach(row => {
+      // Kiểm tra cấu trúc dữ liệu
+      if (!row) return;
+      
+      // Kiểm tra nếu row là một đối tượng có thuộc tính values là mảng
+      if (row.values && Array.isArray(row.values)) {
+        row.values.forEach(cell => {
+          if (cell && cell.hyperlink) hyperlinkCount++;
+        });
+      }
+      // Trường hợp row là một mảng (cấu trúc khác)
+      else if (Array.isArray(row)) {
+        row.forEach(cell => {
+          if (cell && cell.hyperlink) hyperlinkCount++;
+        });
+      }
+    });
+  }
+  console.log(`Tổng số hyperlink được tìm thấy: ${hyperlinkCount}`);
   
   return {
     values,

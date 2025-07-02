@@ -235,13 +235,20 @@ export function useApiSheetData(courseId) {
     try {
       console.log(`🔄 Bắt đầu xử lý sheet ${sheetId} vào database...`);
       
+      // Hiển thị thông báo đang xử lý
+      setApiSheetError('Đang xử lý dữ liệu sheet vào database...');
+      
       const response = await fetch(`/api/sheets/${sheetId}/process-to-db`, {
         method: 'POST',
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ background: false })
+        body: JSON.stringify({ 
+          background: false,
+          preserveHyperlinks: true, // Đảm bảo giữ nguyên hyperlink
+          includeHtmlData: true     // Bao gồm dữ liệu HTML đầy đủ
+        })
       });
       
       if (!response.ok) {
@@ -250,9 +257,17 @@ export function useApiSheetData(courseId) {
       
       const result = await response.json();
       console.log(`✅ Kết quả xử lý sheet ${sheetId}:`, result);
+      
+      // Xóa thông báo lỗi
+      setApiSheetError(null);
+      
+      // Xóa cache để đảm bảo lấy dữ liệu mới nhất
+      clearCurrentCache();
+      
       return result.success;
     } catch (error) {
       console.error('❌ Lỗi khi xử lý dữ liệu sheet:', error);
+      setApiSheetError(`Lỗi khi xử lý sheet: ${error.message}`);
       return false;
     }
   };
@@ -277,6 +292,22 @@ export function useApiSheetData(courseId) {
       console.log(`📥 Dữ liệu nhận được từ database cho sheet ${sheetId}:`, result);
       
       if (result.success) {
+        // Kiểm tra và log số lượng hyperlink
+        let hyperlinkCount = 0;
+        if (result.sheet?.htmlData) {
+          result.sheet.htmlData.forEach((row, rowIndex) => {
+            if (row && row.values) {
+              row.values.forEach((cell, cellIndex) => {
+                if (cell && cell.hyperlink) {
+                  hyperlinkCount++;
+                  console.log(`🔗 Hyperlink tại [${rowIndex},${cellIndex}]: ${cell.hyperlink}`);
+                }
+              });
+            }
+          });
+        }
+        console.log(`🔢 Tổng số hyperlink: ${hyperlinkCount}`);
+        
         console.log(`✅ Dữ liệu sheet ${sheetId}:`, {
           totalRows: result.sheet.values?.length || 0,
           hasHtmlData: !!result.sheet.htmlData,

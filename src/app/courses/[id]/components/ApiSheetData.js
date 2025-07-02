@@ -18,6 +18,7 @@ export default function ApiSheetData({
   const [loadingLinks, setLoadingLinks] = useState({});
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
   const [hoveredHeader, setHoveredHeader] = useState(null);
+  const [processingSheet, setProcessingSheet] = useState(false);
   
   // Tạo proxy link từ URL thông qua Base64 encoding
   const createProxyLink = useCallback((url) => {
@@ -225,88 +226,123 @@ export default function ApiSheetData({
       const optimizedRow = sheetDetail.optimizedHtmlData.find(row => row.rowIndex === rowIndex);
       if (optimizedRow && optimizedRow.hyperlinks) {
         const hyperlink = optimizedRow.hyperlinks.find(link => link.col === cellIndex);
-        if (hyperlink) return hyperlink.url;
+        if (hyperlink) {
+          console.log(`🔍 Tìm thấy hyperlink tối ưu [${rowIndex},${cellIndex}]: ${hyperlink.url}`);
+          return hyperlink.url;
+        }
       }
     }
     
     // Nếu không có dữ liệu tối ưu, thử lấy từ dữ liệu HTML đầy đủ
-    const htmlRow = sheetDetail.htmlData?.[rowIndex]?.values || [];
-    const htmlCell = htmlRow[cellIndex];
-    return htmlCell?.hyperlink;
+    if (sheetDetail.htmlData && sheetDetail.htmlData[rowIndex]) {
+      const htmlRow = sheetDetail.htmlData[rowIndex];
+      if (htmlRow && htmlRow.values && htmlRow.values[cellIndex]) {
+        const htmlCell = htmlRow.values[cellIndex];
+        if (htmlCell && htmlCell.hyperlink) {
+          console.log(`🔍 Tìm thấy hyperlink đầy đủ [${rowIndex},${cellIndex}]: ${htmlCell.hyperlink}`);
+          return htmlCell.hyperlink;
+        }
+      }
+    }
+    
+    return null;
   };
 
   // Hàm render cell có hyperlink
   const renderHyperlinkCell = (hyperlink, cellContent, rowIndex, cellIndex) => {
     if (!hyperlink) return cellContent;
     
+    console.log(`🔗 Render hyperlink [${rowIndex},${cellIndex}]: ${hyperlink}`);
+    
     // Kiểm tra nếu là proxy link
     const isProxyLink = hyperlink.startsWith('/api/proxy-link/');
     const originalUrl = isProxyLink ? decodeProxyLink(hyperlink) : hyperlink;
-    const finalUrl = isProxyLink ? hyperlink : createProxyLink(hyperlink);
+    const finalUrl = hyperlink; // Sử dụng hyperlink gốc
     
     // Nếu không tạo được proxy link, hiển thị nội dung thông thường
     if (!finalUrl) return cellContent;
     
     // Kiểm tra loại link
-    const isYoutube = originalUrl && isYoutubeLink(originalUrl);
-    const isPdf = originalUrl && isPdfLink(originalUrl);
-    const isGDrive = originalUrl && isGoogleDriveLink(originalUrl);
+    const isYoutube = isYoutubeLink(originalUrl || hyperlink);
+    const isPdf = isPdfLink(originalUrl || hyperlink);
+    const isDrive = isGoogleDriveLink(originalUrl || hyperlink);
     
-    // Tạo title cho link
-    const linkTitle = cellContent || (isPdf ? 'Xem PDF' : (isYoutube ? 'Xem video' : 'Mở liên kết'));
+    // Xác định icon và class dựa trên loại link
+    let icon = null;
+    let linkClass = "text-blue-600 hover:text-blue-800 hover:underline cursor-pointer";
     
-    // Kiểm tra trạng thái loading
-    const isLoading = loadingLinks[finalUrl];
+    if (isYoutube) {
+      icon = (
+        <svg className="w-4 h-4 inline-block mr-1" fill="red" viewBox="0 0 24 24">
+          <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/>
+        </svg>
+      );
+      linkClass += " text-red-600 hover:text-red-800";
+    } else if (isPdf) {
+      icon = (
+        <svg className="w-4 h-4 inline-block mr-1" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 9.5h1v-1H9v1zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm10 5.5h1v-3h-1v3z"/>
+        </svg>
+      );
+      linkClass += " text-orange-600 hover:text-orange-800";
+    } else if (isDrive) {
+      icon = (
+        <svg className="w-4 h-4 inline-block mr-1" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M12 10l-3 5h6l3-5h-6zm-1-9v6.5l3 5 4-6.5-7-5zm-7 14l3 5 4-6.5-7-5v6.5z"/>
+        </svg>
+      );
+      linkClass += " text-green-600 hover:text-green-800";
+    } else {
+      icon = (
+        <svg className="w-4 h-4 inline-block mr-1" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/>
+        </svg>
+      );
+    }
+    
+    // Xác định hàm xử lý click dựa trên loại link
+    const handleClick = (e) => {
+      e.preventDefault();
+      
+      // Đánh dấu link đang loading
+      setLoadingLinks(prev => ({ ...prev, [hyperlink]: true }));
+      
+      if (isYoutube) {
+        handleYoutubeClick(e, originalUrl || hyperlink);
+      } else if (isPdf) {
+        handlePdfClick(e, finalUrl, cellContent || 'Xem tài liệu PDF');
+      } else if (isDrive) {
+        window.open(originalUrl || hyperlink, '_blank');
+      } else {
+        handleLinkClick(e, finalUrl, cellContent || 'Xem tài liệu');
+      }
+      
+      // Đánh dấu link đã xong loading
+      setTimeout(() => {
+        setLoadingLinks(prev => ({ ...prev, [hyperlink]: false }));
+      }, 500);
+    };
+    
+    // Hiển thị icon loading nếu đang tải
+    const isLoading = loadingLinks[hyperlink];
     
     return (
-      <button
-        onClick={(e) => handleLinkClick(e, finalUrl, linkTitle)}
-        className={`inline-flex items-center text-left ${
-          isYoutube ? 'text-red-600 hover:text-red-700' :
-          isPdf ? 'text-blue-600 hover:text-blue-700' :
-          isGDrive ? 'text-green-600 hover:text-green-700' :
-          'text-indigo-600 hover:text-indigo-700'
-        } font-medium focus:outline-none focus:underline transition-colors duration-150 disabled:opacity-50`}
-        disabled={isLoading}
+      <span 
+        className={linkClass}
+        onClick={handleClick}
+        title={originalUrl || hyperlink}
       >
         {isLoading ? (
-          <>
-            <ArrowPathIcon className="w-4 h-4 mr-1 animate-spin" />
-            <span>Đang tải...</span>
-          </>
-        ) : (
-          <>
-            {/* Icon based on link type */}
-            {isYoutube && (
-              <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z" />
-              </svg>
-            )}
-            {isPdf && (
-              <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" />
-              </svg>
-            )}
-            {isGDrive && (
-              <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 10L7 18h10l-5-8zM2 18l5-8-5-8h10l5 8-5 8H2z" />
-              </svg>
-            )}
-            {!isYoutube && !isPdf && !isGDrive && (
-              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-              </svg>
-            )}
-            <span className="truncate">{linkTitle}</span>
-          </>
-        )}
-      </button>
+          <span className="inline-block animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-blue-600 mr-1"></span>
+        ) : icon}
+        {cellContent || hyperlink}
+      </span>
     );
   };
 
-  // Hàm xử lý nội dung cell để phát hiện và chuyển đổi URL thành liên kết
+  // Render nội dung cell
   const renderCellContent = (content, rowIndex, cellIndex, sheetDetail) => {
-    // Kiểm tra hyperlink
+    // Lấy hyperlink nếu có
     const hyperlink = getHyperlink(rowIndex, cellIndex, sheetDetail);
     
     // Nếu có hyperlink, render cell với hyperlink
@@ -314,8 +350,8 @@ export default function ApiSheetData({
       return renderHyperlinkCell(hyperlink, content, rowIndex, cellIndex);
     }
     
-    // Nếu không có hyperlink, render nội dung thông thường
-    return content || '';
+    // Nếu không có hyperlink, hiển thị nội dung thông thường
+    return content;
   };
 
   // Hàm kiểm tra cell có bị gộp không
@@ -478,6 +514,46 @@ export default function ApiSheetData({
     );
   };
 
+  // Hàm xử lý sheet lên database
+  const handleProcessSheet = async () => {
+    if (!apiSheetData?.sheets || !apiSheetData.sheets[activeApiSheet]) return;
+    
+    const currentSheet = apiSheetData.sheets[activeApiSheet];
+    setProcessingSheet(true);
+    
+    try {
+      // Gọi API xử lý sheet
+      const response = await fetch(`/api/sheets/${currentSheet._id}/process-to-db`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+          background: false,
+          preserveHyperlinks: true,
+          includeHtmlData: true
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Lỗi ${response.status}: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      console.log('Kết quả xử lý sheet:', result);
+      
+      // Sau khi xử lý thành công, tải lại dữ liệu sheet
+      await fetchSheetDetail(currentSheet._id);
+      
+      alert('Đã xử lý và cập nhật sheet thành công!');
+    } catch (error) {
+      console.error('Lỗi khi xử lý sheet:', error);
+      alert(`Lỗi khi xử lý sheet: ${error.message}`);
+    } finally {
+      setProcessingSheet(false);
+    }
+  };
+
   return (
     <div className="bg-white shadow rounded-lg overflow-hidden">
       {/* Sheet selector */}
@@ -534,15 +610,39 @@ export default function ApiSheetData({
                   <h3 className="text-lg font-medium text-gray-900">
                     {apiSheetData.sheets[activeApiSheet].title || `Sheet ${activeApiSheet + 1}`}
                   </h3>
-                  <button
-                    onClick={() => fetchSheetDetail(apiSheetData.sheets[activeApiSheet]._id)}
-                    className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
-                  >
-                    <svg className="h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                    Làm mới
-                  </button>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => handleProcessSheet()}
+                      disabled={processingSheet}
+                      className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {processingSheet ? (
+                        <>
+                          <svg className="animate-spin h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Đang xử lý...
+                        </>
+                      ) : (
+                        <>
+                          <svg className="h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                          </svg>
+                          Cập nhật vào DB
+                        </>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => fetchSheetDetail(apiSheetData.sheets[activeApiSheet]._id)}
+                      className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
+                    >
+                      <svg className="h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      Làm mới
+                    </button>
+                  </div>
                 </div>
 
                 {/* Sheet data table */}

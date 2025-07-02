@@ -43,6 +43,22 @@ export async function processSheetToDatabase(sheetId, options = {}) {
     const header = sheetData.values[0] || [];
     const rows = [];
     
+    // Kiểm tra và log hyperlink
+    let hyperlinkCount = 0;
+    if (sheetData.htmlData) {
+      sheetData.htmlData.forEach((row, rowIndex) => {
+        if (row && row.values) {
+          row.values.forEach((cell, cellIndex) => {
+            if (cell && cell.hyperlink) {
+              hyperlinkCount++;
+              console.log(`Tìm thấy hyperlink tại [${rowIndex},${cellIndex}]: ${cell.hyperlink}`);
+            }
+          });
+        }
+      });
+    }
+    console.log(`Tổng số hyperlink tìm thấy trong dữ liệu gốc: ${hyperlinkCount}`);
+    
     // Xử lý từng hàng (bỏ qua header)
     for (let rowIndex = 1; rowIndex < sheetData.values.length; rowIndex++) {
       const row = sheetData.values[rowIndex];
@@ -54,6 +70,7 @@ export async function processSheetToDatabase(sheetId, options = {}) {
       // Xử lý hàng
       const processedRow = {};
       const urls = [];
+      const hyperlinks = [];
       
       row.forEach((cell, colIndex) => {
         // Lưu giá trị gốc của ô
@@ -64,6 +81,12 @@ export async function processSheetToDatabase(sheetId, options = {}) {
         const hyperlink = htmlCell?.hyperlink;
         
         if (hyperlink) {
+          // Lưu hyperlink vào danh sách
+          hyperlinks.push({
+            col: colIndex,
+            url: hyperlink
+          });
+          
           const cleanUrl = cleanGoogleUrl(hyperlink);
           if (isDriveUrl(cleanUrl)) {
             urls.push({
@@ -93,14 +116,53 @@ export async function processSheetToDatabase(sheetId, options = {}) {
         processedData: {
           ...processedRow,
           urls
-        }
+        },
+        hyperlinks: hyperlinks.length > 0 ? hyperlinks : undefined
       });
     }
     
-    // Chuẩn bị dữ liệu HTML để lưu trữ
-    const formattedHtmlData = sheetData.htmlData ? 
-      sheetData.htmlData.map(row => row?.values || []) : 
-      [];
+    // Đảm bảo dữ liệu HTML được giữ nguyên
+    let formattedHtmlData = [];
+    if (sheetData.htmlData && Array.isArray(sheetData.htmlData)) {
+      // Chuẩn hóa cấu trúc dữ liệu HTML
+      formattedHtmlData = sheetData.htmlData.map((row, rowIndex) => {
+        if (!row) return { values: [] };
+        
+        // Nếu row đã có cấu trúc { values: [...] }
+        if (row.values && Array.isArray(row.values)) {
+          return row;
+        }
+        // Nếu row là một mảng, chuyển đổi sang cấu trúc chuẩn
+        else if (Array.isArray(row)) {
+          return {
+            values: row.map(cell => {
+              // Giữ lại thông tin hyperlink nếu có
+              if (cell && typeof cell === 'object') {
+                return cell;
+              }
+              // Chuyển đổi giá trị đơn giản thành đối tượng
+              return { formattedValue: cell };
+            })
+          };
+        }
+        // Trường hợp khác, trả về đối tượng rỗng
+        return { values: [] };
+      });
+      
+      // Kiểm tra và log số lượng hyperlink sau khi chuẩn hóa
+      let hyperlinkCount = 0;
+      formattedHtmlData.forEach((row, rowIndex) => {
+        if (row && row.values && Array.isArray(row.values)) {
+          row.values.forEach((cell, cellIndex) => {
+            if (cell && cell.hyperlink) {
+              hyperlinkCount++;
+              console.log(`Hyperlink sau chuẩn hóa [${rowIndex},${cellIndex}]: ${cell.hyperlink}`);
+            }
+          });
+        }
+      });
+      console.log(`Tổng số hyperlink sau chuẩn hóa: ${hyperlinkCount}`);
+    }
     
     // Tạo document sheet
     const sheetDocument = {
@@ -113,7 +175,8 @@ export async function processSheetToDatabase(sheetId, options = {}) {
       metadata: {
         source: 'Google Sheets',
         processedBy: options.processedBy || 'SheetProcessor',
-        version: '3.0'
+        version: '3.0',
+        preserveHyperlinks: true
       }
     };
     
@@ -126,6 +189,7 @@ export async function processSheetToDatabase(sheetId, options = {}) {
     return {
       success: true,
       processedCount: rows.length,
+      hyperlinkCount,
       errors: 0,
       documentId: result._id
     };
