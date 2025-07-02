@@ -10,14 +10,12 @@ import { routes } from '@/config/env-config';
 async function verifyAuthTokenServer(token) {
   try {
     // Gọi API nội bộ để xác thực token
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/auth/verify`, {
+    const response = await fetch('/api/auth/verify', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ token }),
-      // Đảm bảo không cache
-      cache: 'no-store'
     });
 
     const data = await response.json();

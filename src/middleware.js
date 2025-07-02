@@ -147,11 +147,8 @@ export async function middleware(request) {
 
   // Xác thực token với server trước khi cho phép truy cập
   try {
-    // Xác định URL cơ sở
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || request.nextUrl.origin;
-    
-    // Gọi API xác thực token
-    const verifyResponse = await fetch(`${baseUrl}${TOKEN_VERIFY_API}`, {
+    // Gọi API xác thực token (dùng đường dẫn tương đối)
+    const verifyResponse = await fetch(TOKEN_VERIFY_API, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -165,8 +162,8 @@ export async function middleware(request) {
 
     // Nếu token không hợp lệ hoặc đã hết hạn, thử làm mới token
     if (!verifyResponse.ok) {
-      // Thử làm mới token
-      const refreshResponse = await fetch(`${baseUrl}${TOKEN_REFRESH_API}`, {
+      // Thử làm mới token (dùng đường dẫn tương đối)
+      const refreshResponse = await fetch(TOKEN_REFRESH_API, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -228,8 +225,8 @@ export async function middleware(request) {
       // Cập nhật token để sử dụng cho các bước tiếp theo
       token = refreshData.token;
       
-      // Gọi lại API xác thực với token mới
-      const reVerifyResponse = await fetch(`${baseUrl}${TOKEN_VERIFY_API}`, {
+      // Gọi lại API xác thực với token mới (dùng đường dẫn tương đối)
+      const reVerifyResponse = await fetch(TOKEN_VERIFY_API, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -257,10 +254,10 @@ export async function middleware(request) {
       // Sử dụng dữ liệu từ token mới đã được xác thực
       user = verifyData.user;
       
-      // Lấy role từ MongoDB thông qua API
+      // Lấy role từ MongoDB thông qua API (dùng đường dẫn tương đối)
       userRole = user.role || 'user';
       try {
-        const roleResponse = await fetch(`${baseUrl}${USER_ROLE_API}`, {
+        const roleResponse = await fetch(USER_ROLE_API, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -290,8 +287,8 @@ export async function middleware(request) {
       // Nếu token sắp hết hạn (còn dưới 30 phút), làm mới token
       if (timeLeft < 30 * 60 * 1000) {
         try {
-          // Gọi API làm mới token
-          const refreshResponse = await fetch(`${baseUrl}${TOKEN_REFRESH_API}`, {
+          // Gọi API làm mới token (dùng đường dẫn tương đối)
+          const refreshResponse = await fetch(TOKEN_REFRESH_API, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
@@ -354,10 +351,10 @@ export async function middleware(request) {
       
       user = verifyData.user;
       
-      // Lấy role từ MongoDB thông qua API
+      // Lấy role từ MongoDB thông qua API (dùng đường dẫn tương đối)
       userRole = user.role || 'user';
       try {
-        const roleResponse = await fetch(`${baseUrl}${USER_ROLE_API}`, {
+        const roleResponse = await fetch(USER_ROLE_API, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -387,8 +384,8 @@ export async function middleware(request) {
       // Nếu token sắp hết hạn (còn dưới 30 phút), làm mới token
       if (timeLeft < 30 * 60 * 1000) {
         try {
-          // Gọi API làm mới token
-          const refreshResponse = await fetch(`${baseUrl}${TOKEN_REFRESH_API}`, {
+          // Gọi API làm mới token (dùng đường dẫn tương đối)
+          const refreshResponse = await fetch(TOKEN_REFRESH_API, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
