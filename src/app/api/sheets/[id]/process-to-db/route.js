@@ -31,22 +31,15 @@ export async function POST(request, { params }) {
     }
 
     await dbMiddleware(request);
-    const { id } = await params;
     
-    // Parse request body
-    let requestBody = {};
-    try {
-      requestBody = await request.json();
-    } catch (error) {
-      // If no body or invalid JSON, use default options
-      console.log('No request body or invalid JSON, using defaults');
+    if (!params || !params.id) {
+      return NextResponse.json(
+        { success: false, error: 'Missing sheet ID parameter' },
+        { status: 400 }
+      );
     }
     
-    const options = {
-      useCache: requestBody.useCache !== false,
-      forceRefresh: requestBody.forceRefresh === true,
-      processedBy: 'API Request'
-    };
+    const { id } = await params;
     
     // Find sheet in the database
     let sheet;
@@ -63,32 +56,46 @@ export async function POST(request, { params }) {
       );
     }
     
-    // Start processing in the background
-    // We'll return a success response immediately and continue processing
-    const processingPromise = processSheetToDatabase(sheet.sheetId, options);
+    // Parse request body
+    let requestBody = {};
+    try {
+      requestBody = await request.json();
+    } catch (error) {
+      console.log('No request body or invalid JSON, using defaults');
+    }
     
-    // If background is false, wait for processing to complete
+    // Xử lý dữ liệu sheet vào database
+    console.log(`Bắt đầu xử lý sheet: ${sheet.name} (ID: ${sheet.sheetId})`);
+    
+    // Nếu yêu cầu xử lý đồng bộ
     if (requestBody.background === false) {
-      const result = await processingPromise;
+      const result = await processSheetToDatabase(sheet.sheetId);
+      
       return NextResponse.json({
-        success: true,
-        message: 'Sheet processing completed',
+        success: result.success,
+        message: result.success ? 'Đã xử lý dữ liệu sheet vào database' : result.error,
         sheet: {
           _id: sheet._id,
           name: sheet.name,
           sheetId: sheet.sheetId
         },
         stats: {
-          processedCount: result.processedCount,
+          processedCount: result.processedCount || 0,
           errors: result.errors || 0
         }
       });
     }
     
-    // Otherwise, return immediately with a background processing message
+    // Nếu xử lý nền (background)
+    processSheetToDatabase(sheet.sheetId).then(result => {
+      console.log(`Hoàn tất xử lý sheet ${sheet.sheetId} trong nền:`, result);
+    }).catch(error => {
+      console.error(`Lỗi xử lý sheet ${sheet.sheetId} trong nền:`, error);
+    });
+    
     return NextResponse.json({
       success: true,
-      message: 'Sheet processing started in background',
+      message: 'Đã bắt đầu xử lý sheet trong nền',
       sheet: {
         _id: sheet._id,
         name: sheet.name,
@@ -96,9 +103,9 @@ export async function POST(request, { params }) {
       }
     });
   } catch (error) {
-    console.error('Error processing sheet to database:', error);
+    console.error('Lỗi xử lý sheet vào database:', error);
     return NextResponse.json(
-      { success: false, error: 'Error processing sheet: ' + error.message },
+      { success: false, error: 'Lỗi xử lý sheet: ' + error.message },
       { status: 500 }
     );
   }
@@ -114,6 +121,14 @@ export async function GET(request, { params }) {
     }
 
     await dbMiddleware(request);
+    
+    if (!params || !params.id) {
+      return NextResponse.json(
+        { success: false, error: 'Missing sheet ID parameter' },
+        { status: 400 }
+      );
+    }
+    
     const { id } = await params;
     
     // Find sheet in the database
@@ -132,7 +147,7 @@ export async function GET(request, { params }) {
     }
     
     // Check if sheet content exists
-    const sheetContent = await SheetContent.findOne({ sheetId: sheet.sheetId }).select('_id totalRows processedAt').lean();
+    const sheetContent = await SheetContent.findOne({ sheetId: sheet.sheetId }).select('_id totalRows processedAt metadata').lean();
     
     if (!sheetContent) {
       return NextResponse.json({
@@ -143,7 +158,7 @@ export async function GET(request, { params }) {
           sheetId: sheet.sheetId
         },
         processed: false,
-        message: 'Sheet has not been processed to database yet'
+        message: 'Sheet chưa được xử lý vào database'
       });
     }
     
@@ -157,13 +172,14 @@ export async function GET(request, { params }) {
       processed: true,
       stats: {
         totalRows: sheetContent.totalRows || 0,
-        processedAt: sheetContent.processedAt
+        processedAt: sheetContent.processedAt,
+        version: sheetContent.metadata?.version || 'unknown'
       }
     });
   } catch (error) {
-    console.error('Error checking processing status:', error);
+    console.error('Lỗi kiểm tra trạng thái xử lý:', error);
     return NextResponse.json(
-      { success: false, error: 'Error checking status: ' + error.message },
+      { success: false, error: 'Lỗi kiểm tra trạng thái: ' + error.message },
       { status: 500 }
     );
   }
@@ -179,6 +195,14 @@ export async function DELETE(request, { params }) {
     }
 
     await dbMiddleware(request);
+    
+    if (!params || !params.id) {
+      return NextResponse.json(
+        { success: false, error: 'Missing sheet ID parameter' },
+        { status: 400 }
+      );
+    }
+    
     const { id } = await params;
     
     // Find sheet in the database
@@ -201,7 +225,7 @@ export async function DELETE(request, { params }) {
     
     return NextResponse.json({
       success: true,
-      message: 'Processed sheet data cleared',
+      message: 'Đã xóa dữ liệu sheet đã xử lý',
       sheet: {
         _id: sheet._id,
         name: sheet.name,
@@ -210,9 +234,9 @@ export async function DELETE(request, { params }) {
       deleted: result.deleted
     });
   } catch (error) {
-    console.error('Error clearing processed sheet data:', error);
+    console.error('Lỗi khi xóa dữ liệu sheet đã xử lý:', error);
     return NextResponse.json(
-      { success: false, error: 'Error clearing processed data: ' + error.message },
+      { success: false, error: 'Lỗi khi xóa dữ liệu đã xử lý: ' + error.message },
       { status: 500 }
     );
   }

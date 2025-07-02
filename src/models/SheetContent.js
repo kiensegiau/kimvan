@@ -30,6 +30,8 @@ const SheetContentSchema = new mongoose.Schema({
   timestamps: true
 });
 
+SheetContentSchema.index({ 'rows.processedData.urls.url': 1 });
+
 const SheetContent = mongoose.models.SheetContent || mongoose.model('SheetContent', SheetContentSchema);
 
 export default SheetContent; 

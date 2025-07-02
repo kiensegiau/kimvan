@@ -57,6 +57,9 @@ export default function SheetDetailPage({ params }) {
   const [processingToDb, setProcessingToDb] = useState(false);
   const [dbProcessingStatus, setDbProcessingStatus] = useState(null);
   const [showDbProcessingModal, setShowDbProcessingModal] = useState(false);
+  const [storageOptions, setStorageOptions] = useState({
+    storeHtmlData: true,
+  });
 
   useEffect(() => {
     fetchSheetDetail();
@@ -583,6 +586,20 @@ export default function SheetDetailPage({ params }) {
       );
     }
 
+    // Kiểm tra xem có dữ liệu hyperlink tối ưu không
+    const hasOptimizedData = sheetData.optimizedHtmlData && sheetData.optimizedHtmlData.length > 0;
+    
+    // Hàm để lấy hyperlink từ dữ liệu tối ưu
+    const getOptimizedHyperlink = (rowIndex, colIndex) => {
+      if (!hasOptimizedData) return null;
+      
+      const optimizedRow = sheetData.optimizedHtmlData.find(row => row.rowIndex === rowIndex);
+      if (!optimizedRow || !optimizedRow.hyperlinks) return null;
+      
+      const hyperlink = optimizedRow.hyperlinks.find(link => link.col === colIndex);
+      return hyperlink ? hyperlink.url : null;
+    };
+
     return (
       <div className="overflow-x-auto bg-white shadow-md rounded-lg">
         <table className="min-w-full divide-y divide-gray-200">
@@ -600,17 +617,22 @@ export default function SheetDetailPage({ params }) {
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {sheetData.values.slice(1).map((row, rowIndex) => {
-              // Lấy dữ liệu HTML tương ứng nếu có
+              // Lấy dữ liệu HTML tương ứng từ cả hai cấu trúc
               const htmlRow = sheetData.htmlData?.[rowIndex + 1]?.values || [];
               
               return (
                 <tr key={rowIndex}>
                   {row.map((cell, cellIndex) => {
-                    // Kiểm tra xem có dữ liệu HTML không
+                    // Thử lấy hyperlink từ htmlData đầy đủ
                     const htmlCell = htmlRow[cellIndex];
-                    const hyperlink = htmlCell?.hyperlink;
+                    let hyperlink = htmlCell?.hyperlink;
                     
-                    // Nếu có hyperlink trong dữ liệu HTML
+                    // Nếu không có, thử lấy từ dữ liệu tối ưu
+                    if (!hyperlink && hasOptimizedData) {
+                      hyperlink = getOptimizedHyperlink(rowIndex + 1, cellIndex);
+                    }
+                    
+                    // Nếu có hyperlink
                     if (hyperlink) {
                       // Xác định loại liên kết để hiển thị icon phù hợp
                       let icon = null;
@@ -716,8 +738,10 @@ export default function SheetDetailPage({ params }) {
   };
 
   // Hàm xử lý dữ liệu vào database
-  const handleProcessToDatabase = async (options = {}) => {
-    if (!confirm('Bạn có chắc chắn muốn xử lý dữ liệu sheet vào database? Quá trình này có thể mất nhiều thời gian.')) {
+  const handleProcessToDatabase = async () => {
+    const confirmMessage = `Bạn có chắc chắn muốn xử lý dữ liệu sheet "${sheet.name}" (ID: ${sheet.sheetId}) vào database?`;
+    
+    if (!confirm(confirmMessage)) {
       return;
     }
     
@@ -734,9 +758,7 @@ export default function SheetDetailPage({ params }) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          background: options.background !== false,
-          forceRefresh: options.forceRefresh || false,
-          batchSize: options.batchSize || 50
+          background: false // Luôn xử lý đồng bộ
         }),
       });
       
@@ -749,23 +771,18 @@ export default function SheetDetailPage({ params }) {
       
       setDbProcessingStatus({
         inProgress: false,
-        success: true,
+        success: result.success,
         message: result.message || 'Đã xử lý dữ liệu vào database thành công',
         stats: result.stats || {}
       });
       
-      // Đóng modal sau một khoảng thời gian nếu thành công
+      // Tải dữ liệu từ database sau khi xử lý thành công
       if (result.success) {
-        // Tải dữ liệu từ database sau khi xử lý thành công
-        if (options.background === false) {
-          // Chỉ tải lại dữ liệu nếu là xử lý đồng bộ
-          await fetchSheetData(null, { useDb: true });
-        }
+        await fetchSheetData(null, { useDb: true });
         
+        // Đóng modal sau một khoảng thời gian
         setTimeout(() => {
-          if (options.closeModalOnSuccess !== false) {
-            setShowDbProcessingModal(false);
-          }
+          setShowDbProcessingModal(false);
         }, 3000);
       }
       
@@ -779,6 +796,11 @@ export default function SheetDetailPage({ params }) {
     } finally {
       setProcessingToDb(false);
     }
+  };
+
+  // Thêm hàm xử lý với tùy chọn xóa dữ liệu cũ
+  const handleProcessWithCleanup = () => {
+    handleProcessToDatabase({ forceCleanup: true });
   };
 
   // Hàm xử lý tất cả link trong sheet
@@ -1670,7 +1692,7 @@ export default function SheetDetailPage({ params }) {
       {/* Modal xử lý dữ liệu vào DB */}
       {showDbProcessingModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg max-w-xl w-full mx-4 overflow-hidden">
+          <div className="bg-white rounded-lg max-w-md w-full mx-4 overflow-hidden">
             <div className="bg-blue-600 text-white px-4 py-3 flex justify-between items-center">
               <h3 className="text-lg font-semibold">Xử lý dữ liệu sheet vào database</h3>
               <button 
@@ -1683,71 +1705,35 @@ export default function SheetDetailPage({ params }) {
             </div>
             
             <div className="p-6">
-              <p className="mb-4 text-gray-700">
-                Tính năng này sẽ xử lý dữ liệu từ Google Sheet và lưu vào database để giảm tải cho server.
-              </p>
-              
-              <div className="mb-6 space-y-4">
-                <div className="flex justify-between">
-                  <button
-                    onClick={() => handleProcessToDatabase({ background: true })}
-                    disabled={processingToDb}
-                    className={`px-4 py-2 rounded ${processingToDb ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'} text-white w-48`}
-                  >
-                    {processingToDb ? 'Đang xử lý...' : 'Xử lý (nền)'}
-                  </button>
-                  
-                  <button
-                    onClick={() => handleProcessToDatabase({ background: false })}
-                    disabled={processingToDb}
-                    className={`px-4 py-2 rounded ${processingToDb ? 'bg-gray-400' : 'bg-green-600 hover:bg-green-700'} text-white w-48`}
-                  >
-                    {processingToDb ? 'Đang xử lý...' : 'Xử lý (đồng bộ)'}
-                  </button>
-                </div>
+              <div className="mb-4">
+                <p className="text-gray-700 mb-2">
+                  Tính năng này sẽ xử lý dữ liệu từ Google Sheet và lưu vào database để giảm tải cho server.
+                </p>
                 
-                <div className="flex justify-between">
-                  <button
-                    onClick={() => handleProcessToDatabase({ forceRefresh: true })}
-                    disabled={processingToDb}
-                    className={`px-4 py-2 rounded ${processingToDb ? 'bg-gray-400' : 'bg-yellow-600 hover:bg-yellow-700'} text-white w-48`}
-                  >
-                    {processingToDb ? 'Đang xử lý...' : 'Bỏ qua cache'}
-                  </button>
-                  
-                  <button
-                    onClick={async () => {
-                      if (!confirm('Bạn có chắc chắn muốn xóa tất cả dữ liệu đã xử lý của sheet này?')) {
-                        return;
-                      }
-                      
-                      try {
-                        setProcessingToDb(true);
-                        
-                        const response = await fetch(`/api/sheets/${id}/process-to-db`, {
-                          method: 'DELETE'
-                        });
-                        
-                        if (!response.ok) {
-                          throw new Error('Không thể xóa dữ liệu');
-                        }
-                        
-                        const result = await response.json();
-                        alert(`Đã xóa ${result.deleted} bản ghi từ database.`);
-                        
-                      } catch (error) {
-                        console.error('Lỗi khi xóa dữ liệu:', error);
-                        alert(`Lỗi: ${error.message}`);
-                      } finally {
-                        setProcessingToDb(false);
-                      }
-                    }}
-                    disabled={processingToDb}
-                    className={`px-4 py-2 rounded ${processingToDb ? 'bg-gray-400' : 'bg-red-600 hover:bg-red-700'} text-white w-48`}
-                  >
-                    {processingToDb ? 'Đang xử lý...' : 'Xóa dữ liệu'}
-                  </button>
+                {/* Thêm phần hiển thị thông tin sheet */}
+                <div className="bg-blue-50 p-3 rounded-md mb-4">
+                  <p className="text-sm text-blue-800 font-medium">Thông tin sheet:</p>
+                  <p className="text-sm text-blue-700">Tên: {sheet?.name}</p>
+                  <p className="text-sm text-blue-700">ID: {sheet?.sheetId}</p>
+                  <p className="text-sm text-blue-700">Mô tả: {sheet?.description || 'Không có mô tả'}</p>
                 </div>
+              </div>
+              
+              <div className="mb-6 flex justify-center">
+                <button
+                  onClick={handleProcessToDatabase}
+                  disabled={processingToDb}
+                  className={`px-6 py-3 rounded ${processingToDb ? 'bg-gray-400' : 'bg-green-600 hover:bg-green-700'} text-white font-medium text-lg`}
+                >
+                  {processingToDb ? (
+                    <div className="flex items-center">
+                      <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white mr-2"></div>
+                      Đang xử lý...
+                    </div>
+                  ) : (
+                    'Xử lý dữ liệu vào DB'
+                  )}
+                </button>
               </div>
               
               {dbProcessingStatus && (

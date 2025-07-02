@@ -10,52 +10,56 @@ import { extractUrlFromCell, isDriveUrl, cleanGoogleUrl } from '@/utils/drive-ut
  * @returns {Object} Processing results
  */
 export async function processSheetToDatabase(sheetId, options = {}) {
-  console.log(`Starting processing of sheet ${sheetId} to database`);
+  console.log(`Bắt đầu xử lý sheet ${sheetId} vào database`);
   
-  // Connect to MongoDB if needed
+  // Kết nối MongoDB nếu cần
   if (mongoose.connection.readyState !== 1) {
     try {
       await mongoose.connect(process.env.MONGODB_URI);
-      console.log('Connected to MongoDB');
+      console.log('Đã kết nối với MongoDB');
     } catch (error) {
-      console.error('Error connecting to MongoDB:', error);
-      return { success: false, error: 'Database connection failed' };
+      console.error('Lỗi kết nối MongoDB:', error);
+      return { success: false, error: 'Không thể kết nối database' };
     }
   }
   
   try {
-    // Fetch data from Google Sheets (with caching)
-    const sheetData = await fetchSheetDataWithCache(sheetId, options.useCache !== false && !options.forceRefresh);
+    // Xóa dữ liệu cũ trước khi xử lý
+    const deleteResult = await SheetContent.deleteOne({ sheetId });
+    console.log(`Đã xóa ${deleteResult.deletedCount} bản ghi cũ của sheet ${sheetId}`);
+    
+    // Lấy dữ liệu từ Google Sheets
+    const sheetData = await fetchSheetDataWithCache(sheetId, false);
     
     if (!sheetData.values || sheetData.values.length === 0) {
       return {
         success: false,
-        error: 'Sheet has no data',
+        error: 'Sheet không có dữ liệu',
         processedCount: 0
       };
     }
     
-    // Process the entire sheet
+    // Xử lý dữ liệu sheet
     const header = sheetData.values[0] || [];
     const rows = [];
     
-    // Process each row (skip header)
+    // Xử lý từng hàng (bỏ qua header)
     for (let rowIndex = 1; rowIndex < sheetData.values.length; rowIndex++) {
       const row = sheetData.values[rowIndex];
       if (!row || row.length === 0) continue;
       
-      // Extract HTML data for this row if available
+      // Lấy dữ liệu HTML cho hàng này nếu có
       const htmlRow = sheetData.htmlData?.[rowIndex]?.values || [];
       
-      // Process the row
+      // Xử lý hàng
       const processedRow = {};
       const urls = [];
       
       row.forEach((cell, colIndex) => {
-        // Store original cell value
+        // Lưu giá trị gốc của ô
         processedRow[`col${colIndex}`] = cell;
         
-        // Process hyperlinks from HTML data
+        // Xử lý hyperlink từ dữ liệu HTML
         const htmlCell = htmlRow[colIndex];
         const hyperlink = htmlCell?.hyperlink;
         
@@ -69,7 +73,7 @@ export async function processSheetToDatabase(sheetId, options = {}) {
             });
           }
         } 
-        // Extract URL from cell content if no hyperlink found
+        // Trích xuất URL từ nội dung ô nếu không có hyperlink
         else if (cell && typeof cell === 'string') {
           const extractedUrl = extractUrlFromCell(cell);
           if (extractedUrl && isDriveUrl(extractedUrl)) {
@@ -82,9 +86,9 @@ export async function processSheetToDatabase(sheetId, options = {}) {
         }
       });
       
-      // Add the processed row to the array
+      // Thêm hàng đã xử lý vào mảng
       rows.push({
-        rowIndex: rowIndex - 1, // Adjust index to be 0-based for rows array
+        rowIndex: rowIndex - 1, // Điều chỉnh index để bắt đầu từ 0 cho mảng rows
         data: row,
         processedData: {
           ...processedRow,
@@ -93,12 +97,12 @@ export async function processSheetToDatabase(sheetId, options = {}) {
       });
     }
     
-    // Prepare htmlData in a format suitable for storage
+    // Chuẩn bị dữ liệu HTML để lưu trữ
     const formattedHtmlData = sheetData.htmlData ? 
       sheetData.htmlData.map(row => row?.values || []) : 
       [];
     
-    // Create the sheet document
+    // Tạo document sheet
     const sheetDocument = {
       sheetId,
       totalRows: rows.length,
@@ -108,18 +112,16 @@ export async function processSheetToDatabase(sheetId, options = {}) {
       processedAt: new Date(),
       metadata: {
         source: 'Google Sheets',
-        processedBy: options.processedBy || 'SheetProcessor'
+        processedBy: options.processedBy || 'SheetProcessor',
+        version: '3.0'
       }
     };
     
-    // Save to database (use upsert to update if exists or create if not)
-    const result = await SheetContent.findOneAndUpdate(
-      { sheetId },
-      sheetDocument,
-      { upsert: true, new: true }
-    );
+    // Tạo mới document
+    const newSheetContent = new SheetContent(sheetDocument);
+    const result = await newSheetContent.save();
     
-    console.log(`Processed and saved sheet ${sheetId} with ${rows.length} rows to database`);
+    console.log(`Đã xử lý và lưu sheet ${sheetId} với ${rows.length} hàng vào database`);
     
     return {
       success: true,
@@ -128,7 +130,7 @@ export async function processSheetToDatabase(sheetId, options = {}) {
       documentId: result._id
     };
   } catch (error) {
-    console.error('Error processing sheet to database:', error);
+    console.error('Lỗi xử lý sheet vào database:', error);
     return {
       success: false,
       error: error.message,
@@ -138,14 +140,34 @@ export async function processSheetToDatabase(sheetId, options = {}) {
 }
 
 /**
- * Get processed sheet data from database
+ * Xóa tất cả dữ liệu đã xử lý của một sheet
  * @param {string} sheetId - Google Sheet ID
- * @param {Object} options - Query options
- * @returns {Object} Processed sheet data
+ * @returns {Object} Kết quả của thao tác
+ */
+export async function clearProcessedSheetData(sheetId) {
+  try {
+    const deleteResult = await SheetContent.deleteOne({ sheetId });
+    console.log(`Đã xóa ${deleteResult.deletedCount} bản ghi của sheet ${sheetId}`);
+    
+    return {
+      success: true,
+      deleted: deleteResult.deletedCount
+    };
+  } catch (error) {
+    console.error('Lỗi khi xóa dữ liệu sheet đã xử lý:', error);
+    throw error;
+  }
+}
+
+/**
+ * Lấy dữ liệu sheet đã xử lý từ database
+ * @param {string} sheetId - Google Sheet ID
+ * @param {Object} options - Tùy chọn truy vấn
+ * @returns {Object} Dữ liệu sheet đã xử lý
  */
 export async function getProcessedSheetData(sheetId, options = {}) {
   try {
-    // Find the sheet content in database
+    // Tìm nội dung sheet trong database
     const sheetContent = await SheetContent.findOne({ sheetId }).lean();
     
     if (!sheetContent) {
@@ -160,11 +182,11 @@ export async function getProcessedSheetData(sheetId, options = {}) {
       };
     }
     
-    // Apply pagination if requested
+    // Áp dụng phân trang nếu yêu cầu
     const { page = 1, limit = 100 } = options;
     const skip = (page - 1) * limit;
     
-    // Get a subset of rows based on pagination
+    // Lấy một tập con các hàng dựa trên phân trang
     const paginatedRows = sheetContent.rows.slice(skip, skip + limit);
     
     return {
@@ -173,6 +195,7 @@ export async function getProcessedSheetData(sheetId, options = {}) {
         sheetId: sheetContent.sheetId,
         header: sheetContent.header,
         rows: paginatedRows,
+        htmlData: sheetContent.htmlData,
         totalRows: sheetContent.totalRows,
         processedAt: sheetContent.processedAt
       },
@@ -184,31 +207,12 @@ export async function getProcessedSheetData(sheetId, options = {}) {
       }
     };
   } catch (error) {
-    console.error('Error getting processed sheet data:', error);
+    console.error('Lỗi khi lấy dữ liệu sheet đã xử lý:', error);
     throw error;
   }
 }
 
-/**
- * Delete all processed data for a sheet
- * @param {string} sheetId - Google Sheet ID
- * @returns {Object} Result of the operation
- */
-export async function clearProcessedSheetData(sheetId) {
-  try {
-    const result = await SheetContent.deleteOne({ sheetId });
-    
-    return {
-      success: true,
-      deleted: result.deletedCount
-    };
-  } catch (error) {
-    console.error('Error clearing processed sheet data:', error);
-    throw error;
-  }
-}
-
-// Helper function to fetch sheet data with caching
+// Hàm trợ giúp để lấy dữ liệu sheet với cache
 async function fetchSheetDataWithCache(sheetId, useCache) {
   const { fetchSheetDataWithCache } = await import('./sheet-cache-manager');
   return fetchSheetDataWithCache(sheetId, useCache);
