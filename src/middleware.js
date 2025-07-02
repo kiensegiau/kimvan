@@ -151,7 +151,7 @@ export async function middleware(request) {
 
   // Xác thực token với server trước khi cho phép truy cập
   try {
-    const baseUrl = request.nextUrl.origin;
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
     // Gọi API xác thực token (dùng URL đầy đủ)
     const verifyResponse = await fetch(`${baseUrl}${TOKEN_VERIFY_API}`, {
       method: 'POST',
