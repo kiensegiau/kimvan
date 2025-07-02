@@ -141,14 +141,11 @@ export async function middleware(request) {
   
   // Kiểm tra token có tồn tại và không phải là chuỗi rỗng
   if (!token || token.trim() === '') {
-    const rawPathname = pathname;
     if (pathname.startsWith('/api/')) {
-      // Nếu là API, trả về JSON lỗi 401
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     } else {
-      // Nếu là route thường, redirect về login
       const redirectUrl = new URL(routes.login, request.url);
-      redirectUrl.searchParams.set('returnUrl', rawPathname);
+      redirectUrl.searchParams.set('returnUrl', pathname);
       const redirectResponse = NextResponse.redirect(redirectUrl);
       return addSecurityHeaders(redirectResponse);
     }
@@ -184,38 +181,40 @@ export async function middleware(request) {
       
       // Nếu không thể làm mới token, chuyển hướng đến trang đăng nhập
       if (!refreshResponse.ok) {
-        const redirectUrl = new URL(routes.login, request.url);
-        redirectUrl.searchParams.set('returnUrl', pathname);
-        const redirectResponse = NextResponse.redirect(redirectUrl);
-        
-        // Xóa cookie token không hợp lệ
-        redirectResponse.cookies.set({
-          name: cookieConfig.authCookieName,
-          value: '',
-          expires: new Date(0),
-          path: '/',
-        });
-        
-        return addSecurityHeaders(redirectResponse);
+        if (pathname.startsWith('/api/')) {
+          return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        } else {
+          const redirectUrl = new URL(routes.login, request.url);
+          redirectUrl.searchParams.set('returnUrl', pathname);
+          const redirectResponse = NextResponse.redirect(redirectUrl);
+          redirectResponse.cookies.set({
+            name: cookieConfig.authCookieName,
+            value: '',
+            expires: new Date(0),
+            path: '/',
+          });
+          return addSecurityHeaders(redirectResponse);
+        }
       }
       
       // Nếu làm mới token thành công, lấy token mới và tiếp tục
       const refreshData = await refreshResponse.json();
       
       if (!refreshData.success || !refreshData.token) {
-        const redirectUrl = new URL(routes.login, request.url);
-        redirectUrl.searchParams.set('returnUrl', pathname);
-        const redirectResponse = NextResponse.redirect(redirectUrl);
-        
-        // Xóa cookie token không hợp lệ
-        redirectResponse.cookies.set({
-          name: cookieConfig.authCookieName,
-          value: '',
-          expires: new Date(0),
-          path: '/',
-        });
-        
-        return addSecurityHeaders(redirectResponse);
+        if (pathname.startsWith('/api/')) {
+          return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        } else {
+          const redirectUrl = new URL(routes.login, request.url);
+          redirectUrl.searchParams.set('returnUrl', pathname);
+          const redirectResponse = NextResponse.redirect(redirectUrl);
+          redirectResponse.cookies.set({
+            name: cookieConfig.authCookieName,
+            value: '',
+            expires: new Date(0),
+            path: '/',
+          });
+          return addSecurityHeaders(redirectResponse);
+        }
       }
       
       // Cập nhật token mới vào cookie
@@ -243,20 +242,34 @@ export async function middleware(request) {
       });
       
       if (!reVerifyResponse.ok) {
-        const redirectUrl = new URL(routes.login, request.url);
-        redirectUrl.searchParams.set('returnUrl', pathname);
-        const redirectResponse = NextResponse.redirect(redirectUrl);
-        return addSecurityHeaders(redirectResponse);
+        if (pathname.startsWith('/api/')) {
+          return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        } else {
+          const redirectUrl = new URL(routes.login, request.url);
+          redirectUrl.searchParams.set('returnUrl', pathname);
+          const redirectResponse = NextResponse.redirect(redirectUrl);
+          return addSecurityHeaders(redirectResponse);
+        }
       }
       
       const verifyData = await reVerifyResponse.json();
       
       // Nếu token mới không hợp lệ, chuyển hướng đến trang đăng nhập
       if (!verifyData.valid) {
-        const redirectUrl = new URL(routes.login, request.url);
-        redirectUrl.searchParams.set('returnUrl', pathname);
-        const redirectResponse = NextResponse.redirect(redirectUrl);
-        return addSecurityHeaders(redirectResponse);
+        if (pathname.startsWith('/api/')) {
+          return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        } else {
+          const redirectUrl = new URL(routes.login, request.url);
+          redirectUrl.searchParams.set('returnUrl', pathname);
+          const redirectResponse = NextResponse.redirect(redirectUrl);
+          redirectResponse.cookies.set({
+            name: cookieConfig.authCookieName,
+            value: '',
+            expires: new Date(0),
+            path: '/',
+          });
+          return addSecurityHeaders(redirectResponse);
+        }
       }
       
       // Sử dụng dữ liệu từ token mới đã được xác thực
@@ -342,19 +355,20 @@ export async function middleware(request) {
       
       // Nếu token không hợp lệ, chuyển hướng đến trang đăng nhập
       if (!verifyData.valid) {
-        const redirectUrl = new URL(routes.login, request.url);
-        redirectUrl.searchParams.set('returnUrl', pathname);
-        const redirectResponse = NextResponse.redirect(redirectUrl);
-        
-        // Xóa cookie token không hợp lệ
-        redirectResponse.cookies.set({
-          name: cookieConfig.authCookieName,
-          value: '',
-          expires: new Date(0),
-          path: '/',
-        });
-        
-        return addSecurityHeaders(redirectResponse);
+        if (pathname.startsWith('/api/')) {
+          return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        } else {
+          const redirectUrl = new URL(routes.login, request.url);
+          redirectUrl.searchParams.set('returnUrl', pathname);
+          const redirectResponse = NextResponse.redirect(redirectUrl);
+          redirectResponse.cookies.set({
+            name: cookieConfig.authCookieName,
+            value: '',
+            expires: new Date(0),
+            path: '/',
+          });
+          return addSecurityHeaders(redirectResponse);
+        }
       }
       
       user = verifyData.user;
@@ -588,8 +602,11 @@ export async function middleware(request) {
     // Cho phép truy cập các đường dẫn khác nếu đã xác thực thành công
     return addSecurityHeaders(response);
   } catch (error) {
-    console.error('Lỗi khi xác thực token:', error);
-    
+    // Nếu là API, trả về JSON lỗi 401
+    if (pathname && pathname.startsWith('/api/')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    // Nếu là route thường, redirect về login
     const redirectUrl = new URL(routes.login, request.url);
     redirectUrl.searchParams.set('returnUrl', pathname);
     const redirectResponse = NextResponse.redirect(redirectUrl);
