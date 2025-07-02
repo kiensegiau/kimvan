@@ -292,6 +292,9 @@ export function useApiSheetData(courseId) {
       console.log(`📥 Dữ liệu nhận được từ database cho sheet ${sheetId}:`, result);
       
       if (result.success) {
+        // Phân tích cấu trúc dữ liệu HTML để debug
+        analyzeHtmlDataStructure(result.sheet);
+        
         // Kiểm tra và log số lượng hyperlink
         let hyperlinkCount = 0;
         if (result.sheet?.htmlData) {
@@ -343,6 +346,90 @@ export function useApiSheetData(courseId) {
     } catch (error) {
       console.error(`❌ Lỗi khi lấy dữ liệu sheet ${sheetId}:`, error);
       throw error;
+    }
+  };
+
+  // Hàm phân tích cấu trúc dữ liệu HTML để debug
+  const analyzeHtmlDataStructure = (sheetData) => {
+    if (!sheetData || !sheetData.htmlData) {
+      console.log('❌ Không có dữ liệu HTML để phân tích');
+      return;
+    }
+
+    console.log('🔍 Phân tích cấu trúc dữ liệu HTML:');
+    console.log(`- Số lượng hàng HTML: ${sheetData.htmlData.length}`);
+    
+    // Kiểm tra cấu trúc dữ liệu HTML
+    const structureTypes = {
+      objectWithValues: 0,
+      array: 0,
+      other: 0,
+      null: 0
+    };
+    
+    // Kiểm tra số lượng hyperlink theo hàng
+    const hyperlinksByRow = {};
+    
+    sheetData.htmlData.forEach((row, rowIndex) => {
+      if (!row) {
+        structureTypes.null++;
+        return;
+      }
+      
+      if (row.values && Array.isArray(row.values)) {
+        structureTypes.objectWithValues++;
+        
+        // Đếm hyperlink trong hàng
+        let rowHyperlinkCount = 0;
+        row.values.forEach((cell, cellIndex) => {
+          if (cell && cell.hyperlink) {
+            rowHyperlinkCount++;
+            console.log(`  + Hyperlink tại [${rowIndex},${cellIndex}]: ${cell.hyperlink}`);
+          }
+        });
+        
+        if (rowHyperlinkCount > 0) {
+          hyperlinksByRow[rowIndex] = rowHyperlinkCount;
+        }
+      } else if (Array.isArray(row)) {
+        structureTypes.array++;
+        
+        // Đếm hyperlink trong hàng
+        let rowHyperlinkCount = 0;
+        row.forEach((cell, cellIndex) => {
+          if (cell && cell.hyperlink) {
+            rowHyperlinkCount++;
+            console.log(`  + Hyperlink tại [${rowIndex},${cellIndex}]: ${cell.hyperlink}`);
+          }
+        });
+        
+        if (rowHyperlinkCount > 0) {
+          hyperlinksByRow[rowIndex] = rowHyperlinkCount;
+        }
+      } else {
+        structureTypes.other++;
+      }
+    });
+    
+    console.log('- Phân loại cấu trúc dữ liệu HTML:');
+    console.log(`  + Hàng có cấu trúc { values: [...] }: ${structureTypes.objectWithValues}`);
+    console.log(`  + Hàng có cấu trúc mảng: ${structureTypes.array}`);
+    console.log(`  + Hàng có cấu trúc khác: ${structureTypes.other}`);
+    console.log(`  + Hàng null/undefined: ${structureTypes.null}`);
+    
+    console.log('- Phân bố hyperlink theo hàng:');
+    Object.keys(hyperlinksByRow).forEach(rowIndex => {
+      console.log(`  + Hàng ${rowIndex}: ${hyperlinksByRow[rowIndex]} hyperlink`);
+    });
+    
+    // Kiểm tra nếu dữ liệu values và htmlData có khớp nhau không
+    if (sheetData.values) {
+      console.log(`- So sánh số lượng hàng: values=${sheetData.values.length}, htmlData=${sheetData.htmlData.length}`);
+      
+      if (sheetData.values.length !== sheetData.htmlData.length) {
+        console.log('⚠️ Cảnh báo: Số lượng hàng không khớp giữa values và htmlData!');
+        console.log('  Điều này có thể gây ra lỗi định vị hyperlink.');
+      }
     }
   };
 
@@ -475,6 +562,37 @@ export function useApiSheetData(courseId) {
       fetchApiSheetData();
     }
   }, [courseId]);
+  
+  // Hàm lấy hyperlink từ dữ liệu HTML
+  const getHyperlink = (rowIndex, cellIndex, sheetDetail) => {
+    // Kiểm tra dữ liệu HTML tối ưu trước
+    if (sheetDetail.optimizedHtmlData && sheetDetail.optimizedHtmlData.length > 0) {
+      const optimizedRow = sheetDetail.optimizedHtmlData.find(row => row.rowIndex === rowIndex);
+      if (optimizedRow && optimizedRow.hyperlinks) {
+        const hyperlink = optimizedRow.hyperlinks.find(link => link.col === cellIndex);
+        if (hyperlink) {
+          console.log(`🔍 Tìm thấy hyperlink tối ưu [${rowIndex},${cellIndex}]: ${hyperlink.url}`);
+          return hyperlink.url;
+        }
+      }
+    }
+    
+    // Nếu không có dữ liệu tối ưu, thử lấy từ dữ liệu HTML đầy đủ
+    if (sheetDetail.htmlData && sheetDetail.htmlData[rowIndex]) {
+      const htmlRow = sheetDetail.htmlData[rowIndex];
+      
+      // Đảm bảo htmlRow có cấu trúc chuẩn { values: [...] }
+      if (htmlRow && htmlRow.values && Array.isArray(htmlRow.values) && htmlRow.values[cellIndex]) {
+        const htmlCell = htmlRow.values[cellIndex];
+        if (htmlCell && htmlCell.hyperlink) {
+          console.log(`🔍 Tìm thấy hyperlink đầy đủ [${rowIndex},${cellIndex}]: ${htmlCell.hyperlink}`);
+          return htmlCell.hyperlink;
+        }
+      }
+    }
+    
+    return null;
+  };
   
   return {
     apiSheetData,

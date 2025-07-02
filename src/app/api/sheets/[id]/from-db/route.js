@@ -77,33 +77,36 @@ function formatSheetDataFromDb(sheetContent) {
     // Use full HTML data
     htmlData = sheetContent.htmlData;
     
-    // Đảm bảo các liên kết được truyền đúng định dạng
+    // Ensure htmlData is in the correct format (array of objects with values property)
     if (Array.isArray(htmlData)) {
-      htmlData.forEach((row, rowIndex) => {
-        // Kiểm tra cấu trúc dữ liệu
-        if (!row) return;
+      htmlData = htmlData.map((row, rowIndex) => {
+        // If row is null or undefined, return empty row
+        if (!row) return { values: [] };
         
-        // Kiểm tra nếu row là một đối tượng có thuộc tính values là mảng
+        // If row is already in correct format with values property
         if (row.values && Array.isArray(row.values)) {
-          row.values.forEach((cell, cellIndex) => {
-            // Đảm bảo hyperlink được giữ nguyên
-            if (cell && cell.hyperlink) {
-              console.log(`Tìm thấy hyperlink tại [${rowIndex},${cellIndex}]: ${cell.hyperlink}`);
-            }
-          });
+          return row;
         } 
-        // Trường hợp row là một mảng (cấu trúc khác)
+        // If row is an array, convert to object with values property
         else if (Array.isArray(row)) {
-          row.forEach((cell, cellIndex) => {
-            if (cell && cell.hyperlink) {
-              console.log(`Tìm thấy hyperlink tại [${rowIndex},${cellIndex}]: ${cell.hyperlink}`);
-            }
-          });
+          return {
+            values: row.map(cell => {
+              // Preserve hyperlink if exists
+              if (cell && typeof cell === 'object' && cell.hyperlink) {
+                console.log(`Converting hyperlink at row ${rowIndex}: ${cell.hyperlink}`);
+                return cell;
+              }
+              // Convert simple values to cell objects
+              return { formattedValue: cell };
+            })
+          };
         }
+        // Default case
+        return { values: [] };
       });
     }
   } else {
-    // Create basic htmlData from rows if no HTML data available
+    // Create basic htmlData from values if no HTML data available
     htmlData = values.map(row => ({
       values: row.map(cell => ({ formattedValue: cell }))
     }));
@@ -112,25 +115,22 @@ function formatSheetDataFromDb(sheetContent) {
   // Log số lượng hyperlink được tìm thấy để debug
   let hyperlinkCount = 0;
   if (Array.isArray(htmlData)) {
-    htmlData.forEach(row => {
+    htmlData.forEach((row, rowIndex) => {
       // Kiểm tra cấu trúc dữ liệu
       if (!row) return;
       
       // Kiểm tra nếu row là một đối tượng có thuộc tính values là mảng
       if (row.values && Array.isArray(row.values)) {
-        row.values.forEach(cell => {
-          if (cell && cell.hyperlink) hyperlinkCount++;
-        });
-      }
-      // Trường hợp row là một mảng (cấu trúc khác)
-      else if (Array.isArray(row)) {
-        row.forEach(cell => {
-          if (cell && cell.hyperlink) hyperlinkCount++;
+        row.values.forEach((cell, cellIndex) => {
+          if (cell && cell.hyperlink) {
+            hyperlinkCount++;
+            console.log(`Tìm thấy hyperlink sau khi format [${rowIndex},${cellIndex}]: ${cell.hyperlink}`);
+          }
         });
       }
     });
   }
-  console.log(`Tổng số hyperlink được tìm thấy: ${hyperlinkCount}`);
+  console.log(`Tổng số hyperlink được tìm thấy sau khi format: ${hyperlinkCount}`);
   
   return {
     values,
@@ -153,7 +153,7 @@ export async function GET(request, { params }) {
     await dbMiddleware(request);
     
     // Get parameters
-    const { id } = await params;
+    const { id } = params;
     if (!id) {
       return NextResponse.json(
         { success: false, error: 'Missing sheet ID' },

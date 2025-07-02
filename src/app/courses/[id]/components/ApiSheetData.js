@@ -221,6 +221,8 @@ export default function ApiSheetData({
   
   // Hàm lấy hyperlink từ dữ liệu HTML
   const getHyperlink = (rowIndex, cellIndex, sheetDetail) => {
+    console.log(`Đang tìm hyperlink tại [${rowIndex},${cellIndex}]`);
+    
     // Kiểm tra dữ liệu HTML tối ưu trước
     if (sheetDetail.optimizedHtmlData && sheetDetail.optimizedHtmlData.length > 0) {
       const optimizedRow = sheetDetail.optimizedHtmlData.find(row => row.rowIndex === rowIndex);
@@ -234,15 +236,47 @@ export default function ApiSheetData({
     }
     
     // Nếu không có dữ liệu tối ưu, thử lấy từ dữ liệu HTML đầy đủ
-    if (sheetDetail.htmlData && sheetDetail.htmlData[rowIndex]) {
-      const htmlRow = sheetDetail.htmlData[rowIndex];
-      if (htmlRow && htmlRow.values && htmlRow.values[cellIndex]) {
-        const htmlCell = htmlRow.values[cellIndex];
-        if (htmlCell && htmlCell.hyperlink) {
-          console.log(`🔍 Tìm thấy hyperlink đầy đủ [${rowIndex},${cellIndex}]: ${htmlCell.hyperlink}`);
-          return htmlCell.hyperlink;
+    if (sheetDetail.htmlData && sheetDetail.htmlData.length > 0) {
+      // Kiểm tra cả trường hợp rowIndex chính xác
+      if (sheetDetail.htmlData[rowIndex]) {
+        const htmlRow = sheetDetail.htmlData[rowIndex];
+        
+        // Đảm bảo htmlRow có cấu trúc chuẩn { values: [...] }
+        if (htmlRow && htmlRow.values && Array.isArray(htmlRow.values) && htmlRow.values[cellIndex]) {
+          const htmlCell = htmlRow.values[cellIndex];
+          if (htmlCell && htmlCell.hyperlink) {
+            console.log(`🔍 Tìm thấy hyperlink đầy đủ [${rowIndex},${cellIndex}]: ${htmlCell.hyperlink}`);
+            return htmlCell.hyperlink;
+          }
         }
       }
+      
+      // Thử tìm ở vị trí khác nếu không tìm thấy ở vị trí chính xác
+      // Trường hợp htmlData không bao gồm header hoặc có cấu trúc khác
+      const adjustedRowIndex = rowIndex - 1; // Thử với rowIndex - 1
+      if (adjustedRowIndex >= 0 && sheetDetail.htmlData[adjustedRowIndex]) {
+        const htmlRow = sheetDetail.htmlData[adjustedRowIndex];
+        
+        if (htmlRow && htmlRow.values && Array.isArray(htmlRow.values) && htmlRow.values[cellIndex]) {
+          const htmlCell = htmlRow.values[cellIndex];
+          if (htmlCell && htmlCell.hyperlink) {
+            console.log(`🔍 Tìm thấy hyperlink với rowIndex điều chỉnh [${adjustedRowIndex},${cellIndex}]: ${htmlCell.hyperlink}`);
+            return htmlCell.hyperlink;
+          }
+        }
+      }
+      
+      // Log tất cả hyperlink có trong dữ liệu để debug
+      console.log('Debug - Tất cả hyperlink trong htmlData:');
+      sheetDetail.htmlData.forEach((row, idx) => {
+        if (row && row.values && Array.isArray(row.values)) {
+          row.values.forEach((cell, cidx) => {
+            if (cell && cell.hyperlink) {
+              console.log(`- Hyperlink tại [${idx},${cidx}]: ${cell.hyperlink}`);
+            }
+          });
+        }
+      });
     }
     
     return null;
@@ -317,10 +351,10 @@ export default function ApiSheetData({
         handleLinkClick(e, finalUrl, cellContent || 'Xem tài liệu');
       }
       
-      // Đánh dấu link đã xong loading
-      setTimeout(() => {
-        setLoadingLinks(prev => ({ ...prev, [hyperlink]: false }));
-      }, 500);
+                  // Đánh dấu link đã xong loading
+                  setTimeout(() => {
+                    setLoadingLinks(prev => ({ ...prev, [hyperlink]: false }));
+                  }, 500);
     };
     
     // Hiển thị icon loading nếu đang tải
@@ -331,19 +365,49 @@ export default function ApiSheetData({
         className={linkClass}
         onClick={handleClick}
         title={originalUrl || hyperlink}
-      >
-        {isLoading ? (
+            >
+              {isLoading ? (
           <span className="inline-block animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-blue-600 mr-1"></span>
         ) : icon}
         {cellContent || hyperlink}
-      </span>
+                  </span>
     );
   };
 
   // Render nội dung cell
   const renderCellContent = (content, rowIndex, cellIndex, sheetDetail) => {
     // Lấy hyperlink nếu có
-    const hyperlink = getHyperlink(rowIndex, cellIndex, sheetDetail);
+    // Thử nhiều vị trí khác nhau để tìm hyperlink
+    let hyperlink = null;
+    
+    // Thử vị trí chính xác trước
+    hyperlink = getHyperlink(rowIndex, cellIndex, sheetDetail);
+    
+    // Nếu không tìm thấy, thử một số vị trí khác
+    if (!hyperlink && rowIndex > 0) {
+      // Thử với rowIndex - 1 (trường hợp htmlData không tính header)
+      hyperlink = getHyperlink(rowIndex - 1, cellIndex, sheetDetail);
+    }
+    
+    // Nếu vẫn không tìm thấy và có htmlData, thử tìm kiếm dựa trên nội dung
+    if (!hyperlink && sheetDetail.htmlData && content) {
+      // Tìm trong toàn bộ htmlData các ô có hyperlink và nội dung tương tự
+      sheetDetail.htmlData.forEach((row, rIdx) => {
+        if (row && row.values && Array.isArray(row.values)) {
+          row.values.forEach((cell, cIdx) => {
+            if (cell && cell.hyperlink && cell.formattedValue === content) {
+              console.log(`🔍 Tìm thấy hyperlink dựa trên nội dung [${rIdx},${cIdx}]: ${cell.hyperlink}`);
+              if (!hyperlink) hyperlink = cell.hyperlink;
+            }
+          });
+        }
+      });
+    }
+    
+    // Debug để xác định vị trí
+    if (hyperlink) {
+      console.log(`✅ Tìm thấy hyperlink cho cell [${rowIndex},${cellIndex}]: ${hyperlink}`);
+    }
     
     // Nếu có hyperlink, render cell với hyperlink
     if (hyperlink) {
@@ -392,7 +456,7 @@ export default function ApiSheetData({
       colSpan: merge.endColumnIndex - merge.startColumnIndex
     };
   };
-
+  
   // Sorting function
   const requestSort = (key) => {
     let direction = 'ascending';
@@ -450,39 +514,39 @@ export default function ApiSheetData({
   // Render bảng dữ liệu
   const renderTable = (sheetDetail) => {
     if (!sheetDetail || !sheetDetail.values || sheetDetail.values.length === 0) {
-      return (
+    return (
         <div className="text-center py-8 text-gray-500">
           Không có dữ liệu
-        </div>
-      );
-    }
-    
-    return (
+      </div>
+    );
+  }
+
+  return (
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
               {sheetDetail.values[0].map((header, index) => (
-                <th
-                  key={index}
+                        <th 
+                          key={index} 
                   scope="col"
                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-normal border-r border-gray-200 last:border-r-0 hover:bg-gray-100 transition-colors duration-150 cursor-pointer relative"
-                  onClick={() => requestSort(index)}
-                  onMouseEnter={() => setHoveredHeader(index)}
-                  onMouseLeave={() => setHoveredHeader(null)}
-                >
-                  <div className="flex items-center">
+                          onClick={() => requestSort(index)}
+                          onMouseEnter={() => setHoveredHeader(index)}
+                          onMouseLeave={() => setHoveredHeader(null)}
+                        >
+                            <div className="flex items-center">
                     <span className="flex-grow">{header}</span>
                     {hoveredHeader === index && (
                       <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
-                      </svg>
-                    )}
-                  </div>
-                </th>
-              ))}
-            </tr>
-          </thead>
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
+                                </svg>
+                              )}
+                          </div>
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {sheetDetail.values.slice(1).map((row, rowIndex) => (
               <tr key={rowIndex} className="group">
@@ -495,6 +559,10 @@ export default function ApiSheetData({
                   // Lấy thông tin gộp cell nếu có
                   const mergeInfo = getMergeInfo(rowIndex + 1, cellIndex, sheetDetail);
                   
+                  // Tính toán rowIndex thực tế cho dữ liệu HTML
+                  // Vì slice(1) đã bỏ qua header, nên cần cộng thêm 1 để khớp với chỉ số trong htmlData
+                  const actualRowIndex = rowIndex + 1;
+                  
                   return (
                     <td
                       key={cellIndex}
@@ -502,15 +570,15 @@ export default function ApiSheetData({
                       rowSpan={mergeInfo?.rowSpan}
                       colSpan={mergeInfo?.colSpan}
                     >
-                      {renderCellContent(cell, rowIndex + 1, cellIndex, sheetDetail)}
+                      {renderCellContent(cell, actualRowIndex, cellIndex, sheetDetail)}
                     </td>
                   );
                 })}
               </tr>
             ))}
-          </tbody>
-        </table>
-      </div>
+                  </tbody>
+                </table>
+              </div>
     );
   };
 
@@ -549,6 +617,48 @@ export default function ApiSheetData({
     } catch (error) {
       console.error('Lỗi khi xử lý sheet:', error);
       alert(`Lỗi khi xử lý sheet: ${error.message}`);
+    } finally {
+      setProcessingSheet(false);
+    }
+  };
+
+  // Hàm sửa lỗi hyperlink
+  const handleFixHyperlinks = async () => {
+    if (!apiSheetData?.sheets || !apiSheetData.sheets[activeApiSheet]) return;
+    
+    const currentSheet = apiSheetData.sheets[activeApiSheet];
+    setProcessingSheet(true);
+    
+    try {
+      // Gọi API xử lý sheet với tùy chọn đặc biệt để sửa hyperlink
+      const response = await fetch(`/api/sheets/${currentSheet._id}/process-to-db`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+          background: false,
+          preserveHyperlinks: true,
+          includeHtmlData: true,
+          fixHyperlinks: true,  // Tùy chọn đặc biệt để sửa hyperlink
+          forceReprocess: true  // Bắt buộc xử lý lại
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Lỗi ${response.status}: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      console.log('Kết quả sửa hyperlink:', result);
+      
+      // Sau khi xử lý thành công, tải lại dữ liệu sheet
+      await fetchSheetDetail(currentSheet._id);
+      
+      alert('Đã sửa lỗi hyperlink thành công!');
+    } catch (error) {
+      console.error('Lỗi khi sửa hyperlink:', error);
+      alert(`Lỗi khi sửa hyperlink: ${error.message}`);
     } finally {
       setProcessingSheet(false);
     }
@@ -599,7 +709,7 @@ export default function ApiSheetData({
               </svg>
               Thử lại
             </button>
-          </div>
+                  </div>
         ) : (
           <>
             {/* Sheet data */}
@@ -634,6 +744,16 @@ export default function ApiSheetData({
                       )}
                     </button>
                     <button
+                      onClick={() => handleFixHyperlinks()}
+                      disabled={processingSheet}
+                      className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-yellow-600 hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <svg className="h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                      </svg>
+                      Sửa lỗi Hyperlink
+                    </button>
+                    <button 
                       onClick={() => fetchSheetDetail(apiSheetData.sheets[activeApiSheet]._id)}
                       className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
                     >
