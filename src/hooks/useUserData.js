@@ -31,73 +31,97 @@ const useUserData = () => {
         // Luôn ưu tiên lấy dữ liệu từ API trước
         console.log('Đang gọi API users/me để lấy thông tin người dùng...');
         
-        const response = await fetch('/api/users/me', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          credentials: 'include', // Thay same-origin bằng include để đảm bảo gửi cookie
-          // Thêm timeout để tránh fetch quá lâu
-          signal: AbortSignal.timeout(10000) // 10 giây timeout
-        });
+        // Tạo danh sách các endpoint để thử
+        const endpoints = [
+          '/api/users/me',
+          '/api/auth/verify', // Thử endpoint này nếu /api/users/me không hoạt động
+          '/api/auth/user-role' // Thử endpoint này nếu cả hai không hoạt động
+        ];
         
-        if (response.ok) {
-          const contentType = response.headers.get('content-type');
-          if (contentType && contentType.includes('application/json')) {
-            const result = await response.json();
+        // Lưu trữ lỗi từ tất cả các lần thử để ghi log
+        const allErrors = [];
+        let userData = null;
+        
+        // Thử từng endpoint cho đến khi thành công
+        for (const endpoint of endpoints) {
+          try {
+            console.log(`Đang thử lấy dữ liệu người dùng từ ${endpoint}...`);
+            const response = await fetch(endpoint, {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+              },
+              credentials: 'include', // Đảm bảo gửi cookie
+              // Thêm timeout để tránh fetch quá lâu
+              signal: AbortSignal.timeout(10000) // 10 giây timeout
+            });
             
-            if (result.success && result.user) {
-              console.log('✅ Lấy dữ liệu người dùng từ API thành công');
-              
-              // Lưu vào global cache để các component khác sử dụng
-              window.__USER_DATA_CACHE__ = result.user;
-              window.__USER_DATA_TIMESTAMP__ = Date.now();
-              
-              // Lưu thông tin người dùng vào localStorage để dùng khi offline
-              try {
-                localStorage.setItem('userData', JSON.stringify(result.user));
-                localStorage.setItem('userDataTimestamp', Date.now().toString());
-                // Thêm trường tokenHash để kiểm tra tính hợp lệ của phiên
-                localStorage.setItem('userTokenHash', result.tokenHash || '');
-              } catch (e) {
-                console.error('Không thể lưu vào localStorage:', e);
-              }
-              
-              if (isMounted) {
-                setUserData(result.user);
+            if (response.ok) {
+              const contentType = response.headers.get('content-type');
+              if (contentType && contentType.includes('application/json')) {
+                const result = await response.json();
+                
+                // Xử lý dữ liệu khác nhau từ các endpoint khác nhau
+                if (endpoint === '/api/users/me' && result.success && result.user) {
+                  userData = result.user;
+                  break;
+                } else if (endpoint === '/api/auth/verify' && result.valid && result.user) {
+                  userData = result.user;
+                  break;
+                } else if (endpoint === '/api/auth/user-role' && result.success) {
+                  // Tạo dữ liệu cơ bản từ thông tin vai trò
+                  userData = {
+                    uid: result.uid || 'unknown',
+                    role: result.role || 'user',
+                    roleDisplayName: getRoleDisplayName(result.role || 'user'),
+                    additionalInfo: {},
+                    enrollments: []
+                  };
+                  break;
+                }
               }
             } else {
-              console.warn('API trả về thành công nhưng không có dữ liệu người dùng hợp lệ:', result);
-              if (isMounted) {
-                setError('Không có dữ liệu người dùng hợp lệ');
-              }
+              allErrors.push(`${endpoint}: ${response.status} ${response.statusText}`);
             }
-          } else {
-            const textContent = await response.text();
-            console.warn('API không trả về JSON mà trả về:', textContent.substring(0, 200) + '...');
-            if (isMounted) {
-              setError('API trả về định dạng không hợp lệ');
-            }
+          } catch (fetchError) {
+            allErrors.push(`${endpoint}: ${fetchError.message}`);
           }
-        } else {
-          console.warn(`API trả về lỗi ${response.status}: ${response.statusText}`);
+        }
+        
+        // Nếu lấy được dữ liệu từ bất kỳ endpoint nào
+        if (userData) {
+          console.log('✅ Lấy dữ liệu người dùng thành công');
+          
+          // Lưu vào global cache để các component khác sử dụng
+          window.__USER_DATA_CACHE__ = userData;
+          window.__USER_DATA_TIMESTAMP__ = Date.now();
+          
+          // Lưu thông tin người dùng vào localStorage để dùng khi offline
+          try {
+            localStorage.setItem('userData', JSON.stringify(userData));
+            localStorage.setItem('userDataTimestamp', Date.now().toString());
+            localStorage.setItem('userTokenHash', 'auto-generated');
+          } catch (e) {
+            console.error('Không thể lưu vào localStorage:', e);
+          }
           
           if (isMounted) {
-            setError(`Lỗi ${response.status}: ${response.statusText}`);
+            setUserData(userData);
           }
+        } else {
+          // Nếu tất cả các endpoint đều thất bại, ghi log lỗi
+          console.warn('Tất cả các endpoint đều thất bại:', allErrors);
           
-          // Nếu không lấy được từ API, thử lấy từ localStorage
+          // Thử lấy từ localStorage
           try {
             console.log('Thử lấy dữ liệu từ localStorage do API thất bại');
             const cachedData = localStorage.getItem('userData');
             const timestamp = localStorage.getItem('userDataTimestamp');
-            const tokenHash = localStorage.getItem('userTokenHash');
             const now = Date.now();
             
-            // Chỉ sử dụng cache nếu nó tồn tại, không quá 5 phút, và có tokenHash
-            if (cachedData && timestamp && tokenHash && 
-                (now - parseInt(timestamp)) < CACHE_TTL) {
+            // Chỉ sử dụng cache nếu nó tồn tại và không quá 5 phút
+            if (cachedData && timestamp && (now - parseInt(timestamp)) < CACHE_TTL) {
               const parsedData = JSON.parse(cachedData);
               console.log('✅ Sử dụng dữ liệu người dùng từ cache:', parsedData);
               
@@ -111,13 +135,7 @@ const useUserData = () => {
             } else {
               // Fallback user data khi không có cache và API thất bại
               console.log('⚠️ Không có cache hoặc cache đã hết hạn. Sử dụng dữ liệu người dùng mặc định');
-              const defaultUser = {
-                email: "guest@example.com",
-                role: "student",
-                roleDisplayName: "Học viên",
-                additionalInfo: {},
-                enrollments: []
-              };
+              const defaultUser = getDefaultUser();
               
               // Lưu vào global cache
               window.__USER_DATA_CACHE__ = defaultUser;
@@ -130,11 +148,7 @@ const useUserData = () => {
           } catch (storageErr) {
             console.error('Không thể đọc từ localStorage:', storageErr);
             // Fallback user as last resort
-            const defaultUser = {
-              email: "guest@example.com",
-              role: "student",
-              roleDisplayName: "Học viên"
-            };
+            const defaultUser = getDefaultUser();
             
             // Lưu vào global cache
             window.__USER_DATA_CACHE__ = defaultUser;
@@ -168,13 +182,7 @@ const useUserData = () => {
             }
           } else {
             console.log('API lỗi, không có cache. Sử dụng dữ liệu người dùng mặc định');
-            const defaultUser = {
-              email: "guest@example.com",
-              role: "student",
-              roleDisplayName: "Học viên",
-              additionalInfo: {},
-              enrollments: []
-            };
+            const defaultUser = getDefaultUser();
             
             // Lưu vào global cache
             window.__USER_DATA_CACHE__ = defaultUser;
@@ -187,11 +195,7 @@ const useUserData = () => {
         } catch (storageErr) {
           console.error('Không thể đọc từ localStorage:', storageErr);
           // Fallback user as absolute last resort
-          const defaultUser = {
-            email: "guest@example.com",
-            role: "student",
-            roleDisplayName: "Học viên"
-          };
+          const defaultUser = getDefaultUser();
           
           // Lưu vào global cache
           window.__USER_DATA_CACHE__ = defaultUser;
@@ -222,6 +226,32 @@ const useUserData = () => {
       clearInterval(intervalId);
     };
   }, []);
+
+  // Hàm tạo dữ liệu người dùng mặc định
+  const getDefaultUser = () => {
+    return {
+      email: "guest@example.com",
+      role: "student",
+      roleDisplayName: "Học viên",
+      additionalInfo: {},
+      enrollments: []
+    };
+  };
+
+  // Hàm chuyển đổi mã vai trò thành tên đầy đủ
+  function getRoleDisplayName(role) {
+    const roleMap = {
+      'admin': 'Quản trị viên',
+      'user': 'Người dùng',
+      'ctv': 'Công tác viên',
+      'staff': 'Nhân viên',
+      'instructor': 'Giảng viên',
+      'student': 'Học viên',
+      'guest': 'Khách'
+    };
+    
+    return roleMap[role] || role;
+  }
 
   /**
    * Làm mới dữ liệu người dùng (gọi lại API)

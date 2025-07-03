@@ -222,15 +222,77 @@ export function useEnrolledCourses(externalUserData = null) {
       
       // Chỉ gọi API nếu không có userData từ bên ngoài
       if (!currentUserData) {
-        // Lấy thông tin người dùng
-        const userResponse = await fetch('/api/users/me');
-        
-        if (userResponse.ok) {
-          const userData = await userResponse.json();
-          if (userData.success && userData.user) {
-            currentUserData = userData.user;
-            setUserData(currentUserData);
+        try {
+          // Thử sử dụng các endpoint khác nhau theo thứ tự ưu tiên
+          const endpoints = [
+            '/api/users/me',
+            '/api/auth/verify', // Thử endpoint này nếu /api/users/me không hoạt động
+            '/api/auth/user-role' // Thử endpoint này nếu cả hai không hoạt động
+          ];
+          
+          // Thử từng endpoint cho đến khi thành công
+          for (const endpoint of endpoints) {
+            try {
+              console.log(`Đang thử lấy dữ liệu người dùng từ ${endpoint}...`);
+              const userResponse = await fetch(endpoint, {
+                credentials: 'include',
+                signal: AbortSignal.timeout(10000) // 10 giây timeout
+              });
+              
+              if (userResponse.ok) {
+                const userData = await userResponse.json();
+                
+                // Xử lý dữ liệu khác nhau từ các endpoint khác nhau
+                if (endpoint === '/api/users/me' && userData.success && userData.user) {
+                  currentUserData = userData.user;
+                  break;
+                } else if (endpoint === '/api/auth/verify' && userData.valid && userData.user) {
+                  currentUserData = userData.user;
+                  break;
+                } else if (endpoint === '/api/auth/user-role' && userData.success) {
+                  // Tạo dữ liệu cơ bản từ thông tin vai trò
+                  currentUserData = {
+                    uid: userData.uid || 'unknown',
+                    role: userData.role || 'user',
+                    enrollments: []
+                  };
+                  break;
+                }
+              }
+            } catch (endpointError) {
+              console.warn(`Lỗi khi gọi ${endpoint}:`, endpointError.message);
+              // Tiếp tục thử endpoint tiếp theo
+            }
           }
+          
+          // Nếu không lấy được dữ liệu từ API, thử lấy từ localStorage
+          if (!currentUserData) {
+            try {
+              const cachedUserData = localStorage.getItem('userData');
+              if (cachedUserData) {
+                currentUserData = JSON.parse(cachedUserData);
+                console.log('Sử dụng dữ liệu người dùng từ cache localStorage');
+              }
+            } catch (storageError) {
+              console.warn('Không thể đọc userData từ localStorage:', storageError);
+            }
+          }
+          
+          // Nếu vẫn không có dữ liệu, sử dụng dữ liệu mặc định
+          if (!currentUserData) {
+            currentUserData = {
+              role: 'student',
+              enrollments: []
+            };
+            console.log('Sử dụng dữ liệu người dùng mặc định');
+          }
+          
+          // Lưu userData vào state
+          setUserData(currentUserData);
+        } catch (userError) {
+          console.error('Lỗi khi lấy thông tin người dùng:', userError);
+          // Nếu có lỗi, vẫn đặt userData là null nhưng không dừng quá trình
+          setUserData(null);
         }
       } else {
         setUserData(currentUserData);
