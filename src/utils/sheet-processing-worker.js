@@ -184,7 +184,6 @@ export async function processSheetToDatabase(sheetId, options = {}) {
       // Thêm hàng đã xử lý vào mảng
       rows.push({
         rowIndex: rowIndex - 1, // Điều chỉnh index để bắt đầu từ 0 cho mảng rows
-        data: row,
         processedData: {
           ...processedRow,
           urls
