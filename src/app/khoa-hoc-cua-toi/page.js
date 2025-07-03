@@ -204,7 +204,7 @@ export default function MyCoursesPage() {
                     <div 
                       key={course.courseId || index} 
                       className="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col h-full group cursor-pointer"
-                      onClick={() => router.push(`/courses/${course.courseId}`)}
+                      onClick={() => router.push(`/khoa-hoc/${course.courseId}`)}
                     >
                       <div className="h-40 bg-gradient-to-r from-indigo-600 to-purple-700 relative overflow-hidden">
                         {/* Background pattern */}
@@ -241,16 +241,16 @@ export default function MyCoursesPage() {
                             <span className="text-xs text-gray-500 ml-1">({rating.toFixed(1)})</span>
                           </div>
                           <span className="text-xs font-medium text-indigo-600 bg-indigo-50 px-2 py-1 rounded-full">
-                            {courseDetails.category || 'Khóa học'}
+                            {courseDetails?.category || course.courseName?.split(' ')[0] || 'Khóa học'}
                           </span>
                         </div>
                         
                         <h3 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-indigo-600 transition-colors line-clamp-2">
-                          {courseDetails.name || `Khóa học #${index + 1}`}
+                          {courseDetails?.name || course.courseName || `Khóa học ${course.courseId}`}
                         </h3>
                         
                         <p className="text-sm text-gray-500 mb-4 line-clamp-2">
-                          {courseDetails.description || 'Khóa học chất lượng cao được thiết kế bởi các chuyên gia hàng đầu.'}
+                          {courseDetails?.description || course.courseDescription || 'Khóa học chất lượng cao được thiết kế bởi các chuyên gia hàng đầu.'}
                         </p>
                         
                         <div className="grid grid-cols-2 gap-3 mb-3">
@@ -268,17 +268,23 @@ export default function MyCoursesPage() {
                           </div>
                           <div className="flex items-center text-xs text-gray-500">
                             <FireIcon className="h-3.5 w-3.5 mr-1.5 text-orange-400" />
-                            <span>Đã học {Math.floor(Math.random() * 100)}%</span>
+                            <span>Đã học {course.progress || Math.floor(Math.random() * 100)}%</span>
                           </div>
                         </div>
                       </div>
                       
                       <div className="border-t border-gray-100 p-5 flex items-center justify-between bg-gray-50">
                         <div className="font-medium text-gray-600 text-sm">
-                          Đăng ký: {new Date(course.enrollmentDate || Date.now()).toLocaleDateString('vi-VN')}
+                          Đăng ký: {new Date(course.enrolledAt || course.enrollmentDate || Date.now()).toLocaleDateString('vi-VN')}
                         </div>
                         
-                        <button className="inline-flex items-center justify-center px-3 py-1.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors group-hover:bg-indigo-700">
+                        <button 
+                          className="inline-flex items-center justify-center px-3 py-1.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors group-hover:bg-indigo-700"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/khoa-hoc/${course.courseId}`);
+                          }}
+                        >
                           <span>Tiếp tục học</span>
                           <ArrowRightIcon className="ml-1.5 h-4 w-4" />
                         </button>

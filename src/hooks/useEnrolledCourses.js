@@ -300,8 +300,15 @@ export function useEnrolledCourses(externalUserData = null) {
 
   // Tìm thông tin chi tiết khóa học
   const findCourseDetails = (courseId) => {
+    if (!courseId || !allCourses || !allCourses.length) return null;
+    
+    // Chuyển courseId thành string để đảm bảo so sánh chính xác
+    const courseIdStr = String(courseId);
+    
     return allCourses.find(course => 
-      course._id === courseId || course.courseId === courseId
+      String(course._id) === courseIdStr || 
+      String(course.courseId) === courseIdStr || 
+      String(course.kimvanId) === courseIdStr
     );
   };
 
