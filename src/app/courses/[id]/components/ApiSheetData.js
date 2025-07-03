@@ -237,14 +237,8 @@ export default function ApiSheetData({
         break;
       
       case 'drive':
-        // Kiểm tra nếu là PDF trên Google Drive
-        if (linkInfo.url.includes('/view') && !linkInfo.url.includes('=media')) {
-          // Chuyển đổi URL drive thường thành URL download trực tiếp
-          const directUrl = linkInfo.url.replace('/view', '/preview');
-          handlePdfClick(e, directUrl, title);
-        } else {
-          window.open(linkInfo.url, '_blank');
-        }
+        // Mở tất cả các link Google Drive trong tab mới mà không thay đổi URL
+        window.open(linkInfo.url, '_blank');
         break;
       
       default:
