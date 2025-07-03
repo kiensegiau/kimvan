@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { PlusIcon, TrashIcon, PencilIcon, ArrowPathIcon, DocumentArrowDownIcon, LinkIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, TrashIcon, PencilIcon, ArrowPathIcon, DocumentArrowDownIcon, LinkIcon, ServerIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 
 export default function SheetsAdminPage() {
@@ -34,6 +34,16 @@ export default function SheetsAdminPage() {
   const [selectedCourse, setSelectedCourse] = useState('');
   const [linkingSheets, setLinkingSheets] = useState(false);
   const [linkingResults, setLinkingResults] = useState(null);
+
+  // State for database processing
+  const [processingDatabase, setProcessingDatabase] = useState(false);
+  const [dbProcessingStatus, setDbProcessingStatus] = useState({
+    current: 0,
+    total: 0,
+    currentSheet: '',
+    results: []
+  });
+  const [showDbProcessingModal, setShowDbProcessingModal] = useState(false);
 
   useEffect(() => {
     fetchSheets();
@@ -388,6 +398,89 @@ export default function SheetsAdminPage() {
     }
   };
 
+  // Hàm xử lý tất cả sheets vào database
+  const handleProcessAllToDatabase = async () => {
+    if (!confirm('Bạn có chắc chắn muốn xử lý tất cả sheets vào database? Quá trình này có thể mất nhiều thời gian.')) {
+      return;
+    }
+
+    setProcessingDatabase(true);
+    setShowDbProcessingModal(true);
+    setDbProcessingStatus({
+      current: 0,
+      total: sheets.length,
+      currentSheet: '',
+      results: []
+    });
+
+    try {
+      // Xử lý tuần tự từng sheet
+      for (let i = 0; i < sheets.length; i++) {
+        const sheet = sheets[i];
+        setDbProcessingStatus(prev => ({
+          ...prev,
+          current: i + 1,
+          currentSheet: sheet.name
+        }));
+
+        try {
+          // Gọi API để xử lý sheet vào database
+          const response = await fetch(`/api/sheets/${sheet._id}/process-to-db`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              background: false // Luôn xử lý đồng bộ
+            }),
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || `Không thể xử lý sheet ${sheet.name} vào database`);
+          }
+
+          const result = await response.json();
+          
+          // Cập nhật kết quả
+          setDbProcessingStatus(prev => ({
+            ...prev,
+            results: [...prev.results, {
+              sheetName: sheet.name,
+              sheetId: sheet._id,
+              success: true,
+              processedCount: result.stats?.processedCount || 0,
+              errors: result.stats?.errors || 0,
+              message: result.message || 'Xử lý thành công'
+            }]
+          }));
+        } catch (error) {
+          console.error(`Lỗi khi xử lý sheet ${sheet.name} vào database:`, error);
+          
+          // Cập nhật kết quả lỗi
+          setDbProcessingStatus(prev => ({
+            ...prev,
+            results: [...prev.results, {
+              sheetName: sheet.name,
+              sheetId: sheet._id,
+              success: false,
+              error: error.message
+            }]
+          }));
+        }
+        
+        // Đợi 1 giây giữa các sheet để tránh quá tải
+        if (i < sheets.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
+    } catch (error) {
+      console.error('Lỗi khi xử lý tất cả sheets vào database:', error);
+    } finally {
+      setProcessingDatabase(false);
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
@@ -402,6 +495,16 @@ export default function SheetsAdminPage() {
               Liên kết vào khóa học ({selectedSheets.length})
             </button>
           )}
+          <button
+            onClick={handleProcessAllToDatabase}
+            disabled={processingDatabase || sheets.length === 0}
+            className={`bg-blue-600 text-white px-4 py-2 rounded-md flex items-center ${
+              processingDatabase || sheets.length === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'
+            }`}
+          >
+            <ServerIcon className="h-5 w-5 mr-2" />
+            {processingDatabase ? 'Đang xử lý...' : 'Xử lý tất cả vào DB'}
+          </button>
           <button
             onClick={handleProcessAllPDFs}
             disabled={processingPDFs || sheets.length === 0}
@@ -742,6 +845,88 @@ export default function SheetsAdminPage() {
                       Liên kết
                     </>
                   )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal xử lý tất cả sheets vào database */}
+      {showDbProcessingModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] overflow-y-auto">
+            <div className="p-6">
+              <h2 className="text-xl font-semibold mb-4">Xử lý tất cả Google Sheets vào Database</h2>
+              
+              <div className="mb-6">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-medium">Tiến trình: {dbProcessingStatus.current}/{dbProcessingStatus.total} sheets</span>
+                  <span className="text-sm">{Math.round((dbProcessingStatus.current / dbProcessingStatus.total) * 100) || 0}%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2.5">
+                  <div 
+                    className="bg-blue-600 h-2.5 rounded-full" 
+                    style={{ width: `${(dbProcessingStatus.current / dbProcessingStatus.total) * 100}%` }}
+                  ></div>
+                </div>
+                {processingDatabase && (
+                  <p className="text-sm text-gray-600 mt-2">
+                    Đang xử lý: {dbProcessingStatus.currentSheet}
+                  </p>
+                )}
+              </div>
+              
+              <div className="border rounded-lg overflow-hidden">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sheet</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Trạng thái</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Số dòng xử lý</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Lỗi</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Thông báo</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {dbProcessingStatus.results.map((result, index) => (
+                      <tr key={index} className={result.success ? 'bg-green-50' : 'bg-red-50'}>
+                        <td className="px-4 py-3 text-sm">{result.sheetName}</td>
+                        <td className="px-4 py-3 text-sm">
+                          {result.success ? (
+                            <span className="text-green-600 font-medium">Thành công</span>
+                          ) : (
+                            <span className="text-red-600 font-medium">Lỗi</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-sm">{result.processedCount || 0}</td>
+                        <td className="px-4 py-3 text-sm">{result.errors || 0}</td>
+                        <td className="px-4 py-3 text-sm">
+                          {result.success ? result.message : result.error}
+                        </td>
+                      </tr>
+                    ))}
+                    {processingDatabase && dbProcessingStatus.results.length < dbProcessingStatus.total && (
+                      <tr>
+                        <td colSpan="5" className="px-4 py-3 text-center text-sm">
+                          <div className="flex items-center justify-center">
+                            <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-blue-500 mr-2"></div>
+                            Đang xử lý...
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              
+              <div className="mt-6 flex justify-end">
+                <button
+                  onClick={() => setShowDbProcessingModal(false)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  disabled={processingDatabase}
+                >
+                  {processingDatabase ? 'Đang xử lý...' : 'Đóng'}
                 </button>
               </div>
             </div>
