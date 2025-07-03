@@ -1,12 +1,8 @@
 import { NextResponse } from 'next/server';
-import clientPromise from '@/lib/mongodb';
-import { cookies } from 'next/headers';
-import { verifyServerAuthToken } from '@/utils/server-auth';
-import { cookieConfig } from '@/config/env-config';
-import { ObjectId } from 'mongodb';
-import { authMiddleware } from '@/lib/auth';
 import { dbMiddleware } from '@/utils/db-middleware';
 import mongoose from 'mongoose';
+import { verifyServerAuthToken } from '@/utils/server-auth';
+import { cookieConfig } from '@/config/env-config';
 
 /**
  * Hàm chuyển đổi mã vai trò thành tên đầy đủ
@@ -47,64 +43,36 @@ export async function GET(request) {
   try {
     // Lấy token từ cookie
     const token = request.cookies.get(cookieConfig.authCookieName)?.value;
-    
-    // Nếu không có token, trả về dữ liệu người dùng mặc định thay vì lỗi 401
+
     if (!token) {
-      console.log('❌ API /users/me: Không có token trong cookie');
-      return NextResponse.json({
-        success: true,
-        user: {
-          uid: 'anonymous',
-          role: 'guest',
-          roleDisplayName: getRoleDisplayName('guest'),
-          displayName: 'Khách',
-          email: null,
-          isAnonymous: true,
-          additionalInfo: {},
-          enrollments: []
-        }
-      });
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      );
     }
-    
-    // Xác thực token
+
+    // Xác thực token trực tiếp với Firebase Admin
     const firebaseUser = await verifyServerAuthToken(token);
     
-    // Nếu token không hợp lệ, trả về dữ liệu người dùng mặc định thay vì lỗi 401
     if (!firebaseUser) {
-      console.log('❌ API /users/me: Token không hợp lệ hoặc hết hạn');
-      return NextResponse.json({
-        success: true,
-        user: {
-          uid: 'anonymous',
-          role: 'guest',
-          roleDisplayName: getRoleDisplayName('guest'),
-          displayName: 'Khách',
-          email: null,
-          isAnonymous: true,
-          additionalInfo: {},
-          enrollments: []
-        }
-      });
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      );
     }
-    
+
     // Lấy thông tin chi tiết từ MongoDB
     const userDetails = await getUserDetails(firebaseUser.uid, request);
-    
-    // Lấy vai trò từ MongoDB nếu có, ngược lại sử dụng từ token
-    const userRole = userDetails?.role || firebaseUser.role || 'user';
-    const roleDisplayName = getRoleDisplayName(userRole);
     
     // Kết hợp thông tin từ Firebase và MongoDB
     const userData = {
       ...firebaseUser,
-      role: userRole,
-      roleDisplayName,
-      isAnonymous: false,
+      role: userDetails?.role || firebaseUser.role || 'user',
+      roleDisplayName: getRoleDisplayName(userDetails?.role || firebaseUser.role || 'user'),
       additionalInfo: userDetails?.additionalInfo || {},
-      enrollments: userDetails?.enrollments || [],
+      enrollments: userDetails?.enrollments || []
     };
     
-    // Trả về thông tin người dùng
     return NextResponse.json({
       success: true,
       user: userData
@@ -112,21 +80,10 @@ export async function GET(request) {
     
   } catch (error) {
     console.error('❌ Lỗi khi lấy thông tin người dùng:', error);
-    
-    // Trả về dữ liệu người dùng mặc định thay vì lỗi 500
-    return NextResponse.json({
-      success: true,
-      user: {
-        uid: 'anonymous',
-        role: 'guest',
-        roleDisplayName: getRoleDisplayName('guest'),
-        displayName: 'Khách',
-        email: null,
-        isAnonymous: true,
-        additionalInfo: {},
-        enrollments: []
-      }
-    });
+    return NextResponse.json(
+      { success: false, error: 'Internal Server Error' },
+      { status: 500 }
+    );
   }
 }
 

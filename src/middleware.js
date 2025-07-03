@@ -64,14 +64,16 @@ const NO_DB_API_PATHS = [
 
 // Đường dẫn API đặc biệt cần loại trừ khỏi middleware hoàn toàn
 const EXCLUDED_API_PATHS = [
-  '/api/users/me',
-  '/api/auth/verify',
-  '/api/auth/refresh-token',
-  '/api/auth/user-role',
   '/api/auth/login',
   '/api/auth/register',
-  '/api/auth/logout',
-  '/api/health-check'
+  '/api/auth/refresh-token',
+  '/api/auth/verify',
+  '/api/auth/google-callback',
+  '/api/auth/reset-password',
+  '/api/users/me',
+  '/api/health-check',
+  '/api/health-check/mongodb',
+  '/api/health-check/mongodb-reset'
 ];
 
 // Kiểm tra xem đường dẫn có cần kết nối DB không
@@ -193,6 +195,14 @@ export async function middleware(request) {
       },
       body: JSON.stringify({ token }),
     });
+
+    if (verifyResponse.ok) {
+      const verifyData = await verifyResponse.json();
+      if (verifyData.valid && verifyData.user) {
+        // Thêm user vào request
+        request.user = verifyData.user;
+      }
+    }
 
     let user;
     let userRole;
@@ -628,6 +638,13 @@ export async function middleware(request) {
       });
       
       return addSecurityHeaders(response);
+    }
+    
+    // Thêm CORS headers cho API routes
+    if (pathname.startsWith('/api/')) {
+      response.headers.set('Access-Control-Allow-Origin', process.env.NEXT_PUBLIC_BASE_URL || '*');
+      response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+      response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     }
     
     // Cho phép truy cập các đường dẫn khác nếu đã xác thực thành công
