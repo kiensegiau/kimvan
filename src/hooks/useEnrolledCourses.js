@@ -235,6 +235,11 @@ export function useEnrolledCourses(externalUserData = null) {
             try {
               console.log(`Đang thử lấy dữ liệu người dùng từ ${endpoint}...`);
               const userResponse = await fetch(endpoint, {
+                method: endpoint === '/api/auth/user-role' ? 'POST' : 'GET', // Use POST for user-role endpoint
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Accept': 'application/json'
+                },
                 credentials: 'include',
                 signal: AbortSignal.timeout(10000) // 10 giây timeout
               });
@@ -257,6 +262,47 @@ export function useEnrolledCourses(externalUserData = null) {
                     enrollments: []
                   };
                   break;
+                }
+              } else {
+                // Log detailed error information for debugging
+                const errorStatus = userResponse.status;
+                try {
+                  const errorText = await userResponse.text();
+                  console.warn(`Lỗi khi gọi ${endpoint}: ${errorStatus} - ${errorText.substring(0, 100)}`);
+                  
+                  // Handle specific error cases
+                  if (endpoint === '/api/auth/user-role' && errorStatus === 405) {
+                    console.warn('API user-role requires POST method - retrying with proper payload');
+                    // Try again with proper request body if Method Not Allowed
+                    try {
+                      const retryResponse = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          'Accept': 'application/json'
+                        },
+                        credentials: 'include',
+                        body: JSON.stringify({}), // Empty object as payload
+                        signal: AbortSignal.timeout(10000)
+                      });
+                      
+                      if (retryResponse.ok) {
+                        const retryData = await retryResponse.json();
+                        if (retryData.success) {
+                          currentUserData = {
+                            uid: retryData.uid || 'unknown',
+                            role: retryData.role || 'user',
+                            enrollments: []
+                          };
+                          break;
+                        }
+                      }
+                    } catch (retryError) {
+                      console.warn('Retry failed:', retryError.message);
+                    }
+                  }
+                } catch (textError) {
+                  console.warn(`Lỗi khi gọi ${endpoint}: ${errorStatus}`);
                 }
               }
             } catch (endpointError) {

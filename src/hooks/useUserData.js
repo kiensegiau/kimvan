@@ -47,7 +47,7 @@ const useUserData = () => {
           try {
             console.log(`Đang thử lấy dữ liệu người dùng từ ${endpoint}...`);
             const response = await fetch(endpoint, {
-              method: 'GET',
+              method: endpoint === '/api/auth/user-role' ? 'POST' : 'GET', // Use POST for user-role endpoint
               headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'
@@ -82,7 +82,44 @@ const useUserData = () => {
                 }
               }
             } else {
-              allErrors.push(`${endpoint}: ${response.status} ${response.statusText}`);
+              // Lưu lại lỗi chi tiết hơn cho việc debug
+              const errorStatus = response.status;
+              const errorText = await response.text().catch(() => 'No response text');
+              allErrors.push(`${endpoint}: ${errorStatus} ${errorText.substring(0, 100)}`);
+              
+              // Handle specific error cases
+              if (endpoint === '/api/auth/user-role' && errorStatus === 405) {
+                console.warn('API user-role requires POST method - retrying with proper payload');
+                // Try again with proper request body if Method Not Allowed
+                try {
+                  const retryResponse = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Accept': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({}), // Empty object as payload
+                    signal: AbortSignal.timeout(10000)
+                  });
+                  
+                  if (retryResponse.ok) {
+                    const retryData = await retryResponse.json();
+                    if (retryData.success) {
+                      userData = {
+                        uid: retryData.uid || 'unknown',
+                        role: retryData.role || 'user',
+                        roleDisplayName: getRoleDisplayName(retryData.role || 'user'),
+                        additionalInfo: {},
+                        enrollments: []
+                      };
+                      break;
+                    }
+                  }
+                } catch (retryError) {
+                  console.warn('Retry failed:', retryError.message);
+                }
+              }
             }
           } catch (fetchError) {
             allErrors.push(`${endpoint}: ${fetchError.message}`);

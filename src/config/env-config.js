@@ -56,8 +56,14 @@ const isHttpsEnabled = () => {
   // Kiểm tra URL cơ sở nếu có
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || '';
   if (baseUrl.startsWith('https://')) return true;
+  if (baseUrl.startsWith('http://')) return false;
   
-  // Mặc định để an toàn, chỉ bật secure trong môi trường production khi không thể xác định
+  // Auto-detect based on environment variables that might be set by hosting providers
+  if (process.env.NEXT_PUBLIC_VERCEL_URL) return true;
+  if (process.env.NEXT_PUBLIC_VERCEL_ENV === 'production') return true;
+  
+  // For production environments where protocol can't be detected, default to false
+  // This allows the app to work in HTTP environments without secure cookie issues
   return false;
 };
 

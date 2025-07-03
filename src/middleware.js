@@ -62,6 +62,14 @@ const NO_DB_API_PATHS = [
   '/api/users/me'
 ];
 
+// Đường dẫn API đặc biệt cần loại trừ khỏi middleware hoàn toàn
+const EXCLUDED_API_PATHS = [
+  '/api/users/me',
+  '/api/auth/verify',
+  '/api/auth/refresh-token',
+  '/api/auth/user-role'
+];
+
 // Kiểm tra xem đường dẫn có cần kết nối DB không
 const needsDatabaseConnection = (path) => {
   return path.startsWith('/api/') && !NO_DB_API_PATHS.some(apiPath => path.startsWith(apiPath));
@@ -108,15 +116,8 @@ export async function middleware(request) {
     });
   }
 
-  // Loại trừ các API xác thực khỏi middleware để tránh lặp
-  if (
-    pathname.startsWith(TOKEN_VERIFY_API) ||
-    pathname.startsWith(TOKEN_REFRESH_API) ||
-    pathname.startsWith(USER_ROLE_API) ||
-    pathname.startsWith('/api/auth/logout') ||
-    pathname.startsWith('/api/auth/admin/check-permission') ||
-    pathname.startsWith('/api/users/me') // Thêm đường dẫn users/me vào danh sách loại trừ
-  ) {
+  // Loại trừ các API đặc biệt khỏi middleware để tránh lặp và redirect loops
+  if (EXCLUDED_API_PATHS.some(path => pathname.startsWith(path))) {
     return response;
   }
 
@@ -171,12 +172,15 @@ export async function middleware(request) {
 
   // Xác thực token với server trước khi cho phép truy cập
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || '';
     // Đảm bảo baseUrl kết thúc đúng cách
     const normalizedBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
     
-    // Gọi API xác thực token (dùng URL đầy đủ)
-    const verifyResponse = await fetch(`${normalizedBaseUrl}${TOKEN_VERIFY_API}`, {
+    // Sử dụng URL tương đối nếu đang trên cùng server, hoặc URL đầy đủ nếu cần
+    const apiUrl = baseUrl ? `${normalizedBaseUrl}${TOKEN_VERIFY_API}` : TOKEN_VERIFY_API;
+    
+    // Gọi API xác thực token
+    const verifyResponse = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
