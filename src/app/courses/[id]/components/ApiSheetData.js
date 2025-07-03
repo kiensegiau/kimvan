@@ -372,16 +372,17 @@ export default function ApiSheetData({
         <a
           href={hyperlink}
           onClick={(e) => handleYoutubeClick(e, hyperlink)}
-          className="flex items-center text-blue-600 hover:text-blue-800 hover:underline"
+          className="flex items-start text-blue-600 hover:text-blue-800 hover:underline break-words"
+          title={cellContent || 'YouTube Video'}
         >
           {isLoading ? (
-            <span className="mr-1 inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-r-transparent"></span>
+            <span className="mr-1 inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-r-transparent flex-shrink-0 mt-1"></span>
           ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" className="mr-1 h-4 w-4 text-red-600" fill="currentColor" viewBox="0 0 24 24">
+            <svg xmlns="http://www.w3.org/2000/svg" className="mr-1 h-4 w-4 text-red-600 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 24 24">
               <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/>
             </svg>
           )}
-          {cellContent || 'YouTube Video'}
+          <span className="break-words">{cellContent || 'YouTube Video'}</span>
         </a>
       );
     }
@@ -395,19 +396,20 @@ export default function ApiSheetData({
         <a
           href={hyperlink}
           onClick={(e) => handlePdfClick(e, hyperlink, cellContent)}
-          className="flex items-center text-blue-600 hover:text-blue-800 hover:underline"
+          className="flex items-start text-blue-600 hover:text-blue-800 hover:underline break-words"
+          title={cellContent || 'PDF Document'}
         >
           {isLoading ? (
-            <span className="mr-1 inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-r-transparent"></span>
+            <span className="mr-1 inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-r-transparent flex-shrink-0 mt-1"></span>
           ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" className="mr-1 h-4 w-4 text-red-600" viewBox="0 0 24 24" fill="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" className="mr-1 h-4 w-4 text-red-600 flex-shrink-0 mt-1" viewBox="0 0 24 24" fill="currentColor">
               <path d="M7 11.5v-6.5h10v6.5" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round"></path>
               <path d="M12 13.5V21" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round"></path>
               <path d="M9.5 16L12 13.5L14.5 16" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round"></path>
               <path d="M4 21.4V2.6C4 2.26863 4.26863 2 4.6 2H19.4C19.7314 2 20 2.26863 20 2.6V21.4C20 21.7314 19.7314 22 19.4 22H4.6C4.26863 22 4 21.7314 4 21.4Z" stroke="currentColor" strokeWidth="1.5" fill="none"></path>
             </svg>
           )}
-          {cellContent || 'PDF Document'}
+          <span className="break-words">{cellContent || 'PDF Document'}</span>
         </a>
       );
     }
@@ -421,16 +423,17 @@ export default function ApiSheetData({
         <a
           href={hyperlink}
           onClick={(e) => handleLinkClick(e, hyperlink, cellContent)}
-          className="flex items-center text-blue-600 hover:text-blue-800 hover:underline"
+          className="flex items-start text-blue-600 hover:text-blue-800 hover:underline break-words"
+          title={cellContent || 'Google Drive Document'}
         >
           {isLoading ? (
-            <span className="mr-1 inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-r-transparent"></span>
+            <span className="mr-1 inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-r-transparent flex-shrink-0 mt-1"></span>
           ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" className="mr-1 h-4 w-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" className="mr-1 h-4 w-4 text-green-600 flex-shrink-0 mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
           )}
-          {cellContent || 'Google Drive Document'}
+          <span className="break-words">{cellContent || 'Google Drive Document'}</span>
         </a>
       );
     }
@@ -444,16 +447,17 @@ export default function ApiSheetData({
         <a
           href={hyperlink}
           onClick={(e) => handleProxyLinkClick(e, hyperlink, cellContent)}
-          className="flex items-center text-blue-600 hover:text-blue-800 hover:underline"
+          className="flex items-start text-blue-600 hover:text-blue-800 hover:underline break-words"
+          title={cellContent || 'Link'}
         >
           {isLoading ? (
-            <span className="mr-1 inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-r-transparent"></span>
+            <span className="mr-1 inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-r-transparent flex-shrink-0 mt-1"></span>
           ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" className="mr-1 h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" className="mr-1 h-4 w-4 text-blue-600 flex-shrink-0 mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
             </svg>
           )}
-          {cellContent || 'Link'}
+          <span className="break-words">{cellContent || 'Link'}</span>
         </a>
       );
     }
@@ -463,9 +467,10 @@ export default function ApiSheetData({
       <a
         href={hyperlink}
         onClick={(e) => handleLinkClick(e, hyperlink, cellContent)}
-        className="text-blue-600 hover:text-blue-800 hover:underline"
+        className="text-blue-600 hover:text-blue-800 hover:underline break-words block"
         target="_blank"
         rel="noopener noreferrer"
+        title={cellContent || hyperlink}
       >
         {cellContent || hyperlink}
       </a>
@@ -572,8 +577,8 @@ export default function ApiSheetData({
       return renderHyperlinkCell(hyperlink, formattedContent, rowIndex, cellIndex);
     }
     
-    // Render cell thông thường
-    return <span>{formattedContent}</span>;
+    // Render cell thông thường với nội dung bị cắt nếu quá dài
+    return <span className="break-words" title={formattedContent}>{formattedContent}</span>;
   };
 
   // Hàm kiểm tra cell có bị gộp không
@@ -830,37 +835,40 @@ export default function ApiSheetData({
     // Xử lý sắp xếp dữ liệu nếu cần
     const sortedRows = getSortedData(rows, header);
     
+    // Loại bỏ cột đầu tiên
+    const displayHeader = header.slice(1);
+    
     return (
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              {header.map((column, index) => (
+              {displayHeader.map((column, index) => (
                 <th
                   key={`header-${index}`}
                   scope="col"
-                  className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer relative ${
-                    sortConfig.key === index ? 'bg-gray-100' : ''
+                  className={`px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer relative min-w-[120px] max-w-[250px] ${
+                    sortConfig.key === index + 1 ? 'bg-gray-100' : ''
                   }`}
-                  onClick={() => requestSort(index)}
-                  onMouseEnter={() => setHoveredHeader(index)}
+                  onClick={() => requestSort(index + 1)}
+                  onMouseEnter={() => setHoveredHeader(index + 1)}
                   onMouseLeave={() => setHoveredHeader(null)}
                 >
                   <div className="flex items-center space-x-1">
-                    <span>{column}</span>
-                    {sortConfig.key === index && (
+                    <span className="break-words" title={column}>{column}</span>
+                    {sortConfig.key === index + 1 && (
                       <span>
                         {sortConfig.direction === 'ascending' ? '▲' : '▼'}
                       </span>
                     )}
                   </div>
-                  {hoveredHeader === index && (
+                  {hoveredHeader === index + 1 && (
                     <div className="absolute right-0 top-0 h-full flex items-center pr-2">
                       <button
                         className="text-gray-400 hover:text-gray-600"
                         onClick={(e) => {
                           e.stopPropagation();
-                          requestSort(index);
+                          requestSort(index + 1);
                         }}
                       >
                         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -876,9 +884,12 @@ export default function ApiSheetData({
           <tbody className="bg-white divide-y divide-gray-200">
             {sortedRows.map((row, rowIndex) => (
               <tr key={`row-${rowIndex}`} className={rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                {header.map((column, cellIndex) => {
+                {header.slice(1).map((column, cellIndex) => {
+                  // Chuyển đổi cellIndex để phù hợp với index thực tế (cột đầu tiên có index = 1 sau khi bỏ qua cột 0)
+                  const actualCellIndex = cellIndex + 1;
+                  
                   // Kiểm tra nếu là cell được merge và không phải cell chính
-                  const mergeInfo = getMergeInfo(rowIndex, cellIndex, sheetDetail);
+                  const mergeInfo = getMergeInfo(rowIndex, actualCellIndex, sheetDetail);
                   
                   if (mergeInfo && !mergeInfo.isMainCell) {
                     return null; // Không render các cell bị merge không phải cell chính
@@ -888,22 +899,22 @@ export default function ApiSheetData({
                   let cellContent;
                   
                   // Trường hợp rows có processedData
-                  if (row.processedData && `col${cellIndex}` in row.processedData) {
-                    cellContent = row.processedData[`col${cellIndex}`];
+                  if (row.processedData && `col${actualCellIndex}` in row.processedData) {
+                    cellContent = row.processedData[`col${actualCellIndex}`];
                   } 
                   // Trường hợp row là đối tượng và có thuộc tính đúng với tên cột
                   else if (column in row) {
                     cellContent = row[column];
                   } 
                   // Trường hợp row là mảng (tương thích với dữ liệu cũ)
-                  else if (Array.isArray(row) && cellIndex < row.length) {
-                    cellContent = row[cellIndex];
+                  else if (Array.isArray(row) && actualCellIndex < row.length) {
+                    cellContent = row[actualCellIndex];
                   }
                   
                   // Lấy hyperlink từ nhiều nguồn dữ liệu khác nhau
                   const hyperlink = getHyperlinkFromValues(
                     rowIndex, 
-                    cellIndex, 
+                    actualCellIndex, 
                     sheetDetail.values, 
                     sheetDetail.htmlData, 
                     sheetDetail.rows, 
@@ -914,13 +925,15 @@ export default function ApiSheetData({
                   return (
                     <td
                       key={`cell-${rowIndex}-${cellIndex}`}
-                      className="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                      className="px-4 py-4 text-sm text-gray-500 min-w-[120px] max-w-[250px]"
                       {...(mergeInfo ? {
                         rowSpan: mergeInfo.rowSpan,
                         colSpan: mergeInfo.colSpan
                       } : {})}
                     >
-                      {renderCellContent(cellContent, rowIndex, cellIndex, sheetDetail)}
+                      <div className="break-words" title={typeof cellContent === 'string' ? cellContent : ''}>
+                        {renderCellContent(cellContent, rowIndex, actualCellIndex, sheetDetail)}
+                      </div>
                     </td>
                   );
                 })}

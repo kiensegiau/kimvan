@@ -1,10 +1,6 @@
 {
   "values": [
     [
-      4,
-      "KHOÁ T-CHUYÊN ĐỀ"
-    ],
-    [
       5,
       "STT",
       "TÊN BÀI HỌC",
@@ -405,256 +401,6 @@
     ]
   ],
   "htmlData": [
-    {
-      "values": [
-        {
-          "userEnteredValue": {
-            "numberValue": 4
-          },
-          "effectiveValue": {
-            "numberValue": 4
-          },
-          "formattedValue": "4",
-          "userEnteredFormat": {
-            "horizontalAlignment": "CENTER",
-            "textFormat": {
-              "fontFamily": "\"Times New Roman\"",
-              "bold": true
-            }
-          },
-          "effectiveFormat": {
-            "backgroundColor": {
-              "red": 1,
-              "green": 1,
-              "blue": 1
-            },
-            "padding": {
-              "top": 2,
-              "right": 3,
-              "bottom": 2,
-              "left": 3
-            },
-            "horizontalAlignment": "CENTER",
-            "verticalAlignment": "BOTTOM",
-            "wrapStrategy": "OVERFLOW_CELL",
-            "textFormat": {
-              "foregroundColor": {},
-              "fontFamily": "\"Times New Roman\"",
-              "fontSize": 10,
-              "bold": true,
-              "italic": false,
-              "strikethrough": false,
-              "underline": false,
-              "foregroundColorStyle": {
-                "rgbColor": {}
-              }
-            },
-            "hyperlinkDisplayType": "PLAIN_TEXT",
-            "backgroundColorStyle": {
-              "rgbColor": {
-                "red": 1,
-                "green": 1,
-                "blue": 1
-              }
-            }
-          }
-        },
-        {
-          "userEnteredValue": {
-            "stringValue": "KHOÁ T-CHUYÊN ĐỀ"
-          },
-          "effectiveValue": {
-            "stringValue": "KHOÁ T-CHUYÊN ĐỀ"
-          },
-          "formattedValue": "KHOÁ T-CHUYÊN ĐỀ",
-          "userEnteredFormat": {
-            "textFormat": {
-              "fontFamily": "\"Times New Roman\""
-            }
-          },
-          "effectiveFormat": {
-            "backgroundColor": {
-              "red": 1,
-              "green": 1,
-              "blue": 1
-            },
-            "padding": {
-              "top": 2,
-              "right": 3,
-              "bottom": 2,
-              "left": 3
-            },
-            "horizontalAlignment": "LEFT",
-            "verticalAlignment": "BOTTOM",
-            "wrapStrategy": "OVERFLOW_CELL",
-            "textFormat": {
-              "foregroundColor": {},
-              "fontFamily": "\"Times New Roman\"",
-              "fontSize": 10,
-              "bold": false,
-              "italic": false,
-              "strikethrough": false,
-              "underline": false,
-              "foregroundColorStyle": {
-                "rgbColor": {}
-              }
-            },
-            "hyperlinkDisplayType": "PLAIN_TEXT",
-            "backgroundColorStyle": {
-              "rgbColor": {
-                "red": 1,
-                "green": 1,
-                "blue": 1
-              }
-            }
-          }
-        },
-        {
-          "effectiveFormat": {
-            "backgroundColor": {
-              "red": 1,
-              "green": 1,
-              "blue": 1
-            },
-            "padding": {
-              "top": 2,
-              "right": 3,
-              "bottom": 2,
-              "left": 3
-            },
-            "verticalAlignment": "BOTTOM",
-            "wrapStrategy": "OVERFLOW_CELL",
-            "textFormat": {
-              "foregroundColor": {},
-              "fontFamily": "Arial",
-              "fontSize": 10,
-              "bold": false,
-              "italic": false,
-              "strikethrough": false,
-              "underline": false,
-              "foregroundColorStyle": {
-                "rgbColor": {}
-              }
-            },
-            "backgroundColorStyle": {
-              "rgbColor": {
-                "red": 1,
-                "green": 1,
-                "blue": 1
-              }
-            }
-          }
-        },
-        {
-          "effectiveFormat": {
-            "backgroundColor": {
-              "red": 1,
-              "green": 1,
-              "blue": 1
-            },
-            "padding": {
-              "top": 2,
-              "right": 3,
-              "bottom": 2,
-              "left": 3
-            },
-            "verticalAlignment": "BOTTOM",
-            "wrapStrategy": "OVERFLOW_CELL",
-            "textFormat": {
-              "foregroundColor": {},
-              "fontFamily": "Arial",
-              "fontSize": 10,
-              "bold": false,
-              "italic": false,
-              "strikethrough": false,
-              "underline": false,
-              "foregroundColorStyle": {
-                "rgbColor": {}
-              }
-            },
-            "backgroundColorStyle": {
-              "rgbColor": {
-                "red": 1,
-                "green": 1,
-                "blue": 1
-              }
-            }
-          }
-        },
-        {
-          "effectiveFormat": {
-            "backgroundColor": {
-              "red": 1,
-              "green": 1,
-              "blue": 1
-            },
-            "padding": {
-              "top": 2,
-              "right": 3,
-              "bottom": 2,
-              "left": 3
-            },
-            "verticalAlignment": "BOTTOM",
-            "wrapStrategy": "OVERFLOW_CELL",
-            "textFormat": {
-              "foregroundColor": {},
-              "fontFamily": "Arial",
-              "fontSize": 10,
-              "bold": false,
-              "italic": false,
-              "strikethrough": false,
-              "underline": false,
-              "foregroundColorStyle": {
-                "rgbColor": {}
-              }
-            },
-            "backgroundColorStyle": {
-              "rgbColor": {
-                "red": 1,
-                "green": 1,
-                "blue": 1
-              }
-            }
-          }
-        },
-        {
-          "effectiveFormat": {
-            "backgroundColor": {
-              "red": 1,
-              "green": 1,
-              "blue": 1
-            },
-            "padding": {
-              "top": 2,
-              "right": 3,
-              "bottom": 2,
-              "left": 3
-            },
-            "verticalAlignment": "BOTTOM",
-            "wrapStrategy": "OVERFLOW_CELL",
-            "textFormat": {
-              "foregroundColor": {},
-              "fontFamily": "Arial",
-              "fontSize": 10,
-              "bold": false,
-              "italic": false,
-              "strikethrough": false,
-              "underline": false,
-              "foregroundColorStyle": {
-                "rgbColor": {}
-              }
-            },
-            "backgroundColorStyle": {
-              "rgbColor": {
-                "red": 1,
-                "green": 1,
-                "blue": 1
-              }
-            }
-          }
-        }
-      ]
-    },
     {
       "values": [
         {
@@ -20269,213 +20015,207 @@
       ]
     }
   ],
-  "range": "'Trang tính1'!A1:Z1000",
+  "range": "'Trang tính1'!A1:Z999",
   "majorDimension": "ROWS",
   "merges": [
     {
-      "startRowIndex": 0,
-      "endRowIndex": 1,
+      "startRowIndex": 1,
+      "endRowIndex": 2,
       "startColumnIndex": 1,
       "endColumnIndex": 6
     },
     {
       "startRowIndex": 2,
-      "endRowIndex": 3,
-      "startColumnIndex": 1,
-      "endColumnIndex": 6
-    },
-    {
-      "startRowIndex": 3,
-      "endRowIndex": 6,
+      "endRowIndex": 5,
       "startColumnIndex": 2,
       "endColumnIndex": 3
     },
     {
-      "startRowIndex": 3,
-      "endRowIndex": 6,
+      "startRowIndex": 2,
+      "endRowIndex": 5,
       "startColumnIndex": 3,
       "endColumnIndex": 4
     },
     {
-      "startRowIndex": 3,
-      "endRowIndex": 6,
+      "startRowIndex": 2,
+      "endRowIndex": 5,
       "startColumnIndex": 5,
+      "endColumnIndex": 6
+    },
+    {
+      "startRowIndex": 10,
+      "endRowIndex": 11,
+      "startColumnIndex": 1,
       "endColumnIndex": 6
     },
     {
       "startRowIndex": 11,
-      "endRowIndex": 12,
-      "startColumnIndex": 1,
-      "endColumnIndex": 6
-    },
-    {
-      "startRowIndex": 12,
-      "endRowIndex": 18,
+      "endRowIndex": 17,
       "startColumnIndex": 3,
       "endColumnIndex": 4
     },
     {
-      "startRowIndex": 12,
-      "endRowIndex": 18,
+      "startRowIndex": 11,
+      "endRowIndex": 17,
       "startColumnIndex": 5,
+      "endColumnIndex": 6
+    },
+    {
+      "startRowIndex": 19,
+      "endRowIndex": 20,
+      "startColumnIndex": 1,
       "endColumnIndex": 6
     },
     {
       "startRowIndex": 20,
-      "endRowIndex": 21,
-      "startColumnIndex": 1,
-      "endColumnIndex": 6
-    },
-    {
-      "startRowIndex": 21,
-      "endRowIndex": 24,
+      "endRowIndex": 23,
       "startColumnIndex": 2,
       "endColumnIndex": 3
     },
     {
-      "startRowIndex": 21,
-      "endRowIndex": 24,
+      "startRowIndex": 20,
+      "endRowIndex": 23,
       "startColumnIndex": 3,
       "endColumnIndex": 4
     },
     {
-      "startRowIndex": 21,
-      "endRowIndex": 24,
+      "startRowIndex": 20,
+      "endRowIndex": 23,
       "startColumnIndex": 5,
       "endColumnIndex": 6
     },
     {
-      "startRowIndex": 25,
-      "endRowIndex": 28,
+      "startRowIndex": 24,
+      "endRowIndex": 27,
       "startColumnIndex": 3,
       "endColumnIndex": 4
     },
     {
-      "startRowIndex": 25,
-      "endRowIndex": 28,
+      "startRowIndex": 24,
+      "endRowIndex": 27,
       "startColumnIndex": 5,
       "endColumnIndex": 6
     },
     {
-      "startRowIndex": 25,
-      "endRowIndex": 28,
+      "startRowIndex": 24,
+      "endRowIndex": 27,
       "startColumnIndex": 2,
       "endColumnIndex": 3
     },
     {
-      "startRowIndex": 29,
-      "endRowIndex": 31,
+      "startRowIndex": 28,
+      "endRowIndex": 30,
       "startColumnIndex": 2,
       "endColumnIndex": 3
     },
     {
-      "startRowIndex": 29,
-      "endRowIndex": 31,
+      "startRowIndex": 28,
+      "endRowIndex": 30,
       "startColumnIndex": 3,
       "endColumnIndex": 4
     },
     {
-      "startRowIndex": 29,
-      "endRowIndex": 31,
+      "startRowIndex": 28,
+      "endRowIndex": 30,
       "startColumnIndex": 5,
       "endColumnIndex": 6
     },
     {
-      "startRowIndex": 33,
-      "endRowIndex": 36,
+      "startRowIndex": 32,
+      "endRowIndex": 35,
       "startColumnIndex": 2,
       "endColumnIndex": 3
     },
     {
-      "startRowIndex": 33,
-      "endRowIndex": 36,
+      "startRowIndex": 32,
+      "endRowIndex": 35,
       "startColumnIndex": 3,
       "endColumnIndex": 4
     },
     {
-      "startRowIndex": 33,
-      "endRowIndex": 36,
+      "startRowIndex": 32,
+      "endRowIndex": 35,
       "startColumnIndex": 5,
       "endColumnIndex": 6
-    },
-    {
-      "startRowIndex": 45,
-      "endRowIndex": 47,
-      "startColumnIndex": 5,
-      "endColumnIndex": 6
-    },
-    {
-      "startRowIndex": 47,
-      "endRowIndex": 49,
-      "startColumnIndex": 5,
-      "endColumnIndex": 6
-    },
-    {
-      "startRowIndex": 49,
-      "endRowIndex": 51,
-      "startColumnIndex": 5,
-      "endColumnIndex": 6
-    },
-    {
-      "startRowIndex": 49,
-      "endRowIndex": 51,
-      "startColumnIndex": 2,
-      "endColumnIndex": 3
-    },
-    {
-      "startRowIndex": 49,
-      "endRowIndex": 51,
-      "startColumnIndex": 3,
-      "endColumnIndex": 4
-    },
-    {
-      "startRowIndex": 53,
-      "endRowIndex": 54,
-      "startColumnIndex": 1,
-      "endColumnIndex": 6
-    },
-    {
-      "startRowIndex": 41,
-      "endRowIndex": 43,
-      "startColumnIndex": 2,
-      "endColumnIndex": 3
-    },
-    {
-      "startRowIndex": 41,
-      "endRowIndex": 43,
-      "startColumnIndex": 3,
-      "endColumnIndex": 4
     },
     {
       "startRowIndex": 44,
-      "endRowIndex": 45,
-      "startColumnIndex": 1,
+      "endRowIndex": 46,
+      "startColumnIndex": 5,
       "endColumnIndex": 6
     },
     {
-      "startRowIndex": 45,
-      "endRowIndex": 47,
+      "startRowIndex": 46,
+      "endRowIndex": 48,
+      "startColumnIndex": 5,
+      "endColumnIndex": 6
+    },
+    {
+      "startRowIndex": 48,
+      "endRowIndex": 50,
+      "startColumnIndex": 5,
+      "endColumnIndex": 6
+    },
+    {
+      "startRowIndex": 48,
+      "endRowIndex": 50,
       "startColumnIndex": 2,
       "endColumnIndex": 3
     },
     {
-      "startRowIndex": 45,
-      "endRowIndex": 47,
+      "startRowIndex": 48,
+      "endRowIndex": 50,
       "startColumnIndex": 3,
       "endColumnIndex": 4
     },
     {
-      "startRowIndex": 47,
-      "endRowIndex": 49,
+      "startRowIndex": 52,
+      "endRowIndex": 53,
+      "startColumnIndex": 1,
+      "endColumnIndex": 6
+    },
+    {
+      "startRowIndex": 40,
+      "endRowIndex": 42,
       "startColumnIndex": 2,
       "endColumnIndex": 3
     },
     {
-      "startRowIndex": 47,
-      "endRowIndex": 49,
+      "startRowIndex": 40,
+      "endRowIndex": 42,
+      "startColumnIndex": 3,
+      "endColumnIndex": 4
+    },
+    {
+      "startRowIndex": 43,
+      "endRowIndex": 44,
+      "startColumnIndex": 1,
+      "endColumnIndex": 6
+    },
+    {
+      "startRowIndex": 44,
+      "endRowIndex": 46,
+      "startColumnIndex": 2,
+      "endColumnIndex": 3
+    },
+    {
+      "startRowIndex": 44,
+      "endRowIndex": 46,
+      "startColumnIndex": 3,
+      "endColumnIndex": 4
+    },
+    {
+      "startRowIndex": 46,
+      "endRowIndex": 48,
+      "startColumnIndex": 2,
+      "endColumnIndex": 3
+    },
+    {
+      "startRowIndex": 46,
+      "endRowIndex": 48,
       "startColumnIndex": 3,
       "endColumnIndex": 4
     }
   ],
-  "fetchedAt": 1751527773290
+  "fetchedAt": 1751528579383
 }
