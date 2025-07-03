@@ -19,19 +19,21 @@ export default function CourseDetailPage({ params }) {
   const router = useRouter();
   const resolvedParams = use(params);
   const id = resolvedParams.id;
-  const { userData } = useUserData();
+  
+  // Lấy thông tin người dùng trước
+  const { userData, loading: userLoading } = useUserData();
 
-  // Sử dụng các custom hooks
+  // Sử dụng các custom hooks và truyền userData vào useCourseData
   const { 
     course,
-    loading,
+    loading: courseLoading,
     error, 
     isLoaded,
     permissionChecked,
     cacheStatus: courseCacheStatus,
     clearCache: clearCourseCache,
     refreshCourseData,
-  } = useCourseData(id);
+  } = useCourseData(id, userData, userLoading);
   
   // Sử dụng API Sheet
   const {
@@ -57,25 +59,26 @@ export default function CourseDetailPage({ params }) {
   };
 
   // Kiểm tra quyền đặc biệt và bỏ qua kiểm tra quyền thông thường nếu có quyền xem tất cả
-  // Đã loại bỏ kiểm tra admin theo yêu cầu
   const hasViewAllPermission = userData?.canViewAllCourses === true;
   const shouldBypassPermissionCheck = hasViewAllPermission;
 
   // Kiểm tra quyền truy cập với xử lý đặc biệt cho admin và canViewAllCourses
   const hasAccessDenied = !shouldBypassPermissionCheck && permissionChecked && error && error.includes("không có quyền truy cập");
 
-  // Tải danh sách sheets khi component mount
+  // Tải danh sách sheets khi component mount và khi course đã tải xong
   useEffect(() => {
     if (course && !loadingApiSheet && !hasAccessDenied) {
       fetchApiSheetData();
     }
   }, [course, hasAccessDenied]);
 
-  if (loading) {
+  // Hiển thị trạng thái loading khi đang tải dữ liệu người dùng hoặc khóa học
+  if (userLoading || courseLoading) {
     return <LoadingState message="Đang tải thông tin khóa học..." />;
   }
 
-  if (hasAccessDenied) {
+  // Chỉ hiển thị lỗi quyền truy cập khi đã hoàn thành kiểm tra
+  if (hasAccessDenied && !userLoading) {
     return (
       <>
         <PermissionDenied message={error} redirectUrl="/courses" data-access-denied="true" />

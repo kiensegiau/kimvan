@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import CryptoJS from 'crypto-js';
-import useUserData from '@/hooks/useUserData';
 import useEnrolledCourses from '@/hooks/useEnrolledCourses';
 
 // Khóa mã hóa - phải giống với khóa ở phía server
@@ -22,7 +21,7 @@ const COURSE_CACHE_KEY = 'courseDataCache';
 // Giới hạn số lượng cache được lưu trữ
 const CACHE_LIMIT = 15;
 
-export function useCourseData(id) {
+export function useCourseData(id, userData = null, userLoading = false) {
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -35,9 +34,6 @@ export function useCourseData(id) {
   const [loadingSheetData, setLoadingSheetData] = useState({});
   const [cacheStatus, setCacheStatus] = useState('');
   const [permissionChecked, setPermissionChecked] = useState(false);
-  
-  // Lấy thông tin người dùng từ hook useUserData
-  const { userData, loading: userDataLoading } = useUserData();
   
   // Sử dụng hook useEnrolledCourses để lấy danh sách khóa học đã đăng ký và hàm kiểm tra
   const { 
@@ -76,6 +72,11 @@ export function useCourseData(id) {
     // Nếu không có dữ liệu khoá học, không có quyền truy cập
     if (!courseData) {
       return false;
+    }
+    
+    // Nếu đang tải thông tin người dùng, chưa thể xác định quyền truy cập
+    if (userLoading) {
+      return true; // Tạm thời cho phép để tránh hiển thị lỗi "không có quyền truy cập" khi chưa tải xong
     }
     
     // Không còn kiểm tra quyền admin nữa (theo yêu cầu)
@@ -374,93 +375,69 @@ export function useCourseData(id) {
   const fetchCourseDetail = async () => {
     try {
       setLoading(true);
-      setError(null);
-
-      // Kiểm tra nếu người dùng có quyền xem tất cả (đã loại bỏ admin)
-      const hasCanViewAllProperty = userData?.canViewAllCourses === true;
       
-      // Nếu có quyền đặc biệt, bỏ qua các kiểm tra quyền khác
-      const hasSpecialAccess = hasCanViewAllProperty;
-
       // Kiểm tra cache trước
       const cachedData = getFromCache();
+      
       if (cachedData) {
-        // Đảm bảo rằng trường requiresEnrollment được đặt đúng
-        if (cachedData.requiresEnrollment === undefined) {
-          cachedData.requiresEnrollment = true; // Mặc định yêu cầu đăng ký
-        }
-        
         setCourse(cachedData);
         
-        // Vẫn cần kiểm tra quyền truy cập với dữ liệu từ cache, nhưng bỏ qua nếu có quyền đặc biệt
-        if (!hasSpecialAccess) {
-          const hasAccess = checkPermission(cachedData);
-          if (!hasAccess) {
-            setError("Bạn không có quyền truy cập vào khóa học này");
+        // Chỉ kiểm tra quyền truy cập khi đã tải xong thông tin người dùng
+        if (!userLoading) {
+          const hasPermission = checkPermission(cachedData);
+          setPermissionChecked(true);
+          
+          if (!hasPermission) {
+            setError('Bạn không có quyền truy cập khóa học này');
+            return;
           }
         }
         
         setIsLoaded(true);
         setLoading(false);
-        setPermissionChecked(true);
         return;
       }
-
-      // Nếu không có cache hoặc cache hết hạn, gọi API
+      
+      // Gọi API nếu không có cache
+      console.log(`Fetching course detail for ID: ${id}`);
       const response = await fetch(`/api/courses/${id}`);
       
       if (!response.ok) {
-        // Xử lý lỗi 401 (chưa đăng nhập)
-        if (response.status === 401) {
-          setError('Bạn cần đăng nhập để xem chi tiết khóa học');
-          setLoading(false);
-          setPermissionChecked(true);
-          return;
-        }
-        
-        if (response.status === 403) {
-          setError('Bạn không có quyền truy cập vào khóa học này');
-          setLoading(false);
-          setPermissionChecked(true);
-          return;
-        }
-        
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Lỗi ${response.status}: ${response.statusText}`);
+        const errorData = await response.json().catch(() => ({ error: `Error ${response.status}: ${response.statusText}` }));
+        throw new Error(errorData.error || `Lỗi khi tải khóa học: ${response.statusText}`);
       }
-
-      const data = await response.json();
-
-      if (data.success) {
-        const courseData = data.course;
-        
-        // Đảm bảo rằng trường requiresEnrollment được đặt đúng
-        if (courseData.requiresEnrollment === undefined) {
-          courseData.requiresEnrollment = true; // Mặc định yêu cầu đăng ký
-        }
-        
-        setCourse(courseData);
-        saveToCache(courseData);
-        
-        // Kiểm tra quyền truy cập, bỏ qua nếu có quyền đặc biệt
-        if (!hasSpecialAccess) {
-          const hasAccess = checkPermission(courseData);
-          if (!hasAccess) {
-            setError("Bạn không có quyền truy cập vào khóa học này");
-          }
-        }
-        
-        setPermissionChecked(true);
-      } else {
-        throw new Error(data.error || 'Không thể tải dữ liệu khóa học');
+      
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Có lỗi xảy ra khi tải thông tin khóa học');
       }
-    } catch (err) {
-      setError(err.message || 'Đã xảy ra lỗi khi tải dữ liệu khóa học');
-      setCourse(null);
+      
+      const courseData = result.course;
+      
+      // Kiểm tra quyền truy cập
+      const hasPermission = !userLoading && checkPermission(courseData);
       setPermissionChecked(true);
+      
+      if (!userLoading && !hasPermission) {
+        setError('Bạn không có quyền truy cập khóa học này');
+        setLoading(false);
+        return;
+      }
+      
+      // Lưu vào cache cho lần sau
+      saveToCache(courseData);
+      
+      // Cập nhật state
+      setCourse(courseData);
+      setIsLoaded(true);
+      setError(null);
+      
+    } catch (error) {
+      console.error('Error fetching course detail:', error);
+      setError(error.message);
     } finally {
       setLoading(false);
-      setIsLoaded(true);
     }
   };
   
@@ -477,12 +454,10 @@ export function useCourseData(id) {
     await fetchCourseDetail();
   };
 
-  // Sử dụng useEffect để tải dữ liệu khi component được mount
+  // Thêm phụ thuộc userLoading vào useEffect để chạy lại khi trạng thái tải user thay đổi
   useEffect(() => {
-    if (id) {
-      fetchCourseDetail();
-    }
-  }, [id, enrolledCourses]);
+    fetchCourseDetail();
+  }, [id, userLoading]);
   
   // Tải danh sách sheets khi component mount
   useEffect(() => {
