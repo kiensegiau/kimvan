@@ -110,15 +110,12 @@ export default function ApiSheetData({
                             url.includes('youtube-nocookie.com') ||
                             url.includes('youtube.googleapis.com');
     
-    // Kiểm tra URL giả định của chúng ta
-    const isLiveUrl = url.includes('example.com/live/');
-    
     // Log để debug
-    if (isRegularYoutube || isLiveUrl) {
-      console.log(`Phát hiện YouTube link: ${url} (${isRegularYoutube ? 'YouTube thông thường' : 'URL giả định'})`);
+    if (isRegularYoutube) {
+      console.log(`Phát hiện YouTube link: ${url}`);
     }
     
-    return isRegularYoutube || isLiveUrl;
+    return isRegularYoutube;
   };
   
   const isPdfLink = (url) => {
@@ -146,13 +143,6 @@ export default function ApiSheetData({
     if (watchMatch) {
       videoId = watchMatch[1];
       console.log('Found video ID from regex:', videoId);
-    }
-    
-    // Nếu là URL giả định của chúng ta (example.com/live/...)
-    if (!videoId && url.includes('example.com/live/')) {
-      // Giả định video ID từ tên bài học
-      videoId = 'dQw4w9WgXcQ'; // Video ID mặc định
-      console.log('Using default video ID for example.com/live URL');
     }
     
     return videoId;
@@ -193,16 +183,6 @@ export default function ApiSheetData({
     // Kiểm tra nếu là YouTube link
     if (isYoutubeLink(url)) {
       console.log('Phát hiện YouTube link, xử lý với handleYoutubeClick');
-      handleYoutubeClick(e, url);
-      setTimeout(() => {
-        setLoadingLinks(prev => ({ ...prev, [url]: false }));
-      }, 500);
-      return;
-    }
-    
-    // Kiểm tra nếu là link giả định của chúng ta
-    if (url.includes('example.com/live/')) {
-      console.log('Phát hiện link live giả định, xử lý như YouTube');
       handleYoutubeClick(e, url);
       setTimeout(() => {
         setLoadingLinks(prev => ({ ...prev, [url]: false }));
@@ -324,6 +304,57 @@ export default function ApiSheetData({
     return null;
   };
 
+  // Trích xuất URL thực từ nội dung cell
+  const extractRealUrl = (content) => {
+    if (!content) return null;
+    
+    // Nếu content là chuỗi và chứa URL
+    if (typeof content === 'string') {
+      // Tìm các URL phổ biến
+      const urlPattern = /(https?:\/\/[^\s]+)/gi;
+      const matches = content.match(urlPattern);
+      
+      if (matches && matches.length > 0) {
+        console.log('Trích xuất được URL từ nội dung:', matches[0]);
+        return matches[0];
+      }
+      
+      // Tìm ID YouTube từ các định dạng phổ biến
+      const ytIdPatterns = [
+        /youtube\.com.*[?&]v=([^&]+)/i,  // youtube.com?v=ID
+        /youtu\.be\/([^?&]+)/i,          // youtu.be/ID
+        /youtube\.com\/embed\/([^?&]+)/i // youtube.com/embed/ID
+      ];
+      
+      for (const pattern of ytIdPatterns) {
+        const match = content.match(pattern);
+        if (match && match[1]) {
+          const videoId = match[1];
+          console.log('Trích xuất được YouTube ID từ nội dung:', videoId);
+          return `https://www.youtube.com/watch?v=${videoId}`;
+        }
+      }
+      
+      // Tìm số cột nếu có (có thể là số điện thoại hoặc mã số)
+      // Nhưng chỉ nếu là cột CHƯƠNG
+      const numberPattern = /(\d{5,})/g;
+      const numberMatches = content.match(numberPattern);
+      
+      if (numberMatches && numberMatches.length > 0) {
+        const number = numberMatches[0];
+        console.log('Tìm thấy số có thể là mã video:', number);
+        
+        // Kiểm tra xem có phải là ID YouTube không (thường là 11 ký tự)
+        if (number.length === 11) {
+          console.log('Số có độ dài phù hợp với YouTube ID:', number);
+          return `https://www.youtube.com/watch?v=${number}`;
+        }
+      }
+    }
+    
+    return null;
+  };
+
   // Hàm render cell có hyperlink
   const renderHyperlinkCell = (hyperlink, cellContent, rowIndex, cellIndex) => {
     // Nếu không có hyperlink, hiển thị text thông thường
@@ -386,6 +417,78 @@ export default function ApiSheetData({
     );
   };
 
+  // Hàm format nội dung cell, đặc biệt xử lý cho các cột ngày tháng
+  const formatCellContent = (content, column) => {
+    // Nếu không có nội dung, trả về chuỗi rỗng
+    if (content === null || content === undefined || content === '') {
+      return '';
+    }
+    
+    // Danh sách các cột chứa ngày tháng
+    const dateCols = ['NGÀY HỌC', 'NGÀY', 'DATE', 'THỜI GIAN'];
+    const isDateColumn = column && dateCols.some(dateCol => 
+      column.toUpperCase().includes(dateCol)
+    );
+    
+    // Xử lý đặc biệt cho cột chứa ngày tháng
+    if (isDateColumn) {
+      // Kiểm tra nếu là số Excel serial date (ví dụ: 45792)
+      if (!isNaN(Number(content))) {
+        // Excel serial date bắt đầu từ ngày 1/1/1900, và số 1 tương ứng với ngày 1/1/1900
+        // Một số serial như 45792 là số ngày kể từ 1/1/1900
+        // Nhưng JavaScript date bắt đầu từ 1/1/1970
+        
+        try {
+          // Chuyển đổi Excel serial date sang JavaScript Date
+          // Excel có lỗi với năm 1900 (coi nó như năm nhuận), nên trừ đi 1 nếu số > 60
+          let excelSerialDate = Number(content);
+          
+          // Xử lý trường hợp Excel hiển thị số không có định dạng (ví dụ: 45792)
+          // Tính toán ngày tương ứng với Excel serial date
+          const millisecondsPerDay = 24 * 60 * 60 * 1000;
+          
+          // Điều chỉnh lỗi năm 1900 trong Excel
+          if (excelSerialDate > 60) {
+            excelSerialDate -= 1;
+          }
+          
+          // Ngày gốc của Excel là 1/1/1900
+          const excelStartDate = new Date(1900, 0, 1);
+          
+          // Tính toán ngày thực tế
+          const targetDate = new Date(excelStartDate.getTime() + (excelSerialDate - 1) * millisecondsPerDay);
+          
+          // Định dạng ngày tháng theo dd/MM/yyyy
+          const day = String(targetDate.getDate()).padStart(2, '0');
+          const month = String(targetDate.getMonth() + 1).padStart(2, '0');
+          const year = targetDate.getFullYear();
+          
+          return `${day}/${month}/${year}`;
+        } catch (error) {
+          console.error('Lỗi khi chuyển đổi Excel serial date:', error);
+          return content; // Trả về giá trị gốc nếu có lỗi
+        }
+      }
+      
+      // Kiểm tra nếu là chuỗi ngày tháng hợp lệ
+      try {
+        const dateObj = new Date(content);
+        if (!isNaN(dateObj.getTime())) {
+          // Định dạng ngày tháng theo dd/MM/yyyy
+          const day = String(dateObj.getDate()).padStart(2, '0');
+          const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+          const year = dateObj.getFullYear();
+          return `${day}/${month}/${year}`;
+        }
+      } catch (error) {
+        console.error('Lỗi khi định dạng chuỗi ngày tháng:', error);
+      }
+    }
+    
+    // Trả về nội dung gốc nếu không cần xử lý đặc biệt
+    return content;
+  };
+
   // Render nội dung cell
   const renderCellContent = (content, rowIndex, cellIndex, sheetDetail) => {
     // Lấy hyperlink nếu có
@@ -416,6 +519,15 @@ export default function ApiSheetData({
       });
     }
     
+    // Thử trích xuất URL từ nội dung cell
+    if (!hyperlink && content) {
+      const columnName = sheetDetail.header?.[cellIndex];
+      hyperlink = extractRealUrl(content);
+      if (hyperlink) {
+        console.log(`🔍 Trích xuất URL từ nội dung cell [${rowIndex},${cellIndex}] (${columnName}):`, hyperlink);
+      }
+    }
+    
     // Debug để xác định vị trí
     if (hyperlink) {
       console.log(`✅ Tìm thấy hyperlink cho cell [${rowIndex},${cellIndex}]: ${hyperlink}`);
@@ -423,11 +535,11 @@ export default function ApiSheetData({
     
     // Nếu có hyperlink, render cell với hyperlink
     if (hyperlink) {
-      return renderHyperlinkCell(hyperlink, content, rowIndex, cellIndex);
+      return renderHyperlinkCell(hyperlink, formatCellContent(content, sheetDetail.header?.[cellIndex]) || '', rowIndex, cellIndex);
     }
     
     // Nếu không có hyperlink, hiển thị nội dung thông thường
-    return content;
+    return formatCellContent(content, sheetDetail.header?.[cellIndex]) || '';
   };
 
   // Hàm kiểm tra cell có bị gộp không
@@ -700,53 +812,8 @@ export default function ApiSheetData({
           }
         });
 
-        // Tìm kiếm hyperlink cho các cột đặc biệt như "LIVE", "TÀI LIỆU", v.v.
-        const specialColumns = ["LIVE", "TÀI LIỆU", "BTVN", "TEST", "CHỮA TEST", "BÀI GIẢNG", "Bản viết tay"];
-        
         // Thêm _hyperlinks nếu tìm thấy
         rowData._hyperlinks = {};
-        
-        // Lấy thông tin bài học
-        const lessonName = row[2] || ""; // Cột "TÊN BÀI"
-        const lessonDate = row[1] || ""; // Cột "NGÀY HỌC"
-        
-        // Kiểm tra các cột đặc biệt
-        specialColumns.forEach(colName => {
-          const colIndex = header.indexOf(colName);
-          if (colIndex !== -1 && colIndex < row.length) {
-            const cellValue = row[colIndex];
-            
-            // Nếu giá trị là "LIVE", "TÀI LIỆU", v.v. (không phải "-" hoặc rỗng)
-            if (cellValue && cellValue !== "-" && cellValue !== "") {
-              // Tạo URL giả định dựa trên loại cột và nội dung bài học
-              let url = "";
-              
-              // Tạo URL dựa trên loại cột
-              if (colName === "LIVE") {
-                // Nếu cellValue chứa "LIVE" thì đó là một video YouTube
-                url = `https://example.com/live/${encodeURIComponent(lessonName)}?date=${encodeURIComponent(lessonDate)}`;
-              } else if (colName === "TÀI LIỆU") {
-                url = `https://example.com/document/${encodeURIComponent(lessonName)}?date=${encodeURIComponent(lessonDate)}`;
-              } else if (colName === "BTVN") {
-                url = `https://example.com/homework/${encodeURIComponent(lessonName)}?date=${encodeURIComponent(lessonDate)}`;
-              } else if (colName === "TEST") {
-                url = `https://example.com/test/${encodeURIComponent(lessonName)}?date=${encodeURIComponent(lessonDate)}`;
-              } else if (colName === "CHỮA TEST") {
-                url = `https://example.com/test-solution/${encodeURIComponent(lessonName)}?date=${encodeURIComponent(lessonDate)}`;
-              } else if (colName === "BÀI GIẢNG") {
-                url = `https://example.com/lecture/${encodeURIComponent(lessonName)}?date=${encodeURIComponent(lessonDate)}`;
-              } else if (colName === "Bản viết tay") {
-                url = `https://example.com/notes/${encodeURIComponent(lessonName)}?date=${encodeURIComponent(lessonDate)}`;
-              }
-              
-              // Log URL đã tạo
-              if (url) {
-                console.log(`Tạo URL giả định cho [${rowIndex},${colIndex}] (${colName}):`, url);
-                rowData._hyperlinks[colName] = url;
-              }
-            }
-          }
-        });
         
         // Kiểm tra trong htmlData nếu có
         if (Array.isArray(sheetDetail.htmlData) && sheetDetail.htmlData.length > rowIndex + 1) {
@@ -755,7 +822,12 @@ export default function ApiSheetData({
           if (htmlRow && Array.isArray(htmlRow)) {
             htmlRow.forEach((cell, cellIndex) => {
               if (cell && cell.hyperlink && cellIndex < header.length) {
-                rowData._hyperlinks[header[cellIndex]] = cell.hyperlink;
+                const columnName = header[cellIndex];
+                if (columnName) {
+                  // Nếu là hyperlink thật từ htmlData, ưu tiên sử dụng
+                  rowData._hyperlinks[columnName] = cell.hyperlink;
+                  console.log(`Sử dụng hyperlink thật từ htmlData cho [${rowIndex},${cellIndex}] (${columnName}):`, cell.hyperlink);
+                }
               }
             });
           }
@@ -833,9 +905,9 @@ export default function ApiSheetData({
                   return (
                     <td key={cellIndex} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {hyperlink ? (
-                        renderHyperlinkCell(hyperlink, cellContent || '', rowIndex, cellIndex)
+                        renderHyperlinkCell(hyperlink, formatCellContent(cellContent, column) || '', rowIndex, cellIndex)
                       ) : (
-                        <span>{cellContent || ''}</span>
+                        <span>{formatCellContent(cellContent, column) || ''}</span>
                       )}
                     </td>
                   );
@@ -927,43 +999,31 @@ export default function ApiSheetData({
       }
     }
     
-    // Tạo hyperlink giả định cho các cột đặc biệt
-    if (Array.isArray(header) && cellIndex < header.length) {
-      const columnName = header[cellIndex];
-      const specialColumns = ["LIVE", "TÀI LIỆU", "BTVN", "TEST", "CHỮA TEST", "BÀI GIẢNG", "Bản viết tay"];
-      
-      if (specialColumns.includes(columnName) && Array.isArray(values) && values.length > rowIndex + 1) {
-        const row = values[rowIndex + 1];
-        if (row && row.length > cellIndex) {
-          const cellValue = row[cellIndex];
-          
-          // Nếu giá trị là "LIVE", "TÀI LIỆU", v.v. (không phải "-" hoặc rỗng)
-          if (cellValue && cellValue !== "-" && cellValue !== "") {
-            // Tạo URL giả định dựa trên loại cột và nội dung bài học
-            let url = "";
-            const lessonName = row[2] || ""; // Cột "TÊN BÀI" thường ở vị trí 2
-            const lessonDate = row[1] || ""; // Cột "NGÀY HỌC" thường ở vị trí 1
+    // Trích xuất URL từ nội dung cell (nếu có)
+    if (Array.isArray(values) && values.length > rowIndex + 1) {
+      const row = values[rowIndex + 1];
+      if (row && row.length > cellIndex) {
+        const cellValue = row[cellIndex];
+        
+        // Nếu có nội dung, thử trích xuất URL hoặc YouTube ID
+        if (cellValue) {
+          // Kiểm tra nếu là cột CHƯƠNG và có thể là ID video
+          const columnName = header?.[cellIndex];
+          if (columnName === "CHƯƠNG") {
+            console.log(`Kiểm tra cell [${rowIndex},${cellIndex}] (${columnName}): "${cellValue}"`);
             
-            // Tạo URL dựa trên loại cột
-            if (columnName === "LIVE") {
-              url = `https://example.com/live/${encodeURIComponent(lessonName)}?date=${encodeURIComponent(lessonDate)}`;
-            } else if (columnName === "TÀI LIỆU") {
-              url = `https://example.com/document/${encodeURIComponent(lessonName)}?date=${encodeURIComponent(lessonDate)}`;
-            } else if (columnName === "BTVN") {
-              url = `https://example.com/homework/${encodeURIComponent(lessonName)}?date=${encodeURIComponent(lessonDate)}`;
-            } else if (columnName === "TEST") {
-              url = `https://example.com/test/${encodeURIComponent(lessonName)}?date=${encodeURIComponent(lessonDate)}`;
-            } else if (columnName === "CHỮA TEST") {
-              url = `https://example.com/test-solution/${encodeURIComponent(lessonName)}?date=${encodeURIComponent(lessonDate)}`;
-            } else if (columnName === "BÀI GIẢNG") {
-              url = `https://example.com/lecture/${encodeURIComponent(lessonName)}?date=${encodeURIComponent(lessonDate)}`;
-            } else if (columnName === "Bản viết tay") {
-              url = `https://example.com/notes/${encodeURIComponent(lessonName)}?date=${encodeURIComponent(lessonDate)}`;
+            // Nếu là số và có độ dài 11 ký tự (có thể là YouTube ID)
+            if (typeof cellValue === 'string' && /^\d+$/.test(cellValue) && cellValue.length === 11) {
+              const youtubeUrl = `https://www.youtube.com/watch?v=${cellValue}`;
+              console.log(`Phát hiện có thể là YouTube ID trong CHƯƠNG: ${cellValue} -> ${youtubeUrl}`);
+              return youtubeUrl;
             }
             
-            if (url) {
-              console.log(`Tạo hyperlink giả định cho [${rowIndex},${cellIndex}] (${columnName}):`, url);
-              return url;
+            // Thử trích xuất URL từ nội dung
+            const extractedUrl = extractRealUrl(cellValue);
+            if (extractedUrl) {
+              console.log(`Trích xuất được URL từ cột CHƯƠNG: ${extractedUrl}`);
+              return extractedUrl;
             }
           }
         }
@@ -1092,38 +1152,6 @@ export default function ApiSheetData({
                     {apiSheetData.sheets[activeApiSheet].name || apiSheetData.sheets[activeApiSheet].detail?.name || `Sheet ${activeApiSheet + 1}`}
                   </h3>
                   <div className="flex space-x-2">
-                    <button
-                      onClick={() => handleProcessSheet()}
-                      disabled={processingSheet}
-                      className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {processingSheet ? (
-                        <>
-                          <svg className="animate-spin h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                          Đang xử lý...
-                        </>
-                      ) : (
-                        <>
-                          <svg className="h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
-                                </svg>
-                          Cập nhật vào DB
-                        </>
-                      )}
-                    </button>
-                    <button
-                      onClick={() => handleFixHyperlinks()}
-                      disabled={processingSheet}
-                      className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-yellow-600 hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <svg className="h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                      </svg>
-                      Sửa lỗi Hyperlink
-                    </button>
                     <button 
                       onClick={() => fetchSheetDetail(apiSheetData.sheets[activeApiSheet]._id)}
                       className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
