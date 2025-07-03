@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ArrowPathIcon } from '@heroicons/react/24/outline';
 import YouTubeModal from './YouTubeModal';
+import YouTubePlaylistModal from './YouTubePlaylistModal';
 import PDFModal from './PDFModal';
 
 export default function ApiSheetData({ 
@@ -13,6 +14,8 @@ export default function ApiSheetData({
   fetchSheetDetail
 }) {
   const [selectedVideo, setSelectedVideo] = useState(null);
+  const [selectedPlaylist, setSelectedPlaylist] = useState(null);
+  const [selectedPlaylistVideo, setSelectedPlaylistVideo] = useState(null);
   const [selectedPDF, setSelectedPDF] = useState(null);
   const [pdfTitle, setPdfTitle] = useState('');
   const [loadingLinks, setLoadingLinks] = useState({});
@@ -148,10 +151,52 @@ export default function ApiSheetData({
     return videoId;
   };
 
+  const isYoutubePlaylist = (url) => {
+    if (!url) return false;
+    
+    // Kiểm tra các định dạng URL playlist YouTube
+    return url.includes('youtube.com/playlist') || 
+           url.includes('youtube.com/watch') && url.includes('list=');
+  };
+
+  const getYoutubePlaylistId = (url) => {
+    if (!url) return null;
+    
+    console.log('Extracting playlist ID from URL:', url);
+    
+    // Xử lý các định dạng URL playlist YouTube khác nhau
+    let playlistId = null;
+    
+    // Format: youtube.com/playlist?list=PLAYLIST_ID
+    // hoặc: youtube.com/watch?v=VIDEO_ID&list=PLAYLIST_ID
+    const playlistMatch = url.match(/[&?]list=([^&]+)/);
+    
+    if (playlistMatch) {
+      playlistId = playlistMatch[1];
+      console.log('Found playlist ID:', playlistId);
+    }
+    
+    return playlistId;
+  };
+
   const handleYoutubeClick = (e, url) => {
     e.preventDefault();
     console.log('Xử lý YouTube click:', url);
     
+    // Kiểm tra nếu là playlist
+    if (isYoutubePlaylist(url)) {
+      const playlistId = getYoutubePlaylistId(url);
+      const videoId = getYoutubeVideoId(url);
+      console.log('Detected playlist:', playlistId, 'with video:', videoId);
+      
+      if (playlistId) {
+        setSelectedPlaylist(playlistId);
+        setSelectedPlaylistVideo(videoId); // Có thể null nếu không có video cụ thể
+        return;
+      }
+    }
+    
+    // Xử lý video đơn lẻ như cũ
     const videoId = getYoutubeVideoId(url);
     console.log('Extracted YouTube video ID:', videoId);
     
@@ -160,7 +205,6 @@ export default function ApiSheetData({
       setSelectedVideo(videoId);
       console.log('Set selectedVideo state to:', videoId);
     } else {
-      // Nếu không lấy được video ID, mở link trong tab mới
       console.log('Không tìm thấy video ID, mở URL trong tab mới');
       window.open(url, '_blank');
     }
@@ -1170,22 +1214,29 @@ export default function ApiSheetData({
                 {/* Modals */}
                 {selectedVideo && (
                   <YouTubeModal
+                    isOpen={true}
                     videoId={selectedVideo}
+                    onClose={() => setSelectedVideo(null)}
+                  />
+                )}
+                {selectedPlaylist && (
+                  <YouTubePlaylistModal
+                    isOpen={true}
+                    playlistId={selectedPlaylist}
+                    videoId={selectedPlaylistVideo}
                     onClose={() => {
-                      console.log('Đóng modal YouTube, selectedVideo trước khi đóng:', selectedVideo);
-                      setSelectedVideo(null);
-                      console.log('selectedVideo đã được set về null');
+                      setSelectedPlaylist(null);
+                      setSelectedPlaylistVideo(null);
                     }}
+                    title="Danh sách phát YouTube"
                   />
                 )}
                 {selectedPDF && (
                   <PDFModal
+                    isOpen={true}
                     url={selectedPDF}
                     title={pdfTitle}
-                    onClose={() => {
-                      setSelectedPDF(null);
-                      setPdfTitle('');
-                    }}
+                    onClose={() => setSelectedPDF(null)}
                   />
                 )}
               </>
