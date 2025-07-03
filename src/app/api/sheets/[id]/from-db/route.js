@@ -166,46 +166,11 @@ export async function GET(request, { params }) {
       );
     }
     
-    // Find processed content
+    // Lấy dữ liệu từ database
     const sheetContent = await SheetContent.findOne({ sheetId }).lean();
     
-    // If no content in database, try to process it first
+    // Nếu không có dữ liệu, kiểm tra fallbackToApi
     if (!sheetContent) {
-      try {
-        // Process the sheet data
-        const result = await processSheetToDatabase(sheetId);
-        
-        if (result.success) {
-          // Get the newly processed content
-          const newSheetContent = await SheetContent.findOne({ sheetId }).lean();
-          
-          if (newSheetContent) {
-            // Format and return the newly processed data
-            const formattedData = formatSheetDataFromDb(newSheetContent);
-            
-            // Add sheet name from Sheet model if available
-            if (sheet && sheet.name && !formattedData.name) {
-              formattedData.name = sheet.name;
-            }
-            
-            return NextResponse.json({
-              success: true,
-              source: 'database',
-              sheet: formattedData,
-              pagination: {
-                page: 1,
-                limit,
-                total: newSheetContent.rows?.length || 0,
-                pages: Math.ceil((newSheetContent.rows?.length || 0) / limit)
-              }
-            });
-          }
-        }
-      } catch (error) {
-        console.error('Error processing sheet data:', error);
-      }
-      
-      // If processing failed or no data was found
       if (fallbackToApi) {
         return NextResponse.json({
           success: true,
@@ -221,10 +186,10 @@ export async function GET(request, { params }) {
       );
     }
     
-    // Format data using helper function
+    // Format dữ liệu và trả về
     const formattedData = formatSheetDataFromDb(sheetContent);
     
-    // Add sheet name from Sheet model if available
+    // Thêm tên sheet từ Sheet model nếu có
     if (sheet && sheet.name && !formattedData.name) {
       formattedData.name = sheet.name;
     }
