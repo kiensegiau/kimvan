@@ -44,12 +44,30 @@ export const firebaseAdminConfig = {
     (isDevelopment ? process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL : undefined),
 };
 
+// Tự động phát hiện nếu đang sử dụng HTTPS
+const isHttpsEnabled = () => {
+  // Trong môi trường phát triển, không yêu cầu secure cookie
+  if (isDevelopment) return false;
+  
+  // Kiểm tra nếu biến môi trường chỉ định rõ ràng
+  if (process.env.HTTPS_ENABLED === 'true') return true;
+  if (process.env.HTTPS_ENABLED === 'false') return false;
+  
+  // Kiểm tra URL cơ sở nếu có
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || '';
+  if (baseUrl.startsWith('https://')) return true;
+  
+  // Mặc định để an toàn, chỉ bật secure trong môi trường production khi không thể xác định
+  return false;
+};
+
 // Cấu hình Cookie
 export const cookieConfig = {
   authCookieName: 'auth-token',
   defaultMaxAge: 60 * 60 * 24 * 30, // 30 ngày (thay vì 7 ngày)
   extendedMaxAge: 60 * 60 * 24 * 180, // 180 ngày (thay vì 90 ngày)
-  secure: process.env.NODE_ENV === 'production',
+  // Tự động phát hiện xem có đang sử dụng HTTPS hay không
+  secure: isHttpsEnabled(),
   httpOnly: true,
   sameSite: 'lax'
 };

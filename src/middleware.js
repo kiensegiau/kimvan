@@ -58,7 +58,8 @@ const NO_DB_API_PATHS = [
   '/api/drive/download',
   '/api/drive/download-direct',
   '/api/drive/refresh-tokens',
-  '/api/test-browser'
+  '/api/test-browser',
+  '/api/users/me'
 ];
 
 // Kiểm tra xem đường dẫn có cần kết nối DB không
@@ -91,6 +92,21 @@ export async function middleware(request) {
   securityHeaders.forEach(header => {
     response.headers.set(header.key, header.value);
   });
+  
+  // Phát hiện giao thức HTTPS
+  const protocol = request.headers.get('x-forwarded-proto') || 
+                   (request.nextUrl.protocol === 'https:' ? 'https' : 'http');
+  const isHttps = protocol === 'https';
+  
+  // Log thông tin giao thức để debug
+  if (pathname === '/') {
+    console.log('🔒 Protocol detection:', { 
+      protocol, 
+      isHttps, 
+      nextUrlProtocol: request.nextUrl.protocol,
+      'x-forwarded-proto': request.headers.get('x-forwarded-proto')
+    });
+  }
 
   // Loại trừ các API xác thực khỏi middleware để tránh lặp
   if (
@@ -98,7 +114,8 @@ export async function middleware(request) {
     pathname.startsWith(TOKEN_REFRESH_API) ||
     pathname.startsWith(USER_ROLE_API) ||
     pathname.startsWith('/api/auth/logout') ||
-    pathname.startsWith('/api/auth/admin/check-permission')
+    pathname.startsWith('/api/auth/admin/check-permission') ||
+    pathname.startsWith('/api/users/me') // Thêm đường dẫn users/me vào danh sách loại trừ
   ) {
     return response;
   }
@@ -155,8 +172,11 @@ export async function middleware(request) {
   // Xác thực token với server trước khi cho phép truy cập
   try {
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    // Đảm bảo baseUrl kết thúc đúng cách
+    const normalizedBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+    
     // Gọi API xác thực token (dùng URL đầy đủ)
-    const verifyResponse = await fetch(`${baseUrl}${TOKEN_VERIFY_API}`, {
+    const verifyResponse = await fetch(`${normalizedBaseUrl}${TOKEN_VERIFY_API}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -169,7 +189,7 @@ export async function middleware(request) {
 
     if (!verifyResponse.ok) {
       // Thử làm mới token (dùng URL đầy đủ)
-      const refreshResponse = await fetch(`${baseUrl}${TOKEN_REFRESH_API}`, {
+      const refreshResponse = await fetch(`${normalizedBaseUrl}${TOKEN_REFRESH_API}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -226,7 +246,7 @@ export async function middleware(request) {
         path: '/',
         maxAge: maxAge,
         httpOnly: true,
-        secure: cookieConfig.secure,
+        secure: isHttps,
         sameSite: cookieConfig.sameSite,
       });
       
@@ -234,7 +254,7 @@ export async function middleware(request) {
       token = refreshData.token;
       
       // Gọi lại API xác thực với token mới (dùng URL đầy đủ)
-      const reVerifyResponse = await fetch(`${baseUrl}${TOKEN_VERIFY_API}`, {
+      const reVerifyResponse = await fetch(`${normalizedBaseUrl}${TOKEN_VERIFY_API}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -279,7 +299,7 @@ export async function middleware(request) {
       // Lấy role từ MongoDB thông qua API (dùng URL đầy đủ)
       userRole = user.role || 'user';
       try {
-        const roleResponse = await fetch(`${baseUrl}${USER_ROLE_API}`, {
+        const roleResponse = await fetch(`${normalizedBaseUrl}${USER_ROLE_API}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -310,7 +330,7 @@ export async function middleware(request) {
       if (timeLeft < 30 * 60 * 1000) {
         try {
           // Gọi API làm mới token (dùng URL đầy đủ)
-          const refreshResponse = await fetch(`${baseUrl}${TOKEN_REFRESH_API}`, {
+          const refreshResponse = await fetch(`${normalizedBaseUrl}${TOKEN_REFRESH_API}`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
@@ -334,7 +354,7 @@ export async function middleware(request) {
                 path: '/',
                 maxAge: maxAge,
                 httpOnly: true,
-                secure: cookieConfig.secure,
+                secure: isHttps,
                 sameSite: cookieConfig.sameSite,
               });
             }
@@ -377,7 +397,7 @@ export async function middleware(request) {
       // Lấy role từ MongoDB thông qua API (dùng URL đầy đủ)
       userRole = user.role || 'user';
       try {
-        const roleResponse = await fetch(`${baseUrl}${USER_ROLE_API}`, {
+        const roleResponse = await fetch(`${normalizedBaseUrl}${USER_ROLE_API}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -408,7 +428,7 @@ export async function middleware(request) {
       if (timeLeft < 30 * 60 * 1000) {
         try {
           // Gọi API làm mới token (dùng URL đầy đủ)
-          const refreshResponse = await fetch(`${baseUrl}${TOKEN_REFRESH_API}`, {
+          const refreshResponse = await fetch(`${normalizedBaseUrl}${TOKEN_REFRESH_API}`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
@@ -432,7 +452,7 @@ export async function middleware(request) {
                 path: '/',
                 maxAge: maxAge,
                 httpOnly: true,
-                secure: cookieConfig.secure,
+                secure: isHttps,
                 sameSite: cookieConfig.sameSite,
               });
             }
@@ -469,7 +489,7 @@ export async function middleware(request) {
       // Thêm cookie admin_access để đánh dấu quyền admin
       response.cookies.set('admin_access', 'true', {
         httpOnly: true,
-        secure: cookieConfig.secure,
+        secure: isHttps,
         sameSite: cookieConfig.sameSite,
         maxAge: 60 * 60 * 2, // 2 giờ
         path: '/',
@@ -494,7 +514,7 @@ export async function middleware(request) {
       // Thêm cookie ctv_access để đánh dấu quyền công tác viên
       response.cookies.set('ctv_access', 'true', {
         httpOnly: true,
-        secure: cookieConfig.secure,
+        secure: isHttps,
         sameSite: cookieConfig.sameSite,
         maxAge: 60 * 60 * 2, // 2 giờ
         path: '/',
@@ -518,7 +538,7 @@ export async function middleware(request) {
           if (userRole === 'admin') {
             response.cookies.set('admin_access', 'true', {
               httpOnly: true,
-              secure: cookieConfig.secure,
+              secure: isHttps,
               sameSite: cookieConfig.sameSite,
               maxAge: 60 * 60 * 2, // 2 giờ
               path: '/',
@@ -527,7 +547,7 @@ export async function middleware(request) {
             // Đặt cookie ctv_access và thêm email CTV vào cookie để API có thể sử dụng
             response.cookies.set('ctv_access', 'true', {
               httpOnly: true,
-              secure: cookieConfig.secure,
+              secure: isHttps,
               sameSite: cookieConfig.sameSite,
               maxAge: 60 * 60 * 2, // 2 giờ
               path: '/',
@@ -536,7 +556,7 @@ export async function middleware(request) {
             // Thêm email của CTV vào cookie để API có thể lấy
             response.cookies.set('ctv_email', user.email, {
               httpOnly: true,
-              secure: cookieConfig.secure,
+              secure: isHttps,
               sameSite: cookieConfig.sameSite,
               maxAge: 60 * 60 * 2, // 2 giờ
               path: '/',
@@ -564,7 +584,7 @@ export async function middleware(request) {
       // Cập nhật cookie admin_access
       response.cookies.set('admin_access', 'true', {
         httpOnly: true,
-        secure: cookieConfig.secure,
+        secure: isHttps,
         sameSite: cookieConfig.sameSite,
         maxAge: 60 * 60 * 2, // 2 giờ
         path: '/',
@@ -591,7 +611,7 @@ export async function middleware(request) {
       // Cập nhật cookie ctv_access
       response.cookies.set('ctv_access', 'true', {
         httpOnly: true,
-        secure: cookieConfig.secure,
+        secure: isHttps,
         sameSite: cookieConfig.sameSite,
         maxAge: 60 * 60 * 2, // 2 giờ
         path: '/',
