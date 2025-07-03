@@ -49,7 +49,7 @@ const isHttpsEnabled = () => {
   // Trong môi trường phát triển, không yêu cầu secure cookie
   if (isDevelopment) return false;
   
-  // Kiểm tra nếu biến môi trường chỉ định rõ ràng
+  // Ưu tiên biến môi trường được cấu hình rõ ràng
   if (process.env.HTTPS_ENABLED === 'true') return true;
   if (process.env.HTTPS_ENABLED === 'false') return false;
   
@@ -57,6 +57,9 @@ const isHttpsEnabled = () => {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || '';
   if (baseUrl.startsWith('https://')) return true;
   if (baseUrl.startsWith('http://')) return false;
+  
+  // Nếu sử dụng VPS thông thường với HTTP, thêm biến môi trường VPS_HTTP=true
+  if (process.env.VPS_HTTP === 'true') return false;
   
   // Auto-detect based on environment variables that might be set by hosting providers
   if (process.env.NEXT_PUBLIC_VERCEL_URL) return true;
@@ -72,8 +75,8 @@ export const cookieConfig = {
   authCookieName: 'auth-token',
   defaultMaxAge: 60 * 60 * 24 * 30, // 30 ngày (thay vì 7 ngày)
   extendedMaxAge: 60 * 60 * 24 * 180, // 180 ngày (thay vì 90 ngày)
-  // Tự động phát hiện xem có đang sử dụng HTTPS hay không
-  secure: isHttpsEnabled(),
+  // Đặt cứng secure là false khi chạy trên môi trường HTTP
+  secure: false, // isHttpsEnabled(),
   httpOnly: true,
   sameSite: 'lax'
 };
