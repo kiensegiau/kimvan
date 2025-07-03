@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { use } from 'react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 // Import hooks
 import { useCourseData } from './hooks/useCourseData';
@@ -20,12 +20,13 @@ export default function CourseDetailPage({ params }) {
   const router = useRouter();
   const resolvedParams = use(params);
   const id = resolvedParams.id;
+  const [permissionCheckedFinal, setPermissionCheckedFinal] = useState(false);
   
   // Lấy thông tin người dùng trước
   const { userData, loading: userLoading } = useUserData();
 
   // Đảm bảo useEnrolledCourses nhận userData để tránh gọi API lặp lại
-  useEnrolledCourses(userData);
+  const { isEnrolledInCourse } = useEnrolledCourses(userData);
 
   // Sử dụng các custom hooks và truyền userData vào useCourseData
   const { 
@@ -63,18 +64,27 @@ export default function CourseDetailPage({ params }) {
   };
 
   // Kiểm tra quyền đặc biệt và bỏ qua kiểm tra quyền thông thường nếu có quyền xem tất cả
-  const hasViewAllPermission = userData?.canViewAllCourses === true;
+  const hasViewAllPermission = userData?.canViewAllCourses === true || 
+    (userData?.permissions && Array.isArray(userData?.permissions) && userData?.permissions.includes('view_all_courses')) ||
+    userData?.role === 'admin';
   const shouldBypassPermissionCheck = hasViewAllPermission;
 
   // Kiểm tra quyền truy cập với xử lý đặc biệt cho admin và canViewAllCourses
   const hasAccessDenied = !shouldBypassPermissionCheck && permissionChecked && error && error.includes("không có quyền truy cập");
 
-  // Tải danh sách sheets khi component mount và khi course đã tải xong
+  // Cập nhật trạng thái kiểm tra quyền cuối cùng khi có đủ thông tin
   useEffect(() => {
-    if (course && !loadingApiSheet && !hasAccessDenied) {
+    if (permissionChecked && !userLoading) {
+      setPermissionCheckedFinal(true);
+    }
+  }, [permissionChecked, userLoading]);
+
+  // Tải danh sách sheets khi component mount và khi course đã tải xong và không bị denied
+  useEffect(() => {
+    if (course && !loadingApiSheet && !hasAccessDenied && permissionCheckedFinal) {
       fetchApiSheetData();
     }
-  }, [course, hasAccessDenied]);
+  }, [course, hasAccessDenied, permissionCheckedFinal]);
 
   // Hiển thị trạng thái loading khi đang tải dữ liệu người dùng hoặc khóa học
   if (userLoading || courseLoading) {
@@ -82,11 +92,9 @@ export default function CourseDetailPage({ params }) {
   }
 
   // Chỉ hiển thị lỗi quyền truy cập khi đã hoàn thành kiểm tra
-  if (hasAccessDenied && !userLoading) {
+  if (hasAccessDenied && permissionCheckedFinal) {
     return (
-      <>
-        <PermissionDenied message={error} redirectUrl="/courses" data-access-denied="true" />
-      </>
+      <PermissionDenied message={error} redirectUrl="/courses" data-access-denied="true" />
     );
   }
 

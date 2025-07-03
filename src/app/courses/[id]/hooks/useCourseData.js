@@ -76,10 +76,8 @@ export function useCourseData(id, userData = null, userLoading = false) {
     
     // Nếu đang tải thông tin người dùng, chưa thể xác định quyền truy cập
     if (userLoading) {
-      return true; // Tạm thời cho phép để tránh hiển thị lỗi "không có quyền truy cập" khi chưa tải xong
+      return null; // Trả về null để biết rằng việc kiểm tra quyền chưa hoàn tất
     }
-    
-    // Không còn kiểm tra quyền admin nữa (theo yêu cầu)
     
     // Kiểm tra thuộc tính canViewAllCourses
     if (userData && userData.canViewAllCourses === true) {
@@ -89,6 +87,11 @@ export function useCourseData(id, userData = null, userLoading = false) {
     // Kiểm tra quyền từ mảng permissions
     if (userData && userData.permissions && Array.isArray(userData.permissions) && 
         userData.permissions.includes('view_all_courses')) {
+      return true;
+    }
+    
+    // Kiểm tra role admin
+    if (userData && userData.role === 'admin') {
       return true;
     }
     
@@ -387,7 +390,8 @@ export function useCourseData(id, userData = null, userLoading = false) {
           const hasPermission = checkPermission(cachedData);
           setPermissionChecked(true);
           
-          if (!hasPermission) {
+          // Chỉ set lỗi nếu hasPermission là false (không phải null)
+          if (hasPermission === false) {
             setError('Bạn không có quyền truy cập khóa học này');
             return;
           }
@@ -416,10 +420,11 @@ export function useCourseData(id, userData = null, userLoading = false) {
       const courseData = result.course;
       
       // Kiểm tra quyền truy cập
-      const hasPermission = !userLoading && checkPermission(courseData);
+      const hasPermission = checkPermission(courseData);
       setPermissionChecked(true);
       
-      if (!userLoading && !hasPermission) {
+      // Chỉ set lỗi và ngăn không tải dữ liệu nếu hasPermission là false (không phải null)
+      if (hasPermission === false) {
         setError('Bạn không có quyền truy cập khóa học này');
         setLoading(false);
         return;
