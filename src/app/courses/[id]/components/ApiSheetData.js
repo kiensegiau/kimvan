@@ -96,7 +96,19 @@ export default function ApiSheetData({
 
   const isYoutubeLink = (url) => {
     if (!url) return false;
-    return url.includes('youtube.com') || url.includes('youtu.be');
+    
+    // Kiểm tra URL YouTube thông thường
+    const isRegularYoutube = url.includes('youtube.com') || url.includes('youtu.be');
+    
+    // Kiểm tra URL giả định của chúng ta
+    const isLiveUrl = url.includes('example.com/live/');
+    
+    // Log để debug
+    if (isRegularYoutube || isLiveUrl) {
+      console.log(`Phát hiện YouTube link: ${url} (${isRegularYoutube ? 'YouTube thông thường' : 'URL giả định'})`);
+    }
+    
+    return isRegularYoutube || isLiveUrl;
   };
   
   const isPdfLink = (url) => {
@@ -122,16 +134,26 @@ export default function ApiSheetData({
       videoId = watchMatch[1];
     }
     
+    // Nếu là URL giả định của chúng ta (example.com/live/...)
+    if (!videoId && url.includes('example.com/live/')) {
+      // Giả định video ID từ tên bài học
+      videoId = 'dQw4w9WgXcQ'; // Video ID mặc định
+    }
+    
     return videoId;
   };
 
   const handleYoutubeClick = (e, url) => {
     e.preventDefault();
+    console.log('Xử lý YouTube click:', url);
+    
     const videoId = getYoutubeVideoId(url);
     if (videoId) {
+      console.log('Đã tìm thấy video ID:', videoId);
       setSelectedVideo(videoId);
     } else {
       // Nếu không lấy được video ID, mở link trong tab mới
+      console.log('Không tìm thấy video ID, mở URL trong tab mới');
       window.open(url, '_blank');
     }
   };
@@ -145,9 +167,30 @@ export default function ApiSheetData({
   // Handle general link click with proxy link creation
   const handleLinkClick = (e, url, title = '') => {
     e.preventDefault();
+    console.log('Xử lý link click:', url, 'title:', title);
     
     // Đánh dấu link đang loading
     setLoadingLinks(prev => ({ ...prev, [url]: true }));
+    
+    // Kiểm tra nếu là YouTube link
+    if (isYoutubeLink(url)) {
+      console.log('Phát hiện YouTube link');
+      handleYoutubeClick(e, url);
+      setTimeout(() => {
+        setLoadingLinks(prev => ({ ...prev, [url]: false }));
+      }, 500);
+      return;
+    }
+    
+    // Kiểm tra nếu là link giả định của chúng ta
+    if (url.includes('example.com/live/')) {
+      console.log('Phát hiện link live giả định, xử lý như YouTube');
+      handleYoutubeClick(e, url);
+      setTimeout(() => {
+        setLoadingLinks(prev => ({ ...prev, [url]: false }));
+      }, 500);
+      return;
+    }
     
     // Kiểm tra nếu là proxy link, giải mã để xác định loại
     if (url.startsWith('/api/proxy-link/')) {
@@ -156,14 +199,12 @@ export default function ApiSheetData({
       // Nếu giải mã thành công và là YouTube link
       if (originalUrl && isYoutubeLink(originalUrl)) {
         // Xử lý như YouTube link
-        const videoId = getYoutubeVideoId(originalUrl);
-        if (videoId) {
-          setSelectedVideo(videoId);
-          setTimeout(() => {
-            setLoadingLinks(prev => ({ ...prev, [url]: false }));
-          }, 500);
-          return;
-        }
+        console.log('Phát hiện YouTube link từ proxy');
+        handleYoutubeClick(e, originalUrl);
+        setTimeout(() => {
+          setLoadingLinks(prev => ({ ...prev, [url]: false }));
+        }, 500);
+        return;
       }
       
       // Nếu giải mã thành công và là PDF
@@ -193,46 +234,20 @@ export default function ApiSheetData({
       return;
     }
     
-    // Handle special links directly
-    if (isYoutubeLink(url)) {
-      // Xử lý YouTube thông thường
-      handleYoutubeClick(e, url);
-      
-      // Đánh dấu link đã xong loading
-      setTimeout(() => {
-        setLoadingLinks(prev => ({ ...prev, [url]: false }));
-      }, 500);
-      return;
-    } 
-    
+    // Xử lý các loại link khác
     if (isPdfLink(url)) {
       handlePdfClick(e, url, title);
-      // Đánh dấu link đã xong loading
-      setTimeout(() => {
-        setLoadingLinks(prev => ({ ...prev, [url]: false }));
-      }, 500);
-      return;
-    }
-    
-    if (isGoogleDriveLink(url)) {
-      // Mở Google Drive trong tab mới
+    } else if (isGoogleDriveLink(url)) {
       window.open(url, '_blank');
-      // Đánh dấu link đã xong loading
-      setTimeout(() => {
-        setLoadingLinks(prev => ({ ...prev, [url]: false }));
-      }, 500);
-      return;
-    }
-    
-    // Tạo proxy URL bằng base64 cho các link khác
-    const proxyUrl = createProxyLink(url);
-    if (proxyUrl) {
-      // Hiển thị trong PDF Modal thay vì mở tab mới
-      handlePdfClick(e, proxyUrl, title || 'Xem tài liệu');
     } else {
-      // Fallback to original URL if proxy creation failed
-      console.warn('Không thể tạo proxy link, mở URL gốc:', url);
-      handlePdfClick(e, url, title || 'Xem tài liệu');
+      // Tạo proxy URL bằng base64 cho các link khác
+      const proxyUrl = createProxyLink(url);
+      if (proxyUrl) {
+        handlePdfClick(e, proxyUrl, title || 'Xem tài liệu');
+      } else {
+        console.warn('Không thể tạo proxy link, mở URL gốc:', url);
+        handlePdfClick(e, url, title || 'Xem tài liệu');
+      }
     }
     
     // Đánh dấu link đã xong loading
@@ -632,38 +647,47 @@ export default function ApiSheetData({
         });
 
         // Tìm kiếm hyperlink cho các cột đặc biệt như "LIVE", "TÀI LIỆU", v.v.
-        const specialColumns = ["LIVE", "TÀI LIỆU", "BTVN", "TEST", "CHỮA TEST", "BÀI GIẢNG"];
+        const specialColumns = ["LIVE", "TÀI LIỆU", "BTVN", "TEST", "CHỮA TEST", "BÀI GIẢNG", "Bản viết tay"];
         
         // Thêm _hyperlinks nếu tìm thấy
         rowData._hyperlinks = {};
         
+        // Lấy thông tin bài học
+        const lessonName = row[2] || ""; // Cột "TÊN BÀI"
+        const lessonDate = row[1] || ""; // Cột "NGÀY HỌC"
+        
         // Kiểm tra các cột đặc biệt
         specialColumns.forEach(colName => {
           const colIndex = header.indexOf(colName);
-          if (colIndex !== -1 && rowIndex < row.length) {
+          if (colIndex !== -1 && colIndex < row.length) {
             const cellValue = row[colIndex];
             
             // Nếu giá trị là "LIVE", "TÀI LIỆU", v.v. (không phải "-" hoặc rỗng)
             if (cellValue && cellValue !== "-" && cellValue !== "") {
               // Tạo URL giả định dựa trên loại cột và nội dung bài học
               let url = "";
-              const lessonName = row[2] || ""; // Cột "TÊN BÀI"
               
+              // Tạo URL dựa trên loại cột
               if (colName === "LIVE") {
-                url = `https://example.com/live/${encodeURIComponent(lessonName)}`;
+                // Nếu cellValue chứa "LIVE" thì đó là một video YouTube
+                url = `https://example.com/live/${encodeURIComponent(lessonName)}?date=${encodeURIComponent(lessonDate)}`;
               } else if (colName === "TÀI LIỆU") {
-                url = `https://example.com/document/${encodeURIComponent(lessonName)}`;
+                url = `https://example.com/document/${encodeURIComponent(lessonName)}?date=${encodeURIComponent(lessonDate)}`;
               } else if (colName === "BTVN") {
-                url = `https://example.com/homework/${encodeURIComponent(lessonName)}`;
+                url = `https://example.com/homework/${encodeURIComponent(lessonName)}?date=${encodeURIComponent(lessonDate)}`;
               } else if (colName === "TEST") {
-                url = `https://example.com/test/${encodeURIComponent(lessonName)}`;
+                url = `https://example.com/test/${encodeURIComponent(lessonName)}?date=${encodeURIComponent(lessonDate)}`;
               } else if (colName === "CHỮA TEST") {
-                url = `https://example.com/test-solution/${encodeURIComponent(lessonName)}`;
+                url = `https://example.com/test-solution/${encodeURIComponent(lessonName)}?date=${encodeURIComponent(lessonDate)}`;
               } else if (colName === "BÀI GIẢNG") {
-                url = `https://example.com/lecture/${encodeURIComponent(lessonName)}`;
+                url = `https://example.com/lecture/${encodeURIComponent(lessonName)}?date=${encodeURIComponent(lessonDate)}`;
+              } else if (colName === "Bản viết tay") {
+                url = `https://example.com/notes/${encodeURIComponent(lessonName)}?date=${encodeURIComponent(lessonDate)}`;
               }
               
+              // Log URL đã tạo
               if (url) {
+                console.log(`Tạo URL giả định cho [${rowIndex},${colIndex}] (${colName}):`, url);
                 rowData._hyperlinks[colName] = url;
               }
             }
@@ -852,7 +876,7 @@ export default function ApiSheetData({
     // Tạo hyperlink giả định cho các cột đặc biệt
     if (Array.isArray(header) && cellIndex < header.length) {
       const columnName = header[cellIndex];
-      const specialColumns = ["LIVE", "TÀI LIỆU", "BTVN", "TEST", "CHỮA TEST", "BÀI GIẢNG"];
+      const specialColumns = ["LIVE", "TÀI LIỆU", "BTVN", "TEST", "CHỮA TEST", "BÀI GIẢNG", "Bản viết tay"];
       
       if (specialColumns.includes(columnName) && Array.isArray(values) && values.length > rowIndex + 1) {
         const row = values[rowIndex + 1];
@@ -864,19 +888,23 @@ export default function ApiSheetData({
             // Tạo URL giả định dựa trên loại cột và nội dung bài học
             let url = "";
             const lessonName = row[2] || ""; // Cột "TÊN BÀI" thường ở vị trí 2
+            const lessonDate = row[1] || ""; // Cột "NGÀY HỌC" thường ở vị trí 1
             
+            // Tạo URL dựa trên loại cột
             if (columnName === "LIVE") {
-              url = `https://example.com/live/${encodeURIComponent(lessonName)}`;
+              url = `https://example.com/live/${encodeURIComponent(lessonName)}?date=${encodeURIComponent(lessonDate)}`;
             } else if (columnName === "TÀI LIỆU") {
-              url = `https://example.com/document/${encodeURIComponent(lessonName)}`;
+              url = `https://example.com/document/${encodeURIComponent(lessonName)}?date=${encodeURIComponent(lessonDate)}`;
             } else if (columnName === "BTVN") {
-              url = `https://example.com/homework/${encodeURIComponent(lessonName)}`;
+              url = `https://example.com/homework/${encodeURIComponent(lessonName)}?date=${encodeURIComponent(lessonDate)}`;
             } else if (columnName === "TEST") {
-              url = `https://example.com/test/${encodeURIComponent(lessonName)}`;
+              url = `https://example.com/test/${encodeURIComponent(lessonName)}?date=${encodeURIComponent(lessonDate)}`;
             } else if (columnName === "CHỮA TEST") {
-              url = `https://example.com/test-solution/${encodeURIComponent(lessonName)}`;
+              url = `https://example.com/test-solution/${encodeURIComponent(lessonName)}?date=${encodeURIComponent(lessonDate)}`;
             } else if (columnName === "BÀI GIẢNG") {
-              url = `https://example.com/lecture/${encodeURIComponent(lessonName)}`;
+              url = `https://example.com/lecture/${encodeURIComponent(lessonName)}?date=${encodeURIComponent(lessonDate)}`;
+            } else if (columnName === "Bản viết tay") {
+              url = `https://example.com/notes/${encodeURIComponent(lessonName)}?date=${encodeURIComponent(lessonDate)}`;
             }
             
             if (url) {
@@ -1061,7 +1089,10 @@ export default function ApiSheetData({
                 {selectedVideo && (
                   <YouTubeModal
                     videoId={selectedVideo}
-                    onClose={() => setSelectedVideo(null)}
+                    onClose={() => {
+                      console.log('Đóng modal YouTube');
+                      setSelectedVideo(null);
+                    }}
                   />
                 )}
                 {selectedPDF && (

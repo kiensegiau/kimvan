@@ -4,9 +4,14 @@ import { useState, useEffect, useRef } from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { ExclamationTriangleIcon } from '@heroicons/react/24/solid';
 
-const YouTubeModal = ({ isOpen, videoId, onClose }) => {
+const YouTubeModal = ({ isOpen = true, videoId, onClose }) => {
   const modalRef = useRef(null);
   const [loading, setLoading] = useState(true);
+  
+  // Log để debug
+  useEffect(() => {
+    console.log('YouTubeModal rendered with videoId:', videoId);
+  }, [videoId]);
 
   // Xử lý click ngoài modal
   useEffect(() => {
@@ -22,6 +27,23 @@ const YouTubeModal = ({ isOpen, videoId, onClose }) => {
 
     return () => {
       document.removeEventListener('mousedown', handleOutsideClick);
+    };
+  }, [isOpen, onClose]);
+
+  // Xử lý phím ESC để đóng modal
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
     };
   }, [isOpen, onClose]);
 
@@ -178,7 +200,8 @@ const YouTubeModal = ({ isOpen, videoId, onClose }) => {
     `;
   };
 
-  if (!isOpen) return null;
+  // Không hiển thị nếu không có videoId hoặc isOpen là false
+  if (!isOpen || !videoId) return null;
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-90"
