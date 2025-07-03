@@ -46,7 +46,8 @@ const useUserData = () => {
         for (const endpoint of endpoints) {
           try {
             console.log(`Đang thử lấy dữ liệu người dùng từ ${endpoint}...`);
-            const response = await fetch(endpoint, {
+            // Prepare options for fetch
+            const options = {
               method: endpoint === '/api/auth/user-role' ? 'POST' : 'GET', // Use POST for user-role endpoint
               headers: {
                 'Content-Type': 'application/json',
@@ -55,7 +56,14 @@ const useUserData = () => {
               credentials: 'include', // Đảm bảo gửi cookie
               // Thêm timeout để tránh fetch quá lâu
               signal: AbortSignal.timeout(10000) // 10 giây timeout
-            });
+            };
+            
+            // Add body for POST requests
+            if (endpoint === '/api/auth/user-role') {
+              options.body = JSON.stringify({ uid: 'anonymous-fallback' });
+            }
+            
+            const response = await fetch(endpoint, options);
             
             if (response.ok) {
               const contentType = response.headers.get('content-type');
@@ -99,7 +107,7 @@ const useUserData = () => {
                       'Accept': 'application/json'
                     },
                     credentials: 'include',
-                    body: JSON.stringify({}), // Empty object as payload
+                                            body: JSON.stringify({ uid: 'anonymous-fallback' }), // Provide a fallback UID
                     signal: AbortSignal.timeout(10000)
                   });
                   

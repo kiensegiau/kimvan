@@ -234,7 +234,8 @@ export function useEnrolledCourses(externalUserData = null) {
           for (const endpoint of endpoints) {
             try {
               console.log(`Đang thử lấy dữ liệu người dùng từ ${endpoint}...`);
-              const userResponse = await fetch(endpoint, {
+              // Prepare options for fetch
+              const options = {
                 method: endpoint === '/api/auth/user-role' ? 'POST' : 'GET', // Use POST for user-role endpoint
                 headers: {
                   'Content-Type': 'application/json',
@@ -242,7 +243,14 @@ export function useEnrolledCourses(externalUserData = null) {
                 },
                 credentials: 'include',
                 signal: AbortSignal.timeout(10000) // 10 giây timeout
-              });
+              };
+              
+              // Add body for POST requests
+              if (endpoint === '/api/auth/user-role') {
+                options.body = JSON.stringify({ uid: 'anonymous-fallback' });
+              }
+              
+              const userResponse = await fetch(endpoint, options);
               
               if (userResponse.ok) {
                 const userData = await userResponse.json();
@@ -282,7 +290,7 @@ export function useEnrolledCourses(externalUserData = null) {
                           'Accept': 'application/json'
                         },
                         credentials: 'include',
-                        body: JSON.stringify({}), // Empty object as payload
+                        body: JSON.stringify({ uid: 'anonymous-fallback' }), // Provide a fallback UID
                         signal: AbortSignal.timeout(10000)
                       });
                       

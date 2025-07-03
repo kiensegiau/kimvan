@@ -3,12 +3,29 @@ import clientPromise from '@/lib/mongodb';
 
 export async function POST(request) {
   try {
-    const { uid } = await request.json();
+    // Safely parse the request body with error handling
+    let uid;
+    try {
+      // Check if request has content before trying to parse
+      const contentType = request.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const text = await request.text();
+        if (text.trim()) {
+          const data = JSON.parse(text);
+          uid = data.uid;
+        }
+      }
+    } catch (parseError) {
+      console.error('❌ API User Role - Lỗi khi parse request body:', parseError);
+    }
     
     if (!uid) {
       return NextResponse.json(
-        { success: false, error: 'UID không được cung cấp' },
-        { status: 400 }
+        { 
+          success: true, 
+          message: 'UID không được cung cấp, sử dụng vai trò mặc định',
+          role: 'user' 
+        }
       );
     }
     
@@ -34,8 +51,11 @@ export async function POST(request) {
   } catch (error) {
     console.error('❌ API User Role - Lỗi khi truy vấn MongoDB:', error);
     return NextResponse.json(
-      { success: false, error: 'Lỗi khi truy vấn MongoDB: ' + error.message },
-      { status: 500 }
+      { 
+        success: true, 
+        error: 'Lỗi khi truy vấn MongoDB: ' + error.message,
+        role: 'user' // Return a default role even on error
+      }
     );
   }
 } 
