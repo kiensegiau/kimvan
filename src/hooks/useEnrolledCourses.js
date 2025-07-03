@@ -6,7 +6,7 @@ const CACHE_DURATION = 12 * 60 * 60 * 1000; // 12 giờ
 const MAX_CACHE_ITEMS = 5; // Giữ tối đa 5 cache items
 const CACHE_KEY = 'enrolled-courses';
 
-export function useEnrolledCourses() {
+export function useEnrolledCourses(externalUserData = null) {
   const router = useRouter();
   const [enrolledCourses, setEnrolledCourses] = useState([]);
   const [allCourses, setAllCourses] = useState([]);
@@ -217,16 +217,23 @@ export function useEnrolledCourses() {
         return;
       }
 
-      // Lấy thông tin người dùng
-      const userResponse = await fetch('/api/users/me');
-      let currentUserData = null;
+      // Sử dụng userData từ bên ngoài nếu có, thay vì gọi API riêng
+      let currentUserData = externalUserData;
       
-      if (userResponse.ok) {
-        const userData = await userResponse.json();
-        if (userData.success && userData.data) {
-          currentUserData = userData.data;
-          setUserData(currentUserData);
+      // Chỉ gọi API nếu không có userData từ bên ngoài
+      if (!currentUserData) {
+        // Lấy thông tin người dùng
+        const userResponse = await fetch('/api/users/me');
+        
+        if (userResponse.ok) {
+          const userData = await userResponse.json();
+          if (userData.success && userData.user) {
+            currentUserData = userData.user;
+            setUserData(currentUserData);
+          }
         }
+      } else {
+        setUserData(currentUserData);
       }
 
       // Lấy danh sách khóa học đã đăng ký

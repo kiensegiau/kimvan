@@ -8,6 +8,7 @@ import { useEffect } from 'react';
 import { useCourseData } from './hooks/useCourseData';
 import { useApiSheetData } from './hooks/useApiSheetData';
 import useUserData from '@/hooks/useUserData';
+import useEnrolledCourses from '@/hooks/useEnrolledCourses';
 
 // Import components
 import ApiSheetData from './components/ApiSheetData';
@@ -22,6 +23,9 @@ export default function CourseDetailPage({ params }) {
   
   // Lấy thông tin người dùng trước
   const { userData, loading: userLoading } = useUserData();
+
+  // Đảm bảo useEnrolledCourses nhận userData để tránh gọi API lặp lại
+  useEnrolledCourses(userData);
 
   // Sử dụng các custom hooks và truyền userData vào useCourseData
   const { 

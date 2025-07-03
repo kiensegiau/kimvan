@@ -36,7 +36,7 @@ export default function CoursesPage() {
     loading: enrolledLoading,
     error: enrolledError,
     refreshEnrollments
-  } = useEnrolledCourses();
+  } = useEnrolledCourses(userData); // Truyền userData từ useUserData
   
   // Thêm các state mới cho bộ lọc
   const [selectedLevel, setSelectedLevel] = useState('all');
