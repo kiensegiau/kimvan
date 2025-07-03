@@ -36,6 +36,11 @@ export default function ApiSheetData({
     }
   }, []);
   
+  // Track changes to selectedVideo
+  useEffect(() => {
+    console.log('selectedVideo state changed:', selectedVideo);
+  }, [selectedVideo]);
+  
   // Giải mã proxy link để lấy URL gốc
   const decodeProxyLink = useCallback((proxyUrl) => {
     try {
@@ -100,7 +105,10 @@ export default function ApiSheetData({
     if (!url) return false;
     
     // Kiểm tra URL YouTube thông thường
-    const isRegularYoutube = url.includes('youtube.com') || url.includes('youtu.be');
+    const isRegularYoutube = url.includes('youtube.com') || 
+                            url.includes('youtu.be') || 
+                            url.includes('youtube-nocookie.com') ||
+                            url.includes('youtube.googleapis.com');
     
     // Kiểm tra URL giả định của chúng ta
     const isLiveUrl = url.includes('example.com/live/');
@@ -127,19 +135,24 @@ export default function ApiSheetData({
   const getYoutubeVideoId = (url) => {
     if (!url) return null;
     
+    console.log('Extracting video ID from URL:', url);
+    
     // Xử lý các định dạng URL YouTube khác nhau
     let videoId = null;
     
     // Format: https://www.youtube.com/watch?v=VIDEO_ID
-    const watchMatch = url.match(/(?:\?v=|&v=|youtu\.be\/|\/v\/|\/embed\/)([^&\n?#]+)/);
+    const watchMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/|youtube\.com\/e\/|youtube\.com\/watch\?.*v=|youtube\.com\/attribution_link\?.*v%3D|youtube\.com\/attribution_link\?.*v=|youtube-nocookie\.com\/.*v=|youtube\.com\/shorts\/)([^&\n?#\/]+)/);
+    
     if (watchMatch) {
       videoId = watchMatch[1];
+      console.log('Found video ID from regex:', videoId);
     }
     
     // Nếu là URL giả định của chúng ta (example.com/live/...)
     if (!videoId && url.includes('example.com/live/')) {
       // Giả định video ID từ tên bài học
       videoId = 'dQw4w9WgXcQ'; // Video ID mặc định
+      console.log('Using default video ID for example.com/live URL');
     }
     
     return videoId;
@@ -150,9 +163,12 @@ export default function ApiSheetData({
     console.log('Xử lý YouTube click:', url);
     
     const videoId = getYoutubeVideoId(url);
+    console.log('Extracted YouTube video ID:', videoId);
+    
     if (videoId) {
       console.log('Đã tìm thấy video ID:', videoId);
       setSelectedVideo(videoId);
+      console.log('Set selectedVideo state to:', videoId);
     } else {
       // Nếu không lấy được video ID, mở link trong tab mới
       console.log('Không tìm thấy video ID, mở URL trong tab mới');
@@ -176,7 +192,7 @@ export default function ApiSheetData({
     
     // Kiểm tra nếu là YouTube link
     if (isYoutubeLink(url)) {
-      console.log('Phát hiện YouTube link');
+      console.log('Phát hiện YouTube link, xử lý với handleYoutubeClick');
       handleYoutubeClick(e, url);
       setTimeout(() => {
         setLoadingLinks(prev => ({ ...prev, [url]: false }));
@@ -197,11 +213,12 @@ export default function ApiSheetData({
     // Kiểm tra nếu là proxy link, giải mã để xác định loại
     if (url.startsWith('/api/proxy-link/')) {
       const originalUrl = decodeProxyLink(url);
+      console.log('Decoded proxy link:', originalUrl);
       
       // Nếu giải mã thành công và là YouTube link
       if (originalUrl && isYoutubeLink(originalUrl)) {
         // Xử lý như YouTube link
-        console.log('Phát hiện YouTube link từ proxy');
+        console.log('Phát hiện YouTube link từ proxy, xử lý với handleYoutubeClick');
         handleYoutubeClick(e, originalUrl);
         setTimeout(() => {
           setLoadingLinks(prev => ({ ...prev, [url]: false }));
@@ -211,6 +228,7 @@ export default function ApiSheetData({
       
       // Nếu giải mã thành công và là PDF
       if (originalUrl && isPdfLink(originalUrl)) {
+        console.log('Phát hiện PDF link từ proxy');
         handlePdfClick(e, url, title || 'Xem tài liệu PDF');
         setTimeout(() => {
           setLoadingLinks(prev => ({ ...prev, [url]: false }));
@@ -221,6 +239,7 @@ export default function ApiSheetData({
       // Nếu giải mã thành công và là Google Drive
       if (originalUrl && isGoogleDriveLink(originalUrl)) {
         // Mở Google Drive trong tab mới
+        console.log('Phát hiện Google Drive link từ proxy');
         window.open(originalUrl, '_blank');
         setTimeout(() => {
           setLoadingLinks(prev => ({ ...prev, [url]: false }));
@@ -229,6 +248,7 @@ export default function ApiSheetData({
       }
       
       // Nếu không phải YouTube hoặc PDF, hiển thị trong PDF Modal
+      console.log('Link không được nhận dạng, xử lý như tài liệu chung');
       handlePdfClick(e, url, title || 'Xem tài liệu');
       setTimeout(() => {
         setLoadingLinks(prev => ({ ...prev, [url]: false }));
@@ -238,13 +258,16 @@ export default function ApiSheetData({
     
     // Xử lý các loại link khác
     if (isPdfLink(url)) {
+      console.log('Phát hiện PDF link');
       handlePdfClick(e, url, title);
     } else if (isGoogleDriveLink(url)) {
+      console.log('Phát hiện Google Drive link');
       window.open(url, '_blank');
     } else {
       // Tạo proxy URL bằng base64 cho các link khác
       const proxyUrl = createProxyLink(url);
       if (proxyUrl) {
+        console.log('Tạo proxy link thành công:', proxyUrl);
         handlePdfClick(e, proxyUrl, title || 'Xem tài liệu');
       } else {
         console.warn('Không thể tạo proxy link, mở URL gốc:', url);
@@ -308,6 +331,34 @@ export default function ApiSheetData({
       return <span>{cellContent || ''}</span>;
     }
 
+    // Check if it's a YouTube link first
+    if (isYoutubeLink(hyperlink)) {
+      console.log('renderHyperlinkCell: Detected YouTube link', hyperlink);
+      // Xác định loading state
+      const isLoading = loadingLinks[hyperlink];
+      
+      return (
+        <button
+          onClick={(e) => handleYoutubeClick(e, hyperlink)}
+          className={`text-red-600 hover:text-red-800 hover:underline focus:outline-none ${
+            isLoading ? 'opacity-50 cursor-wait' : ''
+          }`}
+          disabled={isLoading}
+        >
+          <span className="flex items-center space-x-1">
+            {isLoading ? (
+              <ArrowPathIcon className="h-4 w-4 animate-spin" />
+            ) : (
+              <svg className="h-4 w-4 mr-1 inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/>
+              </svg>
+            )}
+            <span>{cellContent || 'Xem video'}</span>
+          </span>
+        </button>
+      );
+    }
+
     // Tạo proxy link nếu cần
     let linkToUse = hyperlink;
     if (isGoogleDriveLink(hyperlink) || isPdfLink(hyperlink)) {
@@ -326,11 +377,11 @@ export default function ApiSheetData({
         disabled={isLoading}
       >
         <span className="flex items-center space-x-1">
-              {isLoading ? (
+          {isLoading ? (
             <ArrowPathIcon className="h-4 w-4 animate-spin" />
           ) : null}
           <span>{cellContent || hyperlink}</span>
-                  </span>
+        </span>
       </button>
     );
   };
@@ -1093,8 +1144,9 @@ export default function ApiSheetData({
                   <YouTubeModal
                     videoId={selectedVideo}
                     onClose={() => {
-                      console.log('Đóng modal YouTube');
+                      console.log('Đóng modal YouTube, selectedVideo trước khi đóng:', selectedVideo);
                       setSelectedVideo(null);
+                      console.log('selectedVideo đã được set về null');
                     }}
                   />
                 )}
