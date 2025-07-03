@@ -7,30 +7,21 @@ import { ExclamationTriangleIcon } from '@heroicons/react/24/solid';
 const YouTubeModal = ({ isOpen = true, videoId, onClose }) => {
   const modalRef = useRef(null);
   const [loading, setLoading] = useState(true);
-  
-  // Log để debug
-  useEffect(() => {
-    console.log('YouTubeModal rendered with videoId:', videoId);
-    console.log('YouTubeModal isOpen:', isOpen);
-  }, [videoId, isOpen]);
 
   // Xử lý click ngoài modal
   useEffect(() => {
     const handleOutsideClick = (event) => {
       if (modalRef.current && !modalRef.current.contains(event.target)) {
-        console.log('Clicked outside modal, closing');
         onClose();
       }
     };
 
     if (isOpen) {
       document.addEventListener('mousedown', handleOutsideClick);
-      console.log('Added outside click listener');
     }
 
     return () => {
       document.removeEventListener('mousedown', handleOutsideClick);
-      console.log('Removed outside click listener');
     };
   }, [isOpen, onClose]);
 
@@ -38,19 +29,16 @@ const YouTubeModal = ({ isOpen = true, videoId, onClose }) => {
   useEffect(() => {
     const handleKeyDown = (event) => {
       if (event.key === 'Escape') {
-        console.log('ESC key pressed, closing modal');
         onClose();
       }
     };
 
     if (isOpen) {
       document.addEventListener('keydown', handleKeyDown);
-      console.log('Added ESC key listener');
     }
 
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
-      console.log('Removed ESC key listener');
     };
   }, [isOpen, onClose]);
 
@@ -209,11 +197,8 @@ const YouTubeModal = ({ isOpen = true, videoId, onClose }) => {
 
   // Không hiển thị nếu không có videoId hoặc isOpen là false
   if (!isOpen || !videoId) {
-    console.log('YouTubeModal not rendering - isOpen:', isOpen, 'videoId:', videoId);
     return null;
   }
-
-  console.log('YouTubeModal rendering with videoId:', videoId);
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-90"
@@ -235,7 +220,6 @@ const YouTubeModal = ({ isOpen = true, videoId, onClose }) => {
       >
         <button
           onClick={() => {
-            console.log('Close button clicked');
             onClose();
           }}
           className="absolute top-4 right-4 z-[10000] p-2 rounded-full bg-black bg-opacity-50 text-white hover:bg-opacity-70 transition-all"
@@ -252,7 +236,6 @@ const YouTubeModal = ({ isOpen = true, videoId, onClose }) => {
               srcDoc={generateSrcdocContent()}
               loading="lazy"
               onLoad={() => {
-                console.log('YouTube iframe loaded');
                 setLoading(false);
               }}
               style={{

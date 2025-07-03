@@ -132,7 +132,6 @@ const YouTubePlaylistModal = ({ isOpen, playlistId, videoId, onClose, title }) =
           setError('Playlist không có video nào');
         }
       } catch (error) {
-        console.error('Lỗi khi tải playlist:', error);
         setError(`Lỗi khi tải playlist: ${error.message}`);
       } finally {
         setIsLoadingPlaylist(false);
@@ -141,6 +140,29 @@ const YouTubePlaylistModal = ({ isOpen, playlistId, videoId, onClose, title }) =
 
     fetchPlaylistData();
   }, [playlistId, videoId, sortOrder]);
+
+  // Xử lý phím ESC để đóng modal
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        onClose();
+      } else if (event.key === 'ArrowRight') {
+        // Phím mũi tên phải: chuyển đến video tiếp theo
+        handleNextVideo();
+      } else if (event.key === 'ArrowLeft') {
+        // Phím mũi tên trái: chuyển đến video trước
+        handlePrevVideo();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose, handleNextVideo, handlePrevVideo]);
 
   // Sắp xếp danh sách phát
   const handleSortPlaylist = () => {

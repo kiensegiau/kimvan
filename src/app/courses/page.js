@@ -83,7 +83,6 @@ export default function CoursesPage() {
       
       setCacheStatus('saved');
     } catch (error) {
-      console.error('Lỗi khi lưu cache:', error);
       // Thử xóa cache và lưu lại
       try {
         localStorage.removeItem('courses-list');
@@ -157,7 +156,6 @@ export default function CoursesPage() {
       setCacheStatus('hit');
       return cacheItem.data;
     } catch (error) {
-      console.error('Lỗi khi đọc cache:', error);
       // Xóa cache lỗi
       try {
         localStorage.removeItem('courses-list');
@@ -191,7 +189,7 @@ export default function CoursesPage() {
       // Không cần gọi API enrollments nữa vì đã sử dụng hook useEnrolledCourses
       // Chỉ cần kiểm tra nếu có lỗi từ hook
       if (enrolledError) {
-        console.error('Lỗi khi lấy khóa học đã đăng ký:', enrolledError);
+        // Lỗi khi lấy khóa học đã đăng ký
       }
       
       // Tránh kiểm tra cache ở đây vì đã kiểm tra trong useEffect 
@@ -242,7 +240,7 @@ export default function CoursesPage() {
       localStorage.removeItem('courses-list');
       setCacheStatus('cleared');
     } catch (error) {
-      console.error('Lỗi khi xóa cache:', error);
+      // Lỗi khi xóa cache
     }
     
     // Làm mới dữ liệu khóa học đã đăng ký

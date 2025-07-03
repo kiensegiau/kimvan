@@ -75,7 +75,6 @@ export function useCourseData(id) {
   const checkPermission = (courseData) => {
     // Nếu không có dữ liệu khoá học, không có quyền truy cập
     if (!courseData) {
-      console.log("Permission check failed: No course data");
       return false;
     }
     
@@ -83,35 +82,27 @@ export function useCourseData(id) {
     
     // Kiểm tra thuộc tính canViewAllCourses
     if (userData && userData.canViewAllCourses === true) {
-      console.log("canViewAllCourses property detected, granting access");
       return true;
     }
     
     // Kiểm tra quyền từ mảng permissions
     if (userData && userData.permissions && Array.isArray(userData.permissions) && 
         userData.permissions.includes('view_all_courses')) {
-      console.log("view_all_courses permission detected, granting access");
       return true;
     }
     
     // Kiểm tra yêu cầu đăng ký của khóa học
     const requiresEnrollment = courseData?.requiresEnrollment !== false;
-    console.log(`Course requires enrollment: ${requiresEnrollment}`);
     
     if (!requiresEnrollment) {
-      console.log("Course doesn't require enrollment, granting access");
       return true;
     }
     
     // Kiểm tra đăng ký - kiểm tra cả MongoDB ID và kimvanId
-    console.log(`Checking enrollment for course ID: ${id}, type: ${typeof id}`);
     
     // Lấy thông tin MongoDB ID và kimvanId từ dữ liệu khóa học
     const mongoDbId = courseData._id ? String(courseData._id) : null;
     const kimvanId = courseData.kimvanId ? String(courseData.kimvanId) : null;
-    
-    console.log(`Course MongoDB ID: ${mongoDbId}, KimvanID: ${kimvanId}`);
-    console.log(`User enrolled courses: ${JSON.stringify(enrolledCourses)}`);
     
     // Kiểm tra đăng ký với cả hai loại ID
     let isUserEnrolled = false;
@@ -122,25 +113,19 @@ export function useCourseData(id) {
       
       // Nếu không tìm thấy, thử kiểm tra với MongoDB ID
       if (!isUserEnrolled && mongoDbId && mongoDbId !== id) {
-        console.log(`Trying with MongoDB ID: ${mongoDbId}`);
         isUserEnrolled = isEnrolledInCourse(mongoDbId);
       }
       
       // Nếu vẫn không tìm thấy, thử kiểm tra với kimvanId
       if (!isUserEnrolled && kimvanId && kimvanId !== id) {
-        console.log(`Trying with kimvanId: ${kimvanId}`);
         isUserEnrolled = isEnrolledInCourse(kimvanId);
       }
     }
     
-    console.log(`User is enrolled: ${isUserEnrolled}`);
-    
     if (isUserEnrolled) {
-      console.log("User is enrolled in course, granting access");
       return true;
     }
     
-    console.log("Access denied: User is not enrolled and has no special permissions");
     return false;
   };
   
@@ -167,7 +152,6 @@ export function useCourseData(id) {
       setCacheStatus('saved');
       return true;
     } catch (error) {
-      console.error('Lỗi khi lưu cache:', error);
       // Xử lý lỗi im lặng
       return false;
     }
@@ -187,14 +171,12 @@ export function useCourseData(id) {
       
       // Kiểm tra phiên bản cache
       if (parsedData._cacheVersion !== CACHE_VERSION) {
-        console.log('Phiên bản cache không khớp, xóa cache cũ');
         clearCurrentCache();
         return null;
       }
       
       // Kiểm tra thời gian hết hạn
       if (parsedData._cacheExpires < Date.now()) {
-        console.log('Cache đã hết hạn');
         clearCurrentCache();
         setCacheStatus('expired');
         return null;
@@ -203,7 +185,6 @@ export function useCourseData(id) {
       setCacheStatus('hit');
       return parsedData;
     } catch (error) {
-      console.error('Lỗi khi đọc cache:', error);
       clearCurrentCache();
       return null;
     }
@@ -248,7 +229,7 @@ export function useCourseData(id) {
         }
       }
     } catch (e) {
-      // Xử lý lỗi im lặng
+      // Bỏ qua lỗi khi dọn dẹp cache
     }
   };
   
@@ -263,7 +244,6 @@ export function useCourseData(id) {
       setCacheStatus('cleared');
       return true;
     } catch (error) {
-      console.error('Lỗi khi xóa cache:', error);
       return false;
     }
   };
@@ -281,7 +261,6 @@ export function useCourseData(id) {
     
     // Kiểm tra quyền truy cập trước khi gọi API
     if (!checkPermission(course)) {
-      console.log("Không có quyền truy cập để tải danh sách sheets");
       return;
     }
     
@@ -310,7 +289,6 @@ export function useCourseData(id) {
         setLinkedSheets([]);
       }
     } catch (error) {
-      console.error('Lỗi khi lấy danh sách sheets:', error);
       setError(`Lỗi khi tải danh sách sheets: ${error.message}`);
       setLinkedSheets([]);
     } finally {
@@ -321,8 +299,6 @@ export function useCourseData(id) {
   // Hàm xử lý dữ liệu sheet vào database
   const processSheetToDb = async (sheetId) => {
     try {
-      console.log(`🔄 [Course] Bắt đầu xử lý sheet ${sheetId} vào database...`);
-      
       const response = await fetch(`/api/sheets/${sheetId}/process-to-db`, {
         method: 'POST',
         credentials: 'include',
@@ -337,10 +313,8 @@ export function useCourseData(id) {
       }
       
       const result = await response.json();
-      console.log(`✅ [Course] Kết quả xử lý sheet ${sheetId}:`, result);
       return result.success;
     } catch (error) {
-      console.error('❌ [Course] Lỗi khi xử lý dữ liệu sheet:', error);
       return false;
     }
   };
@@ -348,8 +322,6 @@ export function useCourseData(id) {
   // Hàm lấy dữ liệu sheet từ database
   const fetchSheetFromDb = async (sheetId) => {
     try {
-      console.log(`🔍 [Course] Đang lấy dữ liệu sheet ${sheetId} từ database...`);
-      
       const response = await fetch(`/api/sheets/${sheetId}/from-db`, {
         credentials: 'include',
         headers: {
@@ -362,22 +334,13 @@ export function useCourseData(id) {
       }
       
       const result = await response.json();
-      console.log(`📥 [Course] Dữ liệu nhận được từ database cho sheet ${sheetId}:`, result);
       
       if (result.success) {
-        console.log(`✅ [Course] Dữ liệu sheet ${sheetId}:`, {
-          totalRows: result.sheet.values?.length || 0,
-          hasHtmlData: !!result.sheet.htmlData,
-          hasOptimizedData: !!result.sheet.optimizedHtmlData,
-          storageMode: result.sheet.storageMode
-        });
         return result.sheet;
       } else if (result.needsFallback) {
-        console.log(`⚠️ [Course] Sheet ${sheetId} cần được xử lý vào database`);
         // Nếu cần xử lý dữ liệu
         const processed = await processSheetToDb(sheetId);
         if (processed) {
-          console.log(`🔄 [Course] Thử lấy lại dữ liệu sau khi xử lý cho sheet ${sheetId}`);
           // Thử lấy lại dữ liệu sau khi xử lý
           return await fetchSheetFromDb(sheetId);
         }
@@ -385,7 +348,6 @@ export function useCourseData(id) {
       
       throw new Error(result.error || 'Không thể lấy dữ liệu sheet');
     } catch (error) {
-      console.error(`❌ [Course] Lỗi khi lấy dữ liệu sheet ${sheetId}:`, error);
       throw error;
     }
   };
@@ -396,22 +358,13 @@ export function useCourseData(id) {
     
     setLoadingSheetData(prev => ({ ...prev, [sheetId]: true }));
     try {
-      console.log(`🔍 [Course] Bắt đầu lấy dữ liệu sheet ${sheetId}...`);
-      
       // Lấy dữ liệu từ database
       const data = await fetchSheetFromDb(sheetId);
       
       if (data) {
-        console.log(`✅ [Course] Đã nhận dữ liệu sheet ${sheetId}:`, {
-          totalRows: data.values?.length || 0,
-          hasHtmlData: !!data.htmlData,
-          hasOptimizedData: !!data.optimizedHtmlData,
-          storageMode: data.storageMode
-        });
         setSheetData(prev => ({ ...prev, [sheetId]: data }));
       }
     } catch (error) {
-      console.error(`❌ [Course] Lỗi khi lấy dữ liệu sheet ${sheetId}:`, error);
     } finally {
       setLoadingSheetData(prev => ({ ...prev, [sheetId]: false }));
     }
@@ -443,10 +396,7 @@ export function useCourseData(id) {
         if (!hasSpecialAccess) {
           const hasAccess = checkPermission(cachedData);
           if (!hasAccess) {
-            console.log("Permission check failed with cached data");
             setError("Bạn không có quyền truy cập vào khóa học này");
-          } else {
-            console.log("Permission check passed with cached data");
           }
         }
         
@@ -496,10 +446,7 @@ export function useCourseData(id) {
         if (!hasSpecialAccess) {
           const hasAccess = checkPermission(courseData);
           if (!hasAccess) {
-            console.log("Permission check failed with fresh data");
             setError("Bạn không có quyền truy cập vào khóa học này");
-          } else {
-            console.log("Permission check passed with fresh data");
           }
         }
         

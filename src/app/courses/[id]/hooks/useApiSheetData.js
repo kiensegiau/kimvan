@@ -32,7 +32,7 @@ export function useApiSheetData(courseId) {
       
       setCacheStatus('saved-list');
     } catch (error) {
-      console.error('Lỗi khi lưu cache sheet list:', error);
+      // Bỏ qua lỗi khi lưu cache
     }
   };
   
@@ -66,7 +66,7 @@ export function useApiSheetData(courseId) {
         // Nếu gặp lỗi storage, bỏ qua việc lưu cache
       }
     } catch (error) {
-      console.error('Lỗi khi lưu cache sheet detail:', error);
+      // Bỏ qua lỗi khi lưu cache
     }
   };
   
@@ -93,7 +93,7 @@ export function useApiSheetData(courseId) {
       setCacheStatus('hit-list');
       return cacheItem.data;
     } catch (error) {
-      console.error('Lỗi khi đọc cache danh sách sheet:', error);
+      // Bỏ qua lỗi khi đọc cache
       return null;
     }
   };
@@ -127,7 +127,7 @@ export function useApiSheetData(courseId) {
         return null;
       }
     } catch (error) {
-      console.error('Lỗi khi đọc cache chi tiết sheet:', error);
+      // Bỏ qua lỗi khi đọc cache
       return null;
     }
   };
@@ -212,7 +212,7 @@ export function useApiSheetData(courseId) {
       
       setCacheStatus('cleared');
     } catch (error) {
-      console.error('Lỗi khi xóa cache:', error);
+      // Bỏ qua lỗi khi xóa cache
     }
   };
   
@@ -226,15 +226,13 @@ export function useApiSheetData(courseId) {
         }
       });
     } catch (e) {
-      console.error('Lỗi khi xóa tất cả cache sheet:', e);
+      // Bỏ qua lỗi khi xóa tất cả cache
     }
   };
   
   // Hàm xử lý dữ liệu sheet vào database
   const processSheetToDb = async (sheetId) => {
     try {
-      console.log(`🔄 Bắt đầu xử lý sheet ${sheetId} vào database...`);
-      
       // Hiển thị thông báo đang xử lý
       setApiSheetError('Đang xử lý dữ liệu sheet vào database...');
       
@@ -256,7 +254,6 @@ export function useApiSheetData(courseId) {
       }
       
       const result = await response.json();
-      console.log(`✅ Kết quả xử lý sheet ${sheetId}:`, result);
       
       // Xóa thông báo lỗi
       setApiSheetError(null);
@@ -266,7 +263,6 @@ export function useApiSheetData(courseId) {
       
       return result.success;
     } catch (error) {
-      console.error('❌ Lỗi khi xử lý dữ liệu sheet:', error);
       setApiSheetError(`Lỗi khi xử lý sheet: ${error.message}`);
       return false;
     }
@@ -275,8 +271,6 @@ export function useApiSheetData(courseId) {
   // Hàm lấy dữ liệu sheet từ database
   const fetchSheetFromDb = async (sheetId) => {
     try {
-      console.log(`🔍 Đang lấy dữ liệu sheet ${sheetId} từ database...`);
-      
       const response = await fetch(`/api/sheets/${sheetId}/from-db`, {
         credentials: 'include',
         headers: {
@@ -289,54 +283,16 @@ export function useApiSheetData(courseId) {
       }
       
       const result = await response.json();
-      console.log(`📥 Dữ liệu nhận được từ database cho sheet ${sheetId}:`, result);
       
       if (result.success) {
         // Phân tích cấu trúc dữ liệu HTML để debug
         analyzeHtmlDataStructure(result.sheet);
         
-        // Kiểm tra và log số lượng hyperlink
-        let hyperlinkCount = 0;
-        if (result.sheet?.htmlData) {
-          result.sheet.htmlData.forEach((row, rowIndex) => {
-            // Kiểm tra cấu trúc dữ liệu
-            if (!row) return;
-            
-            // Kiểm tra nếu row là một đối tượng có thuộc tính values là mảng
-            if (row.values && Array.isArray(row.values)) {
-              row.values.forEach((cell, cellIndex) => {
-                if (cell && cell.hyperlink) {
-                  hyperlinkCount++;
-                  console.log(`🔗 Hyperlink tại [${rowIndex},${cellIndex}]: ${cell.hyperlink}`);
-                }
-              });
-            } 
-            // Trường hợp row là một mảng (cấu trúc khác)
-            else if (Array.isArray(row)) {
-              row.forEach((cell, cellIndex) => {
-                if (cell && cell.hyperlink) {
-                  hyperlinkCount++;
-                  console.log(`🔗 Hyperlink tại [${rowIndex},${cellIndex}]: ${cell.hyperlink}`);
-                }
-              });
-            }
-          });
-        }
-        console.log(`🔢 Tổng số hyperlink: ${hyperlinkCount}`);
-        
-        console.log(`✅ Dữ liệu sheet ${sheetId}:`, {
-          totalRows: result.sheet.values?.length || 0,
-          hasHtmlData: !!result.sheet.htmlData,
-          hasOptimizedData: !!result.sheet.optimizedHtmlData,
-          storageMode: result.sheet.storageMode
-        });
         return result.sheet;
       } else if (result.needsFallback) {
-        console.log(`⚠️ Sheet ${sheetId} cần được xử lý vào database`);
         // Nếu cần xử lý dữ liệu
         const processed = await processSheetToDb(sheetId);
         if (processed) {
-          console.log(`🔄 Thử lấy lại dữ liệu sau khi xử lý cho sheet ${sheetId}`);
           // Thử lấy lại dữ liệu sau khi xử lý
           return await fetchSheetFromDb(sheetId);
         }
@@ -344,7 +300,6 @@ export function useApiSheetData(courseId) {
       
       throw new Error(result.error || 'Không thể lấy dữ liệu sheet');
     } catch (error) {
-      console.error(`❌ Lỗi khi lấy dữ liệu sheet ${sheetId}:`, error);
       throw error;
     }
   };
@@ -352,13 +307,9 @@ export function useApiSheetData(courseId) {
   // Hàm phân tích cấu trúc dữ liệu HTML để debug
   const analyzeHtmlDataStructure = (sheetData) => {
     if (!sheetData || !sheetData.htmlData) {
-      console.log('❌ Không có dữ liệu HTML để phân tích');
       return;
     }
 
-    console.log('🔍 Phân tích cấu trúc dữ liệu HTML:');
-    console.log(`- Số lượng hàng HTML: ${sheetData.htmlData.length}`);
-    
     // Kiểm tra cấu trúc dữ liệu HTML
     const structureTypes = {
       objectWithValues: 0,
@@ -384,7 +335,6 @@ export function useApiSheetData(courseId) {
         row.values.forEach((cell, cellIndex) => {
           if (cell && cell.hyperlink) {
             rowHyperlinkCount++;
-            console.log(`  + Hyperlink tại [${rowIndex},${cellIndex}]: ${cell.hyperlink}`);
           }
         });
         
@@ -399,7 +349,6 @@ export function useApiSheetData(courseId) {
         row.forEach((cell, cellIndex) => {
           if (cell && cell.hyperlink) {
             rowHyperlinkCount++;
-            console.log(`  + Hyperlink tại [${rowIndex},${cellIndex}]: ${cell.hyperlink}`);
           }
         });
         
@@ -410,45 +359,12 @@ export function useApiSheetData(courseId) {
         structureTypes.other++;
       }
     });
-    
-    console.log('- Phân loại cấu trúc dữ liệu HTML:');
-    console.log(`  + Hàng có cấu trúc { values: [...] }: ${structureTypes.objectWithValues}`);
-    console.log(`  + Hàng có cấu trúc mảng: ${structureTypes.array}`);
-    console.log(`  + Hàng có cấu trúc khác: ${structureTypes.other}`);
-    console.log(`  + Hàng null/undefined: ${structureTypes.null}`);
-    
-    console.log('- Phân bố hyperlink theo hàng:');
-    Object.keys(hyperlinksByRow).forEach(rowIndex => {
-      console.log(`  + Hàng ${rowIndex}: ${hyperlinksByRow[rowIndex]} hyperlink`);
-    });
-    
-    // Kiểm tra nếu dữ liệu values và htmlData có khớp nhau không
-    if (sheetData.values) {
-      console.log(`- So sánh số lượng hàng: values=${sheetData.values.length}, htmlData=${sheetData.htmlData.length}`);
-      
-      if (sheetData.values.length !== sheetData.htmlData.length) {
-        console.log('⚠️ Cảnh báo: Số lượng hàng không khớp giữa values và htmlData!');
-        console.log('  Điều này có thể gây ra lỗi định vị hyperlink.');
-      }
-    }
   };
 
   // Hàm phân tích cấu trúc dữ liệu sheet
   const analyzeSheetDataStructure = (sheetData) => {
-    // Log cấu trúc dữ liệu
-    console.log('Phân tích cấu trúc dữ liệu sheet:', sheetData);
-    
     // Kiểm tra cấu trúc mới với rows và header
     if (sheetData && Array.isArray(sheetData.rows) && Array.isArray(sheetData.header)) {
-      console.log('✅ Cấu trúc dữ liệu mới với rows và header:');
-      console.log('- Header:', sheetData.header.length, 'cột');
-      console.log('- Rows:', sheetData.rows.length, 'hàng');
-      
-      // Kiểm tra hyperlinks
-      if (Array.isArray(sheetData.hyperlinks)) {
-        console.log('- Hyperlinks:', sheetData.hyperlinks.length, 'liên kết');
-      }
-      
       return {
         type: 'structured',
         hasHeader: true,
@@ -459,9 +375,6 @@ export function useApiSheetData(courseId) {
     
     // Kiểm tra cấu trúc values
     if (sheetData && Array.isArray(sheetData.values)) {
-      console.log('✅ Cấu trúc dữ liệu values:');
-      console.log('- Values:', sheetData.values.length, 'hàng (bao gồm header)');
-      
       return {
         type: 'values',
         hasValues: true,
@@ -481,8 +394,6 @@ export function useApiSheetData(courseId) {
       // Kiểm tra cache trước
       const cachedDetail = getSheetDetailFromCache(sheetId);
       if (cachedDetail) {
-        console.log(`🔄 Sử dụng dữ liệu chi tiết sheet ${sheetId} từ cache`);
-        
         // Cập nhật dữ liệu sheet từ cache
         setApiSheetData(prevData => {
           if (!prevData || !prevData.sheets) return prevData;
@@ -504,10 +415,7 @@ export function useApiSheetData(courseId) {
         return;
       }
       
-      console.log(`🔄 Đang tải dữ liệu chi tiết sheet ${sheetId}...`);
-      setLoadingApiSheet(true);
-      
-      // Ưu tiên lấy dữ liệu từ database trước
+      // Lấy dữ liệu từ database
       const dbResponse = await fetch(`/api/sheets/${sheetId}/from-db`, {
         method: 'GET',
         credentials: 'include'
@@ -517,12 +425,8 @@ export function useApiSheetData(courseId) {
       
       // Nếu có dữ liệu từ database
       if (dbData.success && dbData.sheet) {
-        console.log(`✅ Đã lấy dữ liệu sheet ${sheetId} từ database`);
-        console.log(`Sheet Name from database: ${dbData.sheet.name || 'Không có tên'}`);
-        
         // Phân tích cấu trúc dữ liệu
         const structure = analyzeSheetDataStructure(dbData.sheet);
-        console.log('Cấu trúc dữ liệu từ database:', structure);
         
         // Cập nhật dữ liệu sheet
         setApiSheetData(prevData => {
@@ -548,13 +452,10 @@ export function useApiSheetData(courseId) {
         // Lưu vào cache
         saveSheetDetailToCache(sheetId, dbData.sheet);
         
-        setLoadingApiSheet(false);
         return;
       }
       
       // Nếu không có dữ liệu từ database, lấy từ API
-      console.log(`⚠️ Không tìm thấy dữ liệu sheet ${sheetId} trong database, lấy từ API...`);
-      
       const apiResponse = await fetch(`/api/sheets/${sheetId}`, {
         method: 'GET',
         credentials: 'include'
@@ -567,11 +468,8 @@ export function useApiSheetData(courseId) {
       const apiData = await apiResponse.json();
       
       if (apiData.success) {
-        console.log(`✅ Đã lấy dữ liệu sheet ${sheetId} từ API`);
-        
         // Phân tích cấu trúc dữ liệu
         const structure = analyzeSheetDataStructure(apiData.sheet);
-        console.log('Cấu trúc dữ liệu từ API:', structure);
         
         // Cập nhật dữ liệu sheet
         setApiSheetData(prevData => {
@@ -595,14 +493,10 @@ export function useApiSheetData(courseId) {
         // Lưu vào cache
         saveSheetDetailToCache(sheetId, apiData.sheet);
       } else {
-        console.error('Lỗi khi lấy dữ liệu sheet:', apiData.error);
         setApiSheetError(`Không thể tải dữ liệu sheet: ${apiData.error || 'Lỗi không xác định'}`);
       }
     } catch (error) {
-      console.error(`Lỗi khi tải dữ liệu chi tiết sheet ${sheetId}:`, error);
       setApiSheetError(`Lỗi khi tải dữ liệu sheet: ${error.message}`);
-    } finally {
-      setLoadingApiSheet(false);
     }
   };
   
@@ -614,13 +508,11 @@ export function useApiSheetData(courseId) {
     setApiSheetError(null);
     
     try {
-      console.log(`🔍 Bắt đầu lấy danh sách sheets cho khóa học ${courseId}...`);
-      
       // Thử lấy từ cache trước
       const cachedData = getSheetListFromCache();
       if (cachedData) {
-        console.log(`📦 Sử dụng danh sách sheets từ cache`);
         setApiSheetData(cachedData);
+        setLoadingApiSheet(false);
         return;
       }
       
@@ -639,31 +531,20 @@ export function useApiSheetData(courseId) {
       const result = await response.json();
       
       if (result.success) {
-        console.log(`📥 Danh sách sheets nhận được:`, {
-          totalSheets: result.sheets?.length || 0,
-          sheets: result.sheets?.map(s => ({
-            id: s._id,
-            name: s.name
-          }))
-        });
-        
         // Lưu vào cache
         saveSheetListToCache(result);
-        console.log(`💾 Đã lưu danh sách sheets vào cache`);
         
         // Cập nhật state
         setApiSheetData(result);
         
         // Nếu có sheets, lấy chi tiết của sheet đầu tiên
         if (result.sheets && result.sheets.length > 0) {
-          console.log(`🔄 Lấy chi tiết của sheet đầu tiên:`, result.sheets[0]._id);
           await fetchSheetDetail(result.sheets[0]._id);
         }
       } else {
         setApiSheetError(result.error || 'Không thể tải dữ liệu sheet');
       }
     } catch (error) {
-      console.error('❌ Lỗi khi tải dữ liệu sheet:', error);
       setApiSheetError(error.message);
     } finally {
       setLoadingApiSheet(false);
@@ -702,7 +583,6 @@ export function useApiSheetData(courseId) {
       if (optimizedRow && optimizedRow.hyperlinks) {
         const hyperlink = optimizedRow.hyperlinks.find(link => link.col === cellIndex);
         if (hyperlink) {
-          console.log(`🔍 Tìm thấy hyperlink tối ưu [${rowIndex},${cellIndex}]: ${hyperlink.url}`);
           return hyperlink.url;
         }
       }
@@ -716,7 +596,6 @@ export function useApiSheetData(courseId) {
       if (htmlRow && htmlRow.values && Array.isArray(htmlRow.values) && htmlRow.values[cellIndex]) {
         const htmlCell = htmlRow.values[cellIndex];
         if (htmlCell && htmlCell.hyperlink) {
-          console.log(`🔍 Tìm thấy hyperlink đầy đủ [${rowIndex},${cellIndex}]: ${htmlCell.hyperlink}`);
           return htmlCell.hyperlink;
         }
       }
