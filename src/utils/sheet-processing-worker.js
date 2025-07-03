@@ -119,11 +119,7 @@ export async function processSheetToDatabase(sheetId, options = {}) {
       
       // Xử lý hàng
       const processedRow = {};
-      const urls = {
-        drive: [],
-        youtube: [],
-        other: []
-      };
+      const urls = [];
       const hyperlinks = [];
       
       row.forEach((cell, colIndex) => {
@@ -144,23 +140,19 @@ export async function processSheetToDatabase(sheetId, options = {}) {
           // Xử lý URL dựa trên loại
           if (isYoutubeUrl(hyperlink)) {
             const cleanUrl = cleanYoutubeUrl(hyperlink);
-            urls.youtube.push({
+            urls.push({
               colIndex,
               url: cleanUrl,
-              source: 'hyperlink'
+              source: 'hyperlink',
+              type: 'youtube'
             });
           } else if (isDriveUrl(hyperlink)) {
             const cleanUrl = cleanGoogleUrl(hyperlink);
-            urls.drive.push({
+            urls.push({
               colIndex,
               url: cleanUrl,
-              source: 'hyperlink'
-            });
-          } else {
-            urls.other.push({
-              colIndex,
-              url: hyperlink,
-              source: 'hyperlink'
+              source: 'hyperlink',
+              type: 'drive'
             });
           }
         } 
@@ -170,23 +162,19 @@ export async function processSheetToDatabase(sheetId, options = {}) {
           if (extractedUrl) {
             if (isYoutubeUrl(extractedUrl)) {
               const cleanUrl = cleanYoutubeUrl(extractedUrl);
-              urls.youtube.push({
+              urls.push({
                 colIndex,
                 url: cleanUrl,
-                source: 'text'
+                source: 'text',
+                type: 'youtube'
               });
             } else if (isDriveUrl(extractedUrl)) {
               const cleanUrl = cleanGoogleUrl(extractedUrl);
-              urls.drive.push({
+              urls.push({
                 colIndex,
                 url: cleanUrl,
-                source: 'text'
-              });
-            } else {
-              urls.other.push({
-                colIndex,
-                url: extractedUrl,
-                source: 'text'
+                source: 'text',
+                type: 'drive'
               });
             }
           }
