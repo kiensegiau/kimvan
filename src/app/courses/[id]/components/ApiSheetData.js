@@ -835,15 +835,13 @@ export default function ApiSheetData({
     // Xử lý sắp xếp dữ liệu nếu cần
     const sortedRows = getSortedData(rows, header);
     
-    // Loại bỏ cột đầu tiên
-    const displayHeader = header.slice(1);
-    
+    // Display all columns including the first one
     return (
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              {displayHeader.map((column, index) => (
+              {header.map((column, index) => (
                 <th
                   key={`header-${index}`}
                   scope="col"
@@ -884,9 +882,9 @@ export default function ApiSheetData({
           <tbody className="bg-white divide-y divide-gray-200">
             {sortedRows.map((row, rowIndex) => (
               <tr key={`row-${rowIndex}`} className={rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                {header.slice(1).map((column, cellIndex) => {
-                  // Chuyển đổi cellIndex để phù hợp với index thực tế (cột đầu tiên có index = 1 sau khi bỏ qua cột 0)
-                  const actualCellIndex = cellIndex + 1;
+                {header.map((column, cellIndex) => {
+                  // Use the direct cellIndex since we're not skipping the first column
+                  const actualCellIndex = cellIndex;
                   
                   // Kiểm tra nếu là cell được merge và không phải cell chính
                   const mergeInfo = getMergeInfo(rowIndex, actualCellIndex, sheetDetail);
