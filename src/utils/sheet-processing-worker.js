@@ -3,6 +3,39 @@ import SheetContent from '@/models/SheetContent';
 import mongoose from 'mongoose';
 import { extractUrlFromCell, isDriveUrl, cleanGoogleUrl } from '@/utils/drive-utils';
 
+// Helper function to check if URL is a YouTube link
+function isYoutubeUrl(url) {
+  if (!url) return false;
+  return url.includes('youtube.com') || url.includes('youtu.be');
+}
+
+// Helper function to clean YouTube URL
+function cleanYoutubeUrl(url) {
+  if (!url) return null;
+  try {
+    const urlObj = new URL(url);
+    
+    // Handle youtu.be format
+    if (urlObj.hostname === 'youtu.be') {
+      const videoId = urlObj.pathname.substring(1);
+      return `https://www.youtube.com/watch?v=${videoId}`;
+    }
+    
+    // Handle youtube.com format
+    if (urlObj.hostname.includes('youtube.com')) {
+      const videoId = urlObj.searchParams.get('v');
+      if (videoId) {
+        return `https://www.youtube.com/watch?v=${videoId}`;
+      }
+    }
+    
+    return url;
+  } catch (error) {
+    console.error('Error cleaning YouTube URL:', error);
+    return url;
+  }
+}
+
 /**
  * Process sheet data and store in the database as a single document
  * @param {string} sheetId - Google Sheet ID
@@ -56,19 +89,25 @@ export async function processSheetToDatabase(sheetId, options = {}) {
     
     // Kiểm tra và log hyperlink
     let hyperlinkCount = 0;
+    let youtubeCount = 0;
     if (sheetData.htmlData) {
       sheetData.htmlData.forEach((row, rowIndex) => {
         if (row && row.values) {
           row.values.forEach((cell, cellIndex) => {
             if (cell && cell.hyperlink) {
               hyperlinkCount++;
-              console.log(`Tìm thấy hyperlink tại [${rowIndex},${cellIndex}]: ${cell.hyperlink}`);
+              if (isYoutubeUrl(cell.hyperlink)) {
+                youtubeCount++;
+                console.log(`Tìm thấy YouTube link tại [${rowIndex},${cellIndex}]: ${cell.hyperlink}`);
+              } else {
+                console.log(`Tìm thấy hyperlink tại [${rowIndex},${cellIndex}]: ${cell.hyperlink}`);
+              }
             }
           });
         }
       });
     }
-    console.log(`Tổng số hyperlink tìm thấy trong dữ liệu gốc: ${hyperlinkCount}`);
+    console.log(`Tổng số hyperlink tìm thấy trong dữ liệu gốc: ${hyperlinkCount} (trong đó có ${youtubeCount} YouTube links)`);
     
     // Xử lý từng hàng (bỏ qua header)
     for (let rowIndex = 1; rowIndex < sheetData.values.length; rowIndex++) {
@@ -80,7 +119,11 @@ export async function processSheetToDatabase(sheetId, options = {}) {
       
       // Xử lý hàng
       const processedRow = {};
-      const urls = [];
+      const urls = {
+        drive: [],
+        youtube: [],
+        other: []
+      };
       const hyperlinks = [];
       
       row.forEach((cell, colIndex) => {
@@ -98,11 +141,25 @@ export async function processSheetToDatabase(sheetId, options = {}) {
             url: hyperlink
           });
           
-          const cleanUrl = cleanGoogleUrl(hyperlink);
-          if (isDriveUrl(cleanUrl)) {
-            urls.push({
+          // Xử lý URL dựa trên loại
+          if (isYoutubeUrl(hyperlink)) {
+            const cleanUrl = cleanYoutubeUrl(hyperlink);
+            urls.youtube.push({
               colIndex,
               url: cleanUrl,
+              source: 'hyperlink'
+            });
+          } else if (isDriveUrl(hyperlink)) {
+            const cleanUrl = cleanGoogleUrl(hyperlink);
+            urls.drive.push({
+              colIndex,
+              url: cleanUrl,
+              source: 'hyperlink'
+            });
+          } else {
+            urls.other.push({
+              colIndex,
+              url: hyperlink,
               source: 'hyperlink'
             });
           }
@@ -110,12 +167,28 @@ export async function processSheetToDatabase(sheetId, options = {}) {
         // Trích xuất URL từ nội dung ô nếu không có hyperlink
         else if (cell && typeof cell === 'string') {
           const extractedUrl = extractUrlFromCell(cell);
-          if (extractedUrl && isDriveUrl(extractedUrl)) {
-            urls.push({
-              colIndex,
-              url: extractedUrl,
-              source: 'text'
-            });
+          if (extractedUrl) {
+            if (isYoutubeUrl(extractedUrl)) {
+              const cleanUrl = cleanYoutubeUrl(extractedUrl);
+              urls.youtube.push({
+                colIndex,
+                url: cleanUrl,
+                source: 'text'
+              });
+            } else if (isDriveUrl(extractedUrl)) {
+              const cleanUrl = cleanGoogleUrl(extractedUrl);
+              urls.drive.push({
+                colIndex,
+                url: cleanUrl,
+                source: 'text'
+              });
+            } else {
+              urls.other.push({
+                colIndex,
+                url: extractedUrl,
+                source: 'text'
+              });
+            }
           }
         }
       });
@@ -135,17 +208,20 @@ export async function processSheetToDatabase(sheetId, options = {}) {
     // Tạo document sheet
     const sheetDocument = {
       sheetId,
-      name: sheetName, // Sử dụng tên sheet từ options hoặc từ database
+      name: sheetName,
       totalRows: rows.length,
       header,
       rows,
-      // Đã loại bỏ trường htmlData
       processedAt: new Date(),
       metadata: {
         source: 'Google Sheets',
         processedBy: options.processedBy || 'SheetProcessor',
-        version: '3.0',
-        preserveHyperlinks: true
+        version: '3.1',
+        preserveHyperlinks: true,
+        stats: {
+          totalHyperlinks: hyperlinkCount,
+          youtubeLinks: youtubeCount
+        }
       }
     };
     
@@ -154,11 +230,13 @@ export async function processSheetToDatabase(sheetId, options = {}) {
     const result = await newSheetContent.save();
     
     console.log(`Đã xử lý và lưu sheet ${sheetId} với ${rows.length} hàng vào database`);
+    console.log(`Thống kê: ${youtubeCount} YouTube links, ${hyperlinkCount} tổng số hyperlinks`);
     
     return {
       success: true,
       processedCount: rows.length,
       hyperlinkCount,
+      youtubeCount,
       errors: 0,
       documentId: result._id
     };
