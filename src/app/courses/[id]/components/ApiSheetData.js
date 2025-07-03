@@ -35,6 +35,32 @@ const toastAnimationStyles = `
   .animate-fade-out-up {
     animation: fadeOutUp 0.5s ease forwards;
   }
+
+  /* Table border styles */
+  .table-bordered {
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+  
+  .table-bordered th, 
+  .table-bordered td {
+    border: 1px solid #e5e7eb;
+    border-bottom-width: 0;
+    border-left-width: 0;
+  }
+  
+  .table-bordered th:last-child,
+  .table-bordered td:last-child {
+    border-right-width: 0;
+  }
+  
+  .table-bordered tr:last-child td {
+    border-bottom-width: 1px;
+  }
+  
+  .table-bordered thead th {
+    border-color: rgba(255, 255, 255, 0.2);
+  }
 `;
 
 export default function ApiSheetData({ 
@@ -900,8 +926,8 @@ export default function ApiSheetData({
           <p className="text-sm text-gray-700">Kéo sang phải để xem đầy đủ dữ liệu nếu bảng quá rộng</p>
         </div>
         
-        <div className="overflow-x-auto border border-gray-200 rounded-lg shadow">
-          <table className="min-w-full divide-y divide-gray-200">
+        <div className="overflow-x-auto border border-indigo-100 rounded-lg shadow-md">
+          <table className="min-w-full table-bordered">
             <thead className="bg-indigo-700">
               <tr>
                 {header.map((column, index) => (
