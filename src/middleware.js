@@ -70,6 +70,7 @@ const EXCLUDED_API_PATHS = [
   '/api/auth/verify',
   '/api/auth/google-callback',
   '/api/auth/reset-password',
+  '/api/auth/user-role',
   '/api/users/me',
   '/api/health-check',
   '/api/health-check/mongodb',
@@ -198,9 +199,25 @@ export async function middleware(request) {
       body: JSON.stringify({ token }),
     });
 
+    // Kiểm tra content-type của response
+    const contentType = verifyResponse.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      console.error('Unexpected response type:', contentType);
+      throw new Error('Expected JSON response but got: ' + contentType);
+    }
+    
     // Clone response để có thể đọc nhiều lần
     const verifyResponseClone = verifyResponse.clone();
-    const verifyData = await verifyResponseClone.json();
+    let verifyData;
+    try {
+      verifyData = await verifyResponseClone.json();
+    } catch (parseError) {
+      console.error('Failed to parse verify response:', parseError);
+      // Log response text để debug
+      const responseText = await verifyResponse.text();
+      console.error('Response text:', responseText);
+      throw new Error('Invalid JSON response from verify endpoint');
+    }
 
     if (!verifyResponse.ok || !verifyData.valid) {
       // Thử làm mới token với URL đầy đủ
@@ -233,8 +250,23 @@ export async function middleware(request) {
         }
       }
       
+      // Kiểm tra content-type của refresh response
+      const refreshContentType = refreshResponse.headers.get('content-type');
+      if (!refreshContentType || !refreshContentType.includes('application/json')) {
+        console.error('Unexpected refresh response type:', refreshContentType);
+        throw new Error('Expected JSON response from refresh but got: ' + refreshContentType);
+      }
+
       // Nếu làm mới token thành công, lấy token mới và tiếp tục
-      const refreshData = await refreshResponse.json();
+      let refreshData;
+      try {
+        refreshData = await refreshResponse.json();
+      } catch (parseError) {
+        console.error('Failed to parse refresh response:', parseError);
+        const responseText = await refreshResponse.text();
+        console.error('Refresh response text:', responseText);
+        throw new Error('Invalid JSON response from refresh endpoint');
+      }
       
       if (!refreshData.success || !refreshData.token) {
         if (pathname.startsWith('/api/')) {
@@ -489,12 +521,13 @@ export async function middleware(request) {
     
     // ==== Kiểm tra quyền truy cập cho các đường dẫn cụ thể ====
     
-    // 1. Kiểm tra nếu yêu cầu là cho trang admin
+          // 1. Kiểm tra nếu yêu cầu là cho trang admin
     if (pathname.startsWith('/admin') && !pathname.startsWith('/admin/login')) {
       // Đảm bảo userRole đã được định nghĩa
-      if (userRole === undefined) {
-        userRole = verifyData.user?.role || 'user';
-      }
+      // Sử dụng biến user đã được xác thực từ verifyData, nếu có
+      const user = request.user || (verifyData?.user);
+      let userRole = user?.role || 'user';
+      
       
       // Kiểm tra user có quyền admin không
       if (userRole !== 'admin') {
@@ -511,15 +544,17 @@ export async function middleware(request) {
         path: '/',
       });
       
+      // Đặt header role cho admin
+      response.headers.set('x-user-role', 'admin');
+      
       return addSecurityHeaders(response);
     }
     
     // 2. Kiểm tra nếu yêu cầu là cho trang công tác viên (CTV)
     if (pathname.startsWith('/ctv') && !pathname.startsWith('/ctv/login')) {
       // Đảm bảo userRole đã được định nghĩa
-      if (userRole === undefined) {
-        userRole = verifyData.user?.role || 'user';
-      }
+      const user = request.user || (verifyData?.user);
+      let userRole = user?.role || 'user';
       
       // Kiểm tra user có quyền ctv (công tác viên) hay không
       if (userRole !== 'ctv') {
@@ -536,15 +571,17 @@ export async function middleware(request) {
         path: '/',
       });
       
+      // Đặt header role cho ctv
+      response.headers.set('x-user-role', 'ctv');
+      
       return addSecurityHeaders(response);
     }
     
     // 3. Kiểm tra nếu yêu cầu là cho API admin
     if (pathname.startsWith('/api/admin') || pathname.startsWith('/api/courses/raw')) {
       // Đảm bảo userRole đã được định nghĩa
-      if (userRole === undefined) {
-        userRole = verifyData.user?.role || 'user';
-      }
+      const user = request.user || (verifyData?.user);
+      let userRole = user?.role || 'user';
       
       // Kiểm tra các API đặc biệt mà CTV được phép truy cập
       if (pathname.startsWith('/api/admin/enrollments') || pathname.startsWith('/api/admin/courses')) {
@@ -570,7 +607,8 @@ export async function middleware(request) {
             });
             
             // Thêm email của CTV vào cookie để API có thể lấy
-            response.cookies.set('ctv_email', verifyData.user.email, {
+            const email = user?.email || '';
+            response.cookies.set('ctv_email', email, {
               httpOnly: true,
               secure: isHttps,
               sameSite: cookieConfig.sameSite,
@@ -612,9 +650,8 @@ export async function middleware(request) {
     // 4. Kiểm tra nếu yêu cầu là cho API công tác viên (CTV)
     if (pathname.startsWith('/api/ctv')) {
       // Đảm bảo userRole đã được định nghĩa
-      if (userRole === undefined) {
-        userRole = verifyData.user?.role || 'user';
-      }
+      const user = request.user || (verifyData?.user);
+      let userRole = user?.role || 'user';
       
       // Kiểm tra user có quyền CTV không
       if (userRole !== 'ctv') {
