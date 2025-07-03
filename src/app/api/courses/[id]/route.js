@@ -355,7 +355,7 @@ export async function GET(request, { params }) {
     
     if (user) {
       // Kiểm tra nếu người dùng có quyền xem tất cả khóa học
-      canViewAllCourses = user.role === 'admin' || user.canViewAllCourses === true;
+      canViewAllCourses = user.canViewAllCourses === true;
       
       // Kiểm tra nếu người dùng đã đăng ký khóa học này
       // Kiểm tra đăng ký bằng MongoDB ID
@@ -1020,10 +1020,10 @@ export async function PATCH(request, { params }) {
       description: courseName 
         ? `Khóa học ${courseName}` 
         : existingCourse.description,
-      price: existingCourse.price || 500000,
-      originalPrice: existingCourse.originalPrice || '',  // Giữ nguyên originalPrice
-      status: existingCourse.status || 'active',
-      createdAt: existingCourse.createdAt || new Date(),
+      price: existingCourse.price,
+      originalPrice: existingCourse.originalPrice,
+      status: existingCourse.status,
+      createdAt: existingCourse.createdAt,
       updatedAt: new Date(),
       processedDriveFiles: existingCourse.processedDriveFiles || [],
       originalData: kimvanData

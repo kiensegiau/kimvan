@@ -52,10 +52,7 @@ export function useEnrolledCourses(externalUserData = null) {
   const hasViewAllCoursesPermission = () => {
     // Kiểm tra role=admin hoặc canViewAllCourses=true trước tiên
     if (userData) {
-      // Nếu là admin, luôn có quyền
-      if (userData.role === 'admin') {
-        return true;
-      }
+      // Admin không có quyền mặc định nữa
       
       // Kiểm tra thuộc tính canViewAllCourses
       if (userData.canViewAllCourses === true) {
@@ -73,10 +70,7 @@ export function useEnrolledCourses(externalUserData = null) {
 
   // Hàm kiểm tra quyền truy cập khóa học (đã đăng ký hoặc có quyền xem tất cả)
   const hasAccessToCourse = (courseId, course = null) => {
-    // Kiểm tra role=admin trước tiên
-    if (userData && userData.role === 'admin') {
-      return true;
-    }
+    // Admin không có quyền mặc định nữa
     
     // Kiểm tra thuộc tính canViewAllCourses 
     if (userData && userData.canViewAllCourses === true) {

@@ -5,20 +5,20 @@ const useUserData = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Giảm thời gian cache xuống 5 phút
-  const CACHE_TTL = 5 * 60 * 1000; // 5 phút
+  // Giảm thời gian cache xuống 1 phút để đảm bảo dữ liệu được cập nhật thường xuyên
+  const CACHE_TTL = 1 * 60 * 1000; // 1 phút
 
   useEffect(() => {
     // Tạo biến để kiểm tra xem component còn mounted không
     let isMounted = true;
 
-    const fetchUserData = async () => {
+    const fetchUserData = async (forceRefresh = false) => {
       try {
         setLoading(true);
         
         // Kiểm tra xem có dữ liệu user có hiệu lực trong global cache không
         const now = Date.now();
-        if (window.__USER_DATA_CACHE__ && 
+        if (!forceRefresh && window.__USER_DATA_CACHE__ && 
             window.__USER_DATA_TIMESTAMP__ && 
             (now - window.__USER_DATA_TIMESTAMP__) < CACHE_TTL) {
           if (isMounted) {
@@ -54,6 +54,8 @@ const useUserData = () => {
                 'Accept': 'application/json'
               },
               credentials: 'include', // Đảm bảo gửi cookie
+              // Thêm timestamp để tránh cache
+              cache: 'no-cache',
               // Thêm timeout để tránh fetch quá lâu
               signal: AbortSignal.timeout(10000) // 10 giây timeout
             };
@@ -63,7 +65,7 @@ const useUserData = () => {
               options.body = JSON.stringify({ uid: 'anonymous-fallback' });
             }
             
-            const response = await fetch(endpoint, options);
+            const response = await fetch(`${endpoint}?_=${now}`, options);
             
             if (response.ok) {
               const contentType = response.headers.get('content-type');
@@ -107,8 +109,9 @@ const useUserData = () => {
                       'Accept': 'application/json'
                     },
                     credentials: 'include',
-                                            body: JSON.stringify({ uid: 'anonymous-fallback' }), // Provide a fallback UID
-                    signal: AbortSignal.timeout(10000)
+                    body: JSON.stringify({ uid: 'anonymous-fallback' }), // Provide a fallback UID
+                    signal: AbortSignal.timeout(10000),
+                    cache: 'no-cache'
                   });
                   
                   if (retryResponse.ok) {
@@ -136,7 +139,7 @@ const useUserData = () => {
         
         // Nếu lấy được dữ liệu từ bất kỳ endpoint nào
         if (userData) {
-          console.log('✅ Lấy dữ liệu người dùng thành công');
+          console.log('✅ Lấy dữ liệu người dùng thành công:', userData);
           
           // Lưu vào global cache để các component khác sử dụng
           window.__USER_DATA_CACHE__ = userData;
@@ -165,7 +168,7 @@ const useUserData = () => {
             const timestamp = localStorage.getItem('userDataTimestamp');
             const now = Date.now();
             
-            // Chỉ sử dụng cache nếu nó tồn tại và không quá 5 phút
+            // Chỉ sử dụng cache nếu nó tồn tại và không quá cũ
             if (cachedData && timestamp && (now - parseInt(timestamp)) < CACHE_TTL) {
               const parsedData = JSON.parse(cachedData);
               console.log('✅ Sử dụng dữ liệu người dùng từ cache:', parsedData);
@@ -256,34 +259,56 @@ const useUserData = () => {
         }
       }
     };
+    
+    // Thêm event listener để làm mới dữ liệu người dùng khi chuyển trang
+    const handleRouteChange = () => {
+      console.log('Đường dẫn thay đổi, làm mới thông tin người dùng');
+      fetchUserData(true); // Force refresh khi chuyển trang
+    };
+    
+    // Thêm event listener cho navigation events
+    if (typeof window !== 'undefined') {
+      window.addEventListener('popstate', handleRouteChange);
+      
+      // Cho Next.js router events nếu có
+      try {
+        const { Router } = require('next/router');
+        Router.events.on('routeChangeComplete', handleRouteChange);
+      } catch (e) {
+        // Bỏ qua nếu không thể sử dụng Next.js Router events
+      }
+    }
 
     fetchUserData();
 
-    // Thiết lập kiểm tra định kỳ dữ liệu người dùng
-    // Tăng khoảng thời gian kiểm tra để giảm tải máy chủ
-    const intervalId = setInterval(() => {
-      fetchUserData();
-    }, 5 * 60 * 1000); // 5 phút thay vì 2 phút
-
-    // Cleanup function để đánh dấu component đã unmounted và hủy interval
     return () => {
       isMounted = false;
-      clearInterval(intervalId);
+      // Cleanup event listeners
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('popstate', handleRouteChange);
+        
+        try {
+          const { Router } = require('next/router');
+          Router.events.off('routeChangeComplete', handleRouteChange);
+        } catch (e) {
+          // Bỏ qua nếu không thể sử dụng Next.js Router events
+        }
+      }
     };
   }, []);
 
-  // Hàm tạo dữ liệu người dùng mặc định
   const getDefaultUser = () => {
     return {
-      email: "guest@example.com",
-      role: "student",
-      roleDisplayName: "Học viên",
+      uid: 'anonymous',
+      email: 'guest@example.com',
+      displayName: 'Khách',
+      role: 'guest',
+      roleDisplayName: 'Khách',
       additionalInfo: {},
       enrollments: []
     };
   };
 
-  // Hàm chuyển đổi mã vai trò thành tên đầy đủ
   function getRoleDisplayName(role) {
     const roleMap = {
       'admin': 'Quản trị viên',
@@ -298,77 +323,74 @@ const useUserData = () => {
     return roleMap[role] || role;
   }
 
-  /**
-   * Làm mới dữ liệu người dùng (gọi lại API)
-   */
+  // Hàm để tải lại dữ liệu người dùng một cách chủ động
   const refreshUserData = async () => {
+    console.log('⟳ Đang tải lại thông tin người dùng...');
     setLoading(true);
     
     try {
-      const response = await fetch('/api/users/me', {
+      // Xóa cache
+      clearUserDataCache();
+      
+      // Gọi API để lấy thông tin mới nhất
+      const response = await fetch('/api/users/me?_=' + Date.now(), {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
-        credentials: 'include', // Đổi từ same-origin sang include
-        signal: AbortSignal.timeout(10000) // 10 giây timeout
+        credentials: 'include',
+        cache: 'no-cache'
       });
       
       if (response.ok) {
         const result = await response.json();
         
         if (result.success && result.user) {
-          // Cập nhật lại global cache
+          // Cập nhật cache và state
           window.__USER_DATA_CACHE__ = result.user;
           window.__USER_DATA_TIMESTAMP__ = Date.now();
           
-          // Cập nhật lại localStorage
-          localStorage.setItem('userData', JSON.stringify(result.user));
-          localStorage.setItem('userDataTimestamp', Date.now().toString());
-          // Cập nhật trường tokenHash để kiểm tra tính hợp lệ của phiên
-          localStorage.setItem('userTokenHash', result.tokenHash || '');
+          // Cập nhật localStorage
+          try {
+            localStorage.setItem('userData', JSON.stringify(result.user));
+            localStorage.setItem('userDataTimestamp', Date.now().toString());
+          } catch (e) {
+            console.error('Không thể lưu vào localStorage:', e);
+          }
           
-          // Cập nhật state
           setUserData(result.user);
-          setError(null);
-        } else {
-          setError('Không có dữ liệu người dùng hợp lệ');
-          
-          // Xóa cache nếu API trả về lỗi xác thực
-          clearUserDataCache();
-        }
-      } else {
-        setError(`Lỗi ${response.status}: ${response.statusText}`);
-        
-        // Xóa cache nếu API trả về lỗi xác thực
-        if (response.status === 401 || response.status === 403) {
-          clearUserDataCache();
+          console.log('✅ Tải lại thông tin người dùng thành công');
+          return true;
         }
       }
+      
+      console.error('❌ Không thể tải lại thông tin người dùng:', response.status);
+      return false;
     } catch (error) {
-      console.error('❌ Lỗi khi làm mới thông tin người dùng:', error);
-      setError(error.message);
+      console.error('❌ Lỗi khi tải lại thông tin người dùng:', error);
+      return false;
     } finally {
       setLoading(false);
     }
   };
-  
-  /**
-   * Xóa cache người dùng
-   */
+
+  // Hàm xóa cache người dùng
   const clearUserDataCache = () => {
-    // Xóa global cache
-    delete window.__USER_DATA_CACHE__;
-    delete window.__USER_DATA_TIMESTAMP__;
+    console.log('🧹 Đang xóa cache thông tin người dùng...');
+    
+    // Xóa cache toàn cục
+    if (typeof window !== 'undefined') {
+      window.__USER_DATA_CACHE__ = null;
+      window.__USER_DATA_TIMESTAMP__ = 0;
+    }
     
     // Xóa localStorage
     try {
       localStorage.removeItem('userData');
       localStorage.removeItem('userDataTimestamp');
-      localStorage.removeItem('userTokenHash');
     } catch (e) {
-      console.error('Không thể xóa dữ liệu từ localStorage:', e);
+      console.error('Không thể xóa từ localStorage:', e);
     }
   };
 

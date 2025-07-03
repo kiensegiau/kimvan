@@ -64,14 +64,19 @@ export async function GET(request) {
     // Lấy thông tin chi tiết từ MongoDB
     const userDetails = await getUserDetails(firebaseUser.uid, request);
     
-    // Kết hợp thông tin từ Firebase và MongoDB
+    // Kết hợp thông tin từ Firebase và MongoDB, ưu tiên dữ liệu từ MongoDB
     const userData = {
       ...firebaseUser,
       role: userDetails?.role || firebaseUser.role || 'user',
       roleDisplayName: getRoleDisplayName(userDetails?.role || firebaseUser.role || 'user'),
       additionalInfo: userDetails?.additionalInfo || {},
-      enrollments: userDetails?.enrollments || []
+      enrollments: userDetails?.enrollments || [],
+      // Luôn lấy quyền canViewAllCourses từ MongoDB, KHÔNG lấy từ token Firebase
+      canViewAllCourses: userDetails?.canViewAllCourses || false
     };
+    
+    // Log để debug
+    console.log(`API /users/me - UID: ${firebaseUser.uid}, canViewAllCourses: ${userData.canViewAllCourses}`);
     
     return NextResponse.json({
       success: true,
@@ -159,7 +164,10 @@ export async function PATCH(request) {
         { upsert: true }
       );
       
-      // Trả về kết quả
+      // Lấy thông tin chi tiết từ MongoDB sau khi cập nhật
+      const updatedUserDetails = await userCollection.findOne({ firebaseId: user.uid });
+      
+      // Trả về kết quả với canViewAllCourses từ MongoDB
       return NextResponse.json({
         success: true,
         message: 'Cập nhật thông tin thành công',
@@ -167,7 +175,8 @@ export async function PATCH(request) {
           ...user,
           displayName: displayName !== undefined ? displayName : user.displayName,
           phoneNumber: phoneNumber !== undefined ? phoneNumber : user.phoneNumber,
-          additionalInfo: additionalInfo !== undefined ? additionalInfo : user.additionalInfo
+          additionalInfo: additionalInfo !== undefined ? additionalInfo : user.additionalInfo,
+          canViewAllCourses: updatedUserDetails?.canViewAllCourses || false
         }
       });
     } catch (dbError) {

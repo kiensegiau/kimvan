@@ -21,12 +21,13 @@ export default function CourseDetailPage({ params }) {
   const resolvedParams = use(params);
   const id = resolvedParams.id;
   const [permissionCheckedFinal, setPermissionCheckedFinal] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   
   // Lấy thông tin người dùng trước
-  const { userData, loading: userLoading } = useUserData();
+  const { userData, loading: userLoading, refreshUserData } = useUserData();
 
   // Đảm bảo useEnrolledCourses nhận userData để tránh gọi API lặp lại
-  const { isEnrolledInCourse } = useEnrolledCourses(userData);
+  const { isEnrolledInCourse, refreshEnrollments } = useEnrolledCourses(userData);
 
   // Sử dụng các custom hooks và truyền userData vào useCourseData
   const { 
@@ -62,15 +63,51 @@ export default function CourseDetailPage({ params }) {
       fetchApiSheetData();
     }, 500); // Delay nhỏ để tránh các yêu cầu đồng thời
   };
+  
+  // Hàm làm mới dữ liệu người dùng và kiểm tra quyền lại từ đầu
+  const handleRefreshPermissions = async () => {
+    setRefreshing(true);
+    try {
+      // Làm mới thông tin người dùng
+      await refreshUserData();
+      // Làm mới danh sách đăng ký
+      if (refreshEnrollments) {
+        await refreshEnrollments();
+      }
+      // Làm mới thông tin khóa học
+      await refreshCourseData();
+      // Reset trạng thái kiểm tra quyền
+      setPermissionCheckedFinal(false);
+    } catch (error) {
+      console.error('Lỗi khi làm mới thông tin người dùng:', error);
+    } finally {
+      setRefreshing(false);
+      // Đợi một chút để các hook cập nhật state
+      setTimeout(() => {
+        setPermissionCheckedFinal(true);
+      }, 500);
+    }
+  };
 
   // Kiểm tra quyền đặc biệt và bỏ qua kiểm tra quyền thông thường nếu có quyền xem tất cả
   const hasViewAllPermission = userData?.canViewAllCourses === true || 
-    (userData?.permissions && Array.isArray(userData?.permissions) && userData?.permissions.includes('view_all_courses')) ||
-    userData?.role === 'admin';
+    (userData?.permissions && Array.isArray(userData?.permissions) && userData?.permissions.includes('view_all_courses'));
   const shouldBypassPermissionCheck = hasViewAllPermission;
 
   // Kiểm tra quyền truy cập với xử lý đặc biệt cho admin và canViewAllCourses
   const hasAccessDenied = !shouldBypassPermissionCheck && permissionChecked && error && error.includes("không có quyền truy cập");
+
+  // Log thông tin kiểm tra quyền để debug
+  useEffect(() => {
+    console.log('-------------------- KIỂM TRA QUYỀN --------------------');
+    console.log('userData:', userData);
+    console.log('hasViewAllPermission:', hasViewAllPermission);
+    console.log('shouldBypassPermissionCheck:', shouldBypassPermissionCheck);
+    console.log('permissionChecked:', permissionChecked);
+    console.log('error:', error);
+    console.log('hasAccessDenied:', hasAccessDenied);
+    console.log('--------------------------------------------------------');
+  }, [userData, hasViewAllPermission, permissionChecked, error, hasAccessDenied]);
 
   // Cập nhật trạng thái kiểm tra quyền cuối cùng khi có đủ thông tin
   useEffect(() => {
@@ -87,14 +124,32 @@ export default function CourseDetailPage({ params }) {
   }, [course, hasAccessDenied, permissionCheckedFinal]);
 
   // Hiển thị trạng thái loading khi đang tải dữ liệu người dùng hoặc khóa học
-  if (userLoading || courseLoading) {
-    return <LoadingState message="Đang tải thông tin khóa học..." />;
+  if (userLoading || courseLoading || refreshing) {
+    return <LoadingState message={refreshing ? "Đang làm mới thông tin quyền truy cập..." : "Đang tải thông tin khóa học..."} />;
   }
 
   // Chỉ hiển thị lỗi quyền truy cập khi đã hoàn thành kiểm tra
   if (hasAccessDenied && permissionCheckedFinal) {
     return (
-      <PermissionDenied message={error} redirectUrl="/courses" data-access-denied="true" />
+      <div className="min-h-screen bg-gray-100 p-4 sm:p-6">
+        <PermissionDenied message={error} redirectUrl="/courses" data-access-denied="true" />
+        
+        {/* Nút làm mới quyền truy cập */}
+        <div className="mt-6 text-center">
+          <button
+            onClick={handleRefreshPermissions}
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
+            </svg>
+            Làm mới quyền truy cập
+          </button>
+          <p className="mt-2 text-sm text-gray-500">
+            Nếu bạn vừa được cấp quyền truy cập, hãy nhấn nút trên để làm mới thông tin.
+          </p>
+        </div>
+      </div>
     );
   }
 
@@ -130,6 +185,15 @@ export default function CourseDetailPage({ params }) {
             </div>
           </div>
           <div className="flex gap-2">
+            <button
+              onClick={handleRefreshPermissions}
+              className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+              </svg>
+              Làm mới quyền
+            </button>
             <button
               onClick={handleRefreshAll}
               className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
@@ -186,6 +250,29 @@ export default function CourseDetailPage({ params }) {
                   </dd>
                 </div>
               )}
+              {/* Hiển thị thông tin quyền truy cập */}
+              <div className="bg-white px-4 py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt className="text-sm font-medium text-gray-500">
+                  Quyền truy cập
+                </dt>
+                <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                  {hasViewAllPermission ? (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="-ml-0.5 mr-1.5 h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Có quyền xem tất cả khóa học
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="-ml-0.5 mr-1.5 h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
+                      Chỉ xem các khóa học đã đăng ký
+                    </span>
+                  )}
+                </dd>
+              </div>
             </dl>
           </div>
         </div>

@@ -71,27 +71,37 @@ export function useCourseData(id, userData = null, userLoading = false) {
   const checkPermission = (courseData) => {
     // Nếu không có dữ liệu khoá học, không có quyền truy cập
     if (!courseData) {
+      console.log('❌ Kiểm tra quyền: Không có dữ liệu khóa học');
       return false;
     }
     
     // Nếu đang tải thông tin người dùng, chưa thể xác định quyền truy cập
     if (userLoading) {
+      console.log('⌛ Kiểm tra quyền: Đang tải thông tin người dùng');
       return null; // Trả về null để biết rằng việc kiểm tra quyền chưa hoàn tất
     }
     
+    // Kiểm tra nếu không có userData
+    if (!userData) {
+      console.log('❌ Kiểm tra quyền: Không có thông tin người dùng');
+      return false;
+    }
+    
+    console.log(`🔍 Kiểm tra quyền truy cập khóa học: ${courseData._id || courseData.id || id}`);
+    console.log(`👤 Thông tin người dùng: role=${userData.role}, canViewAllCourses=${userData.canViewAllCourses}`);
+    
+    // Bỏ kiểm tra quyền từ role admin (admin không còn mặc định có quyền xem tất cả)
+    
     // Kiểm tra thuộc tính canViewAllCourses
-    if (userData && userData.canViewAllCourses === true) {
+    if (userData.canViewAllCourses === true) {
+      console.log('✅ Kiểm tra quyền: Người dùng có quyền xem tất cả khóa học (canViewAllCourses)');
       return true;
     }
     
     // Kiểm tra quyền từ mảng permissions
-    if (userData && userData.permissions && Array.isArray(userData.permissions) && 
+    if (userData.permissions && Array.isArray(userData.permissions) && 
         userData.permissions.includes('view_all_courses')) {
-      return true;
-    }
-    
-    // Kiểm tra role admin
-    if (userData && userData.role === 'admin') {
+      console.log('✅ Kiểm tra quyền: Người dùng có quyền view_all_courses trong mảng permissions');
       return true;
     }
     
@@ -99,6 +109,7 @@ export function useCourseData(id, userData = null, userLoading = false) {
     const requiresEnrollment = courseData?.requiresEnrollment !== false;
     
     if (!requiresEnrollment) {
+      console.log('✅ Kiểm tra quyền: Khóa học không yêu cầu đăng ký');
       return true;
     }
     
@@ -127,9 +138,11 @@ export function useCourseData(id, userData = null, userLoading = false) {
     }
     
     if (isUserEnrolled) {
+      console.log('✅ Kiểm tra quyền: Người dùng đã đăng ký khóa học này');
       return true;
     }
     
+    console.log('❌ Kiểm tra quyền: Không có quyền truy cập khóa học');
     return false;
   };
   

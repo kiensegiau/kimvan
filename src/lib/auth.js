@@ -85,7 +85,8 @@ export async function authMiddleware(req) {
         email: decodedToken.email,
         name: decodedToken.name || decodedToken.displayName,
         role: decodedToken.role || 'user',
-        canViewAllCourses: decodedToken.role === 'admin' || decodedToken.canViewAllCourses === true
+        // Admin không còn mặc định có quyền xem tất cả khóa học
+        canViewAllCourses: decodedToken.canViewAllCourses === true
       };
     } catch (verifyError) {
       console.error('Lỗi khi xác thực token:', verifyError);
