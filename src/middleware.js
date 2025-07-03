@@ -96,6 +96,13 @@ function addSecurityHeaders(response) {
   return response;
 }
 
+// Hàm lấy base URL
+const getBaseUrl = (request) => {
+  const host = request.headers.get('host');
+  const protocol = request.headers.get('x-forwarded-proto') || 'http';
+  return `${protocol}://${host}`;
+};
+
 export async function middleware(request) {
   const { pathname } = request.nextUrl;
   // Debug: log pathname để kiểm tra
@@ -180,15 +187,10 @@ export async function middleware(request) {
 
   // Xác thực token với server trước khi cho phép truy cập
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || '';
-    // Đảm bảo baseUrl kết thúc đúng cách
-    const normalizedBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+    const baseUrl = getBaseUrl(request);
     
-    // Sử dụng URL tương đối nếu đang trên cùng server, hoặc URL đầy đủ nếu cần
-    const apiUrl = baseUrl ? `${normalizedBaseUrl}${TOKEN_VERIFY_API}` : TOKEN_VERIFY_API;
-    
-    // Gọi API xác thực token
-    const verifyResponse = await fetch(apiUrl, {
+    // Gọi API xác thực token với URL đầy đủ
+    const verifyResponse = await fetch(`${baseUrl}${TOKEN_VERIFY_API}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -208,8 +210,8 @@ export async function middleware(request) {
     let userRole;
 
     if (!verifyResponse.ok) {
-      // Thử làm mới token (dùng URL đầy đủ)
-      const refreshResponse = await fetch(`${normalizedBaseUrl}${TOKEN_REFRESH_API}`, {
+      // Thử làm mới token với URL đầy đủ
+      const refreshResponse = await fetch(`${baseUrl}${TOKEN_REFRESH_API}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -274,7 +276,7 @@ export async function middleware(request) {
       token = refreshData.token;
       
       // Gọi lại API xác thực với token mới (dùng URL đầy đủ)
-      const reVerifyResponse = await fetch(`${normalizedBaseUrl}${TOKEN_VERIFY_API}`, {
+      const reVerifyResponse = await fetch(`${baseUrl}${TOKEN_VERIFY_API}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -319,7 +321,7 @@ export async function middleware(request) {
       // Lấy role từ MongoDB thông qua API (dùng URL đầy đủ)
       userRole = user.role || 'user';
       try {
-        const roleResponse = await fetch(`${normalizedBaseUrl}${USER_ROLE_API}`, {
+        const roleResponse = await fetch(`${baseUrl}${USER_ROLE_API}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -350,7 +352,7 @@ export async function middleware(request) {
       if (timeLeft < 30 * 60 * 1000) {
         try {
           // Gọi API làm mới token (dùng URL đầy đủ)
-          const refreshResponse = await fetch(`${normalizedBaseUrl}${TOKEN_REFRESH_API}`, {
+          const refreshResponse = await fetch(`${baseUrl}${TOKEN_REFRESH_API}`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
@@ -417,7 +419,7 @@ export async function middleware(request) {
       // Lấy role từ MongoDB thông qua API (dùng URL đầy đủ)
       userRole = user.role || 'user';
       try {
-        const roleResponse = await fetch(`${normalizedBaseUrl}${USER_ROLE_API}`, {
+        const roleResponse = await fetch(`${baseUrl}${USER_ROLE_API}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -448,7 +450,7 @@ export async function middleware(request) {
       if (timeLeft < 30 * 60 * 1000) {
         try {
           // Gọi API làm mới token (dùng URL đầy đủ)
-          const refreshResponse = await fetch(`${normalizedBaseUrl}${TOKEN_REFRESH_API}`, {
+          const refreshResponse = await fetch(`${baseUrl}${TOKEN_REFRESH_API}`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
