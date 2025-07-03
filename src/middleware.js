@@ -198,18 +198,11 @@ export async function middleware(request) {
       body: JSON.stringify({ token }),
     });
 
-    if (verifyResponse.ok) {
-      const verifyData = await verifyResponse.json();
-      if (verifyData.valid && verifyData.user) {
-        // Thêm user vào request
-        request.user = verifyData.user;
-      }
-    }
+    // Clone response để có thể đọc nhiều lần
+    const verifyResponseClone = verifyResponse.clone();
+    const verifyData = await verifyResponseClone.json();
 
-    let user;
-    let userRole;
-
-    if (!verifyResponse.ok) {
+    if (!verifyResponse.ok || !verifyData.valid) {
       // Thử làm mới token với URL đầy đủ
       const refreshResponse = await fetch(`${baseUrl}${TOKEN_REFRESH_API}`, {
         method: 'POST',
@@ -316,17 +309,17 @@ export async function middleware(request) {
       }
       
       // Sử dụng dữ liệu từ token mới đã được xác thực
-      user = verifyData.user;
+      request.user = verifyData.user;
       
       // Lấy role từ MongoDB thông qua API (dùng URL đầy đủ)
-      userRole = user.role || 'user';
+      let userRole = verifyData.user.role || 'user';
       try {
         const roleResponse = await fetch(`${baseUrl}${USER_ROLE_API}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ uid: user.uid }),
+          body: JSON.stringify({ uid: verifyData.user.uid }),
         });
         
         if (roleResponse.ok) {
@@ -344,7 +337,7 @@ export async function middleware(request) {
   
       // Kiểm tra xem token có sắp hết hạn không
       // Lấy thời gian hết hạn từ payload token
-      const tokenExpiration = user.tokenExpiration;
+      const tokenExpiration = verifyData.user.tokenExpiration;
       const now = Date.now();
       const timeLeft = tokenExpiration - now;
       
@@ -391,7 +384,7 @@ export async function middleware(request) {
       // Nếu token hợp lệ, đặt header
       response.headers.set('x-middleware-active', 'true');
       response.headers.set('x-auth-token', token);
-      response.headers.set('x-user-id', user.uid);
+      response.headers.set('x-user-id', verifyData.user.uid);
       response.headers.set('x-user-role', userRole);
     } else {
       const verifyData = await verifyResponse.json();
@@ -414,17 +407,18 @@ export async function middleware(request) {
         }
       }
       
-      user = verifyData.user;
+      // Sử dụng dữ liệu từ token đã được xác thực
+      request.user = verifyData.user;
       
       // Lấy role từ MongoDB thông qua API (dùng URL đầy đủ)
-      userRole = user.role || 'user';
+      let userRole = verifyData.user.role || 'user';
       try {
         const roleResponse = await fetch(`${baseUrl}${USER_ROLE_API}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ uid: user.uid }),
+          body: JSON.stringify({ uid: verifyData.user.uid }),
         });
         
         if (roleResponse.ok) {
@@ -442,7 +436,7 @@ export async function middleware(request) {
   
       // Kiểm tra xem token có sắp hết hạn không
       // Lấy thời gian hết hạn từ payload token
-      const tokenExpiration = user.tokenExpiration;
+      const tokenExpiration = verifyData.user.tokenExpiration;
       const now = Date.now();
       const timeLeft = tokenExpiration - now;
       
@@ -489,7 +483,7 @@ export async function middleware(request) {
       // Nếu token hợp lệ, đặt header
       response.headers.set('x-middleware-active', 'true');
       response.headers.set('x-auth-token', token);
-      response.headers.set('x-user-id', user.uid);
+      response.headers.set('x-user-id', verifyData.user.uid);
       response.headers.set('x-user-role', userRole);
     }
     
@@ -499,7 +493,7 @@ export async function middleware(request) {
     if (pathname.startsWith('/admin') && !pathname.startsWith('/admin/login')) {
       // Đảm bảo userRole đã được định nghĩa
       if (userRole === undefined) {
-        userRole = user?.role || 'user';
+        userRole = verifyData.user?.role || 'user';
       }
       
       // Kiểm tra user có quyền admin không
@@ -524,7 +518,7 @@ export async function middleware(request) {
     if (pathname.startsWith('/ctv') && !pathname.startsWith('/ctv/login')) {
       // Đảm bảo userRole đã được định nghĩa
       if (userRole === undefined) {
-        userRole = user?.role || 'user';
+        userRole = verifyData.user?.role || 'user';
       }
       
       // Kiểm tra user có quyền ctv (công tác viên) hay không
@@ -549,7 +543,7 @@ export async function middleware(request) {
     if (pathname.startsWith('/api/admin') || pathname.startsWith('/api/courses/raw')) {
       // Đảm bảo userRole đã được định nghĩa
       if (userRole === undefined) {
-        userRole = user?.role || 'user';
+        userRole = verifyData.user?.role || 'user';
       }
       
       // Kiểm tra các API đặc biệt mà CTV được phép truy cập
@@ -576,7 +570,7 @@ export async function middleware(request) {
             });
             
             // Thêm email của CTV vào cookie để API có thể lấy
-            response.cookies.set('ctv_email', user.email, {
+            response.cookies.set('ctv_email', verifyData.user.email, {
               httpOnly: true,
               secure: isHttps,
               sameSite: cookieConfig.sameSite,
@@ -619,7 +613,7 @@ export async function middleware(request) {
     if (pathname.startsWith('/api/ctv')) {
       // Đảm bảo userRole đã được định nghĩa
       if (userRole === undefined) {
-        userRole = user?.role || 'user';
+        userRole = verifyData.user?.role || 'user';
       }
       
       // Kiểm tra user có quyền CTV không
