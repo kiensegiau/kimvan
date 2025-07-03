@@ -518,6 +518,7 @@ export function useApiSheetData(courseId) {
       // Nếu có dữ liệu từ database
       if (dbData.success && dbData.sheet) {
         console.log(`✅ Đã lấy dữ liệu sheet ${sheetId} từ database`);
+        console.log(`Sheet Name from database: ${dbData.sheet.name || 'Không có tên'}`);
         
         // Phân tích cấu trúc dữ liệu
         const structure = analyzeSheetDataStructure(dbData.sheet);
@@ -534,7 +535,9 @@ export function useApiSheetData(courseId) {
                 return {
                   ...sheet,
                   detail: dbData.sheet,
-                  source: 'database'
+                  source: 'database',
+                  // Cập nhật tên sheet nếu chưa có
+                  name: sheet.name || dbData.sheet.name
                 };
               }
               return sheet;
@@ -734,4 +737,4 @@ export function useApiSheetData(courseId) {
     clearCache: clearCurrentCache,
     clearAllSheetCaches
   };
-} 
+}

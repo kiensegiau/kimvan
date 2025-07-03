@@ -28,6 +28,17 @@ export async function processSheetToDatabase(sheetId, options = {}) {
     const deleteResult = await SheetContent.deleteOne({ sheetId });
     console.log(`Đã xóa ${deleteResult.deletedCount} bản ghi cũ của sheet ${sheetId}`);
     
+    // Tìm thông tin sheet từ database để lấy tên
+    let sheetName = options.sheetName || '';
+    if (!sheetName) {
+      const sheetInfo = await mongoose.models.Sheet.findOne({ sheetId }).lean();
+      if (sheetInfo) {
+        sheetName = sheetInfo.name;
+      } else {
+        console.warn(`Không tìm thấy thông tin sheet ${sheetId} trong database`);
+      }
+    }
+    
     // Lấy dữ liệu từ Google Sheets
     const sheetData = await fetchSheetDataWithCache(sheetId, false);
     
@@ -121,56 +132,14 @@ export async function processSheetToDatabase(sheetId, options = {}) {
       });
     }
     
-    // Đảm bảo dữ liệu HTML được giữ nguyên
-    let formattedHtmlData = [];
-    if (sheetData.htmlData && Array.isArray(sheetData.htmlData)) {
-      // Chuẩn hóa cấu trúc dữ liệu HTML
-      formattedHtmlData = sheetData.htmlData.map((row, rowIndex) => {
-        if (!row) return { values: [] };
-        
-        // Nếu row đã có cấu trúc { values: [...] }
-        if (row.values && Array.isArray(row.values)) {
-          return row;
-        }
-        // Nếu row là một mảng, chuyển đổi sang cấu trúc chuẩn
-        else if (Array.isArray(row)) {
-          return {
-            values: row.map(cell => {
-              // Giữ lại thông tin hyperlink nếu có
-              if (cell && typeof cell === 'object') {
-                return cell;
-              }
-              // Chuyển đổi giá trị đơn giản thành đối tượng
-              return { formattedValue: cell };
-            })
-          };
-        }
-        // Trường hợp khác, trả về đối tượng rỗng
-        return { values: [] };
-      });
-      
-      // Kiểm tra và log số lượng hyperlink sau khi chuẩn hóa
-      let hyperlinkCount = 0;
-      formattedHtmlData.forEach((row, rowIndex) => {
-        if (row && row.values && Array.isArray(row.values)) {
-          row.values.forEach((cell, cellIndex) => {
-            if (cell && cell.hyperlink) {
-              hyperlinkCount++;
-              console.log(`Hyperlink sau chuẩn hóa [${rowIndex},${cellIndex}]: ${cell.hyperlink}`);
-            }
-          });
-        }
-      });
-      console.log(`Tổng số hyperlink sau chuẩn hóa: ${hyperlinkCount}`);
-    }
-    
     // Tạo document sheet
     const sheetDocument = {
       sheetId,
+      name: sheetName, // Sử dụng tên sheet từ options hoặc từ database
       totalRows: rows.length,
       header,
       rows,
-      htmlData: formattedHtmlData,
+      // Đã loại bỏ trường htmlData
       processedAt: new Date(),
       metadata: {
         source: 'Google Sheets',
@@ -257,9 +226,9 @@ export async function getProcessedSheetData(sheetId, options = {}) {
       data: {
         _id: sheetContent._id,
         sheetId: sheetContent.sheetId,
+        name: sheetContent.name || '',
         header: sheetContent.header,
         rows: paginatedRows,
-        htmlData: sheetContent.htmlData,
         totalRows: sheetContent.totalRows,
         processedAt: sheetContent.processedAt
       },

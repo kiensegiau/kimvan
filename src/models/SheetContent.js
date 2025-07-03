@@ -7,6 +7,10 @@ const SheetContentSchema = new mongoose.Schema({
     unique: true,
     index: true
   },
+  name: {
+    type: String,
+    default: ''
+  },
   totalRows: {
     type: Number,
     default: 0

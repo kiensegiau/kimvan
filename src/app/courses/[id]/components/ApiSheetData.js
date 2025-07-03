@@ -69,7 +69,7 @@ export default function ApiSheetData({
       if (currentSheet) {
         console.log('📑 Thông tin sheet hiện tại:');
         console.log('Sheet ID:', currentSheet._id);
-        console.log('Sheet Name:', currentSheet.name);
+        console.log('Sheet Name:', currentSheet.name || currentSheet.detail?.name || 'Không có tên');
         
         // Kiểm tra và log cấu trúc dữ liệu chi tiết
         if (currentSheet.detail) {
@@ -80,9 +80,11 @@ export default function ApiSheetData({
             console.log('Header:', currentSheet.detail.header);
             console.log('Rows:', currentSheet.detail.rows);
             console.log('Total Rows:', currentSheet.detail.rows.length);
+            console.log('Sheet Name from detail:', currentSheet.detail.name || 'Không có tên trong detail');
           } else if (Array.isArray(currentSheet.detail.values)) {
             console.log('Values:', currentSheet.detail.values);
             console.log('Total Rows:', currentSheet.detail.values.length - 1);
+            console.log('Sheet Name from detail:', currentSheet.detail.name || 'Không có tên trong detail');
           }
         }
       }
@@ -617,6 +619,7 @@ export default function ApiSheetData({
 
     // Log toàn bộ cấu trúc dữ liệu
     console.log('🎯 Toàn bộ dữ liệu sheet:', sheetDetail);
+    console.log('Sheet Name:', sheetDetail.name || 'Không có tên trong dữ liệu chi tiết');
     
     // Debug cấu trúc dữ liệu
     debugSheetStructure(sheetDetail);
@@ -998,7 +1001,7 @@ export default function ApiSheetData({
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
-                  {sheet.title || `Sheet ${index + 1}`}
+                  {sheet.name || `Sheet ${index + 1}`}
               </button>
             ))}
             </div>
@@ -1035,7 +1038,7 @@ export default function ApiSheetData({
                 {/* Sheet title and actions */}
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg font-medium text-gray-900">
-                    {apiSheetData.sheets[activeApiSheet].title || `Sheet ${activeApiSheet + 1}`}
+                    {apiSheetData.sheets[activeApiSheet].name || apiSheetData.sheets[activeApiSheet].detail?.name || `Sheet ${activeApiSheet + 1}`}
                   </h3>
                   <div className="flex space-x-2">
                     <button

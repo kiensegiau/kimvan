@@ -32,7 +32,8 @@ function formatSheetDataFromDb(sheetContent) {
       htmlData: [],
       header: [],
       rows: [],
-      fetchedAt: null
+      fetchedAt: null,
+      name: sheetContent?.name || ''
     };
   }
   
@@ -108,7 +109,8 @@ function formatSheetDataFromDb(sheetContent) {
     htmlData: sheetContent.htmlData || [],
     optimizedHtmlData: sheetContent.optimizedHtmlData || null,
     storageMode: sheetContent.metadata?.storageMode || 'full',
-    fetchedAt: sheetContent.processedAt
+    fetchedAt: sheetContent.processedAt,
+    name: sheetContent.name || ''
   };
 }
 
@@ -175,6 +177,11 @@ export async function GET(request, { params }) {
             // Format and return the newly processed data
             const formattedData = formatSheetDataFromDb(newSheetContent);
             
+            // Add sheet name from Sheet model if available
+            if (sheet && sheet.name && !formattedData.name) {
+              formattedData.name = sheet.name;
+            }
+            
             return NextResponse.json({
               success: true,
               source: 'database',
@@ -210,6 +217,11 @@ export async function GET(request, { params }) {
     
     // Format data using helper function
     const formattedData = formatSheetDataFromDb(sheetContent);
+    
+    // Add sheet name from Sheet model if available
+    if (sheet && sheet.name && !formattedData.name) {
+      formattedData.name = sheet.name;
+    }
     
     // Return response
     return NextResponse.json({

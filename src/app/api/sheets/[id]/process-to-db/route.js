@@ -69,7 +69,10 @@ export async function POST(request, { params }) {
     
     // Nếu yêu cầu xử lý đồng bộ
     if (requestBody.background === false) {
-      const result = await processSheetToDatabase(sheet.sheetId);
+      const result = await processSheetToDatabase(sheet.sheetId, { 
+        processedBy: auth.user.email || 'API',
+        sheetName: sheet.name 
+      });
       
       return NextResponse.json({
         success: result.success,
@@ -87,7 +90,10 @@ export async function POST(request, { params }) {
     }
     
     // Nếu xử lý nền (background)
-    processSheetToDatabase(sheet.sheetId).then(result => {
+    processSheetToDatabase(sheet.sheetId, { 
+      processedBy: auth.user.email || 'API',
+      sheetName: sheet.name 
+    }).then(result => {
       console.log(`Hoàn tất xử lý sheet ${sheet.sheetId} trong nền:`, result);
     }).catch(error => {
       console.error(`Lỗi xử lý sheet ${sheet.sheetId} trong nền:`, error);
