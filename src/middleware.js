@@ -72,6 +72,18 @@ const EXCLUDED_API_PATHS = [
   '/api/auth/reset-password',
   '/api/auth/user-role',
   '/api/users/me',
+  '/api/users/me/password',
+  '/api/courses',
+  '/api/courses/',
+  '/api/enrollments',
+  '/api/enrollments/',
+  '/api/sheets',
+  '/api/sheets/',
+  '/api/cache',
+  '/api/links',
+  '/api/links/',
+  '/api/spreadsheets',
+  '/api/spreadsheets/',
   '/api/health-check',
   '/api/health-check/mongodb',
   '/api/health-check/mongodb-reset'
@@ -104,6 +116,21 @@ const getBaseUrl = (request) => {
   return `${protocol}://${host}`;
 };
 
+// Hàm chuyển đổi mã vai trò thành tên đầy đủ
+function getRoleDisplayName(role) {
+  const roleMap = {
+    'admin': 'Quản trị viên',
+    'user': 'Người dùng',
+    'ctv': 'Công tác viên',
+    'staff': 'Nhân viên',
+    'instructor': 'Giảng viên',
+    'student': 'Học viên',
+    'guest': 'Khách'
+  };
+  
+  return roleMap[role] || role;
+}
+
 export async function middleware(request) {
   const { pathname } = request.nextUrl;
   // Debug: log pathname để kiểm tra
@@ -133,7 +160,13 @@ export async function middleware(request) {
   });
 
   // Loại trừ các API đặc biệt khỏi middleware để tránh lặp và redirect loops
-  if (EXCLUDED_API_PATHS.some(path => pathname.startsWith(path))) {
+  if (EXCLUDED_API_PATHS.some(path => pathname.startsWith(path)) || 
+      pathname.match(/^\/api\/courses\/[\w-]+/) || 
+      pathname.match(/^\/api\/enrollments\/[\w-]+/) || 
+      pathname.match(/^\/api\/sheets\/[\w-]+/) || 
+      pathname.match(/^\/api\/links\/[\w-]+/) ||
+      pathname.match(/^\/api\/spreadsheets\/[\w-]+/)) {
+    console.log('🚫 Bỏ qua middleware cho:', pathname);
     return response;
   }
 
@@ -150,6 +183,12 @@ export async function middleware(request) {
   
   // Không kiểm tra xác thực cho các đường dẫn công khai
   if (pathIsPublic) {
+    return addSecurityHeaders(response);
+  }
+
+  // Không áp dụng middleware cho các API trong môi trường phát triển
+  if (process.env.NODE_ENV !== 'production' && pathname.startsWith('/api/')) {
+    console.log('⚙️ Môi trường phát triển: Bỏ qua middleware cho API:', pathname);
     return addSecurityHeaders(response);
   }
 
@@ -211,12 +250,19 @@ export async function middleware(request) {
     let verifyData;
     try {
       verifyData = await verifyResponseClone.json();
+      console.log('Verify response data:', JSON.stringify(verifyData));
     } catch (parseError) {
       console.error('Failed to parse verify response:', parseError);
       // Log response text để debug
       const responseText = await verifyResponse.text();
       console.error('Response text:', responseText);
       throw new Error('Invalid JSON response from verify endpoint');
+    }
+    
+    // Đảm bảo request.user được thiết lập
+    if (verifyData && verifyData.valid && verifyData.user) {
+      request.user = verifyData.user;
+      console.log('User set from verify response:', JSON.stringify(request.user));
     }
 
     if (!verifyResponse.ok || !verifyData.valid) {
@@ -341,32 +387,46 @@ export async function middleware(request) {
       }
       
       // Sử dụng dữ liệu từ token mới đã được xác thực
-      request.user = verifyData.user;
+      if (verifyData && verifyData.user) {
+        request.user = verifyData.user;
+        console.log('Setting request.user from token refresh:', JSON.stringify(request.user));
+      } else {
+        console.log('Warning: verifyData.user is undefined after token refresh');
+      }
       
       // Lấy role từ MongoDB thông qua API (dùng URL đầy đủ)
-      let userRole = verifyData.user.role || 'user';
+      let userRole = 'user';
+      if (verifyData?.user?.role) {
+        userRole = verifyData.user.role;
+      }
+      
       try {
-        const roleResponse = await fetch(`${baseUrl}${USER_ROLE_API}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ uid: verifyData.user.uid }),
-        });
-        
-        if (roleResponse.ok) {
-          const roleData = await roleResponse.json();
-          if (roleData.success && roleData.role) {
-            userRole = roleData.role;
+        if (verifyData?.user?.uid) {
+          const roleResponse = await fetch(`${baseUrl}${USER_ROLE_API}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ uid: verifyData.user.uid }),
+          });
+          
+          if (roleResponse.ok) {
+            const roleData = await roleResponse.json();
+            if (roleData.success && roleData.role) {
+              userRole = roleData.role;
+              console.log('Role lấy từ API:', userRole);
+            }
+          } else {
+            console.error('Lỗi khi gọi API role:', await roleResponse.text());
           }
         } else {
-          console.error('Lỗi khi gọi API role:', await roleResponse.text());
+          console.error('Không thể lấy role từ API: uid không tồn tại');
         }
       } catch (roleError) {
         console.error('Lỗi khi lấy role từ API:', roleError);
         // Không làm gián đoạn luồng nếu lỗi API, tiếp tục sử dụng role từ token
       }
-  
+      
       // Kiểm tra xem token có sắp hết hạn không
       // Lấy thời gian hết hạn từ payload token
       const tokenExpiration = verifyData.user.tokenExpiration;
@@ -416,10 +476,23 @@ export async function middleware(request) {
       // Nếu token hợp lệ, đặt header
       response.headers.set('x-middleware-active', 'true');
       response.headers.set('x-auth-token', token);
-      response.headers.set('x-user-id', verifyData.user.uid);
-      response.headers.set('x-user-role', userRole);
-    } else {
-      const verifyData = await verifyResponse.json();
+      
+      // Đảm bảo user info tồn tại trước khi đặt header
+      if (verifyData?.user?.uid) {
+        response.headers.set('x-user-id', verifyData.user.uid);
+      } else {
+        console.error('Warning: verifyData.user.uid is undefined');
+      }
+      
+      // Đặt header role
+      response.headers.set('x-user-role', userRole || 'user');
+    }     else {
+      // Đảm bảo verifyData được định nghĩa
+      if (!verifyData) {
+        const verifyResponseData = await verifyResponse.json();
+        verifyData = verifyResponseData;
+        console.log('verifyData from else block:', JSON.stringify(verifyData));
+      }
       
       // Nếu token không hợp lệ, chuyển hướng đến trang đăng nhập
       if (!verifyData.valid) {
@@ -440,32 +513,46 @@ export async function middleware(request) {
       }
       
       // Sử dụng dữ liệu từ token đã được xác thực
-      request.user = verifyData.user;
+      if (verifyData && verifyData.user) {
+        request.user = verifyData.user;
+        console.log('Setting request.user:', JSON.stringify(request.user));
+      } else {
+        console.log('Warning: verifyData.user is undefined');
+      }
       
       // Lấy role từ MongoDB thông qua API (dùng URL đầy đủ)
-      let userRole = verifyData.user.role || 'user';
+      let userRole = 'user';
+      if (verifyData?.user?.role) {
+        userRole = verifyData.user.role;
+      }
+      
       try {
-        const roleResponse = await fetch(`${baseUrl}${USER_ROLE_API}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ uid: verifyData.user.uid }),
-        });
-        
-        if (roleResponse.ok) {
-          const roleData = await roleResponse.json();
-          if (roleData.success && roleData.role) {
-            userRole = roleData.role;
+        if (verifyData?.user?.uid) {
+          const roleResponse = await fetch(`${baseUrl}${USER_ROLE_API}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ uid: verifyData.user.uid }),
+          });
+          
+          if (roleResponse.ok) {
+            const roleData = await roleResponse.json();
+            if (roleData.success && roleData.role) {
+              userRole = roleData.role;
+              console.log('Role lấy từ API:', userRole);
+            }
+          } else {
+            console.error('Lỗi khi gọi API role:', await roleResponse.text());
           }
         } else {
-          console.error('Lỗi khi gọi API role:', await roleResponse.text());
+          console.error('Không thể lấy role từ API: uid không tồn tại');
         }
       } catch (roleError) {
         console.error('Lỗi khi lấy role từ API:', roleError);
         // Không làm gián đoạn luồng nếu lỗi API, tiếp tục sử dụng role từ token
       }
-  
+      
       // Kiểm tra xem token có sắp hết hạn không
       // Lấy thời gian hết hạn từ payload token
       const tokenExpiration = verifyData.user.tokenExpiration;
@@ -515,8 +602,16 @@ export async function middleware(request) {
       // Nếu token hợp lệ, đặt header
       response.headers.set('x-middleware-active', 'true');
       response.headers.set('x-auth-token', token);
-      response.headers.set('x-user-id', verifyData.user.uid);
-      response.headers.set('x-user-role', userRole);
+      
+      // Đảm bảo user info tồn tại trước khi đặt header
+      if (verifyData?.user?.uid) {
+        response.headers.set('x-user-id', verifyData.user.uid);
+      } else {
+        console.error('Warning: verifyData.user.uid is undefined');
+      }
+      
+      // Đặt header role
+      response.headers.set('x-user-role', userRole || 'user');
     }
     
     // ==== Kiểm tra quyền truy cập cho các đường dẫn cụ thể ====
@@ -525,7 +620,11 @@ export async function middleware(request) {
     if (pathname.startsWith('/admin') && !pathname.startsWith('/admin/login')) {
       // Đảm bảo userRole đã được định nghĩa
       // Sử dụng biến user đã được xác thực từ verifyData, nếu có
+      console.log('Admin check - request.user:', JSON.stringify(request.user));
+      console.log('Admin check - verifyData?.user:', verifyData?.user ? JSON.stringify(verifyData?.user) : 'undefined');
+      
       const user = request.user || (verifyData?.user);
+      console.log('Admin check - Final user object:', user ? JSON.stringify(user) : 'undefined');
       let userRole = user?.role || 'user';
       
       
@@ -681,6 +780,34 @@ export async function middleware(request) {
     }
     
     // Cho phép truy cập các đường dẫn khác nếu đã xác thực thành công
+    
+    // Thêm user_info cookie nếu token hợp lệ
+    if (request.user && request.user.uid) {
+      // Thêm cookie với thông tin user để client-side có thể truy cập
+      const userInfo = JSON.stringify({
+        uid: request.user.uid,
+        email: request.user.email || '',
+        role: request.user.role || 'user',
+        displayName: request.user.displayName || request.user.name || request.user.email || '',
+        name: request.user.name || '',
+        roleDisplayName: getRoleDisplayName(request.user.role || 'user'),
+        canViewAllCourses: request.user.canViewAllCourses || false,
+        additionalInfo: request.user.additionalInfo || {},
+        enrollments: request.user.enrollments || []
+      });
+      
+      // Đặt cookie user_info
+      response.cookies.set('user_info', userInfo, {
+        httpOnly: false, // Client-side accessible
+        secure: isHttps,
+        sameSite: cookieConfig.sameSite,
+        maxAge: 60 * 60 * 24, // 24 giờ
+        path: '/',
+      });
+      
+      console.log('Đã thiết lập user_info cookie với đầy đủ thông tin người dùng');
+    }
+    
     return addSecurityHeaders(response);
   } catch (error) {
     console.error('Middleware error:', error);

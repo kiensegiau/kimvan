@@ -28,7 +28,56 @@ const useUserData = () => {
           return;
         }
         
-        // Luôn ưu tiên lấy dữ liệu từ API trước
+        // THÊM: Kiểm tra thông tin từ cookie user_info trước
+        try {
+          console.log('🍪 Đang kiểm tra cookie user_info...');
+          const cookies = document.cookie;
+          console.log('📋 Danh sách cookies:', cookies);
+          
+          const userInfoCookie = cookies
+            .split('; ')
+            .find(row => row.startsWith('user_info='));
+            
+          if (userInfoCookie) {
+            const cookieValue = userInfoCookie.split('=')[1];
+            const decodedValue = decodeURIComponent(cookieValue);
+            console.log('🔄 Cookie user_info đã giải mã:', decodedValue);
+            
+            try {
+              const parsedUserInfo = JSON.parse(decodedValue);
+              console.log('✅ Đã tìm thấy user_info cookie:', parsedUserInfo);
+              
+              if (parsedUserInfo && parsedUserInfo.uid) {
+                // Lưu vào global cache
+                window.__USER_DATA_CACHE__ = parsedUserInfo;
+                window.__USER_DATA_TIMESTAMP__ = Date.now();
+                
+                if (isMounted) {
+                  setUserData(parsedUserInfo);
+                  setLoading(false);
+                }
+                
+                // Lưu thông tin người dùng vào localStorage để dùng khi offline
+                try {
+                  localStorage.setItem('userData', JSON.stringify(parsedUserInfo));
+                  localStorage.setItem('userDataTimestamp', Date.now().toString());
+                } catch (e) {
+                  console.error('Không thể lưu vào localStorage:', e);
+                }
+                
+                return; // Không cần gọi API nếu đã có thông tin từ cookie
+              }
+            } catch (parseError) {
+              console.error('❌ Lỗi khi parse JSON từ cookie:', parseError);
+            }
+          } else {
+            console.log('⚠️ Không tìm thấy user_info cookie, sẽ tiếp tục gọi API');
+          }
+        } catch (cookieError) {
+          console.error('❌ Lỗi khi đọc cookie user_info:', cookieError);
+        }
+        
+        // Luôn ưu tiên lấy dữ liệu từ API nếu không có cookie
         console.log('Đang gọi API users/me để lấy thông tin người dùng...');
         
         // Tạo danh sách các endpoint để thử
