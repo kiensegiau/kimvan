@@ -26,11 +26,13 @@ async function checkAuth(request) {
 // Helper function to format sheet data from DB to match the Google Sheets API format
 function formatSheetDataFromDb(sheetContent) {
   if (!sheetContent || !sheetContent.rows || sheetContent.rows.length === 0) {
-    return {
+    // Nếu không có dữ liệu rows, trả về cấu trúc gốc
+    return sheetContent || {
       values: [],
       htmlData: [],
-      optimizedHtmlData: null,
-      storageMode: 'full'
+      header: [],
+      rows: [],
+      fetchedAt: null
     };
   }
   
@@ -45,98 +47,67 @@ function formatSheetDataFromDb(sheetContent) {
     values.push(row.data);
   });
   
-  // Handle HTML data based on storage mode
-  let htmlData = [];
-  let optimizedHtmlData = null;
-  let storageMode = sheetContent.metadata?.storageMode || 'full';
-  
-  if (storageMode === 'optimized' && sheetContent.optimizedHtmlData) {
-    // Use optimized HTML data
-    optimizedHtmlData = sheetContent.optimizedHtmlData;
-    
-    // Create compatible htmlData structure for backward compatibility
-    const maxRows = Math.max(...sheetContent.optimizedHtmlData.map(row => row.rowIndex)) + 1;
-    htmlData = Array(maxRows).fill(null).map(() => ({ values: [] }));
-    
-    // Fill in hyperlinks
-    sheetContent.optimizedHtmlData.forEach(row => {
-      if (!row.hyperlinks || !row.rowIndex) return;
-      
-      if (!htmlData[row.rowIndex]) {
-        htmlData[row.rowIndex] = { values: [] };
-      }
-      
-      row.hyperlinks.forEach(link => {
-        if (!htmlData[row.rowIndex].values[link.col]) {
-          htmlData[row.rowIndex].values[link.col] = {};
-        }
-        htmlData[row.rowIndex].values[link.col].hyperlink = link.url;
-      });
+  // Create structured rows with header keys
+  const structuredRows = sheetContent.rows.map(row => {
+    const rowObj = {};
+    header.forEach((headerCol, index) => {
+      rowObj[headerCol] = row.data[index] || '';
     });
-  } else if (sheetContent.htmlData) {
-    // Use full HTML data
-    htmlData = sheetContent.htmlData;
     
-    // Ensure htmlData is in the correct format (array of objects with values property)
-    if (Array.isArray(htmlData)) {
-      htmlData = htmlData.map((row, rowIndex) => {
-        // If row is null or undefined, return empty row
-        if (!row) return { values: [] };
-        
-        // If row is already in correct format with values property
-        if (row.values && Array.isArray(row.values)) {
-          return row;
-        } 
-        // If row is an array, convert to object with values property
-        else if (Array.isArray(row)) {
-          return {
-            values: row.map(cell => {
-              // Preserve hyperlink if exists
-              if (cell && typeof cell === 'object' && cell.hyperlink) {
-                console.log(`Converting hyperlink at row ${rowIndex}: ${cell.hyperlink}`);
-                return cell;
-              }
-              // Convert simple values to cell objects
-              return { formattedValue: cell };
-            })
-          };
+    // Extract hyperlinks from processedData.urls if available
+    if (row.processedData && Array.isArray(row.processedData.urls)) {
+      rowObj._hyperlinks = {};
+      row.processedData.urls.forEach(urlData => {
+        if (urlData && urlData.colIndex !== undefined && urlData.url) {
+          const colIndex = urlData.colIndex;
+          if (colIndex >= 0 && colIndex < header.length) {
+            rowObj._hyperlinks[header[colIndex]] = urlData.url;
+          }
         }
-        // Default case
-        return { values: [] };
       });
     }
-  } else {
-    // Create basic htmlData from values if no HTML data available
-    htmlData = values.map(row => ({
-      values: row.map(cell => ({ formattedValue: cell }))
-    }));
-  }
+    
+    return rowObj;
+  });
   
-  // Log số lượng hyperlink được tìm thấy để debug
-  let hyperlinkCount = 0;
-  if (Array.isArray(htmlData)) {
-    htmlData.forEach((row, rowIndex) => {
-      // Kiểm tra cấu trúc dữ liệu
-      if (!row) return;
-      
-      // Kiểm tra nếu row là một đối tượng có thuộc tính values là mảng
-      if (row.values && Array.isArray(row.values)) {
-        row.values.forEach((cell, cellIndex) => {
-          if (cell && cell.hyperlink) {
-            hyperlinkCount++;
-            console.log(`Tìm thấy hyperlink sau khi format [${rowIndex},${cellIndex}]: ${cell.hyperlink}`);
-          }
-        });
+  // Extract all hyperlinks into a separate array
+  let hyperlinks = [];
+  sheetContent.rows.forEach((row, rowIndex) => {
+    if (row.processedData && Array.isArray(row.processedData.urls)) {
+      row.processedData.urls.forEach(urlData => {
+        if (urlData && urlData.colIndex !== undefined && urlData.url) {
+          hyperlinks.push({
+            row: rowIndex,
+            col: urlData.colIndex,
+            url: urlData.url
+          });
+        }
+      });
+    }
+  });
+  
+  // Also extract hyperlinks from optimized storage if available
+  if (sheetContent.metadata?.storageMode === 'optimized' && sheetContent.optimizedHtmlData) {
+    sheetContent.optimizedHtmlData.forEach(row => {
+      if (row.hyperlinks && Array.isArray(row.hyperlinks)) {
+        hyperlinks = hyperlinks.concat(row.hyperlinks.map(link => ({
+          row: row.rowIndex,
+          col: link.col,
+          url: link.url
+        })));
       }
     });
   }
-  console.log(`Tổng số hyperlink được tìm thấy sau khi format: ${hyperlinkCount}`);
   
+  // Trả về dữ liệu đã định dạng
   return {
     values,
-    htmlData,
-    optimizedHtmlData,
-    storageMode,
+    rows: structuredRows,
+    header,
+    hyperlinks,
+    htmlData: sheetContent.htmlData || [],
+    optimizedHtmlData: sheetContent.optimizedHtmlData || null,
+    storageMode: sheetContent.metadata?.storageMode || 'full',
     fetchedAt: sheetContent.processedAt
   };
 }

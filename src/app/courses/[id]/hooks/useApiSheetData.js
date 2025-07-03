@@ -433,45 +433,173 @@ export function useApiSheetData(courseId) {
     }
   };
 
-  // Hàm lấy chi tiết của một sheet
-  const fetchSheetDetail = async (sheetId) => {
-    if (!sheetId) return;
+  // Hàm phân tích cấu trúc dữ liệu sheet
+  const analyzeSheetDataStructure = (sheetData) => {
+    // Log cấu trúc dữ liệu
+    console.log('Phân tích cấu trúc dữ liệu sheet:', sheetData);
     
-    try {
-      console.log(`🔍 Bắt đầu lấy chi tiết sheet ${sheetId}...`);
+    // Kiểm tra cấu trúc mới với rows và header
+    if (sheetData && Array.isArray(sheetData.rows) && Array.isArray(sheetData.header)) {
+      console.log('✅ Cấu trúc dữ liệu mới với rows và header:');
+      console.log('- Header:', sheetData.header.length, 'cột');
+      console.log('- Rows:', sheetData.rows.length, 'hàng');
       
-      // Thử lấy từ cache trước
-      const cachedData = getSheetDetailFromCache(sheetId);
-      if (cachedData) {
-        console.log(`📦 Sử dụng dữ liệu cache cho sheet ${sheetId}`);
-        return cachedData;
+      // Kiểm tra hyperlinks
+      if (Array.isArray(sheetData.hyperlinks)) {
+        console.log('- Hyperlinks:', sheetData.hyperlinks.length, 'liên kết');
       }
       
-      // Lấy dữ liệu từ database
-      const sheetData = await fetchSheetFromDb(sheetId);
+      return {
+        type: 'structured',
+        hasHeader: true,
+        hasRows: true,
+        hasHyperlinks: Array.isArray(sheetData.hyperlinks) && sheetData.hyperlinks.length > 0
+      };
+    }
+    
+    // Kiểm tra cấu trúc values
+    if (sheetData && Array.isArray(sheetData.values)) {
+      console.log('✅ Cấu trúc dữ liệu values:');
+      console.log('- Values:', sheetData.values.length, 'hàng (bao gồm header)');
       
-      // Lưu vào cache
-      saveSheetDetailToCache(sheetId, sheetData);
-      console.log(`💾 Đã lưu dữ liệu sheet ${sheetId} vào cache`);
-      
-      // Cập nhật dữ liệu sheet trong state
-      setApiSheetData(prevData => {
-        if (!prevData || !prevData.sheets) return prevData;
+      return {
+        type: 'values',
+        hasValues: true,
+        rowCount: sheetData.values.length - 1 // Trừ đi header
+      };
+    }
+    
+    return {
+      type: 'unknown',
+      isValid: false
+    };
+  };
+
+  // Hàm lấy dữ liệu chi tiết sheet
+  const fetchSheetDetail = async (sheetId) => {
+    try {
+      // Kiểm tra cache trước
+      const cachedDetail = getSheetDetailFromCache(sheetId);
+      if (cachedDetail) {
+        console.log(`🔄 Sử dụng dữ liệu chi tiết sheet ${sheetId} từ cache`);
         
-        const updatedSheets = prevData.sheets.map(sheet => {
-          if (sheet._id === sheetId) {
-            return { ...sheet, detail: sheetData };
-          }
-          return sheet;
+        // Cập nhật dữ liệu sheet từ cache
+        setApiSheetData(prevData => {
+          if (!prevData || !prevData.sheets) return prevData;
+          
+          return {
+            ...prevData,
+            sheets: prevData.sheets.map(sheet => {
+              if (sheet._id === sheetId) {
+                return {
+                  ...sheet,
+                  detail: cachedDetail
+                };
+              }
+              return sheet;
+            })
+          };
         });
         
-        return { ...prevData, sheets: updatedSheets };
+        return;
+      }
+      
+      console.log(`🔄 Đang tải dữ liệu chi tiết sheet ${sheetId}...`);
+      setLoadingApiSheet(true);
+      
+      // Ưu tiên lấy dữ liệu từ database trước
+      const dbResponse = await fetch(`/api/sheets/${sheetId}/from-db`, {
+        method: 'GET',
+        credentials: 'include'
       });
       
-      return sheetData;
+      const dbData = await dbResponse.json();
+      
+      // Nếu có dữ liệu từ database
+      if (dbData.success && dbData.sheet) {
+        console.log(`✅ Đã lấy dữ liệu sheet ${sheetId} từ database`);
+        
+        // Phân tích cấu trúc dữ liệu
+        const structure = analyzeSheetDataStructure(dbData.sheet);
+        console.log('Cấu trúc dữ liệu từ database:', structure);
+        
+        // Cập nhật dữ liệu sheet
+        setApiSheetData(prevData => {
+          if (!prevData || !prevData.sheets) return prevData;
+          
+          return {
+            ...prevData,
+            sheets: prevData.sheets.map(sheet => {
+              if (sheet._id === sheetId) {
+                return {
+                  ...sheet,
+                  detail: dbData.sheet,
+                  source: 'database'
+                };
+              }
+              return sheet;
+            })
+          };
+        });
+        
+        // Lưu vào cache
+        saveSheetDetailToCache(sheetId, dbData.sheet);
+        
+        setLoadingApiSheet(false);
+        return;
+      }
+      
+      // Nếu không có dữ liệu từ database, lấy từ API
+      console.log(`⚠️ Không tìm thấy dữ liệu sheet ${sheetId} trong database, lấy từ API...`);
+      
+      const apiResponse = await fetch(`/api/sheets/${sheetId}`, {
+        method: 'GET',
+        credentials: 'include'
+      });
+      
+      if (!apiResponse.ok) {
+        throw new Error(`Lỗi khi tải dữ liệu sheet: ${apiResponse.status}`);
+      }
+      
+      const apiData = await apiResponse.json();
+      
+      if (apiData.success) {
+        console.log(`✅ Đã lấy dữ liệu sheet ${sheetId} từ API`);
+        
+        // Phân tích cấu trúc dữ liệu
+        const structure = analyzeSheetDataStructure(apiData.sheet);
+        console.log('Cấu trúc dữ liệu từ API:', structure);
+        
+        // Cập nhật dữ liệu sheet
+        setApiSheetData(prevData => {
+          if (!prevData || !prevData.sheets) return prevData;
+          
+          return {
+            ...prevData,
+            sheets: prevData.sheets.map(sheet => {
+              if (sheet._id === sheetId) {
+                return {
+                  ...sheet,
+                  detail: apiData.sheet,
+                  source: 'api'
+                };
+              }
+              return sheet;
+            })
+          };
+        });
+        
+        // Lưu vào cache
+        saveSheetDetailToCache(sheetId, apiData.sheet);
+      } else {
+        console.error('Lỗi khi lấy dữ liệu sheet:', apiData.error);
+        setApiSheetError(`Không thể tải dữ liệu sheet: ${apiData.error || 'Lỗi không xác định'}`);
+      }
     } catch (error) {
-      console.error(`❌ Lỗi khi lấy chi tiết sheet ${sheetId}:`, error);
-      throw error;
+      console.error(`Lỗi khi tải dữ liệu chi tiết sheet ${sheetId}:`, error);
+      setApiSheetError(`Lỗi khi tải dữ liệu sheet: ${error.message}`);
+    } finally {
+      setLoadingApiSheet(false);
     }
   };
   
