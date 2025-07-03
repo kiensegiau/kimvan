@@ -73,12 +73,12 @@ const isHttpsEnabled = () => {
 // Cấu hình Cookie
 export const cookieConfig = {
   authCookieName: 'auth-token',
-  defaultMaxAge: 60 * 60 * 24 * 30, // 30 ngày (thay vì 7 ngày)
-  extendedMaxAge: 60 * 60 * 24 * 180, // 180 ngày (thay vì 90 ngày)
-  // Đặt cứng secure là false khi chạy trên môi trường HTTP
-  secure: false, // isHttpsEnabled(),
+  defaultMaxAge: 60 * 60 * 24 * 30, // 30 ngày
+  extendedMaxAge: 60 * 60 * 24 * 180, // 180 ngày
+  secure: true, // Luôn bật secure vì đang dùng Cloudflare
   httpOnly: true,
-  sameSite: 'lax'
+  sameSite: 'lax',
+  path: '/'
 };
 
 // Cấu hình đường dẫn

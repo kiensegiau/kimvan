@@ -67,7 +67,11 @@ const EXCLUDED_API_PATHS = [
   '/api/users/me',
   '/api/auth/verify',
   '/api/auth/refresh-token',
-  '/api/auth/user-role'
+  '/api/auth/user-role',
+  '/api/auth/login',
+  '/api/auth/register',
+  '/api/auth/logout',
+  '/api/health-check'
 ];
 
 // Kiểm tra xem đường dẫn có cần kết nối DB không
@@ -107,14 +111,16 @@ export async function middleware(request) {
   const isHttps = protocol === 'https';
   
   // Log thông tin giao thức để debug
-  if (pathname === '/') {
-    console.log('🔒 Protocol detection:', { 
-      protocol, 
-      isHttps, 
-      nextUrlProtocol: request.nextUrl.protocol,
-      'x-forwarded-proto': request.headers.get('x-forwarded-proto')
-    });
-  }
+  console.log('🔒 Protocol detection:', { 
+    pathname,
+    protocol, 
+    isHttps, 
+    nextUrlProtocol: request.nextUrl.protocol,
+    'x-forwarded-proto': request.headers.get('x-forwarded-proto'),
+    'cf-visitor': request.headers.get('cf-visitor'),
+    'x-forwarded-host': request.headers.get('x-forwarded-host'),
+    'host': request.headers.get('host')
+  });
 
   // Loại trừ các API đặc biệt khỏi middleware để tránh lặp và redirect loops
   if (EXCLUDED_API_PATHS.some(path => pathname.startsWith(path))) {
