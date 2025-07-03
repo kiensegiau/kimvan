@@ -67,6 +67,7 @@ function formatSheetDataFromDb(sheetContent) {
         if (urlData && urlData.colIndex !== undefined && urlData.url) {
           const colIndex = urlData.colIndex;
           if (colIndex >= 0 && colIndex < header.length) {
+            // Sử dụng URL đã có sẵn (có thể là proxy URL)
             rowObj._hyperlinks[header[colIndex]] = urlData.url;
           }
         }
@@ -85,7 +86,7 @@ function formatSheetDataFromDb(sheetContent) {
           hyperlinks.push({
             row: rowIndex,
             col: urlData.colIndex,
-            url: urlData.url
+            url: urlData.url  // Use the URL as-is, already proxy URL
           });
         }
       });
@@ -99,7 +100,7 @@ function formatSheetDataFromDb(sheetContent) {
         hyperlinks = hyperlinks.concat(row.hyperlinks.map(link => ({
           row: row.rowIndex,
           col: link.col,
-          url: link.url
+          url: link.url  // Use the URL as-is, already proxy URL
         })));
       }
     });

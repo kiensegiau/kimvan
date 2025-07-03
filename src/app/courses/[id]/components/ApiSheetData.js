@@ -68,6 +68,50 @@ export default function ApiSheetData({
     }
   }, []);
 
+  // Giải mã và xử lý proxy link
+  const handleProxyLink = useCallback((proxyUrl) => {
+    const decodedUrl = decodeProxyLink(proxyUrl);
+    console.log('Decoded proxy link:', decodedUrl);
+    
+    if (!decodedUrl) return null;
+    
+    // Kiểm tra nếu là YouTube link
+    if (decodedUrl.includes('youtube.com') || decodedUrl.includes('youtu.be')) {
+      // Xử lý trường hợp link qua Google redirector
+      if (decodedUrl.includes('google.com/url?q=')) {
+        const match = decodedUrl.match(/[?&]q=([^&]+)/);
+        if (match && match[1]) {
+          const actualYoutubeUrl = decodeURIComponent(match[1]);
+          console.log('Extracted actual YouTube URL from Google redirector:', actualYoutubeUrl);
+          return {
+            type: 'youtube',
+            url: actualYoutubeUrl
+          };
+        }
+      }
+      
+      // Trường hợp link YouTube trực tiếp
+      return {
+        type: 'youtube',
+        url: decodedUrl
+      };
+    }
+    
+    // Kiểm tra nếu là Google Drive
+    if (decodedUrl.includes('drive.google.com')) {
+      return {
+        type: 'drive',
+        url: decodedUrl
+      };
+    }
+    
+    // Các loại link khác
+    return {
+      type: 'other',
+      url: decodedUrl
+    };
+  }, [decodeProxyLink]);
+
   // Kiểm tra và tải chi tiết sheet nếu cần
   useEffect(() => {
     if (apiSheetData && apiSheetData.sheets && apiSheetData.sheets.length > 0) {
@@ -216,6 +260,67 @@ export default function ApiSheetData({
     setPdfTitle(title);
   };
 
+  // Xử lý click vào proxy link
+  const handleProxyLinkClick = (e, proxyUrl, title = '') => {
+    e.preventDefault();
+    console.log('Xử lý proxy link click:', proxyUrl);
+    
+    // Đánh dấu link đang loading
+    setLoadingLinks(prev => ({ ...prev, [proxyUrl]: true }));
+    
+    const linkInfo = handleProxyLink(proxyUrl);
+    console.log('Link info:', linkInfo);
+    
+    if (!linkInfo) {
+      console.error('Không thể giải mã proxy link');
+      setLoadingLinks(prev => ({ ...prev, [proxyUrl]: false }));
+      return;
+    }
+    
+    // Xử lý theo loại link
+    switch (linkInfo.type) {
+      case 'youtube':
+        // Xử lý YouTube link
+        if (isYoutubePlaylist(linkInfo.url)) {
+          const playlistId = getYoutubePlaylistId(linkInfo.url);
+          const videoId = getYoutubeVideoId(linkInfo.url);
+          
+          if (playlistId) {
+            setSelectedPlaylist(playlistId);
+            setSelectedPlaylistVideo(videoId);
+          } else {
+            const videoId = getYoutubeVideoId(linkInfo.url);
+            if (videoId) {
+              setSelectedVideo(videoId);
+            } else {
+              window.open(linkInfo.url, '_blank');
+            }
+          }
+        } else {
+          const videoId = getYoutubeVideoId(linkInfo.url);
+          if (videoId) {
+            setSelectedVideo(videoId);
+          } else {
+            window.open(linkInfo.url, '_blank');
+          }
+        }
+        break;
+        
+      case 'drive':
+      case 'other':
+      default:
+        // Mở tất cả các link không phải YouTube trong tab mới
+        console.log('Mở link không phải YouTube trong tab mới:', linkInfo.url);
+        window.open(linkInfo.url, '_blank');
+        break;
+    }
+    
+    // Đánh dấu link đã xong loading
+    setTimeout(() => {
+      setLoadingLinks(prev => ({ ...prev, [proxyUrl]: false }));
+    }, 500);
+  };
+
   // Handle general link click with proxy link creation
   const handleLinkClick = (e, url, title = '') => {
     e.preventDefault();
@@ -223,6 +328,12 @@ export default function ApiSheetData({
     
     // Đánh dấu link đang loading
     setLoadingLinks(prev => ({ ...prev, [url]: true }));
+    
+    // Kiểm tra nếu là proxy link
+    if (url.startsWith('/api/proxy-link/')) {
+      handleProxyLinkClick(e, url, title);
+      return;
+    }
     
     // Kiểm tra nếu là YouTube link
     if (isYoutubeLink(url)) {
@@ -234,70 +345,9 @@ export default function ApiSheetData({
       return;
     }
     
-    // Kiểm tra nếu là proxy link, giải mã để xác định loại
-    if (url.startsWith('/api/proxy-link/')) {
-      const originalUrl = decodeProxyLink(url);
-      console.log('Decoded proxy link:', originalUrl);
-      
-      // Nếu giải mã thành công và là YouTube link
-      if (originalUrl && isYoutubeLink(originalUrl)) {
-        // Xử lý như YouTube link
-        console.log('Phát hiện YouTube link từ proxy, xử lý với handleYoutubeClick');
-        handleYoutubeClick(e, originalUrl);
-        setTimeout(() => {
-          setLoadingLinks(prev => ({ ...prev, [url]: false }));
-        }, 500);
-        return;
-      }
-      
-      // Nếu giải mã thành công và là PDF
-      if (originalUrl && isPdfLink(originalUrl)) {
-        console.log('Phát hiện PDF link từ proxy');
-        handlePdfClick(e, url, title || 'Xem tài liệu PDF');
-        setTimeout(() => {
-          setLoadingLinks(prev => ({ ...prev, [url]: false }));
-        }, 500);
-        return;
-      }
-      
-      // Nếu giải mã thành công và là Google Drive
-      if (originalUrl && isGoogleDriveLink(originalUrl)) {
-        // Mở Google Drive trong tab mới
-        console.log('Phát hiện Google Drive link từ proxy');
-        window.open(originalUrl, '_blank');
-        setTimeout(() => {
-          setLoadingLinks(prev => ({ ...prev, [url]: false }));
-        }, 500);
-        return;
-      }
-      
-      // Nếu không phải YouTube hoặc PDF, hiển thị trong PDF Modal
-      console.log('Link không được nhận dạng, xử lý như tài liệu chung');
-      handlePdfClick(e, url, title || 'Xem tài liệu');
-      setTimeout(() => {
-        setLoadingLinks(prev => ({ ...prev, [url]: false }));
-      }, 500);
-      return;
-    }
-    
-    // Xử lý các loại link khác
-    if (isPdfLink(url)) {
-      console.log('Phát hiện PDF link');
-      handlePdfClick(e, url, title);
-    } else if (isGoogleDriveLink(url)) {
-      console.log('Phát hiện Google Drive link');
-      window.open(url, '_blank');
-    } else {
-      // Tạo proxy URL bằng base64 cho các link khác
-      const proxyUrl = createProxyLink(url);
-      if (proxyUrl) {
-        console.log('Tạo proxy link thành công:', proxyUrl);
-        handlePdfClick(e, proxyUrl, title || 'Xem tài liệu');
-      } else {
-        console.warn('Không thể tạo proxy link, mở URL gốc:', url);
-        handlePdfClick(e, url, title || 'Xem tài liệu');
-      }
-    }
+    // Mở tất cả các link khác trong tab mới
+    console.log('Mở link trong tab mới:', url);
+    window.open(url, '_blank');
     
     // Đánh dấu link đã xong loading
     setTimeout(() => {
@@ -434,19 +484,44 @@ export default function ApiSheetData({
       );
     }
 
-    // Tạo proxy link nếu cần
-    let linkToUse = hyperlink;
-    if (isGoogleDriveLink(hyperlink) || isPdfLink(hyperlink)) {
-      linkToUse = createProxyLink(hyperlink) || hyperlink;
-    }
-
+    // Xác định nếu là proxy link
+    const isProxyLink = hyperlink.startsWith('/api/proxy-link/');
+    
     // Xác định loading state
-    const isLoading = loadingLinks[hyperlink] || loadingLinks[linkToUse];
+    const isLoading = loadingLinks[hyperlink];
+    
+    // Xác định icon phù hợp dựa trên loại link
+    let icon = null;
+    let textColor = 'text-blue-600 hover:text-blue-800';
+    
+    if (isPdfLink(hyperlink) || (isProxyLink && hyperlink.toLowerCase().includes('pdf'))) {
+      icon = (
+        <svg className="h-4 w-4 mr-1 inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 16h1v-3h1v-1h-3v1h1v3zm-5-3h1.5v4.501h1V13H10v-1H7v1zm9 0h3v1h-2v1h2v1h-2v1.5h-1V13z"/>
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM6 20V4h7v5h5v11H6z"/>
+        </svg>
+      );
+      textColor = 'text-red-600 hover:text-red-800';
+    } else if (isGoogleDriveLink(hyperlink) || (isProxyLink && hyperlink.toLowerCase().includes('drive.google'))) {
+      icon = (
+        <svg className="h-4 w-4 mr-1 inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 10l-3 5h3v-5zm-4 0H4.5l3 5H11l-3-5zm5-5l-3 5h6l3-5h-6z"/>
+          <path d="M19 17h-4.5l-3 5h6c1.1 0 2-.9 2-2v-3z"/>
+        </svg>
+      );
+      textColor = 'text-green-600 hover:text-green-800';
+    } else {
+      icon = (
+        <svg className="h-4 w-4 mr-1 inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/>
+        </svg>
+      );
+    }
     
     return (
       <button
-        onClick={(e) => handleLinkClick(e, linkToUse, cellContent)}
-        className={`text-blue-600 hover:text-blue-800 hover:underline focus:outline-none ${
+        onClick={(e) => handleLinkClick(e, hyperlink, cellContent)}
+        className={`${textColor} hover:underline focus:outline-none ${
           isLoading ? 'opacity-50 cursor-wait' : ''
         }`}
         disabled={isLoading}
@@ -454,8 +529,8 @@ export default function ApiSheetData({
         <span className="flex items-center space-x-1">
           {isLoading ? (
             <ArrowPathIcon className="h-4 w-4 animate-spin" />
-          ) : null}
-          <span>{cellContent || hyperlink}</span>
+          ) : icon}
+          <span>{cellContent || 'Xem liên kết'}</span>
         </span>
       </button>
     );
