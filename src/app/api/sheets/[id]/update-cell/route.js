@@ -8,7 +8,7 @@ import fs from 'fs';
 export async function PUT(request, { params }) {
   try {
     await dbMiddleware(request);
-    const { id } = params;
+    const { id } = await params;
     const { rowIndex, columnIndex, value, url } = await request.json();
 
     // Find the sheet in the database
