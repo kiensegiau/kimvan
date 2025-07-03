@@ -4,6 +4,39 @@ import YouTubeModal from './YouTubeModal';
 import YouTubePlaylistModal from './YouTubePlaylistModal';
 import PDFModal from './PDFModal';
 
+// Define animation styles
+const toastAnimationStyles = `
+  @keyframes fadeInDown {
+    from {
+      opacity: 0;
+      transform: translate3d(0, -20px, 0);
+    }
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
+  }
+  
+  @keyframes fadeOutUp {
+    from {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
+    to {
+      opacity: 0;
+      transform: translate3d(0, -20px, 0);
+    }
+  }
+  
+  .animate-fade-in-down {
+    animation: fadeInDown 0.5s ease forwards;
+  }
+  
+  .animate-fade-out-up {
+    animation: fadeOutUp 0.5s ease forwards;
+  }
+`;
+
 export default function ApiSheetData({ 
   apiSheetData, 
   loadingApiSheet, 
@@ -22,6 +55,7 @@ export default function ApiSheetData({
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
   const [hoveredHeader, setHoveredHeader] = useState(null);
   const [processingSheet, setProcessingSheet] = useState(false);
+  const [showToast, setShowToast] = useState(false);
   
   // Tạo proxy link từ URL thông qua Base64 encoding
   const createProxyLink = useCallback((url) => {
@@ -104,6 +138,27 @@ export default function ApiSheetData({
       url: decodedUrl
     };
   }, [decodeProxyLink]);
+
+  // State to track animation class
+  const [toastAnimation, setToastAnimation] = useState('animate-fade-in-down');
+
+  // Show toast notification when component mounts
+  useEffect(() => {
+    setShowToast(true);
+    
+    // Hide toast after 5 seconds
+    const timer = setTimeout(() => {
+      // Start fade-out animation
+      setToastAnimation('animate-fade-out-up');
+      
+      // Actually hide the component after animation completes
+      setTimeout(() => {
+        setShowToast(false);
+      }, 500); // Match animation duration
+    }, 5000);
+    
+    return () => clearTimeout(timer);
+  }, []);
 
   // Kiểm tra và tải chi tiết sheet nếu cần
   useEffect(() => {
@@ -837,17 +892,25 @@ export default function ApiSheetData({
     
     // Display all columns including the first one
     return (
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              {header.map((column, index) => (
-                <th
-                  key={`header-${index}`}
-                  scope="col"
-                  className={`px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer relative min-w-[120px] max-w-[250px] ${
-                    sortConfig.key === index + 1 ? 'bg-gray-100' : ''
-                  }`}
+      <div>
+        <div className="bg-gray-50 p-3 mb-2 rounded-md flex items-center border border-gray-200 shadow-sm">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 9l3 3m0 0l-3 3m3-3H8m13 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p className="text-sm text-gray-700">Kéo sang phải để xem đầy đủ dữ liệu nếu bảng quá rộng</p>
+        </div>
+        
+        <div className="overflow-x-auto border border-gray-200 rounded-lg shadow">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-indigo-700">
+              <tr>
+                {header.map((column, index) => (
+                  <th
+                    key={`header-${index}`}
+                    scope="col"
+                    className={`px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer relative min-w-[120px] max-w-[250px] ${
+                      sortConfig.key === index + 1 ? 'bg-indigo-800' : ''
+                    }`}
                   onClick={() => requestSort(index + 1)}
                   onMouseEnter={() => setHoveredHeader(index + 1)}
                   onMouseLeave={() => setHoveredHeader(null)}
@@ -863,7 +926,7 @@ export default function ApiSheetData({
                   {hoveredHeader === index + 1 && (
                     <div className="absolute right-0 top-0 h-full flex items-center pr-2">
                       <button
-                        className="text-gray-400 hover:text-gray-600"
+                        className="text-white hover:text-gray-200"
                         onClick={(e) => {
                           e.stopPropagation();
                           requestSort(index + 1);
@@ -881,7 +944,7 @@ export default function ApiSheetData({
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {sortedRows.map((row, rowIndex) => (
-              <tr key={`row-${rowIndex}`} className={rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+              <tr key={`row-${rowIndex}`} className={`hover:bg-indigo-50 ${rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-100'}`}>
                 {header.map((column, cellIndex) => {
                   // Use the direct cellIndex since we're not skipping the first column
                   const actualCellIndex = cellIndex;
@@ -939,6 +1002,7 @@ export default function ApiSheetData({
             ))}
           </tbody>
         </table>
+      </div>
       </div>
     );
   };
@@ -1047,7 +1111,37 @@ export default function ApiSheetData({
   };
 
   return (
-    <div className="bg-white shadow rounded-lg overflow-hidden">
+    <div className="bg-white shadow rounded-lg overflow-hidden relative">
+      {/* Add styles for animation */}
+      <style dangerouslySetInnerHTML={{ __html: toastAnimationStyles }} />
+      
+      {/* Toast notification */}
+      {showToast && (
+        <div className={`fixed top-4 right-4 z-50 flex items-center p-4 mb-4 text-gray-800 bg-white rounded-lg shadow-lg border-l-4 border-indigo-600 ${toastAnimation} max-w-md`}>
+          <div className="inline-flex items-center justify-center flex-shrink-0 w-8 h-8 text-indigo-500 bg-indigo-100 rounded-lg">
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"></path>
+            </svg>
+          </div>
+          <div className="ml-3 text-sm font-medium">
+            Bạn có thể kéo sang phải để xem đầy đủ dữ liệu. Nhấn vào tiêu đề cột để sắp xếp dữ liệu.
+          </div>
+          <button 
+            type="button" 
+            onClick={() => {
+              setToastAnimation('animate-fade-out-up');
+              setTimeout(() => setShowToast(false), 500);
+            }}
+            className="ml-auto -mx-1.5 -my-1.5 bg-white text-gray-400 hover:text-gray-900 rounded-lg focus:ring-2 focus:ring-gray-300 p-1.5 hover:bg-gray-100 inline-flex h-8 w-8"
+          >
+            <span className="sr-only">Đóng</span>
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd"></path>
+            </svg>
+          </button>
+        </div>
+      )}
+      
       {/* Sheet selector */}
       {apiSheetData?.sheets && apiSheetData.sheets.length > 0 && (
         <div className="border-b border-gray-200">
