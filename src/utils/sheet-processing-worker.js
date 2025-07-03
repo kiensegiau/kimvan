@@ -2,6 +2,7 @@ import { processAndSyncSheet } from './sheet-cache-manager';
 import SheetContent from '@/models/SheetContent';
 import mongoose from 'mongoose';
 import { extractUrlFromCell, isDriveUrl, cleanGoogleUrl } from '@/utils/drive-utils';
+import crypto from 'crypto';
 
 // Helper function to check if URL is a YouTube link
 function isYoutubeUrl(url) {
@@ -32,6 +33,24 @@ function cleanYoutubeUrl(url) {
     return url;
   } catch (error) {
     console.error('Error cleaning YouTube URL:', error);
+    return url;
+  }
+}
+
+// Helper function to encode URL to proxy link
+function encodeToProxyLink(url) {
+  if (!url) return null;
+  try {
+    // Tạo buffer từ URL
+    const buffer = Buffer.from(url, 'utf-8');
+    // Mã hóa base64 và thay thế các ký tự không hợp lệ trong URL
+    const encoded = buffer.toString('base64')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=/g, '');
+    return `/api/proxy-link/${encoded}`;
+  } catch (error) {
+    console.error('Error encoding proxy link:', error);
     return url;
   }
 }
@@ -131,52 +150,52 @@ export async function processSheetToDatabase(sheetId, options = {}) {
         const hyperlink = htmlCell?.hyperlink;
         
         if (hyperlink) {
+          // Xử lý và mã hóa URL
+          let processedUrl = hyperlink;
+          if (isYoutubeUrl(hyperlink)) {
+            processedUrl = cleanYoutubeUrl(hyperlink);
+          } else if (isDriveUrl(hyperlink)) {
+            processedUrl = cleanGoogleUrl(hyperlink);
+          }
+          // Mã hóa thành proxy link
+          const proxyUrl = encodeToProxyLink(processedUrl);
+          
           // Lưu hyperlink vào danh sách
           hyperlinks.push({
             col: colIndex,
-            url: hyperlink
+            url: proxyUrl,
+            originalUrl: processedUrl
           });
           
-          // Xử lý URL dựa trên loại
-          if (isYoutubeUrl(hyperlink)) {
-            const cleanUrl = cleanYoutubeUrl(hyperlink);
-            urls.push({
-              colIndex,
-              url: cleanUrl,
-              source: 'hyperlink',
-              type: 'youtube'
-            });
-          } else if (isDriveUrl(hyperlink)) {
-            const cleanUrl = cleanGoogleUrl(hyperlink);
-            urls.push({
-              colIndex,
-              url: cleanUrl,
-              source: 'hyperlink',
-              type: 'drive'
-            });
-          }
+          urls.push({
+            colIndex,
+            url: proxyUrl,
+            originalUrl: processedUrl,
+            source: 'hyperlink',
+            type: isYoutubeUrl(hyperlink) ? 'youtube' : isDriveUrl(hyperlink) ? 'drive' : 'other'
+          });
         } 
         // Trích xuất URL từ nội dung ô nếu không có hyperlink
         else if (cell && typeof cell === 'string') {
           const extractedUrl = extractUrlFromCell(cell);
           if (extractedUrl) {
+            // Xử lý và mã hóa URL được trích xuất
+            let processedUrl = extractedUrl;
             if (isYoutubeUrl(extractedUrl)) {
-              const cleanUrl = cleanYoutubeUrl(extractedUrl);
-              urls.push({
-                colIndex,
-                url: cleanUrl,
-                source: 'text',
-                type: 'youtube'
-              });
+              processedUrl = cleanYoutubeUrl(extractedUrl);
             } else if (isDriveUrl(extractedUrl)) {
-              const cleanUrl = cleanGoogleUrl(extractedUrl);
-              urls.push({
-                colIndex,
-                url: cleanUrl,
-                source: 'text',
-                type: 'drive'
-              });
+              processedUrl = cleanGoogleUrl(extractedUrl);
             }
+            // Mã hóa thành proxy link
+            const proxyUrl = encodeToProxyLink(processedUrl);
+            
+            urls.push({
+              colIndex,
+              url: proxyUrl,
+              originalUrl: processedUrl,
+              source: 'text',
+              type: isYoutubeUrl(extractedUrl) ? 'youtube' : isDriveUrl(extractedUrl) ? 'drive' : 'other'
+            });
           }
         }
       });
@@ -203,7 +222,7 @@ export async function processSheetToDatabase(sheetId, options = {}) {
       metadata: {
         source: 'Google Sheets',
         processedBy: options.processedBy || 'SheetProcessor',
-        version: '3.1',
+        version: '3.2',
         preserveHyperlinks: true,
         stats: {
           totalHyperlinks: hyperlinkCount,
