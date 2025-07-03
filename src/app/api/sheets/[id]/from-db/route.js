@@ -43,16 +43,21 @@ function formatSheetDataFromDb(sheetContent) {
   // Create values array (starts with header)
   const values = [header];
   
-  // Add data rows
+  // Add data rows from processedData
   sheetContent.rows.forEach(row => {
-    values.push(row.data);
+    const rowData = [];
+    // Lấy dữ liệu từ processedData.colX
+    for (let i = 0; i < header.length; i++) {
+      rowData.push(row.processedData[`col${i}`] || '');
+    }
+    values.push(rowData);
   });
   
   // Create structured rows with header keys
   const structuredRows = sheetContent.rows.map(row => {
     const rowObj = {};
     header.forEach((headerCol, index) => {
-      rowObj[headerCol] = row.data[index] || '';
+      rowObj[headerCol] = row.processedData[`col${index}`] || '';
     });
     
     // Extract hyperlinks from processedData.urls if available
