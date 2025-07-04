@@ -74,6 +74,11 @@ export default function MyCoursesPage() {
   // Lấy danh sách khóa học đã đăng ký với thông tin chi tiết
   const enrolledCoursesWithDetails = getEnrolledCoursesWithDetails();
 
+  // Debug: Log first course structure
+  if (enrolledCoursesWithDetails.length > 0) {
+    console.log("Course Structure Debug:", JSON.stringify(enrolledCoursesWithDetails[0], null, 2));
+  }
+
   return (
     <main className="relative bg-gradient-to-b from-gray-50 to-white min-h-screen w-full overflow-hidden">
       {/* Hero Header */}
@@ -204,7 +209,15 @@ export default function MyCoursesPage() {
                     <div 
                       key={course.courseId || index} 
                       className="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col h-full group cursor-pointer"
-                      onClick={() => router.push(`/khoa-hoc/${course.courseId}`)}
+                      onClick={() => {
+                        // Extract the correct ID for navigation
+                        const id = course.details?._id || course.courseId?._id || course.kimvanId || 
+                                   (course.courseId && typeof course.courseId === 'object' ? 
+                                    (course.courseId.toString && course.courseId.toString() !== '[object Object]' ? 
+                                     course.courseId.toString() : course.courseId._id) : course.courseId);
+                        console.log("Navigating with ID:", id, "from course:", course);
+                        router.push(`/courses/${id}`);
+                      }}
                     >
                       <div className="h-40 bg-gradient-to-r from-indigo-600 to-purple-700 relative overflow-hidden">
                         {/* Background pattern */}
@@ -282,7 +295,13 @@ export default function MyCoursesPage() {
                           className="inline-flex items-center justify-center px-3 py-1.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors group-hover:bg-indigo-700"
                           onClick={(e) => {
                             e.stopPropagation();
-                            router.push(`/khoa-hoc/${course.courseId}`);
+                            // Extract the correct ID for navigation - same logic as above
+                            const id = course.details?._id || course.courseId?._id || course.kimvanId || 
+                                       (course.courseId && typeof course.courseId === 'object' ? 
+                                        (course.courseId.toString && course.courseId.toString() !== '[object Object]' ? 
+                                         course.courseId.toString() : course.courseId._id) : course.courseId);
+                            console.log("Navigating with ID (button):", id, "from course:", course);
+                            router.push(`/courses/${id}`);
                           }}
                         >
                           <span>Tiếp tục học</span>
@@ -303,7 +322,7 @@ export default function MyCoursesPage() {
                   Bạn chưa đăng ký khóa học nào. Hãy khám phá và đăng ký các khóa học để bắt đầu hành trình học tập của bạn.
                 </p>
                 <button
-                  onClick={() => router.push('/khoa-hoc')}
+                  onClick={() => router.push('/courses')}
                   className="inline-flex items-center justify-center px-6 py-3 border border-transparent rounded-lg shadow-md text-base font-medium text-white bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800"
                 >
                   <AcademicCapIcon className="h-5 w-5 mr-2" />
