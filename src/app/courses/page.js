@@ -821,7 +821,7 @@ export default function CoursesPage() {
                   <div 
                     key={course._id} 
                     className="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col h-full group cursor-pointer"
-                    onClick={() => router.push(`/courses/${course.kimvanId || course._id}`)}
+                    onClick={() => router.push(`/courses/${course.courseId || course.kimvanId}`)}
                   >
                     <div className="h-40 bg-gradient-to-r from-indigo-600 to-purple-700 relative overflow-hidden">
                       {/* Background pattern */}
