@@ -20,16 +20,33 @@ export default function CourseDetailPage({ params }) {
   const router = useRouter();
   const resolvedParams = use(params);
   const id = resolvedParams.id;
+  
+  // States để quản lý quyền và trạng thái tải
   const [permissionCheckedFinal, setPermissionCheckedFinal] = useState(false);
+  const [hasAccessToLoadData, setHasAccessToLoadData] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   
-  // Lấy thông tin người dùng trước
+  // Lấy thông tin người dùng - Bước đầu tiên và quan trọng nhất
   const { userData, loading: userLoading, refreshUserData } = useUserData();
 
   // Đảm bảo useEnrolledCourses nhận userData để tránh gọi API lặp lại
   const { isEnrolledInCourse, refreshEnrollments } = useEnrolledCourses(userData);
 
-  // Sử dụng các custom hooks và truyền userData vào useCourseData
+  // Kiểm tra quyền đặc biệt ngay khi có userData - FIX: Khởi tạo rõ ràng với boolean
+  const hasViewAllPermission = Boolean(userData?.canViewAllCourses === true || 
+    (userData?.permissions && Array.isArray(userData?.permissions) && userData?.permissions.includes('view_all_courses')));
+  
+  // Log rõ ràng giá trị của userData và quyền đặc biệt
+  useEffect(() => {
+    if (userData) {
+      console.log('👤 userData được tải:', userData);
+      console.log('🔑 canViewAllCourses:', userData.canViewAllCourses);
+      console.log('🔑 permissions:', userData.permissions);
+      console.log('✅ hasViewAllPermission:', hasViewAllPermission);
+    }
+  }, [userData, hasViewAllPermission]);
+
+  // Chỉ tải thông tin khóa học khi userData đã sẵn sàng
   const { 
     course,
     loading: courseLoading,
@@ -40,8 +57,11 @@ export default function CourseDetailPage({ params }) {
     clearCache: clearCourseCache,
     refreshCourseData,
   } = useCourseData(id, userData, userLoading);
-  
-  // Sử dụng API Sheet
+
+  // Kiểm tra quyền truy cập sau khi có thông tin từ useCourseData
+  const hasAccessDenied = !hasViewAllPermission && permissionChecked && error && error.includes("không có quyền truy cập");
+
+  // Chỉ khởi tạo useApiSheetData khi có quyền truy cập (lazy initialization)
   const {
     apiSheetData,
     loadingApiSheet,
@@ -52,10 +72,53 @@ export default function CourseDetailPage({ params }) {
     fetchApiSheetData,
     fetchSheetDetail,
     clearCache: clearSheetCache,
-  } = useApiSheetData(id);
+  } = useApiSheetData(hasAccessToLoadData ? id : null);
+
+  // Xác định quyền truy cập cuối cùng khi đã có đầy đủ thông tin
+  useEffect(() => {
+    if (!userLoading && permissionChecked) {
+      const hasAccess = hasViewAllPermission || !hasAccessDenied;
+      console.log('🔍 Thông tin quyền truy cập:');
+      console.log('  - userLoading:', userLoading);
+      console.log('  - permissionChecked:', permissionChecked);
+      console.log('  - hasViewAllPermission:', hasViewAllPermission);
+      console.log('  - error:', error);
+      console.log('  - hasAccessDenied:', hasAccessDenied);
+      console.log('  - Kết quả kiểm tra quyền:', hasAccess ? 'CÓ QUYỀN' : 'KHÔNG CÓ QUYỀN');
+      
+      setPermissionCheckedFinal(true);
+      setHasAccessToLoadData(hasAccess);
+    }
+  }, [userLoading, permissionChecked, hasViewAllPermission, hasAccessDenied, error]);
+
+  // Chỉ tải dữ liệu sheet khi đã xác nhận có quyền và khóa học đã tải xong
+  useEffect(() => {
+    if (hasAccessToLoadData && course && !loadingApiSheet) {
+      console.log('📊 Đã xác nhận quyền truy cập, bắt đầu tải dữ liệu sheet');
+      fetchApiSheetData();
+    }
+  }, [hasAccessToLoadData, course, loadingApiSheet]);
+
+  // Log thông tin kiểm tra quyền để debug
+  useEffect(() => {
+    console.log('-------------------- KIỂM TRA QUYỀN --------------------');
+    console.log('userData:', userData);
+    console.log('hasViewAllPermission:', hasViewAllPermission);
+    console.log('permissionChecked:', permissionChecked);
+    console.log('error:', error);
+    console.log('hasAccessDenied:', hasAccessDenied);
+    console.log('permissionCheckedFinal:', permissionCheckedFinal);
+    console.log('hasAccessToLoadData:', hasAccessToLoadData);
+    console.log('--------------------------------------------------------');
+  }, [userData, hasViewAllPermission, permissionChecked, error, hasAccessDenied, permissionCheckedFinal, hasAccessToLoadData]);
 
   // Hàm làm mới tất cả cache
   const handleRefreshAll = () => {
+    if (!hasAccessToLoadData) {
+      console.log('Không có quyền truy cập, bỏ qua làm mới dữ liệu');
+      return;
+    }
+    
     clearCourseCache();
     clearSheetCache();
     refreshCourseData();
@@ -74,65 +137,39 @@ export default function CourseDetailPage({ params }) {
       if (refreshEnrollments) {
         await refreshEnrollments();
       }
-      // Làm mới thông tin khóa học
-      await refreshCourseData();
       // Reset trạng thái kiểm tra quyền
       setPermissionCheckedFinal(false);
+      setHasAccessToLoadData(false);
+      // Làm mới thông tin khóa học
+      await refreshCourseData();
     } catch (error) {
       console.error('Lỗi khi làm mới thông tin người dùng:', error);
     } finally {
       setRefreshing(false);
-      // Đợi một chút để các hook cập nhật state
-      setTimeout(() => {
-        setPermissionCheckedFinal(true);
-      }, 500);
     }
   };
 
-  // Kiểm tra quyền đặc biệt và bỏ qua kiểm tra quyền thông thường nếu có quyền xem tất cả
-  const hasViewAllPermission = userData?.canViewAllCourses === true || 
-    (userData?.permissions && Array.isArray(userData?.permissions) && userData?.permissions.includes('view_all_courses'));
-  const shouldBypassPermissionCheck = hasViewAllPermission;
-
-  // Kiểm tra quyền truy cập với xử lý đặc biệt cho admin và canViewAllCourses
-  const hasAccessDenied = !shouldBypassPermissionCheck && permissionChecked && error && error.includes("không có quyền truy cập");
-
-  // Log thông tin kiểm tra quyền để debug
-  useEffect(() => {
-    console.log('-------------------- KIỂM TRA QUYỀN --------------------');
-    console.log('userData:', userData);
-    console.log('hasViewAllPermission:', hasViewAllPermission);
-    console.log('shouldBypassPermissionCheck:', shouldBypassPermissionCheck);
-    console.log('permissionChecked:', permissionChecked);
-    console.log('error:', error);
-    console.log('hasAccessDenied:', hasAccessDenied);
-    console.log('--------------------------------------------------------');
-  }, [userData, hasViewAllPermission, permissionChecked, error, hasAccessDenied]);
-
-  // Cập nhật trạng thái kiểm tra quyền cuối cùng khi có đủ thông tin
-  useEffect(() => {
-    if (permissionChecked && !userLoading) {
-      setPermissionCheckedFinal(true);
-    }
-  }, [permissionChecked, userLoading]);
-
-  // Tải danh sách sheets khi component mount và khi course đã tải xong và không bị denied
-  useEffect(() => {
-    if (course && !loadingApiSheet && !hasAccessDenied && permissionCheckedFinal) {
-      fetchApiSheetData();
-    }
-  }, [course, hasAccessDenied, permissionCheckedFinal]);
-
   // Hiển thị trạng thái loading khi đang tải dữ liệu người dùng hoặc khóa học
-  if (userLoading || courseLoading || refreshing) {
+  if (userLoading || (hasAccessToLoadData && courseLoading) || refreshing) {
     return <LoadingState message={refreshing ? "Đang làm mới thông tin quyền truy cập..." : "Đang tải thông tin khóa học..."} />;
   }
 
   // Chỉ hiển thị lỗi quyền truy cập khi đã hoàn thành kiểm tra
-  if (hasAccessDenied && permissionCheckedFinal) {
+  if (permissionCheckedFinal && !hasAccessToLoadData) {
     return (
       <div className="min-h-screen bg-gray-100 p-4 sm:p-6">
-        <PermissionDenied message={error} redirectUrl="/courses" data-access-denied="true" />
+        <PermissionDenied message={error || "Bạn không có quyền truy cập khóa học này"} redirectUrl="/courses" data-access-denied="true" />
+        
+        {/* Thông tin debug */}
+        <div className="mt-4 p-4 bg-yellow-50 rounded-md border border-yellow-300">
+          <h3 className="text-sm font-medium text-yellow-800">Thông tin kiểm tra quyền:</h3>
+          <ul className="mt-2 text-sm text-yellow-700">
+            <li>Role: {userData?.role || 'N/A'}</li>
+            <li>canViewAllCourses: {userData?.canViewAllCourses ? 'true' : 'false'}</li>
+            <li>hasViewAllPermission: {hasViewAllPermission ? 'true' : 'false'}</li>
+            <li>hasAccessDenied: {hasAccessDenied ? 'true' : 'false'}</li>
+          </ul>
+        </div>
         
         {/* Nút làm mới quyền truy cập */}
         <div className="mt-6 text-center">
