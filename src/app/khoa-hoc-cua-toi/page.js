@@ -203,18 +203,17 @@ export default function MyCoursesPage() {
                   const level = getRandomLevel();
                   const students = getRandomStudentCount();
                   const lessons = getRandomLessonCount();
-                  const courseDetails = course.details || {};
+                  
+                  // Lấy thông tin khóa học từ cấu trúc mới
+                  const courseInfo = course.courseId || {};
                   
                   return (
                     <div 
-                      key={course.courseId || index} 
+                      key={course.id || index} 
                       className="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col h-full group cursor-pointer"
                       onClick={() => {
-                        // Extract the correct ID for navigation
-                        const id = course.details?._id || course.courseId?._id || course.kimvanId || 
-                                   (course.courseId && typeof course.courseId === 'object' ? 
-                                    (course.courseId.toString && course.courseId.toString() !== '[object Object]' ? 
-                                     course.courseId.toString() : course.courseId._id) : course.courseId);
+                        // Sử dụng ID từ cấu trúc mới
+                        const id = courseInfo._id || course.kimvanId;
                         console.log("Navigating with ID:", id, "from course:", course);
                         router.push(`/courses/${id}`);
                       }}
@@ -248,85 +247,62 @@ export default function MyCoursesPage() {
                       </div>
                       
                       <div className="p-5 flex-grow">
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center space-x-1">
-                            {renderStars(rating)}
-                            <span className="text-xs text-gray-500 ml-1">({rating.toFixed(1)})</span>
-                          </div>
-                          <span className="text-xs font-medium text-indigo-600 bg-indigo-50 px-2 py-1 rounded-full">
-                            {courseDetails?.category || course.courseName?.split(' ')[0] || 'Khóa học'}
-                          </span>
-                        </div>
-                        
                         <h3 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-indigo-600 transition-colors line-clamp-2">
-                          {courseDetails?.name || course.courseName || `Khóa học ${course.courseId}`}
+                          {course.courseName || courseInfo.name}
                         </h3>
-                        
-                        <p className="text-sm text-gray-500 mb-4 line-clamp-2">
-                          {courseDetails?.description || course.courseDescription || 'Khóa học chất lượng cao được thiết kế bởi các chuyên gia hàng đầu.'}
+                        <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+                          {course.courseDescription || courseInfo.description}
                         </p>
                         
-                        <div className="grid grid-cols-2 gap-3 mb-3">
-                          <div className="flex items-center text-xs text-gray-500">
-                            <UserCircleIcon className="h-3.5 w-3.5 mr-1.5 text-gray-400" />
-                            <span>{students.toLocaleString()} học viên</span>
+                        {/* Course stats */}
+                        <div className="grid grid-cols-2 gap-4 text-sm text-gray-500">
+                          <div className="flex items-center">
+                            <UserCircleIcon className="h-4 w-4 mr-1" />
+                            {students.toLocaleString()} học viên
                           </div>
-                          <div className="flex items-center text-xs text-gray-500">
-                            <DocumentTextIcon className="h-3.5 w-3.5 mr-1.5 text-gray-400" />
-                            <span>{lessons} bài học</span>
+                          <div className="flex items-center">
+                            <DocumentTextIcon className="h-4 w-4 mr-1" />
+                            {lessons} bài học
                           </div>
-                          <div className="flex items-center text-xs text-gray-500">
-                            <ClockIcon className="h-3.5 w-3.5 mr-1.5 text-gray-400" />
-                            <span>{Math.round(lessons * 0.4)} giờ học</span>
+                          <div className="flex items-center">
+                            <ClockIcon className="h-4 w-4 mr-1" />
+                            {courseInfo.duration || '12 giờ'}
                           </div>
-                          <div className="flex items-center text-xs text-gray-500">
-                            <FireIcon className="h-3.5 w-3.5 mr-1.5 text-orange-400" />
-                            <span>Đã học {course.progress || Math.floor(Math.random() * 100)}%</span>
+                          <div className="flex items-center">
+                            <FireIcon className="h-4 w-4 mr-1 text-orange-500" />
+                            {Math.floor(course.progress || 0)}% hoàn thành
                           </div>
                         </div>
                       </div>
                       
-                      <div className="border-t border-gray-100 p-5 flex items-center justify-between bg-gray-50">
-                        <div className="font-medium text-gray-600 text-sm">
-                          Đăng ký: {new Date(course.enrolledAt || course.enrollmentDate || Date.now()).toLocaleDateString('vi-VN')}
+                      {/* Course footer */}
+                      <div className="p-5 border-t border-gray-100">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center">
+                            {renderStars(rating)}
+                            <span className="ml-1 text-sm text-gray-500">{rating.toFixed(1)}</span>
+                          </div>
+                          <div className="flex items-center text-indigo-600 font-medium text-sm group-hover:translate-x-1 transition-transform">
+                            Vào học
+                            <ArrowRightIcon className="h-4 w-4 ml-1" />
+                          </div>
                         </div>
-                        
-                        <button 
-                          className="inline-flex items-center justify-center px-3 py-1.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors group-hover:bg-indigo-700"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            // Extract the correct ID for navigation - same logic as above
-                            const id = course.details?._id || course.courseId?._id || course.kimvanId || 
-                                       (course.courseId && typeof course.courseId === 'object' ? 
-                                        (course.courseId.toString && course.courseId.toString() !== '[object Object]' ? 
-                                         course.courseId.toString() : course.courseId._id) : course.courseId);
-                            console.log("Navigating with ID (button):", id, "from course:", course);
-                            router.push(`/courses/${id}`);
-                          }}
-                        >
-                          <span>Tiếp tục học</span>
-                          <ArrowRightIcon className="ml-1.5 h-4 w-4" />
-                        </button>
                       </div>
                     </div>
                   );
                 })}
               </div>
             ) : (
-              <div className="text-center py-16 bg-gray-50 rounded-xl border border-gray-200 shadow-sm">
-                <AcademicCapIcon className="mx-auto h-16 w-16 text-gray-300 mb-4" />
-                <h3 className="text-xl font-medium text-gray-900 mb-2">
-                  Bạn chưa đăng ký khóa học nào
-                </h3>
-                <p className="text-gray-500 mb-6 max-w-md mx-auto">
-                  Bạn chưa đăng ký khóa học nào. Hãy khám phá và đăng ký các khóa học để bắt đầu hành trình học tập của bạn.
-                </p>
+              <div className="text-center py-20">
+                <div className="inline-block mb-5">
+                  <ExclamationCircleIcon className="h-16 w-16 text-gray-400" />
+                </div>
+                <p className="text-gray-500 text-lg font-medium">Bạn chưa đăng ký khóa học nào</p>
                 <button
                   onClick={() => router.push('/courses')}
-                  className="inline-flex items-center justify-center px-6 py-3 border border-transparent rounded-lg shadow-md text-base font-medium text-white bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800"
+                  className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                 >
-                  <AcademicCapIcon className="h-5 w-5 mr-2" />
-                  Xem tất cả khóa học
+                  Khám phá khóa học
                 </button>
               </div>
             )}

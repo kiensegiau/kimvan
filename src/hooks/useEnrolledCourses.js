@@ -363,12 +363,12 @@ export function useEnrolledCourses(externalUserData = null) {
       // Ghi log để debug
       console.log('Enrollments data:', enrollmentsData);
       
-      if (enrollmentsData.success && Array.isArray(enrollmentsData.enrollments)) {
-        setEnrolledCourses(enrollmentsData.enrollments);
+      if (enrollmentsData.success && Array.isArray(enrollmentsData.data)) {
+        setEnrolledCourses(enrollmentsData.data);
         
         // Lưu vào cache
         saveToCache({
-          enrolledCourses: enrollmentsData.enrollments,
+          enrolledCourses: enrollmentsData.data,
           allCourses: [],
           userData: currentUserData
         });
