@@ -227,26 +227,7 @@ export async function checkFileInfo(fileId) {
 
     const fileInfo = await response.json();
     
-    // Log thông tin chi tiết để debug
-    console.log('Chi tiết file:', {
-      id: fileInfo.id,
-      name: fileInfo.name,
-      mimeType: fileInfo.mimeType,
-      size: fileInfo.size,
-      capabilities: fileInfo.capabilities,
-      owner: fileInfo.owners?.[0] ? {
-        displayName: fileInfo.owners[0].displayName,
-        emailAddress: fileInfo.owners[0].emailAddress,
-        permissionId: fileInfo.owners[0].permissionId,
-        kind: fileInfo.owners[0].kind
-      } : null,
-      sharingUser: fileInfo.sharingUser ? {
-        displayName: fileInfo.sharingUser.displayName,
-        emailAddress: fileInfo.sharingUser.emailAddress,
-        permissionId: fileInfo.sharingUser.permissionId,
-        kind: fileInfo.sharingUser.kind
-      } : null
-    });
+  
 
     // Kiểm tra quyền truy cập
     const canDownload = fileInfo.capabilities?.canDownload;

@@ -15,126 +15,55 @@ import Sheet from '@/models/Sheet';
  * @param {Request} request - Request object từ Next.js
  * @returns {Promise<Object>} - Kết quả cập nhật
  */
-export async function updateSheetCell(courseId, sheetIndex, rowIndex, cellIndex, originalUrl, newUrl, displayText = null, request) {
-  console.log(`Cập nhật link trong sheet: Course=${courseId}, Sheet=${sheetIndex}, Row=${rowIndex}, Cell=${cellIndex}`);
-  console.log(`URL gốc: ${originalUrl}`);
-  console.log(`URL mới: ${newUrl}`);
-  
+export async function updateSheetCell(courseId, sheetIndex, rowIndex, cellIndex, originalUrl, newUrl, displayText, request, options = {}) {
   try {
-    await dbMiddleware(request);
+    const { skipProcessing = false, originalLink, processedTime } = options;
     
-    // Tìm khóa học trong database
-    const course = await Course.findById(courseId);
-    if (!course) {
-      console.error(`Không tìm thấy khóa học với ID: ${courseId}`);
-      return {
-        success: false,
-        error: 'Không tìm thấy khóa học'
-      };
-    }
-    
-    // Kiểm tra dữ liệu sheet
-    if (!course.originalData?.sheets || !course.originalData.sheets[sheetIndex]) {
-      console.error(`Không tìm thấy sheet với index: ${sheetIndex}`);
-      return {
-        success: false,
-        error: 'Không tìm thấy dữ liệu sheet'
-      };
-    }
-    
-    const sheet = course.originalData.sheets[sheetIndex];
-    if (!sheet.data || !sheet.data[0] || !sheet.data[0].rowData || !sheet.data[0].rowData[rowIndex]) {
-      console.error(`Không tìm thấy dữ liệu hàng cần cập nhật: Row=${rowIndex}`);
-      return {
-        success: false,
-        error: 'Không tìm thấy dữ liệu hàng cần cập nhật'
-      };
-    }
-    
-    // Kiểm tra và tạo mảng values nếu chưa có
-    if (!sheet.data[0].rowData[rowIndex].values) {
-      sheet.data[0].rowData[rowIndex].values = [];
-    }
-    
-    // Đảm bảo mảng values đủ dài để chứa cellIndex
-    while (sheet.data[0].rowData[rowIndex].values.length <= cellIndex) {
-      sheet.data[0].rowData[rowIndex].values.push({ formattedValue: '' });
-    }
-    
-    // Lấy ô hiện tại
-    const currentCell = sheet.data[0].rowData[rowIndex].values[cellIndex];
-    
-    // Xác định text hiển thị
-    const cellText = displayText || currentCell.formattedValue || 'Tài liệu đã xử lý';
-    
-    // Lấy thời gian hiện tại để ghi chú
-    const currentTime = new Date().toLocaleString('vi-VN');
-    
-    // Cập nhật dữ liệu ô với màu nổi bật hơn
-    const updatedCell = {
-      ...currentCell,
-      formattedValue: cellText,
-      hyperlink: newUrl,
-      note: `Link gốc: ${originalUrl}\nĐã xử lý lúc: ${currentTime}`,
-      userEnteredFormat: {
-        ...(currentCell.userEnteredFormat || {}),
-        backgroundColor: {
-          red: 0.9,
-          green: 0.6,  // Giảm green để màu nổi bật hơn (xanh dương đậm hơn)
-          blue: 1.0
-        },
-        textFormat: {
-          link: { uri: newUrl },
-          foregroundColor: { 
-            red: 0.0,
-            green: 0.0,
-            blue: 0.7  // Chữ màu xanh đậm
-          },
-          bold: true  // In đậm text
-        }
+    const noteContent = skipProcessing 
+      ? `Link gốc: ${originalLink}\nĐã bỏ qua xử lý lúc: ${new Date().toLocaleString('vi-VN')}\nLý do: File gốc từ khoahocshare6.0@gmail.com`
+      : `Link gốc: ${originalUrl}\nĐã xử lý lúc: ${new Date().toLocaleString('vi-VN')}`;
+
+    const cellStyle = {
+      backgroundColor: { red: 0.9, green: 0.6, blue: 1.0 },
+      textFormat: {
+        foregroundColor: { red: 0, green: 0, blue: 0.8 },
+        bold: true
       }
     };
-    
-    // Thêm thông tin về quá trình xử lý
-    updatedCell.processedLinks = {
-      originalUrl: originalUrl,
-      processedUrl: newUrl,
-      processedAt: new Date(),
-      position: {
-        sheet: sheet.properties?.title || `Sheet ${sheetIndex}`,
-        row: rowIndex,
-        col: cellIndex
-      }
-    };
-    
-    // Cập nhật ô trong sheet
-    sheet.data[0].rowData[rowIndex].values[cellIndex] = updatedCell;
-    
-    // Đánh dấu là đã sửa đổi để mongoose lưu thay đổi
-    course.markModified('originalData');
-    
-    // Lưu lại vào database
-    await course.save();
-    
-    console.log(`✅ Đã cập nhật link trong sheet thành công`);
-    
-    return {
-      success: true,
-      message: 'Cập nhật ô thành công',
-      updatedCell: {
+
+    const response = await fetch('/api/courses/' + courseId + '/update-cell', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cookie': request.headers.get('cookie') || ''
+      },
+      body: JSON.stringify({
         sheetIndex,
         rowIndex,
         cellIndex,
-        displayText: cellText,
-        originalUrl,
-        newUrl
-      }
+        cellData: {
+          formattedValue: displayText,
+          hyperlink: skipProcessing ? originalLink : newUrl,
+          note: noteContent,
+          userEnteredFormat: cellStyle
+        }
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    return {
+      success: true,
+      message: skipProcessing ? 'Đã cập nhật cell (bỏ qua xử lý)' : 'Đã cập nhật cell',
+      updatedCell: result
     };
   } catch (error) {
-    console.error('Lỗi khi cập nhật ô trong sheet:', error);
     return {
       success: false,
-      error: `Lỗi khi cập nhật ô: ${error.message}`
+      error: `Lỗi khi cập nhật cell: ${error.message}`
     };
   }
 }
@@ -151,124 +80,51 @@ export async function updateSheetCell(courseId, sheetIndex, rowIndex, cellIndex,
  * @param {Request} request - Request object từ Next.js
  * @returns {Promise<Object>} - Kết quả cập nhật
  */
-export async function updateGoogleSheetCell(sheetId, sheetName, rowIndex, colIndex, displayText, url, originalUrl, request) {
-  console.log(`Cập nhật trực tiếp vào Google Sheet: ID=${sheetId}, Sheet=${sheetName}, Row=${rowIndex + 1}, Col=${colIndex + 1}`);
-  
+export async function updateGoogleSheetCell(sheetId, sheetName, rowIndex, cellIndex, displayText, newUrl, originalUrl, request, options = {}) {
   try {
-    // Tìm sheet trong database để lấy thông tin xác thực
-    await dbMiddleware(request);
-    const sheet = await Sheet.findOne({ sheetId });
+    const { skipProcessing = false, originalLink, processedTime } = options;
     
-    if (!sheet) {
-      console.error(`Không tìm thấy thông tin sheet với ID: ${sheetId}`);
-      return {
-        success: false,
-        error: 'Không tìm thấy thông tin sheet'
-      };
+    const noteContent = skipProcessing 
+      ? `Link gốc: ${originalLink}\nĐã bỏ qua xử lý lúc: ${new Date().toLocaleString('vi-VN')}\nLý do: File gốc từ khoahocshare6.0@gmail.com`
+      : `Link gốc: ${originalUrl}\nĐã xử lý lúc: ${new Date().toLocaleString('vi-VN')}`;
+
+    const cellStyle = {
+      backgroundColor: { red: 0.9, green: 0.6, blue: 1.0 },
+      textFormat: {
+        foregroundColor: { red: 0, green: 0, blue: 0.8 },
+        bold: true
+      }
+    };
+
+    const response = await fetch('/api/sheets/' + sheetId + '/update-cell', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cookie': request.headers.get('cookie') || ''
+      },
+      body: JSON.stringify({
+        rowIndex,
+        columnIndex: cellIndex,
+        value: displayText,
+        url: skipProcessing ? originalLink : newUrl,
+        originalUrl: originalUrl
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
-    
-    // Tạo OAuth2 client
-    const oauth2Client = new google.auth.OAuth2();
-    oauth2Client.setCredentials({
-      access_token: sheet.accessToken,
-      refresh_token: sheet.refreshToken,
-      expiry_date: sheet.expiryDate
-    });
-    
-    // Tạo đối tượng sheets
-    const sheets = google.sheets({ version: 'v4', auth: oauth2Client });
-    
-    // Tạo A1 notation cho ô cần cập nhật
-    const cellA1Notation = `${sheetName}!${String.fromCharCode(65 + colIndex)}${rowIndex + 1}`;
-    
-    // Lấy thời gian hiện tại để ghi chú
-    const currentTime = new Date().toLocaleString('vi-VN');
-    
-    // Cập nhật giá trị ô
-    await sheets.spreadsheets.values.update({
-      spreadsheetId: sheetId,
-      range: cellA1Notation,
-      valueInputOption: 'USER_ENTERED',
-      requestBody: {
-        values: [[displayText]]
-      }
-    });
-    
-    // Lấy sheetId thực tế từ API nếu không biết
-    let actualSheetId = 0;
-    try {
-      const sheetInfo = await sheets.spreadsheets.get({
-        spreadsheetId: sheetId,
-        ranges: [sheetName],
-        fields: 'sheets.properties'
-      });
-      
-      if (sheetInfo.data.sheets && sheetInfo.data.sheets[0].properties) {
-        actualSheetId = sheetInfo.data.sheets[0].properties.sheetId;
-        console.log(`Tìm thấy sheet ID thực tế: ${actualSheetId}`);
-      }
-    } catch (sheetLookupError) {
-      console.warn(`Không tìm thấy sheet ID, sử dụng mặc định 0: ${sheetLookupError.message}`);
-    }
-    
-    // Cập nhật định dạng hyperlink với màu nổi bật
-    await sheets.spreadsheets.batchUpdate({
-      spreadsheetId: sheetId,
-      requestBody: {
-        requests: [
-          {
-            updateCells: {
-              range: {
-                sheetId: actualSheetId,
-                startRowIndex: rowIndex,
-                endRowIndex: rowIndex + 1,
-                startColumnIndex: colIndex,
-                endColumnIndex: colIndex + 1
-              },
-              rows: [
-                {
-                  values: [
-                    {
-                      userEnteredValue: { stringValue: displayText },
-                      userEnteredFormat: {
-                        backgroundColor: {
-                          red: 0.9,
-                          green: 0.6,  // Giảm green để màu nổi bật hơn (xanh dương đậm hơn)
-                          blue: 1.0
-                        },
-                        textFormat: {
-                          link: { uri: url },
-                          foregroundColor: { 
-                            red: 0.0,
-                            green: 0.0,
-                            blue: 0.7  // Chữ màu xanh đậm
-                          },
-                          bold: true  // In đậm text
-                        }
-                      },
-                      note: `Link gốc: ${originalUrl}\nĐã xử lý lúc: ${currentTime}`
-                    }
-                  ]
-                }
-              ],
-              fields: 'userEnteredValue,userEnteredFormat.textFormat.link,userEnteredFormat.textFormat.foregroundColor,userEnteredFormat.textFormat.bold,userEnteredFormat.backgroundColor,note'
-            }
-          }
-        ]
-      }
-    });
-    
-    console.log(`✅ Đã cập nhật trực tiếp vào Google Sheet thành công`);
-    
+
+    const result = await response.json();
     return {
       success: true,
-      message: 'Cập nhật Google Sheet thành công'
+      message: skipProcessing ? 'Đã cập nhật Google Sheet cell (bỏ qua xử lý)' : 'Đã cập nhật Google Sheet cell',
+      updatedCell: result
     };
   } catch (error) {
-    console.error('Lỗi khi cập nhật Google Sheet:', error);
     return {
       success: false,
-      error: `Lỗi khi cập nhật Google Sheet: ${error.message}`
+      error: `Lỗi khi cập nhật Google Sheet cell: ${error.message}`
     };
   }
 } 

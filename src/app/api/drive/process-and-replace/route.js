@@ -329,14 +329,10 @@ function addToProcessingQueue(params) {
 
 // API Endpoint - POST
 export async function POST(request) {
-  console.log('============== BẮT ĐẦU API XỬ LÝ VÀ THAY THẾ FILE GOOGLE DRIVE ==============');
-  
   let tempDir = null;
-  // Đặt timeout cho toàn bộ quá trình (120 phút)
   const GLOBAL_TIMEOUT = 120 * 60 * 1000;
   const startTime = Date.now();
   
-  // Tạo promise với timeout
   const timeoutPromise = new Promise((_, reject) => {
     setTimeout(() => {
       reject(new Error(`Quá trình xử lý vượt quá thời gian cho phép (${GLOBAL_TIMEOUT / 60000} phút)`));
@@ -344,7 +340,6 @@ export async function POST(request) {
   });
   
   try {
-    // Parse request body
     const requestBody = await request.json();
     const { 
       driveLink, 
@@ -364,40 +359,84 @@ export async function POST(request) {
       useSheetNameDirectly = false
     } = requestBody;
     
-    console.log('Thông tin request:', {
-      driveLink: driveLink || 'không có',
-      folderId: folderId || 'sẽ dùng folder mặc định "1Lt10aHyWp9VtPaImzInE0DmIcbrjJgpN"',
-      apiKey: apiKey ? 'Đã cung cấp' : 'Sử dụng từ hệ thống quản lý API key',
-      courseName: courseName || 'không có (sẽ lưu vào thư mục mặc định)',
-      sheetName: sheetName || 'không có',
-      isSheetDocument: isSheetDocument || false,
-      updateSheet: updateSheet || false,
-      courseId: courseId || 'không có',
-      sheetIndex: sheetIndex !== undefined ? sheetIndex : 'không có',
-      rowIndex: rowIndex !== undefined ? rowIndex : 'không có',
-      cellIndex: cellIndex !== undefined ? cellIndex : 'không có',
-      sheetId: sheetId || 'không có',
-      googleSheetName: googleSheetName || 'không có',
-      useSheetNameDirectly: useSheetNameDirectly || false
-    });
-    
-    // Validate drive link
     if (!driveLink) {
-      console.error('LỖI: Thiếu liên kết Google Drive');
       return NextResponse.json(
         { error: 'Thiếu liên kết Google Drive.' },
         { status: 400 }
       );
     }
     
-    // Trích xuất file ID
     const fileId = extractDriveFileId(driveLink);
     if (!fileId) {
-      console.error('LỖI: Không thể trích xuất ID file từ URL');
       return NextResponse.json(
         { error: 'Không thể trích xuất ID file từ URL. Vui lòng kiểm tra lại liên kết.' },
         { status: 400 }
       );
+    }
+
+    // Kiểm tra thông tin file bằng API upload
+    try {
+      const fileInfo = await checkFileInfo(fileId);
+
+      if (fileInfo.success && fileInfo.fileInfo.owners?.[0]?.emailAddress === 'khoahocshare6.0@gmail.com') {
+        // Xử lý cập nhật sheet nếu cần
+        let sheetUpdateResult = null;
+        if (updateSheet) {
+          console.log('File thuộc khoahocshare6.0@gmail.com, cập nhật sheet với trạng thái bỏ qua...');
+          if (courseId && sheetIndex !== undefined && rowIndex !== undefined && cellIndex !== undefined) {
+            sheetUpdateResult = await updateSheetCell(
+              courseId,
+              sheetIndex,
+              rowIndex,
+              cellIndex,
+              driveLink,
+              driveLink, // Giữ nguyên link gốc
+              displayText || fileInfo.fileInfo.name,
+              request,
+              {
+                skipProcessing: true,
+                originalLink: driveLink,
+                processedTime: new Date().toISOString()
+              }
+            );
+          } else if (sheetId && googleSheetName && rowIndex !== undefined && cellIndex !== undefined) {
+            sheetUpdateResult = await updateGoogleSheetCell(
+              sheetId,
+              googleSheetName,
+              rowIndex,
+              cellIndex,
+              displayText || fileInfo.fileInfo.name,
+              driveLink, // Giữ nguyên link gốc
+              driveLink,
+              request,
+              {
+                skipProcessing: true,
+                originalLink: driveLink,
+                processedTime: new Date().toISOString()
+              }
+            );
+          }
+        }
+
+        // Trả về kết quả
+        return NextResponse.json({
+          success: true,
+          skipped: true,
+          reason: 'File thuộc sở hữu của khoahocshare6.0@gmail.com',
+          originalFile: {
+            id: fileId,
+            link: driveLink,
+            info: fileInfo.fileInfo
+          },
+          sheetUpdate: updateSheet ? {
+            success: sheetUpdateResult?.success || false,
+            message: sheetUpdateResult?.message || sheetUpdateResult?.error || 'Không có thông tin cập nhật',
+            details: sheetUpdateResult?.updatedCell || null
+          } : null
+        });
+      }
+    } catch (error) {
+      // Tiếp tục xử lý nếu không kiểm tra được thông tin
     }
     
     // Xác định folder đích dựa trên thông tin request trước khi kiểm tra file

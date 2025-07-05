@@ -700,20 +700,26 @@ export async function POST(request, { params }) {
               
               console.log(`URL cuối cùng được chọn: ${newUrl || 'không có URL'}`);
             } else {
-              console.log(`Kết quả là file, sử dụng link file đã xử lý: ${processResultJson.processedFile?.link}`);
-              newUrl = processResultJson.processedFile?.link;
+              console.log(`Kết quả là file, kiểm tra trạng thái xử lý...`);
+              if (processResultJson.skipped) {
+                console.log(`File được bỏ qua xử lý, sử dụng link gốc: ${urlGroup.originalUrl}`);
+                newUrl = urlGroup.originalUrl;
+              } else {
+                console.log(`File đã xử lý, sử dụng link mới: ${processResultJson.processedFile?.link}`);
+                newUrl = processResultJson.processedFile?.link;
+              }
             }
               
             if (!newUrl) {
-              console.error(`Không nhận được URL mới sau khi xử lý: ${urlGroup.originalUrl}`);
+              console.error(`Không nhận được URL sau khi xử lý: ${urlGroup.originalUrl}`);
               errors.push({
                 url: urlGroup.originalUrl,
-                error: 'Không nhận được URL mới sau khi xử lý'
+                error: 'Không nhận được URL sau khi xử lý'
               });
               return {
                 success: false,
                 urlGroup,
-                error: 'Không nhận được URL mới sau khi xử lý'
+                error: 'Không nhận được URL sau khi xử lý'
               };
             }
 
@@ -722,24 +728,77 @@ export async function POST(request, { params }) {
               if (processResultJson.sheetUpdate.success) {
                 console.log(`✅ Sheet đã được cập nhật tự động qua API`);
               } else {
-                console.warn(`⚠️ Cập nhật sheet tự động thất bại: ${processResultJson.sheetUpdate.message}`);
-                console.log(`Thử phương pháp thay thế để cập nhật sheet...`);
+                console.log(`⚠️ API cập nhật sheet thất bại, tiến hành cập nhật trực tiếp...`);
                 
-                // Sử dụng phương pháp thay thế nếu API không tự cập nhật được
-                try {
-                  // Thực hiện cập nhật thủ công nếu cần
-                  console.log(`Cập nhật thủ công được bỏ qua vì sheet đã được xử lý bởi API`);
-                } catch (manualUpdateError) {
-                  console.error(`Không thể cập nhật sheet bằng phương pháp thay thế:`, manualUpdateError);
-                  errors.push({
-                    url: urlGroup.originalUrl,
-                    error: 'Không thể cập nhật sheet bằng phương pháp thay thế'
-                  });
-                  return {
-                    success: false,
-                    urlGroup,
-                    error: 'Không thể cập nhật sheet bằng phương pháp thay thế'
-                  };
+                // Cập nhật trực tiếp vào Google Sheet
+                for (const cellInfo of urlGroup.cells) {
+                  try {
+                    console.log(`Cập nhật ô [${cellInfo.rowIndex + 1}:${cellInfo.colIndex + 1}] trong sheet...`);
+                    console.log(`URL gốc: ${urlGroup.originalUrl}`);
+                    console.log(`URL mới: ${newUrl}`);
+                    
+                    // Lấy thời gian hiện tại để ghi chú
+                    const currentTime = new Date().toLocaleString('vi-VN');
+                    const noteContent = processResultJson.skipped 
+                      ? `Link gốc: ${urlGroup.originalUrl}\nĐã bỏ qua xử lý lúc: ${currentTime}\nLý do: File gốc từ khoahocshare6.0@gmail.com`
+                      : `Link gốc: ${urlGroup.originalUrl}\nĐã xử lý lúc: ${currentTime}`;
+                    
+                    // Sử dụng batchUpdate để cập nhật cả giá trị và định dạng
+                    await sheets.spreadsheets.batchUpdate({
+                      spreadsheetId: sheet.sheetId,
+                      requestBody: {
+                        requests: [
+                          {
+                            updateCells: {
+                              range: {
+                                sheetId: actualSheetId,
+                                startRowIndex: cellInfo.rowIndex,
+                                endRowIndex: cellInfo.rowIndex + 1,
+                                startColumnIndex: cellInfo.colIndex,
+                                endColumnIndex: cellInfo.colIndex + 1
+                              },
+                              rows: [
+                                {
+                                  values: [
+                                    {
+                                      userEnteredValue: {
+                                        stringValue: cellInfo.cell || 'Tài liệu đã xử lý'
+                                      },
+                                      userEnteredFormat: {
+                                        backgroundColor: {
+                                          red: 0.9,
+                                          green: 0.6,
+                                          blue: 1.0
+                                        },
+                                        textFormat: {
+                                          link: { uri: newUrl },
+                                          foregroundColor: { 
+                                            red: 0.0,
+                                            green: 0.0,
+                                            blue: 0.7
+                                          },
+                                          bold: true
+                                        }
+                                      },
+                                      note: noteContent
+                                    }
+                                  ]
+                                }
+                              ],
+                              fields: 'userEnteredValue,userEnteredFormat.backgroundColor,userEnteredFormat.textFormat.link,userEnteredFormat.textFormat.foregroundColor,userEnteredFormat.textFormat.bold,note'
+                            }
+                          }
+                        ]
+                      }
+                    });
+                    console.log(`✅ Đã cập nhật ô thành công với batchUpdate`);
+                  } catch (error) {
+                    console.error(`❌ Lỗi khi cập nhật ô: ${error.message}`);
+                    errors.push({
+                      url: urlGroup.originalUrl,
+                      error: `Lỗi khi cập nhật ô: ${error.message}`
+                    });
+                  }
                 }
               }
             }
@@ -748,9 +807,10 @@ export async function POST(request, { params }) {
               success: true,
               urlGroup,
               newUrl,
-              processResult: processResultJson.processedFile,
-              fileType,
-              isFolder: false
+              processResult: processResultJson.skipped ? null : processResultJson.processedFile,
+              fileType: processResultJson.mimeType || 'application/pdf',
+              isFolder: false,
+              skipped: processResultJson.skipped || false
             };
           } catch (apiError) {
             console.error(`Lỗi khi gọi API process-and-replace: ${apiError.message}`);
@@ -903,12 +963,13 @@ export async function POST(request, { params }) {
               console.log(`Đã cập nhật ô thành công với values.update`);
             }
             
+            // Thêm vào mảng kết quả
             processedCells.push({
               rowIndex: cellInfo.rowIndex,
               colIndex: cellInfo.colIndex,
               originalUrl: cellInfo.url,
               newUrl: newUrl,
-              duplicatesDeleted: processResult.duplicatesDeleted || 0,
+              duplicatesDeleted: result.processResult?.duplicatesDeleted || 0,
               sharedWithCells: urlGroup.cells.length - 1 // Số ô khác có cùng URL
             });
             

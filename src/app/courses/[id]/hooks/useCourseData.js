@@ -397,6 +397,7 @@ export function useCourseData(id, userData = null, userLoading = false) {
           // Chỉ set lỗi nếu hasPermission là false (không phải null)
           if (hasPermission === false) {
             setError('Bạn không có quyền truy cập khóa học này');
+            setLoading(false);
             return;
           }
         }
@@ -421,7 +422,20 @@ export function useCourseData(id, userData = null, userLoading = false) {
       });
       
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: `Error ${response.status}: ${response.statusText}` }));
+        // Xử lý lỗi 403 một cách rõ ràng
+        if (response.status === 403) {
+          setError('Bạn không có quyền truy cập khóa học này. Vui lòng đăng ký khóa học hoặc liên hệ admin để được cấp quyền.');
+          setLoading(false);
+          setPermissionChecked(true);
+          return;
+        }
+        
+        // Xử lý các lỗi khác
+        const errorData = await response.json().catch(() => ({ 
+          error: response.status === 404 
+            ? 'Không tìm thấy khóa học này'
+            : `Lỗi ${response.status}: ${response.statusText}` 
+        }));
         throw new Error(errorData.error || `Lỗi khi tải khóa học: ${response.statusText}`);
       }
       
@@ -439,7 +453,7 @@ export function useCourseData(id, userData = null, userLoading = false) {
       
       // Chỉ set lỗi và ngăn không tải dữ liệu nếu hasPermission là false (không phải null)
       if (hasPermission === false) {
-        setError('Bạn không có quyền truy cập khóa học này');
+        setError('Bạn không có quyền truy cập khóa học này. Vui lòng đăng ký khóa học hoặc liên hệ admin để được cấp quyền.');
         setLoading(false);
         return;
       }
@@ -454,7 +468,8 @@ export function useCourseData(id, userData = null, userLoading = false) {
       
     } catch (error) {
       console.error('Error fetching course detail:', error);
-      setError(error.message);
+      // Thêm thông tin hữu ích cho người dùng
+      setError(error.message || 'Có lỗi xảy ra khi tải thông tin khóa học. Vui lòng thử lại sau hoặc liên hệ admin nếu lỗi vẫn tiếp tục.');
     } finally {
       setLoading(false);
     }
