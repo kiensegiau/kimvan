@@ -239,10 +239,13 @@ export async function checkFileInfo(fileId) {
     // Lấy thông tin file
     const fileInfo = await drive.files.get({
       fileId: fileId,
-      fields: 'id,name,mimeType,size,capabilities,parents'
+      fields: 'id,name,mimeType,size,capabilities,parents,owners'
     });
     
     console.log(`Thông tin file: ${fileInfo.data.name} (${fileInfo.data.mimeType})`);
+    if (fileInfo.data.owners && fileInfo.data.owners.length > 0) {
+      console.log(`Chủ sở hữu file: ${fileInfo.data.owners[0].emailAddress}`);
+    }
     
     return {
       success: true,

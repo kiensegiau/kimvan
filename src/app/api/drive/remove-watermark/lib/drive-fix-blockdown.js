@@ -39,7 +39,25 @@ function getChromePath() {
   try {
     switch (os.platform()) {
       case 'win32':
+        // Kiểm tra các đường dẫn phổ biến
+        const windowsPaths = [
+          'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+          'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+          'C:\\Users\\Administrator\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe',
+          'C:\\Users\\PC\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe'
+        ];
+        
+        for (const path of windowsPaths) {
+          if (fs.existsSync(path)) {
+            console.log(`✅ Tìm thấy Chrome tại: ${path}`);
+            return path;
+          }
+        }
+        
+        // Đường dẫn mặc định nếu không tìm thấy
+        console.log(`⚠️ Không tìm thấy Chrome trong các đường dẫn phổ biến, sử dụng đường dẫn mặc định`);
         return 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+        
       case 'darwin': // macOS
         return '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
       default: // Linux và các hệ điều hành khác
@@ -337,7 +355,7 @@ async function getOrCreateBrowser(profilePath, debugMode = false) {
     
     const browser = await puppeteer.launch({
       headless: debugMode ? false : 'new',
-      channel: "chrome",
+      channel: os.platform() === 'win32' ? 'chrome' : undefined,
       executablePath: chromePath,
       args: [
         "--start-maximized",
@@ -369,7 +387,7 @@ async function getOrCreateBrowser(profilePath, debugMode = false) {
       defaultViewport: null,
       ignoreDefaultArgs: ["--enable-automation"],
       timeout: 180000,
-      slowMo: 50
+      slowMo: debugMode ? 100 : 50
     });
     
     // Lưu browser vào map
@@ -431,6 +449,8 @@ setInterval(() => {
  * @returns {Promise<{success: boolean, filePath: string, error: string}>}
  */
 export async function downloadBlockedPDF(fileId, fileName, tempDir, watermarkConfig = {}) {
+  console.log(`🚀 [CHROME] Bắt đầu xử lý file bị chặn: fileId=${fileId}, fileName=${fileName}`);
+  
   let browser = null;
   let page = null;
   let downloadedImages = [];
@@ -474,6 +494,11 @@ export async function downloadBlockedPDF(fileId, fileName, tempDir, watermarkCon
   
   // Lưu thông tin cấu hình
   const debugMode = watermarkConfig && watermarkConfig.debugMode === true;
+  
+  // Log thông tin về chế độ debug
+  if (debugMode) {
+    console.log(`🔍 CHẾ ĐỘ DEBUG: Chrome sẽ được hiển thị (KHÔNG chạy ở chế độ headless)`);
+  }
   
   const outputPath = path.join(tempDir, `${path.basename(fileName, '.pdf')}_clean.pdf`);
   
@@ -616,18 +641,26 @@ export async function downloadBlockedPDF(fileId, fileName, tempDir, watermarkCon
       throw new Error(`Không thể tải ảnh từ các trang PDF: ${downloadError.message}`);
     }
     
-    // Bỏ qua xử lý watermark và sử dụng ảnh gốc trực tiếp
-    try {
-      console.log(`⏭️ BỎ QUA HOÀN TOÀN bước xử lý watermark...`);
-      // Chỉ chuyển đổi định dạng ảnh nếu cần
-      const pngImages = await convertAllImagesToPng(downloadedImages, imagesDir);
-      
-      // Sử dụng trực tiếp ảnh gốc đã chuyển đổi sang PNG mà không tạo bản sao
-      console.log(`✅ Sử dụng trực tiếp ${pngImages.length} ảnh gốc mà không xử lý watermark`);
+    // Chuyển đổi định dạng ảnh trước khi xử lý
+    const pngImages = await convertAllImagesToPng(downloadedImages, imagesDir);
+    
+    // Xác định có cần xử lý watermark hay không
+    if (true) {
+      // Bỏ qua xử lý watermark và sử dụng ảnh gốc trực tiếp
+      console.log(`⏭️ BỎ QUA bước xử lý watermark theo cấu hình...`);
       processedImages = pngImages;
-    } catch (processError) {
-      console.error(`Lỗi xử lý ảnh: ${processError.message}`);
-      throw new Error(`Không thể xử lý ảnh: ${processError.message}`);
+    } else {
+      // Xử lý watermark
+      try {
+        console.log(`🔧 Bắt đầu xử lý watermark cho ${pngImages.length} trang...`);
+        processedImages = await processAllImages(pngImages, processedDir, config);
+        console.log(`✅ Đã xử lý watermark cho ${processedImages.length} trang`);
+      } catch (processError) {
+        console.error(`❌ Lỗi xử lý watermark: ${processError.message}`);
+        console.log(`⚠️ Sử dụng ảnh gốc không xử lý watermark do lỗi`);
+        // Fallback sử dụng ảnh gốc nếu xử lý thất bại
+        processedImages = pngImages;
+      }
     }
     
     // Tạo file PDF từ các ảnh đã xử lý
