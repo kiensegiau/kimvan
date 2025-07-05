@@ -408,10 +408,10 @@ export async function POST(request) {
       console.log(`\n🔄 Thử tải file trực tiếp với token download...`);
       
       // Tạo thư mục tạm để lưu file
-      const tempDir = path.join(os.tmpdir(), uuidv4());
+      tempDir = path.join(os.tmpdir(), uuidv4());
       fs.mkdirSync(tempDir, { recursive: true });
       
-      // Thử tải file trực tiếp
+      // Thử tải file trực tiếp - sẽ tự động chuyển sang dùng cookie nếu gặp lỗi 404
       const downloadResult = await downloadFromGoogleDrive(fileId);
       
       if (downloadResult.success) {
