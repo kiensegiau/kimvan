@@ -67,21 +67,30 @@ export async function updateSheetCell(courseId, sheetIndex, rowIndex, cellIndex,
     // Xác định text hiển thị
     const cellText = displayText || currentCell.formattedValue || 'Tài liệu đã xử lý';
     
-    // Cập nhật dữ liệu ô
+    // Lấy thời gian hiện tại để ghi chú
+    const currentTime = new Date().toLocaleString('vi-VN');
+    
+    // Cập nhật dữ liệu ô với màu nổi bật hơn
     const updatedCell = {
       ...currentCell,
       formattedValue: cellText,
       hyperlink: newUrl,
-      note: `Link gốc: ${originalUrl}`,
+      note: `Link gốc: ${originalUrl}\nĐã xử lý lúc: ${currentTime}`,
       userEnteredFormat: {
         ...(currentCell.userEnteredFormat || {}),
         backgroundColor: {
           red: 0.9,
-          green: 0.9,
+          green: 0.6,  // Giảm green để màu nổi bật hơn (xanh dương đậm hơn)
           blue: 1.0
         },
         textFormat: {
-          link: { uri: newUrl }
+          link: { uri: newUrl },
+          foregroundColor: { 
+            red: 0.0,
+            green: 0.0,
+            blue: 0.7  // Chữ màu xanh đậm
+          },
+          bold: true  // In đậm text
         }
       }
     };
@@ -172,6 +181,9 @@ export async function updateGoogleSheetCell(sheetId, sheetName, rowIndex, colInd
     // Tạo A1 notation cho ô cần cập nhật
     const cellA1Notation = `${sheetName}!${String.fromCharCode(65 + colIndex)}${rowIndex + 1}`;
     
+    // Lấy thời gian hiện tại để ghi chú
+    const currentTime = new Date().toLocaleString('vi-VN');
+    
     // Cập nhật giá trị ô
     await sheets.spreadsheets.values.update({
       spreadsheetId: sheetId,
@@ -182,7 +194,24 @@ export async function updateGoogleSheetCell(sheetId, sheetName, rowIndex, colInd
       }
     });
     
-    // Cập nhật định dạng hyperlink
+    // Lấy sheetId thực tế từ API nếu không biết
+    let actualSheetId = 0;
+    try {
+      const sheetInfo = await sheets.spreadsheets.get({
+        spreadsheetId: sheetId,
+        ranges: [sheetName],
+        fields: 'sheets.properties'
+      });
+      
+      if (sheetInfo.data.sheets && sheetInfo.data.sheets[0].properties) {
+        actualSheetId = sheetInfo.data.sheets[0].properties.sheetId;
+        console.log(`Tìm thấy sheet ID thực tế: ${actualSheetId}`);
+      }
+    } catch (sheetLookupError) {
+      console.warn(`Không tìm thấy sheet ID, sử dụng mặc định 0: ${sheetLookupError.message}`);
+    }
+    
+    // Cập nhật định dạng hyperlink với màu nổi bật
     await sheets.spreadsheets.batchUpdate({
       spreadsheetId: sheetId,
       requestBody: {
@@ -190,7 +219,7 @@ export async function updateGoogleSheetCell(sheetId, sheetName, rowIndex, colInd
           {
             updateCells: {
               range: {
-                sheetId: 0, // Assuming first sheet or you need to get the actual sheetId
+                sheetId: actualSheetId,
                 startRowIndex: rowIndex,
                 endRowIndex: rowIndex + 1,
                 startColumnIndex: colIndex,
@@ -204,19 +233,25 @@ export async function updateGoogleSheetCell(sheetId, sheetName, rowIndex, colInd
                       userEnteredFormat: {
                         backgroundColor: {
                           red: 0.9,
-                          green: 0.9,
+                          green: 0.6,  // Giảm green để màu nổi bật hơn (xanh dương đậm hơn)
                           blue: 1.0
                         },
                         textFormat: {
-                          link: { uri: url }
+                          link: { uri: url },
+                          foregroundColor: { 
+                            red: 0.0,
+                            green: 0.0,
+                            blue: 0.7  // Chữ màu xanh đậm
+                          },
+                          bold: true  // In đậm text
                         }
                       },
-                      note: `Link gốc: ${originalUrl}`
+                      note: `Link gốc: ${originalUrl}\nĐã xử lý lúc: ${currentTime}`
                     }
                   ]
                 }
               ],
-              fields: 'userEnteredValue,userEnteredFormat.textFormat.link,userEnteredFormat.backgroundColor,note'
+              fields: 'userEnteredValue,userEnteredFormat.textFormat.link,userEnteredFormat.textFormat.foregroundColor,userEnteredFormat.textFormat.bold,userEnteredFormat.backgroundColor,note'
             }
           }
         ]

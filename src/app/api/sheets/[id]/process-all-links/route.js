@@ -781,7 +781,10 @@ export async function POST(request, { params }) {
               console.log(`URL mới: ${newUrl}`);
               console.log(`Loại file: ${fileType}, Là folder: ${result.isFolder ? 'Có' : 'Không'}`);
               
-              // Sử dụng batchUpdate để cập nhật cả giá trị và định dạng hyperlink
+              // Lấy thời gian hiện tại để ghi chú
+              const currentTime = new Date().toLocaleString('vi-VN');
+              
+              // Sử dụng batchUpdate để cập nhật cả giá trị và định dạng hyperlink với màu nổi bật
               await sheets.spreadsheets.batchUpdate({
                 spreadsheetId: sheet.sheetId,
                 requestBody: {
@@ -803,15 +806,27 @@ export async function POST(request, { params }) {
                                   stringValue: cellInfo.cell // Giữ nguyên text hiển thị
                                 },
                                 userEnteredFormat: {
+                                  backgroundColor: {
+                                    red: 0.9,
+                                    green: 0.6,  // Màu xanh dương nổi bật
+                                    blue: 1.0
+                                  },
                                   textFormat: {
-                                    link: { uri: newUrl }
+                                    link: { uri: newUrl },
+                                    foregroundColor: { 
+                                      red: 0.0,
+                                      green: 0.0,
+                                      blue: 0.7  // Chữ màu xanh đậm
+                                    },
+                                    bold: true  // In đậm text
                                   }
-                                }
+                                },
+                                note: `Link gốc: ${urlGroup.originalUrl}\nĐã xử lý lúc: ${currentTime}`
                               }
                             ]
                           }
                         ],
-                        fields: 'userEnteredValue,userEnteredFormat.textFormat.link'
+                        fields: 'userEnteredValue,userEnteredFormat.backgroundColor,userEnteredFormat.textFormat.link,userEnteredFormat.textFormat.foregroundColor,userEnteredFormat.textFormat.bold,note'
                       }
                     }
                   ]
@@ -824,6 +839,8 @@ export async function POST(request, { params }) {
               // Phương pháp thay thế sử dụng values.update
               const newCellValue = createHyperlinkFormula(cellInfo.cell, newUrl);
               console.log(`Thử phương pháp thay thế với values.update, giá trị mới: ${newCellValue}`);
+              
+              // Cập nhật giá trị ô
               await sheets.spreadsheets.values.update({
                 spreadsheetId: sheet.sheetId,
                 range: `${apiSheetName}!${String.fromCharCode(65 + cellInfo.colIndex)}${cellInfo.rowIndex + 1}`,
@@ -832,6 +849,37 @@ export async function POST(request, { params }) {
                   values: [[newCellValue]]
                 }
               });
+              
+              // Thêm ghi chú sau khi cập nhật giá trị
+              try {
+                const currentTime = new Date().toLocaleString('vi-VN');
+                await sheets.spreadsheets.batchUpdate({
+                  spreadsheetId: sheet.sheetId,
+                  requestBody: {
+                    requests: [{
+                      updateCells: {
+                        range: {
+                          sheetId: actualSheetId,
+                          startRowIndex: cellInfo.rowIndex,
+                          endRowIndex: cellInfo.rowIndex + 1,
+                          startColumnIndex: cellInfo.colIndex,
+                          endColumnIndex: cellInfo.colIndex + 1
+                        },
+                        rows: [{
+                          values: [{
+                            note: `Link gốc: ${urlGroup.originalUrl}\nĐã xử lý lúc: ${currentTime}`
+                          }]
+                        }],
+                        fields: 'note'
+                      }
+                    }]
+                  }
+                });
+                console.log(`Đã thêm ghi chú cho ô`);
+              } catch (noteError) {
+                console.error(`Không thể thêm ghi chú:`, noteError);
+              }
+              
               console.log(`Đã cập nhật ô thành công với values.update`);
             }
             

@@ -37,34 +37,44 @@ export async function downloadFromGoogleDrive(fileId, options = {}) {
 
       let response;
       
-      // Nếu không bắt buộc dùng cookie, thử dùng API token trước
+      // Ưu tiên sử dụng Google Drive API nếu không bị bắt buộc dùng cookie
       if (!options.forceCookie) {
-        // Lấy access token từ auth-utils
-        const accessToken = await getAccessToken();
-        console.log('Đã lấy access token từ auth-utils');
+        try {
+          console.log('🔄 Đang thử tải file thông qua Google Drive API...');
+          
+          // Lấy access token từ auth-utils
+          const accessToken = await getAccessToken();
+          console.log('Đã lấy access token từ auth-utils');
 
-        // Tạo URL download với token
-        const downloadUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`;
-        console.log('URL tải xuống:', downloadUrl);
+          // Tạo URL download với token
+          const downloadUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`;
+          console.log('URL tải xuống:', downloadUrl);
 
-        // Tải file với token
-        response = await fetch(downloadUrl, {
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Accept': '*/*'
+          // Tải file với token
+          response = await fetch(downloadUrl, {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Accept': '*/*'
+            }
+          });
+
+          // Nếu lỗi 404, chuyển sang dùng cookie
+          if (response.status === 404) {
+            console.log('API báo 404, chuyển sang dùng cookie...');
+            return await downloadFromGoogleDrive(fileId, { forceCookie: true });
           }
-        });
 
-        // Nếu lỗi 404, chuyển sang dùng cookie
-        if (response.status === 404) {
-          console.log('API báo 404, chuyển sang dùng cookie...');
+          // Nếu lỗi khác 404, throw error
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Lỗi khi tải file (HTTP ${response.status}): ${errorText}`);
+          }
+          
+          console.log('✅ Tải file qua Google Drive API thành công');
+        } catch (apiError) {
+          console.error(`❌ Lỗi khi tải qua API: ${apiError.message}`);
+          console.log('Chuyển sang dùng cookie...');
           return await downloadFromGoogleDrive(fileId, { forceCookie: true });
-        }
-
-        // Nếu lỗi khác 404, throw error
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`Lỗi khi tải file (HTTP ${response.status}): ${errorText}`);
         }
       } else {
         // Dùng cookie để tải
