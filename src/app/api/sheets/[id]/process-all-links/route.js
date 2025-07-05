@@ -167,15 +167,19 @@ export async function POST(request, { params }) {
                                     cell.userEnteredFormat.textFormat.link && 
                                     cell.userEnteredFormat.textFormat.link.uri);
                   
+                  // Lấy ghi chú của ô (nếu có)
+                  const note = cell.note || '';
+                  
                   htmlData.values[rowIndex].values[colIndex] = {
-                    hyperlink: hyperlink
+                    hyperlink: hyperlink,
+                    note: note  // Lưu ghi chú để kiểm tra sau
                   };
                 });
               }
             });
           }
           
-          console.log('Đã lấy được dữ liệu hyperlink từ Google Sheets API');
+          console.log('Đã lấy được dữ liệu hyperlink và ghi chú từ Google Sheets API');
         }
       } catch (htmlError) {
         console.error('Lỗi khi lấy dữ liệu hyperlink:', htmlError);
@@ -205,6 +209,7 @@ export async function POST(request, { params }) {
     
     // Tìm tất cả các ô chứa link Google Drive
     const cellsToProcess = [];
+    const skippedCells = [];
     
     for (let rowIndex = 1; rowIndex < values.length; rowIndex++) {
       const row = values[rowIndex] || [];
@@ -219,6 +224,20 @@ export async function POST(request, { params }) {
         // Kiểm tra xem có dữ liệu HTML không
         const htmlCell = htmlRow[colIndex];
         const hyperlink = htmlCell?.hyperlink;
+        const note = htmlCell?.note || '';
+        
+        // Kiểm tra xem ô đã được xử lý trước đó chưa (dựa vào ghi chú)
+        const isProcessed = note && (note.includes('Link gốc:') || note.includes('Đã xử lý lúc:'));
+        if (isProcessed) {
+          console.log(`Bỏ qua ô [${rowIndex + 1}:${colIndex + 1}] vì đã được xử lý trước đó (có ghi chú)`);
+          skippedCells.push({
+            rowIndex,
+            colIndex,
+            cell,
+            note
+          });
+          continue;  // Bỏ qua ô này và chuyển sang ô tiếp theo
+        }
         
         // Ưu tiên lấy hyperlink từ dữ liệu HTML
         let url = hyperlink;
@@ -266,6 +285,7 @@ export async function POST(request, { params }) {
     }
     
     console.log(`Tìm thấy ${cellsToProcess.length} ô chứa link Google Drive cần xử lý`);
+    console.log(`Đã bỏ qua ${skippedCells.length} ô đã được xử lý trước đó (có ghi chú)`);
     
     // If no links found, add a test link from the request body if provided
     if (cellsToProcess.length === 0 && requestBody.testDriveLink) {
