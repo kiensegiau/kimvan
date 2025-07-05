@@ -349,13 +349,26 @@ export async function GET(request, { params }) {
     // Kiểm tra xác thực người dùng
     const user = await authMiddleware(request);
     
+    // Thêm log để debug
+    console.log('👤 API - User info:', {
+      uid: user?.uid,
+      email: user?.email,
+      role: user?.role,
+      canViewAllCourses: user?.canViewAllCourses,
+      isAdmin: user?.role === 'admin'
+    });
+    
     // Kiểm tra quyền truy cập
     let isEnrolled = false;
     let canViewAllCourses = false;
     
     if (user) {
+      // Đọc thông tin quyền từ headers
+      const permissionsHeader = request.headers.get('X-User-Permissions');
+      const userPermissions = permissionsHeader ? JSON.parse(permissionsHeader) : {};
+      
       // Kiểm tra nếu người dùng có quyền xem tất cả khóa học
-      canViewAllCourses = user.canViewAllCourses === true;
+      canViewAllCourses = userPermissions.hasViewAllPermission === true;
       
       // Kiểm tra nếu người dùng đã đăng ký khóa học này
       // Kiểm tra đăng ký bằng MongoDB ID
@@ -401,6 +414,7 @@ export async function GET(request, { params }) {
     
     // Nếu khóa học yêu cầu đăng ký và người dùng không có quyền
     if (course.requiresEnrollment && !isEnrolled && !canViewAllCourses) {
+      console.log('Access denied - User role:', user?.role, 'isEnrolled:', isEnrolled, 'canViewAllCourses:', canViewAllCourses);
       return NextResponse.json({ 
         success: false,
         message: 'Bạn cần đăng ký khóa học này để xem chi tiết',

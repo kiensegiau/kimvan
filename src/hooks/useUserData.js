@@ -48,18 +48,29 @@ const useUserData = () => {
               console.log('✅ Đã tìm thấy user_info cookie:', parsedUserInfo);
               
               if (parsedUserInfo && parsedUserInfo.uid) {
+                // Tính toán hasViewAllPermission
+                const hasViewAllPermission = parsedUserInfo.canViewAllCourses === true || 
+                  (parsedUserInfo.permissions && Array.isArray(parsedUserInfo.permissions) && 
+                   parsedUserInfo.permissions.includes('view_all_courses'));
+
+                // Thêm hasViewAllPermission vào userData
+                const enhancedUserData = {
+                  ...parsedUserInfo,
+                  hasViewAllPermission
+                };
+                
                 // Lưu vào global cache
-                window.__USER_DATA_CACHE__ = parsedUserInfo;
+                window.__USER_DATA_CACHE__ = enhancedUserData;
                 window.__USER_DATA_TIMESTAMP__ = Date.now();
                 
                 if (isMounted) {
-                  setUserData(parsedUserInfo);
+                  setUserData(enhancedUserData);
                   setLoading(false);
                 }
                 
                 // Lưu thông tin người dùng vào localStorage để dùng khi offline
                 try {
-                  localStorage.setItem('userData', JSON.stringify(parsedUserInfo));
+                  localStorage.setItem('userData', JSON.stringify(enhancedUserData));
                   localStorage.setItem('userDataTimestamp', Date.now().toString());
                 } catch (e) {
                   console.error('Không thể lưu vào localStorage:', e);
@@ -189,6 +200,11 @@ const useUserData = () => {
         // Nếu lấy được dữ liệu từ bất kỳ endpoint nào
         if (userData) {
           console.log('✅ Lấy dữ liệu người dùng thành công:', userData);
+          
+          // Tính toán canViewAllCourses dựa trên permissions
+          userData.canViewAllCourses = userData.canViewAllCourses === true || 
+            (userData.permissions && Array.isArray(userData.permissions) && 
+             userData.permissions.includes('view_all_courses'));
           
           // Lưu vào global cache để các component khác sử dụng
           window.__USER_DATA_CACHE__ = userData;

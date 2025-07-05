@@ -29,7 +29,7 @@ export function useEnrolledCourses(externalUserData = null) {
     // Kiểm tra trong danh sách khóa học đã đăng ký
     const isEnrolled = enrolledCourses.some(course => {
       // So sánh với courseId (MongoDB ID)
-      const enrolledCourseId = String(course.courseId);
+      const enrolledCourseId = String(course.courseId?._id || course.courseId);
       const matchesMongoId = enrolledCourseId === courseIdStr;
       
       // So sánh với kimvanId (nếu courseIdStr có thể là kimvanId)
@@ -347,42 +347,36 @@ export function useEnrolledCourses(externalUserData = null) {
       }
 
       // Lấy danh sách khóa học đã đăng ký
-      const enrollmentsResponse = await fetch('/api/enrollments');
-      
+      const enrollmentsResponse = await fetch('/api/enrollments', {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
       if (!enrollmentsResponse.ok) {
-        if (enrollmentsResponse.status === 401) {
-          setError('Bạn cần đăng nhập để xem khóa học đã đăng ký');
-          return;
-        }
-        
-        const errorData = await enrollmentsResponse.json().catch(() => ({}));
-        const errorMessage = errorData.error || `Lỗi ${enrollmentsResponse.status}: ${enrollmentsResponse.statusText}`;
-        throw new Error(errorMessage);
+        throw new Error(`Lỗi khi lấy danh sách đăng ký: ${enrollmentsResponse.status}`);
       }
-      
+
       const enrollmentsData = await enrollmentsResponse.json();
-      if (!enrollmentsData.success || !enrollmentsData.data) {
-        throw new Error('Không thể lấy được danh sách khóa học đã đăng ký');
-      }
       
-      const enrollments = enrollmentsData.data;
-      setEnrolledCourses(enrollments);
+      // Ghi log để debug
+      console.log('Enrollments data:', enrollmentsData);
       
-      // Lấy thêm thông tin chi tiết của tất cả khóa học
-      const coursesResponse = await fetch('/api/minicourses');
-      if (coursesResponse.ok) {
-        const coursesData = await coursesResponse.json();
-        if (coursesData && coursesData.success && coursesData.data && Array.isArray(coursesData.data.minicourses)) {
-          setAllCourses(coursesData.data.minicourses);
-          
-          // Lưu vào cache
-          saveToCache({
-            enrolledCourses: enrollments,
-            allCourses: coursesData.data.minicourses,
-            userData: currentUserData
-          });
-        }
+      if (enrollmentsData.success && Array.isArray(enrollmentsData.enrollments)) {
+        setEnrolledCourses(enrollmentsData.enrollments);
+        
+        // Lưu vào cache
+        saveToCache({
+          enrolledCourses: enrollmentsData.enrollments,
+          allCourses: [],
+          userData: currentUserData
+        });
+      } else {
+        setEnrolledCourses([]);
       }
+
+      setLoading(false);
     } catch (err) {
       setError(err.message || 'Đã xảy ra lỗi khi tải dữ liệu khóa học.');
     } finally {

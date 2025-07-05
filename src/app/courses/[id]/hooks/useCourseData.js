@@ -88,20 +88,11 @@ export function useCourseData(id, userData = null, userLoading = false) {
     }
     
     console.log(`🔍 Kiểm tra quyền truy cập khóa học: ${courseData._id || courseData.id || id}`);
-    console.log(`👤 Thông tin người dùng: role=${userData.role}, canViewAllCourses=${userData.canViewAllCourses}`);
+    console.log(`👤 Thông tin người dùng: role=${userData.role}, hasViewAllPermission=${userData.hasViewAllPermission}`);
     
-    // Bỏ kiểm tra quyền từ role admin (admin không còn mặc định có quyền xem tất cả)
-    
-    // Kiểm tra thuộc tính canViewAllCourses
-    if (userData.canViewAllCourses === true) {
-      console.log('✅ Kiểm tra quyền: Người dùng có quyền xem tất cả khóa học (canViewAllCourses)');
-      return true;
-    }
-    
-    // Kiểm tra quyền từ mảng permissions
-    if (userData.permissions && Array.isArray(userData.permissions) && 
-        userData.permissions.includes('view_all_courses')) {
-      console.log('✅ Kiểm tra quyền: Người dùng có quyền view_all_courses trong mảng permissions');
+    // Kiểm tra quyền xem tất cả khóa học
+    if (userData.hasViewAllPermission === true) {
+      console.log('✅ Kiểm tra quyền: Người dùng có quyền xem tất cả khóa học');
       return true;
     }
     
@@ -417,7 +408,17 @@ export function useCourseData(id, userData = null, userLoading = false) {
       
       // Gọi API nếu không có cache
       console.log(`Fetching course detail for ID: ${id}`);
-      const response = await fetch(`/api/courses/${id}`);
+      const response = await fetch(`/api/courses/${id}`, {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-Permissions': JSON.stringify({
+            hasViewAllPermission: userData?.hasViewAllPermission === true,
+            role: userData?.role,
+            canViewAllCourses: userData?.canViewAllCourses === true
+          })
+        }
+      });
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: `Error ${response.status}: ${response.statusText}` }));
