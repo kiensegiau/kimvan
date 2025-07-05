@@ -168,6 +168,165 @@ async function processAndUploadFile(
   }
 }
 
+/**
+ * Xử lý tuần tự file bằng Chrome
+ */
+async function processFileWithChrome(
+  fileId,
+  fileName,
+  tempDir,
+  driveLink,
+  targetFolderId,
+  targetFolderName,
+  courseName,
+  apiKey,
+  updateSheet,
+  courseId,
+  sheetIndex,
+  rowIndex,
+  cellIndex,
+  sheetId,
+  googleSheetName,
+  displayText,
+  request,
+  startTime,
+  errorType // "404" hoặc "403"
+) {
+  console.log(`\n=== BẮT ĐẦU XỬ LÝ FILE BẰNG CHROME (${errorType}) ===`);
+  console.log(`🔍 File ID: ${fileId}`);
+  console.log(`📄 Tên file: ${fileName}`);
+  console.log(`📂 Thư mục tạm: ${tempDir}`);
+  
+  try {
+    // Thêm import nếu chưa có
+    const { downloadBlockedPDF } = await import('../remove-watermark/lib/drive-fix-blockdown.js');
+    
+    // Tạo tên file tạm
+    const tempFileName = `blocked_${fileId}.pdf`;
+    
+    console.log(`\n🌐 Đang mở Chrome để tải file...`);
+    console.log(`⏳ Vui lòng đợi trong khi Chrome xử lý...`);
+    
+    // Gọi hàm downloadBlockedPDF để tải file
+    const chromeDownloadResult = await downloadBlockedPDF(
+      fileId, 
+      tempFileName, 
+      tempDir, 
+      { debugMode: true }  // BẬT chế độ debug để hiển thị Chrome
+    );
+    
+    if (chromeDownloadResult.success) {
+      console.log(`\n✅ Tải file thành công qua Chrome:`);
+      console.log(`📄 File path: ${chromeDownloadResult.filePath}`);
+      
+      // Xử lý file đã tải
+      console.log(`\n🔄 Đang xử lý file đã tải xuống...`);
+      const result = await processAndUploadFile(
+        chromeDownloadResult.filePath,
+        "application/pdf",
+        fileId,
+        driveLink,
+        targetFolderId,
+        targetFolderName || courseName || `Chrome Download (${errorType})`,
+        apiKey,
+        updateSheet,
+        courseId,
+        sheetIndex,
+        rowIndex,
+        cellIndex,
+        sheetId,
+        googleSheetName,
+        displayText,
+        request,
+        startTime,
+        tempDir,
+        `${errorType}_chrome`
+      );
+      
+      console.log(`\n✅ Hoàn tất xử lý file bằng Chrome`);
+      return result;
+    } else {
+      console.error(`\n❌ Không thể tải file bằng Chrome:`);
+      console.error(`💬 Lỗi: ${chromeDownloadResult.error}`);
+      throw new Error(chromeDownloadResult.error);
+    }
+  } catch (error) {
+    console.error(`\n❌ Lỗi khi xử lý file bằng Chrome (${errorType}):`);
+    console.error(`💬 ${error.message}`);
+    throw error;
+  }
+}
+
+// Thêm vào đầu file, sau phần import
+let isProcessing = false;
+const processingQueue = [];
+
+/**
+ * Xử lý hàng đợi các file cần dùng Chrome
+ */
+async function processNextInQueue() {
+  if (isProcessing || processingQueue.length === 0) return;
+  
+  isProcessing = true;
+  const task = processingQueue.shift();
+  
+  try {
+    console.log(`\n=== ĐANG XỬ LÝ FILE TRONG HÀNG ĐỢI ===`);
+    console.log(`⏳ Còn ${processingQueue.length} file đang chờ...`);
+    
+    const result = await processFileWithChrome(
+      task.fileId,
+      task.fileName,
+      task.tempDir,
+      task.driveLink,
+      task.targetFolderId,
+      task.targetFolderName,
+      task.courseName,
+      task.apiKey,
+      task.updateSheet,
+      task.courseId,
+      task.sheetIndex,
+      task.rowIndex,
+      task.cellIndex,
+      task.sheetId,
+      task.googleSheetName,
+      task.displayText,
+      task.request,
+      task.startTime,
+      task.errorType
+    );
+    
+    task.resolve(result);
+  } catch (error) {
+    task.reject(error);
+  } finally {
+    isProcessing = false;
+    // Xử lý file tiếp theo trong hàng đợi
+    processNextInQueue();
+  }
+}
+
+/**
+ * Thêm file vào hàng đợi xử lý
+ */
+function addToProcessingQueue(params) {
+  return new Promise((resolve, reject) => {
+    const task = {
+      ...params,
+      resolve,
+      reject
+    };
+    
+    console.log(`\n📋 Thêm file vào hàng đợi xử lý Chrome:`);
+    console.log(`🔍 File ID: ${params.fileId}`);
+    console.log(`📄 Tên file: ${params.fileName}`);
+    console.log(`⚠️ Loại lỗi: ${params.errorType}`);
+    
+    processingQueue.push(task);
+    processNextInQueue(); // Thử xử lý ngay nếu không có file nào đang xử lý
+  });
+}
+
 // API Endpoint - POST
 export async function POST(request) {
   console.log('============== BẮT ĐẦU API XỬ LÝ VÀ THAY THẾ FILE GOOGLE DRIVE ==============');
@@ -254,134 +413,118 @@ export async function POST(request) {
       console.error(`Lỗi khi kiểm tra thông tin file: ${fileInfoResult.message}`);
       
       if (fileInfoResult.error === 'FILE_NOT_FOUND') {
-        console.log(`Phát hiện lỗi 404: File không tồn tại, thử dùng phương pháp Chrome để tiếp cận...`);
+        console.log(`\n⚠️ Phát hiện lỗi 404: File không tồn tại`);
+        console.log(`🔄 Thêm vào hàng đợi xử lý bằng Chrome...`);
         
         try {
-          // Thêm import nếu chưa có
-          const { downloadBlockedPDF } = await import('../remove-watermark/lib/drive-fix-blockdown.js');
-          
           // Tạo thư mục tạm để lưu file
           const tempDir = path.join(os.tmpdir(), uuidv4());
           fs.mkdirSync(tempDir, { recursive: true });
           
-          // Tạo tên file
-          const tempFileName = `blocked_${fileId}.pdf`;
+          // Thêm vào hàng đợi và đợi kết quả
+          const result = await addToProcessingQueue({
+            fileId,
+            fileName: 'unknown', // Không cần truy cập fileInfo vì file không tồn tại
+            tempDir,
+            driveLink,
+            targetFolderId,
+            targetFolderName,
+            courseName,
+            apiKey,
+            updateSheet,
+            courseId,
+            sheetIndex,
+            rowIndex,
+            cellIndex,
+            sheetId,
+            googleSheetName,
+            displayText,
+            request,
+            startTime,
+            errorType: "404"
+          });
           
-          console.log(`Đang thử tải file không tồn tại sử dụng phương pháp Chrome...`);
+          return NextResponse.json(result);
+        } catch (error) {
+          console.error(`\n❌ Không thể xử lý file 404 bằng Chrome:`);
+          console.error(`💬 ${error.message}`);
           
-          // Gọi hàm downloadBlockedPDF để tải file
-          const chromeDownloadResult = await downloadBlockedPDF(
-            fileId, 
-            tempFileName, 
-            tempDir, 
-            { debugMode: true }  // BẬT chế độ debug để hiển thị Chrome
-          );
-          
-          if (chromeDownloadResult.success) {
-            console.log(`✅ Tải file thành công qua phương pháp Chrome: ${chromeDownloadResult.filePath}`);
-            
-            // Xử lý file đã tải bằng phương pháp thông thường
-            const result = await processAndUploadFile(
-              chromeDownloadResult.filePath,
-              "application/pdf",
-              fileId,
-              driveLink,
-              targetFolderId,
-              targetFolderName || courseName || "Chrome Download",
-              apiKey,
-              updateSheet,
-              courseId,
-              sheetIndex,
-              rowIndex,
-              cellIndex,
-              sheetId,
-              googleSheetName,
-              displayText,
-              request,
-              startTime,
-              tempDir,
-              "404_chrome"
-            );
-            
-            return NextResponse.json(result);
-          } else {
-            console.error(`❌ Không thể tải file bằng phương pháp Chrome: ${chromeDownloadResult.error}`);
-            return NextResponse.json(
-              { error: fileInfoResult.message, chromeAttempted: true },
-              { status: 404 }
-            );
+          // Dọn dẹp thư mục tạm nếu có lỗi
+          if (tempDir) {
+            try {
+              fs.rmdirSync(tempDir, { recursive: true });
+              console.log(`Đã xóa thư mục tạm: ${tempDir}`);
+            } catch (cleanupError) {
+              console.error('Lỗi khi dọn dẹp thư mục tạm:', cleanupError);
+            }
           }
-        } catch (chromeError) {
-          console.error(`❌ Lỗi khi thử phương pháp Chrome: ${chromeError.message}`);
+          
           return NextResponse.json(
-            { error: fileInfoResult.message, chromeError: chromeError.message },
+            { 
+              error: error.message, 
+              chromeAttempted: true,
+              fileId,
+              driveLink 
+            },
             { status: 404 }
           );
         }
       }
       
       if (fileInfoResult.error === 'PERMISSION_DENIED') {
-        console.log(`Phát hiện lỗi 403: Không có quyền truy cập, thử dùng drive-fix-blockdown.js...`);
+        console.log(`\n⚠️ Phát hiện lỗi 403: Không có quyền truy cập`);
+        console.log(`🔄 Thêm vào hàng đợi xử lý bằng Chrome...`);
         
         try {
-          // Thêm import nếu chưa có
-          const { downloadBlockedPDF } = await import('../remove-watermark/lib/drive-fix-blockdown.js');
-          
           // Tạo thư mục tạm để lưu file
           const tempDir = path.join(os.tmpdir(), uuidv4());
           fs.mkdirSync(tempDir, { recursive: true });
           
-          // Tạo tên file
-          const tempFileName = `blocked_${fileId}.pdf`;
+          // Thêm vào hàng đợi và đợi kết quả
+          const result = await addToProcessingQueue({
+            fileId,
+            fileName: 'unknown', // Không cần truy cập fileInfo vì không có quyền truy cập
+            tempDir,
+            driveLink,
+            targetFolderId,
+            targetFolderName,
+            courseName,
+            apiKey,
+            updateSheet,
+            courseId,
+            sheetIndex,
+            rowIndex,
+            cellIndex,
+            sheetId,
+            googleSheetName,
+            displayText,
+            request,
+            startTime,
+            errorType: "403"
+          });
           
-          console.log(`Đang thử tải file bị chặn quyền truy cập sử dụng Chrome...`);
+          return NextResponse.json(result);
+        } catch (error) {
+          console.error(`\n❌ Không thể xử lý file 403 bằng Chrome:`);
+          console.error(`💬 ${error.message}`);
           
-          // Gọi hàm downloadBlockedPDF để tải file
-          const chromeDownloadResult = await downloadBlockedPDF(
-            fileId, 
-            tempFileName, 
-            tempDir, 
-            { debugMode: true }  // BẬT chế độ debug để hiển thị Chrome
-          );
-          
-          if (chromeDownloadResult.success) {
-            console.log(`✅ Tải file thành công qua phương pháp Chrome (403): ${chromeDownloadResult.filePath}`);
-            
-            // Xử lý file đã tải bằng phương pháp thông thường
-            const result = await processAndUploadFile(
-              chromeDownloadResult.filePath,
-              "application/pdf",
-              fileId,
-              driveLink,
-              targetFolderId,
-              targetFolderName || courseName || "Blocked PDF",
-              apiKey,
-              updateSheet,
-              courseId,
-              sheetIndex,
-              rowIndex,
-              cellIndex,
-              sheetId,
-              googleSheetName,
-              displayText,
-              request,
-              startTime,
-              tempDir,
-              "403_chrome"
-            );
-            
-            return NextResponse.json(result);
-          } else {
-            console.error(`❌ Không thể tải file bằng phương pháp Chrome (403): ${chromeDownloadResult.error}`);
-            return NextResponse.json(
-              { error: fileInfoResult.message, blockdownAttempted: true },
-              { status: 403 }
-            );
+          // Dọn dẹp thư mục tạm nếu có lỗi
+          if (tempDir) {
+            try {
+              fs.rmdirSync(tempDir, { recursive: true });
+              console.log(`Đã xóa thư mục tạm: ${tempDir}`);
+            } catch (cleanupError) {
+              console.error('Lỗi khi dọn dẹp thư mục tạm:', cleanupError);
+            }
           }
-        } catch (blockdownError) {
-          console.error(`❌ Lỗi khi thử phương pháp Chrome (403): ${blockdownError.message}`);
+          
           return NextResponse.json(
-            { error: fileInfoResult.message, blockdownError: blockdownError.message },
+            { 
+              error: error.message, 
+              blockdownAttempted: true,
+              fileId,
+              driveLink 
+            },
             { status: 403 }
           );
         }
@@ -397,14 +540,27 @@ export async function POST(request) {
     const mimeType = fileInfo.mimeType;
     console.log(`MIME type của file: ${mimeType}`);
     
-    // Lấy thông tin về chủ sở hữu file nếu có
+    // Kiểm tra và log thông tin về chủ sở hữu file
     let ownerInfo = null;
     if (fileInfo.owners && fileInfo.owners.length > 0) {
       ownerInfo = {
         email: fileInfo.owners[0].emailAddress,
-        displayName: fileInfo.owners[0].displayName
+        displayName: fileInfo.owners[0].displayName,
+        kind: fileInfo.owners[0].kind,
+        permissionId: fileInfo.owners[0].permissionId,
+        photoLink: fileInfo.owners[0].photoLink
       };
-      console.log(`Chủ sở hữu file: ${ownerInfo.displayName} (${ownerInfo.email})`);
+      console.log('=== THÔNG TIN CHỦ SỞ HỮU FILE ===');
+      console.log(`👤 Tên: ${ownerInfo.displayName}`);
+      console.log(`📧 Email: ${ownerInfo.email}`);
+      console.log(`🔑 Permission ID: ${ownerInfo.permissionId}`);
+      console.log(`🌐 Loại tài khoản: ${ownerInfo.kind}`);
+      if (ownerInfo.photoLink) {
+        console.log(`🖼️ Ảnh đại diện: ${ownerInfo.photoLink}`);
+      }
+      console.log('================================');
+    } else {
+      console.log('⚠️ Không tìm thấy thông tin về chủ sở hữu file');
     }
     
     // Tạo promise cho quá trình xử lý
@@ -697,7 +853,8 @@ export async function POST(request) {
                 isFolder: false,
                 originalFile: {
                   id: fileId,
-                  link: driveLink
+                  link: driveLink,
+                  owner: ownerInfo // Thêm thông tin chủ sở hữu
                 },
                 targetFolder: {
                   id: targetFolderId,
@@ -708,7 +865,7 @@ export async function POST(request) {
                   name: existingFile.name,
                   link: existingFile.webViewLink
                 },
-                ownerInfo: ownerInfo, // Add owner information
+                ownerInfo, // Thêm thông tin chủ sở hữu ở cấp cao nhất
                 processingTime: processingTime,
                 fileAlreadyExists: true,
                 sheetUpdate: updateSheet ? {
@@ -833,13 +990,14 @@ export async function POST(request) {
           const processingTime = Math.round((Date.now() - startTime) / 1000);
           console.log(`✅ Hoàn tất xử lý sau ${processingTime} giây`);
           
-          // Trả về kết quả
+          // Trả về kết quả cho file đơn lẻ
           return {
             success: true,
             isFolder: false,
             originalFile: {
               id: fileId,
-              link: driveLink
+              link: driveLink,
+              owner: ownerInfo // Thêm thông tin chủ sở hữu
             },
             targetFolder: {
               id: targetFolderId,
@@ -850,7 +1008,7 @@ export async function POST(request) {
               name: uploadResult.fileName,
               link: uploadResult.webViewLink
             },
-            ownerInfo: ownerInfo, // Add owner information
+            ownerInfo, // Thêm thông tin chủ sở hữu ở cấp cao nhất
             duplicatesDeleted: uploadResult.duplicatesDeleted || 0,
             processingTime: processingTime,
             sheetUpdate: updateSheet ? {
