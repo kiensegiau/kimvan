@@ -114,6 +114,234 @@ async function getDownloadUrl(fileId) {
 }
 
 /**
+ * Kiểm tra thời hạn cookie
+ * @param {Array} cookies - Mảng cookie từ file
+ * @returns {Object} - Kết quả kiểm tra
+ */
+function checkCookieExpiry(cookies) {
+  const now = new Date();
+  const warnings = [];
+  let hasValidCookies = false;
+
+  cookies.forEach(cookie => {
+    if (cookie.expirationDate) {
+      const expiryDate = new Date(cookie.expirationDate * 1000); // Convert epoch to Date
+      const daysLeft = Math.round((expiryDate - now) / (1000 * 60 * 60 * 24));
+      
+      if (expiryDate > now) {
+        hasValidCookies = true;
+        if (daysLeft <= 7) {
+          warnings.push(`⚠️ Cookie ${cookie.name} sẽ hết hạn trong ${daysLeft} ngày`);
+        }
+      } else {
+        warnings.push(`❌ Cookie ${cookie.name} đã hết hạn ${-daysLeft} ngày trước`);
+      }
+    }
+  });
+
+  return {
+    hasValidCookies,
+    warnings
+  };
+}
+
+/**
+ * Tải file từ Google Drive bằng cookie trình duyệt
+ * @param {string} fileId - ID của file
+ * @param {string} outputDir - Thư mục lưu file
+ * @returns {Promise<Object>} - Kết quả tải xuống
+ */
+async function downloadWithBrowserCookie(fileId, outputDir) {
+  let cookies = '';
+  try {
+    // Kiểm tra file cookie tồn tại
+    if (!fs.existsSync('kimvan-cookie.json')) {
+      throw new Error('Không tìm thấy file kimvan-cookie.json');
+    }
+
+    // Đọc và parse file cookie
+    const cookieContent = fs.readFileSync('kimvan-cookie.json', 'utf8');
+    const cookieData = JSON.parse(cookieContent);
+
+    // Kiểm tra format cookie
+    if (!cookieData || !Array.isArray(cookieData.cookies)) {
+      throw new Error('Format cookie không hợp lệ. Vui lòng xem hướng dẫn trong docs/kimvan-chrome-cookie.md');
+    }
+
+    // Kiểm tra thời hạn cookie
+    const cookieCheck = checkCookieExpiry(cookieData.cookies);
+    if (cookieCheck.warnings.length > 0) {
+      console.log('\n=== CẢNH BÁO COOKIE ===');
+      cookieCheck.warnings.forEach(warning => console.log(warning));
+      console.log('========================\n');
+    }
+
+    if (!cookieCheck.hasValidCookies) {
+      throw new Error('Tất cả cookie đã hết hạn. Vui lòng cập nhật lại cookie từ Chrome.');
+    }
+
+    // Tạo cookie string
+    cookies = cookieData.cookies
+      .filter(cookie => {
+        // Chỉ dùng cookie còn hạn
+        if (cookie.expirationDate) {
+          return new Date(cookie.expirationDate * 1000) > new Date();
+        }
+        return cookie && cookie.name && cookie.value;
+      })
+      .map(cookie => `${cookie.name}=${cookie.value}`)
+      .join('; ');
+
+    if (!cookies) {
+      throw new Error('Không tìm thấy cookie hợp lệ');
+    }
+
+    console.log('Đã đọc cookie từ file');
+
+    // Tạo URL download trực tiếp
+    const directUrl = `https://drive.google.com/uc?id=${fileId}&export=download`;
+    console.log('URL tải xuống trực tiếp:', directUrl);
+
+    // Tải file với cookie
+    const cookieResponse = await fetch(directUrl, {
+      headers: {
+        'Cookie': cookies,
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      }
+    });
+
+    if (!cookieResponse.ok) {
+      throw new Error(`Lỗi khi tải file với cookie (HTTP ${cookieResponse.status})`);
+    }
+
+    // Kiểm tra content-type
+    const contentType = cookieResponse.headers.get('content-type');
+    console.log('Content-Type:', contentType);
+
+    // Xác định đuôi file
+    let extension = '';
+    if (contentType) {
+      switch (contentType.toLowerCase()) {
+        case 'application/pdf':
+          extension = '.pdf';
+          break;
+        case 'image/jpeg':
+          extension = '.jpg';
+          break;
+        case 'image/png':
+          extension = '.png';
+          break;
+        case 'image/gif':
+          extension = '.gif';
+          break;
+        case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+          extension = '.docx';
+          break;
+        case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
+          extension = '.xlsx';
+          break;
+        case 'application/vnd.openxmlformats-officedocument.presentationml.presentation':
+          extension = '.pptx';
+          break;
+        default:
+          console.log('⚠️ MIME type không xác định:', contentType);
+          break;
+      }
+    }
+
+    if (contentType && contentType.includes('text/html')) {
+      // Xử lý trang xác nhận download
+      const html = await cookieResponse.text();
+      const confirmMatch = html.match(/confirm=([^&"]+)/);
+      
+      if (confirmMatch) {
+        const confirmToken = confirmMatch[1];
+        console.log('Tìm thấy token xác nhận, thử tải lại...');
+        
+        // Tải lại với token xác nhận
+        const confirmUrl = `${directUrl}&confirm=${confirmToken}`;
+        const confirmResponse = await fetch(confirmUrl, {
+          headers: {
+            'Cookie': cookies,
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+          }
+        });
+        
+        if (!confirmResponse.ok) {
+          throw new Error(`Lỗi khi tải file sau khi xác nhận (HTTP ${confirmResponse.status})`);
+        }
+        
+        // Lưu file
+        const outputFile = `downloaded_file${extension}`;
+        const outputPath = path.join(outputDir, outputFile);
+        const dest = fs.createWriteStream(outputPath);
+        const reader = confirmResponse.body.getReader();
+        
+        while (true) {
+          const { done, value } = await reader.read();
+          
+          if (done) {
+            console.log('Hoàn tất tải xuống');
+            break;
+          }
+          
+          dest.write(Buffer.from(value));
+        }
+        
+        await new Promise((resolve, reject) => {
+          dest.end();
+          dest.on('finish', resolve);
+          dest.on('error', reject);
+        });
+        
+        return {
+          success: true,
+          filePath: outputPath,
+          outputDir,
+          mimeType: confirmResponse.headers.get('content-type')
+        };
+      } else {
+        throw new Error('Không tìm thấy token xác nhận trong HTML');
+      }
+    }
+
+    // Lưu file
+    const outputFile = `downloaded_file${extension}`;
+    const outputPath = path.join(outputDir, outputFile);
+    const dest = fs.createWriteStream(outputPath);
+    const reader = cookieResponse.body.getReader();
+    
+    while (true) {
+      const { done, value } = await reader.read();
+      
+      if (done) {
+        console.log('Hoàn tất tải xuống');
+        break;
+      }
+      
+      dest.write(Buffer.from(value));
+    }
+    
+    await new Promise((resolve, reject) => {
+      dest.end();
+      dest.on('finish', resolve);
+      dest.on('error', reject);
+    });
+
+    return {
+      success: true,
+      filePath: outputPath,
+      outputDir,
+      mimeType: contentType
+    };
+
+  } catch (cookieError) {
+    console.error('Lỗi khi dùng cookie:', cookieError);
+    throw new Error(`Không thể tải file với cookie: ${cookieError.message}`);
+  }
+}
+
+/**
  * Tải xuống file từ Google Drive
  * @param {string} fileId - ID của file trên Google Drive
  * @returns {Promise<Object>} - Kết quả tải xuống
@@ -159,152 +387,17 @@ export async function downloadFromGoogleDrive(fileId) {
         // Nếu lỗi 404, thử dùng cookie
         if (response.status === 404) {
           console.log('API báo 404, thử dùng cookie...');
-          
-          let cookies = '';
-          try {
-            // Kiểm tra file cookie tồn tại
-            if (!fs.existsSync('kimvan-cookie.json')) {
-              throw new Error('Không tìm thấy file kimvan-cookie.json');
-            }
-
-            // Đọc và parse file cookie
-            const cookieContent = fs.readFileSync('kimvan-cookie.json', 'utf8');
-            const cookieData = JSON.parse(cookieContent);
-
-            // Kiểm tra format cookie
-            if (!cookieData || !Array.isArray(cookieData.cookies)) {
-              throw new Error('Format cookie không hợp lệ. Vui lòng xem hướng dẫn trong docs/kimvan-chrome-cookie.md');
-            }
-
-            // Tạo cookie string
-            cookies = cookieData.cookies
-              .filter(cookie => cookie && cookie.name && cookie.value)
-              .map(cookie => `${cookie.name}=${cookie.value}`)
-              .join('; ');
-
-            if (!cookies) {
-              throw new Error('Không tìm thấy cookie hợp lệ');
-            }
-
-            console.log('Đã đọc cookie từ file');
-
-            // Tạo URL download trực tiếp
-            const directUrl = `https://drive.google.com/uc?id=${fileId}&export=download`;
-            console.log('URL tải xuống trực tiếp:', directUrl);
-
-            // Tải file với cookie
-            const cookieResponse = await fetch(directUrl, {
-              headers: {
-                'Cookie': cookies,
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-              }
-            });
-
-            if (!cookieResponse.ok) {
-              throw new Error(`Lỗi khi tải file với cookie (HTTP ${cookieResponse.status})`);
-            }
-
-            // Kiểm tra content-type
-            const contentType = cookieResponse.headers.get('content-type');
-            console.log('Content-Type:', contentType);
-
-            if (contentType && contentType.includes('text/html')) {
-              // Xử lý trang xác nhận download
-              const html = await cookieResponse.text();
-              const confirmMatch = html.match(/confirm=([^&"]+)/);
-              
-              if (confirmMatch) {
-                const confirmToken = confirmMatch[1];
-                console.log('Tìm thấy token xác nhận, thử tải lại...');
-                
-                // Tải lại với token xác nhận
-                const confirmUrl = `${directUrl}&confirm=${confirmToken}`;
-                const confirmResponse = await fetch(confirmUrl, {
-                  headers: {
-                    'Cookie': cookies,
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-                  }
-                });
-                
-                if (!confirmResponse.ok) {
-                  throw new Error(`Lỗi khi tải file sau khi xác nhận (HTTP ${confirmResponse.status})`);
-                }
-                
-                // Lưu file
-                const dest = fs.createWriteStream(path.join(outputDir, 'downloaded_file'));
-                const reader = confirmResponse.body.getReader();
-                
-                while (true) {
-                  const { done, value } = await reader.read();
-                  
-                  if (done) {
-                    console.log('Hoàn tất tải xuống');
-                    break;
-                  }
-                  
-                  dest.write(Buffer.from(value));
-                }
-                
-                await new Promise((resolve, reject) => {
-                  dest.end();
-                  dest.on('finish', resolve);
-                  dest.on('error', reject);
-                });
-                
-                return {
-                  success: true,
-                  filePath: path.join(outputDir, 'downloaded_file'),
-                  outputDir,
-                  mimeType: confirmResponse.headers.get('content-type')
-                };
-              } else {
-                throw new Error('Không tìm thấy token xác nhận trong HTML');
-              }
-            }
-
-            // Lưu file
-            const dest = fs.createWriteStream(path.join(outputDir, 'downloaded_file'));
-            const reader = cookieResponse.body.getReader();
-            
-            while (true) {
-              const { done, value } = await reader.read();
-              
-              if (done) {
-                console.log('Hoàn tất tải xuống');
-                break;
-              }
-              
-              dest.write(Buffer.from(value));
-            }
-            
-            await new Promise((resolve, reject) => {
-              dest.end();
-              dest.on('finish', resolve);
-              dest.on('error', reject);
-            });
-
-            return {
-              success: true,
-              filePath: path.join(outputDir, 'downloaded_file'),
-              outputDir,
-              mimeType: contentType
-            };
-
-          } catch (cookieError) {
-            console.error('Lỗi khi dùng cookie:', cookieError);
-            throw new Error(`Không thể tải file với cookie: ${cookieError.message}`);
-          }
+          return await downloadWithBrowserCookie(fileId, outputDir);
         }
 
         const errorText = await response.text();
         throw new Error(`Lỗi khi tải file (HTTP ${response.status}): ${errorText}`);
       }
 
-      // Lưu file
+      // Xác định đuôi file
       const mimeType = response.headers.get('content-type');
       let extension = '';
       
-      // Xác định đuôi file dựa vào MIME type
       if (mimeType) {
         switch (mimeType.toLowerCase()) {
           case 'application/pdf':
@@ -334,8 +427,16 @@ export async function downloadFromGoogleDrive(fileId) {
         }
       }
 
-      const outputFile = `downloaded_file${extension}`;
+      // Tạo tên file với prefix mặc định nếu không có tên
+      const defaultPrefix = 'Tài liệu';
+      const timestamp = new Date().getTime();
+      const outputFile = `${defaultPrefix}_${timestamp}${extension}`;
       const outputPath = path.join(outputDir, outputFile);
+
+      // Log thông tin file
+      console.log('📝 Tên file:', outputFile);
+      console.log('📂 Đường dẫn:', outputPath);
+
       const dest = fs.createWriteStream(outputPath);
       const reader = response.body.getReader();
       
@@ -360,7 +461,8 @@ export async function downloadFromGoogleDrive(fileId) {
         success: true,
         filePath: outputPath,
         outputDir,
-        mimeType: mimeType
+        mimeType: mimeType,
+        fileName: outputFile
       };
 
       // Log chi tiết về file

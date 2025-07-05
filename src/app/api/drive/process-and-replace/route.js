@@ -415,184 +415,120 @@ export async function POST(request) {
       const downloadResult = await downloadFromGoogleDrive(fileId);
       
       if (downloadResult.success) {
-        console.log(`✅ Tải file thành công: ${downloadResult.fileName}`);
+        console.log(`✅ Tải file thành công: ${downloadResult.filePath}`);
         console.log(`📄 MIME type: ${downloadResult.mimeType}`);
         
         // Tiếp tục xử lý file như bình thường
-          let processedFilePath;
-          let processedFileName = downloadResult.fileName;
-          
+        let processedFilePath;
+        
         // Kiểm tra xem file có phải là file bị chặn đã được xử lý không
-        const isBlockedFileProcessed = downloadResult.fileName && 
-          downloadResult.fileName.includes('blocked_') && 
-          downloadResult.fileName.includes('_clean');
+        const isBlockedFileProcessed = downloadResult.filePath && 
+          downloadResult.filePath.includes('blocked_') && 
+          downloadResult.filePath.includes('_clean');
           
-          if (isBlockedFileProcessed) {
-            console.log('File đã được xử lý bởi drive-fix-blockdown, bỏ qua bước xử lý thông thường');
-            processedFilePath = downloadResult.filePath;
-          } else {
+        if (isBlockedFileProcessed) {
+          console.log('File đã được xử lý bởi drive-fix-blockdown, bỏ qua bước xử lý thông thường');
+          processedFilePath = downloadResult.filePath;
+        } else {
           // Xử lý file theo loại
           if (downloadResult.mimeType.includes('pdf')) {
-              console.log('Phát hiện file PDF, tiến hành xử lý xóa watermark...');
-              const processResult = await processFile(downloadResult.filePath, downloadResult.mimeType, apiKey);
-              processedFilePath = processResult.processedPath;
-            } else {
+            console.log('Phát hiện file PDF, tiến hành xử lý xóa watermark...');
+            const processResult = await processFile(downloadResult.filePath, downloadResult.mimeType, apiKey);
+            processedFilePath = processResult.processedPath;
+          } else {
             console.log(`Phát hiện file không phải PDF (${downloadResult.mimeType}), chỉ tải xuống và upload lại`);
-              const fileDir = path.dirname(downloadResult.filePath);
-              const fileExt = path.extname(downloadResult.filePath);
-              const fileName = path.basename(downloadResult.filePath, fileExt);
-              processedFilePath = path.join(fileDir, `${fileName}_uploaded${fileExt}`);
-              fs.copyFileSync(downloadResult.filePath, processedFilePath);
+            processedFilePath = downloadResult.filePath;
           }
-          }
+        }
           
         // Upload file đã xử lý
-          const uploadResult = await uploadToGoogleDrive(
-            processedFilePath,
-            processedFileName,
-            downloadResult.mimeType,
-            targetFolderId,
+        const uploadResult = await uploadToGoogleDrive(
+          processedFilePath,
+          path.basename(processedFilePath),
+          downloadResult.mimeType,
+          targetFolderId,
           targetFolderName || courseName
-          );
+        );
           
         // Xử lý cập nhật sheet nếu cần
-          let sheetUpdateResult = null;
-          if (updateSheet) {
-            console.log('Yêu cầu cập nhật sheet được kích hoạt, tiến hành cập nhật...');
-            if (courseId && sheetIndex !== undefined && rowIndex !== undefined && cellIndex !== undefined) {
-              sheetUpdateResult = await updateSheetCell(
-                courseId,
-                sheetIndex,
-                rowIndex,
-                cellIndex,
+        let sheetUpdateResult = null;
+        if (updateSheet) {
+          console.log('Yêu cầu cập nhật sheet được kích hoạt, tiến hành cập nhật...');
+          if (courseId && sheetIndex !== undefined && rowIndex !== undefined && cellIndex !== undefined) {
+            sheetUpdateResult = await updateSheetCell(
+              courseId,
+              sheetIndex,
+              rowIndex,
+              cellIndex,
               driveLink,
               uploadResult.webViewLink,
               displayText,
               request
             );
-            } else if (sheetId && googleSheetName && rowIndex !== undefined && cellIndex !== undefined) {
-              const cellDisplayText = displayText || 'Tài liệu đã xử lý';
-              sheetUpdateResult = await updateGoogleSheetCell(
-                sheetId,
-                googleSheetName,
-                rowIndex,
-                cellIndex,
-                cellDisplayText,
-                uploadResult.webViewLink,
+          } else if (sheetId && googleSheetName && rowIndex !== undefined && cellIndex !== undefined) {
+            const cellDisplayText = displayText || 'Tài liệu đã xử lý';
+            sheetUpdateResult = await updateGoogleSheetCell(
+              sheetId,
+              googleSheetName,
+              rowIndex,
+              cellIndex,
+              cellDisplayText,
+              uploadResult.webViewLink,
               driveLink,
               request
             );
           }
-          }
+        }
           
-          // Dọn dẹp thư mục tạm
-          try {
-            fs.rmdirSync(tempDir, { recursive: true });
-            console.log(`Đã xóa thư mục tạm: ${tempDir}`);
-          } catch (cleanupError) {
-            console.error('Lỗi khi dọn dẹp thư mục tạm:', cleanupError);
-          }
+        // Dọn dẹp thư mục tạm
+        try {
+          fs.rmdirSync(tempDir, { recursive: true });
+          console.log(`Đã xóa thư mục tạm: ${tempDir}`);
+        } catch (cleanupError) {
+          console.error('Lỗi khi dọn dẹp thư mục tạm:', cleanupError);
+        }
           
         // Trả về kết quả thành công
         return NextResponse.json({
-            success: true,
-            isFolder: false,
-            originalFile: {
-              id: fileId,
-              link: driveLink
-            },
-            targetFolder: {
-              id: targetFolderId,
-              name: targetFolderName || (courseName || 'Mặc định')
-            },
-            processedFile: {
-              id: uploadResult.fileId,
-              name: uploadResult.fileName,
-              link: uploadResult.webViewLink
-            },
+          success: true,
+          isFolder: false,
+          originalFile: {
+            id: fileId,
+            link: driveLink
+          },
+          targetFolder: {
+            id: targetFolderId,
+            name: targetFolderName || (courseName || 'Mặc định')
+          },
+          processedFile: {
+            id: uploadResult.fileId,
+            name: uploadResult.fileName,
+            link: uploadResult.webViewLink
+          },
           mimeType: downloadResult.mimeType,
           processingTime: Math.round((Date.now() - startTime) / 1000),
-            sheetUpdate: updateSheet ? {
-              success: sheetUpdateResult?.success || false,
-              message: sheetUpdateResult?.message || sheetUpdateResult?.error || 'Không có thông tin cập nhật',
-              details: sheetUpdateResult?.updatedCell || null
-            } : null
+          sheetUpdate: updateSheet ? {
+            success: sheetUpdateResult?.success || false,
+            message: sheetUpdateResult?.message || sheetUpdateResult?.error || 'Không có thông tin cập nhật',
+            details: sheetUpdateResult?.updatedCell || null
+          } : null
         });
       } else {
-        // Nếu tải thất bại, kiểm tra loại lỗi
-        if (downloadResult.error.includes('404') || downloadResult.error.includes('not found')) {
-          console.log(`\n⚠️ Phát hiện lỗi 404: File không tồn tại`);
-          console.log(`🔄 Chuyển sang phương pháp Chrome...`);
-          
-          // Thêm vào hàng đợi xử lý bằng Chrome
-          const result = await addToProcessingQueue({
-            fileId,
-            fileName: 'unknown',
-            tempDir,
-            driveLink,
-            targetFolderId,
-            targetFolderName,
-            courseName,
-            apiKey,
-            updateSheet,
-            courseId,
-            sheetIndex,
-            rowIndex,
-            cellIndex,
-            sheetId,
-            googleSheetName,
-            displayText,
-            request,
-            startTime,
-            errorType: "404"
-          });
-          
-          return NextResponse.json(result);
-        } else if (downloadResult.error.includes('403') || downloadResult.error.includes('permission denied')) {
-          console.log(`\n⚠️ Phát hiện lỗi 403: Không có quyền truy cập`);
-          console.log(`🔄 Chuyển sang phương pháp Chrome...`);
-          
-          // Thêm vào hàng đợi xử lý bằng Chrome
-          const result = await addToProcessingQueue({
-            fileId,
-            fileName: 'unknown',
-            tempDir,
-            driveLink,
-            targetFolderId,
-            targetFolderName,
-            courseName,
-            apiKey,
-            updateSheet,
-            courseId,
-            sheetIndex,
-            rowIndex,
-            cellIndex,
-            sheetId,
-            googleSheetName,
-            displayText,
-            request,
-            startTime,
-            errorType: "403"
-          });
-          
-          return NextResponse.json(result);
-        } else {
-          // Lỗi khác
-          throw new Error(downloadResult.error);
-        }
-        }
-      } catch (error) {
+        // Nếu tải thất bại, ném lỗi để xử lý ở catch block
+        throw new Error(downloadResult.error);
+      }
+    } catch (error) {
       console.error('Lỗi khi xử lý file:', error);
         
-        // Dọn dẹp thư mục tạm nếu có lỗi
-        if (tempDir) {
-          try {
-            fs.rmdirSync(tempDir, { recursive: true });
-            console.log(`Đã xóa thư mục tạm: ${tempDir}`);
-          } catch (cleanupError) {
-            console.error('Lỗi khi dọn dẹp thư mục tạm:', cleanupError);
-          }
+      // Dọn dẹp thư mục tạm nếu có lỗi
+      if (tempDir) {
+        try {
+          fs.rmdirSync(tempDir, { recursive: true });
+          console.log(`Đã xóa thư mục tạm: ${tempDir}`);
+        } catch (cleanupError) {
+          console.error('Lỗi khi dọn dẹp thư mục tạm:', cleanupError);
         }
+      }
         
       return NextResponse.json(
         { 
