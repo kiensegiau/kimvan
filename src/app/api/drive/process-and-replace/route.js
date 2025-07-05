@@ -109,7 +109,7 @@ async function processAndUploadFile(
     // Dọn dẹp thư mục tạm
     if (tempDir) {
       try {
-        fs.rmdirSync(tempDir, { recursive: true });
+        fs.rmSync(tempDir, { recursive: true, force: true });
         console.log(`Đã xóa thư mục tạm: ${tempDir}`);
       } catch (cleanupError) {
         console.error('Lỗi khi dọn dẹp thư mục tạm:', cleanupError);
@@ -157,7 +157,7 @@ async function processAndUploadFile(
     // Dọn dẹp thư mục tạm nếu có lỗi
     if (tempDir) {
       try {
-        fs.rmdirSync(tempDir, { recursive: true });
+        fs.rmSync(tempDir, { recursive: true, force: true });
         console.log(`Đã xóa thư mục tạm: ${tempDir}`);
       } catch (cleanupError) {
         console.error('Lỗi khi dọn dẹp thư mục tạm:', cleanupError);
@@ -482,7 +482,7 @@ export async function POST(request) {
           
         // Dọn dẹp thư mục tạm
         try {
-          fs.rmdirSync(tempDir, { recursive: true });
+          fs.rmSync(tempDir, { recursive: true, force: true });
           console.log(`Đã xóa thư mục tạm: ${tempDir}`);
         } catch (cleanupError) {
           console.error('Lỗi khi dọn dẹp thư mục tạm:', cleanupError);
@@ -523,7 +523,7 @@ export async function POST(request) {
       // Dọn dẹp thư mục tạm nếu có lỗi
       if (tempDir) {
         try {
-          fs.rmdirSync(tempDir, { recursive: true });
+          fs.rmSync(tempDir, { recursive: true, force: true });
           console.log(`Đã xóa thư mục tạm: ${tempDir}`);
         } catch (cleanupError) {
           console.error('Lỗi khi dọn dẹp thư mục tạm:', cleanupError);
@@ -546,7 +546,7 @@ export async function POST(request) {
     // Dọn dẹp thư mục tạm nếu có lỗi
     if (tempDir) {
       try {
-        fs.rmdirSync(tempDir, { recursive: true });
+        fs.rmSync(tempDir, { recursive: true, force: true });
         console.log(`Đã xóa thư mục tạm: ${tempDir}`);
       } catch (cleanupError) {
         console.error('Lỗi khi dọn dẹp thư mục tạm:', cleanupError);

@@ -71,13 +71,20 @@ export async function updateSheetCell(courseId, sheetIndex, rowIndex, cellIndex,
     const updatedCell = {
       ...currentCell,
       formattedValue: cellText,
-      hyperlink: newUrl
+      hyperlink: newUrl,
+      note: `Link gốc: ${originalUrl}`,
+      userEnteredFormat: {
+        ...(currentCell.userEnteredFormat || {}),
+        backgroundColor: {
+          red: 0.9,
+          green: 0.9,
+          blue: 1.0
+        },
+        textFormat: {
+          link: { uri: newUrl }
+        }
+      }
     };
-    
-    // Thêm thông tin về định dạng hyperlink
-    if (!updatedCell.userEnteredFormat) updatedCell.userEnteredFormat = {};
-    if (!updatedCell.userEnteredFormat.textFormat) updatedCell.userEnteredFormat.textFormat = {};
-    updatedCell.userEnteredFormat.textFormat.link = { uri: newUrl };
     
     // Thêm thông tin về quá trình xử lý
     updatedCell.processedLinks = {
@@ -195,15 +202,21 @@ export async function updateGoogleSheetCell(sheetId, sheetName, rowIndex, colInd
                     {
                       userEnteredValue: { stringValue: displayText },
                       userEnteredFormat: {
+                        backgroundColor: {
+                          red: 0.9,
+                          green: 0.9,
+                          blue: 1.0
+                        },
                         textFormat: {
                           link: { uri: url }
                         }
-                      }
+                      },
+                      note: `Link gốc: ${originalUrl}`
                     }
                   ]
                 }
               ],
-              fields: 'userEnteredValue,userEnteredFormat.textFormat.link'
+              fields: 'userEnteredValue,userEnteredFormat.textFormat.link,userEnteredFormat.backgroundColor,note'
             }
           }
         ]
