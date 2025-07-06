@@ -80,18 +80,53 @@ export async function POST(req, { params }) {
     for (const sheet of sheets) {
       try {
         console.log(`🔄 [API] process-all-sheets: Processing sheet ID ${sheet._id} (${sheet.title || sheet.name || 'Unnamed'})...`);
+        console.log(`🔄 [API] process-all-sheets: Sheet data keys:`, Object.keys(sheet));
+        console.log(`🔄 [API] process-all-sheets: Sheet data structure:`, {
+          hasValues: !!sheet.values,
+          valuesType: sheet.values ? typeof sheet.values : 'undefined',
+          valuesLength: sheet.values ? sheet.values.length : 0,
+          hasData: !!sheet.data,
+          dataType: sheet.data ? typeof sheet.data : 'undefined'
+        });
+        
+        // Lấy dữ liệu chi tiết từ sheet từ endpoint from-db
+        console.log(`🔄 [API] process-all-sheets: Fetching detailed data for sheet ${sheet._id}...`);
+        const detailedSheetResponse = await fetch(`http://localhost:3001/api/sheets/${sheet._id}/from-db`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Cookie': req.headers.get('cookie') || ''
+          }
+        });
+        
+        if (!detailedSheetResponse.ok) {
+          throw new Error(`Failed to fetch detailed sheet data: ${detailedSheetResponse.status}`);
+        }
+        
+        const detailedSheetData = await detailedSheetResponse.json();
+        console.log(`✅ [API] process-all-sheets: Retrieved detailed sheet data:`, {
+          success: detailedSheetData.success,
+          hasSheet: !!detailedSheetData.sheet,
+          sheetDataKeys: detailedSheetData.sheet ? Object.keys(detailedSheetData.sheet) : []
+        });
+        
+        if (!detailedSheetData.success || !detailedSheetData.sheet) {
+          throw new Error('Failed to get detailed sheet data');
+        }
+        
+        const detailedSheet = detailedSheetData.sheet;
         
         // Update the sheet in the database
         const updatedSheet = await Sheet.findByIdAndUpdate(
           sheet._id,
           {
             $set: {
-              values: sheet.values,
-              rows: sheet.rows,
-              header: sheet.header,
-              hyperlinks: sheet.hyperlinks,
-              htmlData: sheet.htmlData || [],
-              merges: sheet.merges,
+              values: detailedSheet.values || [],
+              rows: detailedSheet.rows || [],
+              header: detailedSheet.header || [],
+              hyperlinks: detailedSheet.hyperlinks || [],
+              htmlData: detailedSheet.htmlData || [],
+              merges: detailedSheet.merges || [],
               updatedAt: new Date()
             }
           },
@@ -99,18 +134,23 @@ export async function POST(req, { params }) {
         ).lean();
 
         console.log(`✅ [API] process-all-sheets: Sheet ${sheet._id} updated successfully`);
+        console.log(`✅ [API] process-all-sheets: Updated sheet data structure:`, {
+          hasValues: !!updatedSheet.values,
+          valuesType: updatedSheet.values ? typeof updatedSheet.values : 'undefined',
+          valuesLength: updatedSheet.values ? updatedSheet.values.length : 0
+        });
 
         // Add to the updated sheet data array
         updatedSheetData.push({
           _id: updatedSheet._id,
           title: updatedSheet.title,
           name: updatedSheet.name,
-          values: updatedSheet.values,
-          rows: updatedSheet.rows,
-          header: updatedSheet.header,
-          hyperlinks: updatedSheet.hyperlinks,
-          htmlData: updatedSheet.htmlData || [],
-          merges: updatedSheet.merges
+          values: detailedSheet.values || [],
+          rows: detailedSheet.rows || [],
+          header: detailedSheet.header || [],
+          hyperlinks: detailedSheet.hyperlinks || [],
+          htmlData: detailedSheet.htmlData || [],
+          merges: detailedSheet.merges || []
         });
 
         results.push({
