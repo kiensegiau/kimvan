@@ -5,9 +5,9 @@ import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { decodeProxyLink, getUpdatedUrl } from '@/utils/proxy-utils';
 import { ArrowLeftIcon, CloudArrowDownIcon, ExclamationCircleIcon, XMarkIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
-import YouTubeModal from '@/app/khoa-hoc/components/YouTubeModal';
-import PDFModal from '@/app/khoa-hoc/components/PDFModal';
-import YouTubePlaylistModal from '@/app/khoa-hoc/components/YouTubePlaylistModal';
+import YouTubeModal from '../components/YouTubeModal';
+import PDFModal from '../components/PDFModal';
+import YouTubePlaylistModal from '../components/YouTubePlaylistModal';
 import LoadingOverlay from '../components/LoadingOverlay';
 import CryptoJS from 'crypto-js';
 
@@ -25,14 +25,22 @@ export default function CourseDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeSheet, setActiveSheet] = useState(0);
-  const [youtubeModal, setYoutubeModal] = useState({ isOpen: false, videoId: null, title: '' });
-  const [youtubePlaylistModal, setYoutubePlaylistModal] = useState({ 
-    isOpen: false, 
-    playlistId: null, 
-    videoId: null, 
-    title: '' 
+  const [youtubeModal, setYoutubeModal] = useState({
+    isOpen: false,
+    videoId: '',
+    title: ''
   });
-  const [pdfModal, setPdfModal] = useState({ isOpen: false, fileUrl: null, title: '' });
+  const [youtubePlaylistModal, setYoutubePlaylistModal] = useState({
+    isOpen: false,
+    playlistId: '',
+    videoId: '',
+    title: ''
+  });
+  const [pdfModal, setPdfModal] = useState({
+    isOpen: false,
+    fileUrl: '',
+    title: ''
+  });
   const [isLoaded, setIsLoaded] = useState(false);
   const [processingLink, setProcessingLink] = useState(false);
   const [viewMode, setViewMode] = useState('table');
@@ -157,30 +165,6 @@ export default function CourseDetailPage() {
         try {
           // Giải mã toàn bộ đối tượng
           fullCourseData = decryptData(encryptedResponse._secureData);
-          
-          // Log để kiểm tra cấu trúc dữ liệu
-          console.log('Dữ liệu từ API - Các trường:', Object.keys(fullCourseData));
-          
-          // Kiểm tra sheetsData nếu có
-          if (fullCourseData.sheetsData) {
-            console.log('sheetsData có', fullCourseData.sheetsData.length, 'sheets');
-            
-            // Kiểm tra sheet đầu tiên
-            if (fullCourseData.sheetsData.length > 0) {
-              const firstSheet = fullCourseData.sheetsData[0];
-              console.log('Sheet đầu tiên - Các trường:', Object.keys(firstSheet));
-              
-              // Kiểm tra hyperlinks
-              if (firstSheet.hyperlinks) {
-                console.log('Số lượng hyperlinks:', firstSheet.hyperlinks.length);
-                if (firstSheet.hyperlinks.length > 0) {
-                  console.log('Mẫu hyperlink:', firstSheet.hyperlinks[0]);
-                }
-              } else {
-                console.log('Không tìm thấy hyperlinks trong sheet');
-              }
-            }
-          }
           
           setCourse(fullCourseData);
           setPermissionChecked(true); // Đánh dấu đã kiểm tra quyền
@@ -375,15 +359,6 @@ export default function CourseDetailPage() {
   const getSheetData = () => {
     // Ưu tiên sử dụng sheetsData nếu có
     if (course?.sheetsData && course.sheetsData.length > 0) {
-      console.log('Sử dụng sheetsData:', course.sheetsData.length, 'sheets');
-      
-      // Debug hyperlinks
-      if (course.sheetsData[0].hyperlinks) {
-        console.log('Cấu trúc hyperlinks:', course.sheetsData[0].hyperlinks.slice(0, 3));
-      } else {
-        console.log('Không tìm thấy hyperlinks trong sheetsData');
-      }
-      
       return {
         sheets: course.sheetsData,
         usingSheetsData: true
@@ -391,7 +366,6 @@ export default function CourseDetailPage() {
     } 
     // Backup: Sử dụng originalData.sheets nếu sheetsData không có
     else if (course?.originalData?.sheets && course.originalData.sheets.length > 0) {
-      console.log('Sử dụng originalData.sheets:', course.originalData.sheets.length, 'sheets');
       return {
         sheets: course.originalData.sheets,
         usingSheetsData: false
@@ -403,22 +377,12 @@ export default function CourseDetailPage() {
   // Hàm lấy dữ liệu hàng và cột từ sheet
   const getSheetRows = (sheet, sheetIndex, useSheetData) => {
     if (useSheetData) {
-      // Log cấu trúc dữ liệu gốc
-      console.log('Sheet data structure:', {
-        totalValues: sheet.values?.length,
-        headerLength: sheet.header?.length,
-        firstRow: sheet.values?.[0],
-        secondRow: sheet.values?.[1],
-        hyperlinks: sheet.hyperlinks?.slice(0, 3) // Chỉ log 3 hyperlinks đầu tiên
-      });
-
       const header = sheet.header || [];
       let rows = [];
 
       if (sheet.values && Array.isArray(sheet.values)) {
         // Bỏ qua row đầu tiên vì là header
         rows = sheet.values.slice(1).map((row, idx) => {
-          console.log(`Processing row ${idx + 1}:`, row);
           if (!Array.isArray(row)) return new Array(header.length).fill('');
           
           const normalizedRow = new Array(header.length).fill('');
@@ -465,14 +429,25 @@ export default function CourseDetailPage() {
   };
 
   // Hàm trả về giá trị hiển thị từ một ô trong bảng
-  const getCellValue = (cell, useSheetData) => {
+  const getCellValue = (cell, useSheetData, colIndex) => {
+    let value;
     if (useSheetData) {
       // Giá trị từ sheetsData
-      return cell || '';
+      value = cell || '';
     } else {
       // Giá trị từ originalData.sheets
-      return cell?.formattedValue || '';
+      value = cell?.formattedValue || '';
     }
+
+    // Nếu là cột đầu tiên (cột ngày) và giá trị là số 5 chữ số
+    if (colIndex === 0 && /^\d{5}$/.test(String(value).trim())) {
+      const date = excelSerialDateToJSDate(parseInt(value));
+      const day = date.getDate().toString().padStart(2, '0');
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      return `${day}/${month}/${date.getFullYear()}`;
+    }
+
+    return value;
   };
 
   // Hàm trích xuất hyperlinks từ sheet data
@@ -482,9 +457,6 @@ export default function CourseDetailPage() {
     
     // Kiểm tra nếu sheet có trường hyperlinks
     if (sheet.hyperlinks && Array.isArray(sheet.hyperlinks)) {
-      // Log để debug cấu trúc hyperlinks
-      console.log('Cấu trúc hyperlinks:', sheet.hyperlinks);
-      
       // Thêm tất cả hyperlinks vào mảng
       allLinks.push(...sheet.hyperlinks);
       
@@ -585,9 +557,6 @@ export default function CourseDetailPage() {
       });
     }
     
-    // Debug: Hiển thị các liên kết tìm thấy
-    console.log('Tất cả hyperlinks tìm thấy:', allLinks);
-    
     return allLinks;
   };
 
@@ -614,29 +583,18 @@ export default function CourseDetailPage() {
   // Hàm lấy URL liên kết từ ô trong bảng
   const getCellLink = (cell, cellData, rowIndex, cellIndex, useSheetData) => {
     if (useSheetData) {
-      // Debug thông tin cho các ô quan trọng
-      if (rowIndex === 1 && (cellIndex === 3 || cellIndex === 4)) {
-        console.log(`Kiểm tra ô quan trọng [${rowIndex},${cellIndex}]:`, cell);
-      }
-      
       // Lấy liên kết từ sheetsData (hyperlinks)
       if (course.sheetsData && course.sheetsData[activeSheet]) {
         // Trích xuất tất cả hyperlinks từ sheet
         const allLinks = extractHyperlinks(course.sheetsData[activeSheet]);
         
         if (allLinks.length > 0) {
-          // Log để debug
-          if (rowIndex === 1 && (cellIndex === 3 || cellIndex === 4)) {
-            console.log(`Tìm hyperlink cho ô [${rowIndex},${cellIndex}], allLinks:`, allLinks);
-          }
-          
           // Tìm chính xác theo row và col (cấu trúc mới)
           const hyperlinkByRowCol = allLinks.find(h => 
             (h.row === rowIndex && h.col === cellIndex)
           );
           
           if (hyperlinkByRowCol && hyperlinkByRowCol.url) {
-            console.log('Tìm thấy hyperlink theo row/col chính xác:', hyperlinkByRowCol);
             return hyperlinkByRowCol.url;
           }
           
@@ -646,7 +604,6 @@ export default function CourseDetailPage() {
           );
           
           if (hyperlinkByRowColStr && hyperlinkByRowColStr.url) {
-            console.log('Tìm thấy hyperlink theo row/col (dạng chuỗi):', hyperlinkByRowColStr);
             return hyperlinkByRowColStr.url;
           }
           
@@ -656,7 +613,6 @@ export default function CourseDetailPage() {
           );
           
           if (hyperlinkByRowColZeroBased && hyperlinkByRowColZeroBased.url) {
-            console.log('Tìm thấy hyperlink theo row/col (zero-based):', hyperlinkByRowColZeroBased);
             return hyperlinkByRowColZeroBased.url;
           }
           
@@ -672,7 +628,6 @@ export default function CourseDetailPage() {
           for (const key of possibleKeys) {
             const hyperlink = allLinks.find(h => h.key === key);
             if (hyperlink && hyperlink.url) {
-              console.log('Tìm thấy hyperlink theo key:', key, hyperlink.url);
               return hyperlink.url;
             }
           }
@@ -684,7 +639,6 @@ export default function CourseDetailPage() {
           );
           
           if (hyperlinkByPosition && hyperlinkByPosition.url) {
-            console.log('Tìm thấy hyperlink theo rowIndex/colIndex:', hyperlinkByPosition);
             return hyperlinkByPosition.url;
           }
           
@@ -696,7 +650,6 @@ export default function CourseDetailPage() {
             );
             
             if (hyperlinkByText && hyperlinkByText.url) {
-              console.log('Tìm thấy hyperlink theo text:', hyperlinkByText);
               return hyperlinkByText.url;
             }
           }
@@ -713,13 +666,11 @@ export default function CourseDetailPage() {
     }
   };
 
-  // Các hàm decodeProxyLink và getUpdatedUrl đã được import từ utils/proxy-utils.js
-
   // Hàm xử lý khi click vào link
   const handleLinkClick = async (url, title) => {
     if (!url) return;
     
-    // Kiểm tra xem có phải link proxy không
+    // Giải mã URL proxy
     const { url: decodedUrl, isProxy, originalUrl } = getUpdatedUrl(url);
     
     if (!decodedUrl) return;
@@ -727,84 +678,65 @@ export default function CourseDetailPage() {
     setProcessingLink(true);
     
     try {
-      console.log('Xử lý link:', { originalUrl, decodedUrl, isProxy });
-      
       // Xử lý theo loại link
       if (isYoutubeLink(decodedUrl)) {
-        // Xử lý link YouTube
+        // Kiểm tra xem có phải playlist không
         if (isYoutubePlaylist(decodedUrl)) {
-          // Trích xuất ID playlist và video
           const playlistId = extractYoutubePlaylistId(decodedUrl);
           const videoId = extractVideoIdFromPlaylist(decodedUrl);
           
-          console.log('YouTube Playlist:', { playlistId, videoId });
-          
           if (playlistId) {
-            // Mở modal playlist YouTube
             setYoutubePlaylistModal({
               isOpen: true,
               playlistId,
-              videoId,
+              videoId: videoId || '',
               title: title || 'YouTube Playlist'
             });
-          } else {
-            const videoId = extractYoutubeId(decodedUrl);
-            if (videoId) {
-              // Mở modal video YouTube
-              setYoutubeModal({
-                isOpen: true,
-                videoId,
-                title: title || 'YouTube Video'
-              });
-            } else {
-              // Nếu không thể trích xuất ID, sử dụng URL gốc
-              window.open(originalUrl, '_blank');
-            }
           }
         } else {
-          // Xử lý video YouTube thông thường
+          // Link video đơn lẻ
           const videoId = extractYoutubeId(decodedUrl);
-          console.log('YouTube Video:', { videoId });
           
           if (videoId) {
-            // Mở modal video YouTube
             setYoutubeModal({
               isOpen: true,
               videoId,
               title: title || 'YouTube Video'
             });
           } else {
-            // Nếu không thể trích xuất ID, sử dụng URL gốc
-            window.open(originalUrl, '_blank');
+            // Thử lấy videoId từ URL gốc nếu decode không thành công
+            const originalVideoId = extractYoutubeId(originalUrl);
+            
+            if (originalVideoId) {
+              setYoutubeModal({
+                isOpen: true,
+                videoId: originalVideoId,
+                title: title || 'YouTube Video'
+              });
+            }
           }
         }
-      } else if (isPdfLink(decodedUrl)) {
-        // Xử lý link PDF - mở trong modal
-        console.log('PDF:', decodedUrl);
+      } else if (isPdfLink(decodedUrl) || (!isGoogleDriveFolder(decodedUrl) && isGoogleDriveLink(decodedUrl))) {
         setPdfModal({
           isOpen: true,
-          fileUrl: isProxy ? originalUrl : decodedUrl, // Sử dụng URL proxy nếu có
-          title: title || 'PDF Document'
+          fileUrl: decodedUrl,
+          title: title || 'Document'
         });
-      } else if (isGoogleDriveLink(decodedUrl)) {
-        // Xử lý link Google Drive
-        console.log('Google Drive:', decodedUrl);
-        
-        if (isGoogleDriveFolder(decodedUrl)) {
-          // Xử lý thư mục Google Drive (mở trong tab mới)
-          window.open(originalUrl, '_blank');
-        } else {
-          // Xử lý file Google Drive - mở trong modal PDF
-          setPdfModal({
-            isOpen: true,
-            fileUrl: isProxy ? originalUrl : decodedUrl, // Sử dụng URL proxy nếu có
-            title: title || 'Google Drive Document'
-          });
-        }
+      } else if (isGoogleDriveFolder(decodedUrl)) {
+        window.open(decodedUrl, '_blank');
       } else {
-        // Mở link khác trong tab mới, sử dụng URL proxy nếu có
-        console.log('External link:', decodedUrl);
-        window.open(isProxy ? originalUrl : decodedUrl, '_blank');
+        // Kiểm tra URL gốc nếu decoded URL không phải YouTube
+        if (isYoutubeLink(originalUrl)) {
+          const videoId = extractYoutubeId(originalUrl);
+          
+          if (videoId) {
+            setYoutubeModal({
+              isOpen: true,
+              videoId,
+              title: title || 'YouTube Video'
+            });
+          }
+        }
       }
     } catch (error) {
       console.error('Lỗi khi xử lý link:', error);
@@ -860,14 +792,37 @@ export default function CourseDetailPage() {
     }, 100);
   }, [activeSheet, course]);
 
+  // Hàm chuyển đổi số ngày Excel thành Date
+  const excelSerialDateToJSDate = (serialDate) => {
+    // Excel bắt đầu từ 1/1/1900, nhưng có lỗi tính năm nhuận nên trừ đi 1
+    const utc_days = Math.floor(serialDate - 25569);
+    const utc_value = utc_days * 86400;
+    const date_info = new Date(utc_value * 1000);
+    return date_info;
+  };
+
   // Hàm format ngày tháng
   const formatDate = (dateStr) => {
     if (!dateStr) return '';
     
     // Đảm bảo dateStr là chuỗi
-    const strValue = String(dateStr);
+    const strValue = String(dateStr).trim();
     
-    // Tách ngày/tháng và năm
+    // Kiểm tra nếu là số ngày kiểu Excel (5 chữ số)
+    if (/^\d{5}$/.test(strValue)) {
+      const date = excelSerialDateToJSDate(parseInt(strValue));
+      const day = date.getDate().toString().padStart(2, '0');
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const year = date.getFullYear();
+      return (
+        <>
+          <div className="font-medium">{day}/{month}</div>
+          <div className="text-xs opacity-80">{year}</div>
+        </>
+      );
+    }
+
+    // Xử lý định dạng dd/mm/yyyy như cũ
     const parts = strValue.match(/^(\d{1,2}\/\d{1,2})\/(\d{4})$/);
     if (parts) {
       return (
@@ -877,6 +832,7 @@ export default function CourseDetailPage() {
         </>
       );
     }
+
     return strValue;
   };
 
@@ -1462,7 +1418,7 @@ export default function CourseDetailPage() {
                                 >
                                   <div className="flex items-center space-x-1">
                                     <span className="break-words">
-                                      {getCellValue(headerCell, usingSheetsData)}
+                                      {getCellValue(headerCell, usingSheetsData, headerIndex)}
                                     </span>
                                   </div>
                                 </th>
@@ -1474,35 +1430,15 @@ export default function CourseDetailPage() {
                               <tr key={rowIndex} className="hover:bg-gray-50">
                                 {header.map((_, colIndex) => {
                                   const cell = row[colIndex];
-                                  const cellValue = getCellValue(cell, usingSheetsData);
+                                  const cellValue = getCellValue(cell, usingSheetsData, colIndex);
                                   
-                                  // Debug log chi tiết hơn
-                                  if (colIndex === 3 || colIndex === 4) {
-                                    console.log(`Row ${rowIndex + 2} (actual position in sheet):`, {
-                                      rowIndexInCode: rowIndex,
-                                      adjustedRowIndex: rowIndex + 2,
-                                      colIndex,
-                                      cellValue,
-                                      cell
-                                    });
-                                  }
-
                                   const originalUrl = getCellLink(
                                     cell, 
                                     row,
-                                    rowIndex, // Sử dụng trực tiếp rowIndex không cộng thêm
+                                    rowIndex,
                                     colIndex,
                                     usingSheetsData
                                   );
-
-                                  // Log khi tìm thấy URL
-                                  if (originalUrl) {
-                                    console.log(`Link found at position:`, {
-                                      rowIndex,
-                                      colIndex,
-                                      url: originalUrl
-                                    });
-                                  }
 
                                   return (
                                     <td

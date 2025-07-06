@@ -16,15 +16,33 @@ export const decodeProxyLink = (proxyUrl) => {
       // Lấy phần mã hóa base64
       const base64Part = proxyUrl.replace('/api/proxy-link/', '');
       
+      // Chuẩn hóa chuỗi base64 trước khi giải mã
+      // 1. Thay thế các ký tự URL-safe
+      // 2. Thêm padding nếu cần
+      const normalizedBase64 = base64Part
+        .replace(/-/g, '+')
+        .replace(/_/g, '/')
+        .replace(/\s/g, '');
+      
+      const paddedBase64 = normalizedBase64.padEnd(
+        normalizedBase64.length + (4 - (normalizedBase64.length % 4)) % 4,
+        '='
+      );
+      
       // Giải mã base64 - sử dụng atob() ở client-side
       // hoặc Buffer.from() ở server-side
       let decodedUrl;
       if (typeof window !== 'undefined') {
-        // Client-side
-        decodedUrl = atob(base64Part);
+        try {
+          // Client-side
+          decodedUrl = decodeURIComponent(escape(atob(paddedBase64)));
+        } catch (e) {
+          // Nếu giải mã UTF-8 thất bại, thử giải mã trực tiếp
+          decodedUrl = atob(paddedBase64);
+        }
       } else {
         // Server-side
-        decodedUrl = Buffer.from(base64Part, 'base64').toString('utf-8');
+        decodedUrl = Buffer.from(paddedBase64, 'base64').toString('utf-8');
       }
       
       return decodedUrl;
@@ -50,10 +68,18 @@ export const encodeProxyLink = (url) => {
     let base64Url;
     if (typeof window !== 'undefined') {
       // Client-side
-      base64Url = btoa(url);
+      // Mã hóa UTF-8 trước khi chuyển sang base64
+      base64Url = btoa(unescape(encodeURIComponent(url)))
+        .replace(/\+/g, '-') // Thay thế các ký tự không an toàn cho URL
+        .replace(/\//g, '_')
+        .replace(/=+$/, ''); // Xóa padding ở cuối
     } else {
       // Server-side
-      base64Url = Buffer.from(url).toString('base64');
+      base64Url = Buffer.from(url)
+        .toString('base64')
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
     }
     
     return `/api/proxy-link/${base64Url}`;
