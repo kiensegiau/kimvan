@@ -12,6 +12,8 @@ export function useProcessing({ course, fetchCourseDetail, setShowJsonInputModal
   const [processingData, setProcessingData] = useState(false);
   const [processingAllDrive, setProcessingAllDrive] = useState(false);
   const [processAllDriveResult, setProcessAllDriveResult] = useState(null);
+  const [processingAllSheets, setProcessingAllSheets] = useState(false);
+  const [processAllSheetsResult, setProcessAllSheetsResult] = useState(null);
   
   // Hàm xóa khóa học
   const handleDelete = async () => {
@@ -382,6 +384,77 @@ export function useProcessing({ course, fetchCourseDetail, setShowJsonInputModal
     }
   };
 
+  // Hàm xử lý đồng bộ tất cả sheets với database
+  const handleProcessAllSheets = async () => {
+    if (!course) {
+      console.log("❌ [CLIENT] handleProcessAllSheets: No course data available");
+      return;
+    }
+    
+    console.log(`🔄 [CLIENT] handleProcessAllSheets: Starting for course "${course.name}" (${course._id})`);
+    console.log(`🔄 [CLIENT] handleProcessAllSheets: Current sheets:`, course.sheets);
+    
+    if (window.confirm(`Bạn có muốn đồng bộ tất cả sheets với database cho khóa học "${course.name}" không?`)) {
+      console.log("✅ [CLIENT] handleProcessAllSheets: User confirmed sync operation");
+      try {
+        setProcessingAllSheets(true);
+        console.log("🔄 [CLIENT] handleProcessAllSheets: Set processingAllSheets = true");
+        
+        // Hiển thị thông báo đang xử lý
+        setProcessAllSheetsResult({
+          success: true,
+          message: `Đang đồng bộ tất cả sheets cho khóa học "${course.name}"...`,
+          inProgress: true
+        });
+        console.log("🔄 [CLIENT] handleProcessAllSheets: Set initial notification");
+        
+        console.log(`🔄 [CLIENT] handleProcessAllSheets: Calling API endpoint /api/courses/${course._id}/process-all-sheets`);
+        const response = await fetch(`/api/courses/${course._id}/process-all-sheets`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+        
+        console.log(`🔄 [CLIENT] handleProcessAllSheets: API response status:`, response.status);
+        const result = await response.json();
+        console.log(`🔄 [CLIENT] handleProcessAllSheets: API response data:`, result);
+        
+        if (!response.ok) {
+          console.error(`❌ [CLIENT] handleProcessAllSheets: API returned error status ${response.status}:`, result);
+          throw new Error(result.message || 'Không thể đồng bộ sheets');
+        }
+        
+        console.log(`✅ [CLIENT] handleProcessAllSheets: API call successful, results:`, result.results);
+        setProcessAllSheetsResult({
+          success: true,
+          message: result.message || 'Đồng bộ sheets thành công',
+          results: result.results,
+          errors: result.errors
+        });
+        console.log("✅ [CLIENT] handleProcessAllSheets: Updated notification with success");
+        
+        // Tải lại thông tin khóa học
+        console.log("🔄 [CLIENT] handleProcessAllSheets: Refreshing course data...");
+        await fetchCourseDetail();
+        console.log("✅ [CLIENT] handleProcessAllSheets: Course data refreshed");
+        
+      } catch (err) {
+        console.error('❌ [CLIENT] handleProcessAllSheets: Error:', err);
+        setProcessAllSheetsResult({
+          success: false,
+          message: `Lỗi đồng bộ sheets: ${err.message}`
+        });
+        console.log("❌ [CLIENT] handleProcessAllSheets: Updated notification with error");
+      } finally {
+        setProcessingAllSheets(false);
+        console.log("✅ [CLIENT] handleProcessAllSheets: Set processingAllSheets = false");
+      }
+    } else {
+      console.log("ℹ️ [CLIENT] handleProcessAllSheets: User cancelled operation");
+    }
+  };
+
   return {
     handleDelete,
     handleAddCourse,
@@ -392,10 +465,14 @@ export function useProcessing({ course, fetchCourseDetail, setShowJsonInputModal
     handleProcessData,
     handleUploadPdf,
     handleProcessAllDrive,
+    handleProcessAllSheets,
     processingData,
-    processingAllDrive, 
+    processingAllDrive,
     processAllDriveResult,
     setProcessAllDriveResult,
+    processingAllSheets,
+    processAllSheetsResult,
+    setProcessAllSheetsResult,
     syncing
   };
 } 

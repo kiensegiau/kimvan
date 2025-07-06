@@ -9,7 +9,9 @@ export default function LinkedSheets({
   sheetData, 
   loadingSheetData, 
   fetchSheetData,
-  setSheetData
+  setSheetData,
+  handleProcessAllSheets,
+  processingAllSheets
 }) {
   return (
     <div className="mt-6">
@@ -82,6 +84,19 @@ export default function LinkedSheets({
         >
           <ArrowPathIcon className={`h-5 w-5 ${loadingSheets ? 'animate-spin' : ''}`} />
           <span>Làm mới</span>
+        </button>
+
+        <button
+          onClick={handleProcessAllSheets}
+          disabled={processingAllSheets || linkedSheets.length === 0}
+          className={`px-4 py-3 rounded-lg text-sm font-medium ${
+            processingAllSheets || linkedSheets.length === 0 ? 
+            'bg-blue-100 text-blue-400 cursor-not-allowed' : 
+            'bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100'
+          } transition-colors duration-200 flex items-center space-x-2 shadow-sm`}
+        >
+          <ArrowPathIcon className={`h-5 w-5 ${processingAllSheets ? 'animate-spin' : ''}`} />
+          <span>Đồng bộ tất cả sheets</span>
         </button>
       </div>
       

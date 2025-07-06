@@ -169,4 +169,62 @@ export function ProcessAllDriveResultNotification({ processAllDriveResult, setPr
       </div>
     </div>
   );
+}
+
+export function ProcessAllSheetsResultNotification({ processAllSheetsResult, setProcessAllSheetsResult }) {
+  if (!processAllSheetsResult) return null;
+  
+  return (
+    <div className={`bg-${processAllSheetsResult.success ? 'blue' : 'red'}-50 p-4 rounded-md mb-6`}>
+      <div className="flex">
+        <div className="flex-shrink-0">
+          {processAllSheetsResult.success ? (
+            <>
+              {processAllSheetsResult.inProgress ? (
+                <ArrowPathIcon className="h-5 w-5 text-blue-400 animate-spin" />
+              ) : (
+                <svg className="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+              )}
+            </>
+          ) : (
+            <ExclamationCircleIcon className="h-5 w-5 text-red-400" aria-hidden="true" />
+          )}
+        </div>
+        <div className="ml-3">
+          <p className={`text-sm font-medium text-${processAllSheetsResult.success ? 'blue' : 'red'}-800`}>
+            {processAllSheetsResult.message}
+          </p>
+          {processAllSheetsResult.results && !processAllSheetsResult.inProgress && (
+            <ul className="mt-2 text-sm text-blue-700 list-disc list-inside">
+              {processAllSheetsResult.results.map((result, index) => (
+                <li key={index}>{result.title || result.sheetId}</li>
+              ))}
+            </ul>
+          )}
+          {processAllSheetsResult.errors && processAllSheetsResult.errors.length > 0 && (
+            <div className="mt-2">
+              <p className="text-sm font-medium text-red-800">Lỗi:</p>
+              <ul className="text-sm text-red-700 list-disc list-inside">
+                {processAllSheetsResult.errors.map((error, index) => (
+                  <li key={index}>{error.title || error.sheetId}: {error.error}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+        <div className="ml-auto pl-3">
+          <div className="-mx-1.5 -my-1.5">
+            <button
+              onClick={() => setProcessAllSheetsResult(null)}
+              className={`inline-flex rounded-md p-1.5 text-${processAllSheetsResult.success ? 'blue' : 'red'}-500 hover:bg-${processAllSheetsResult.success ? 'blue' : 'red'}-100`}
+            >
+              <XMarkIcon className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 } 

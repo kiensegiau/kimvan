@@ -18,7 +18,8 @@ import {
   SyncResultNotification, 
   ProcessResultNotification, 
   UploadResultNotification, 
-  ProcessAllDriveResultNotification 
+  ProcessAllDriveResultNotification,
+  ProcessAllSheetsResultNotification
 } from './components/Notifications';
 import {
   JsonInputModal,
@@ -140,10 +141,14 @@ export default function CourseDetailPage({ params }) {
     handleProcessData,
     handleUploadPdf,
     handleProcessAllDrive,
+    handleProcessAllSheets,
     processingData,
     processingAllDrive,
     processAllDriveResult,
     setProcessAllDriveResult,
+    processingAllSheets,
+    processAllSheetsResult,
+    setProcessAllSheetsResult,
     syncing
   } = useProcessing({
     course,
@@ -305,6 +310,10 @@ export default function CourseDetailPage({ params }) {
           processAllDriveResult={processAllDriveResult} 
           setProcessAllDriveResult={setProcessAllDriveResult} 
         />
+        <ProcessAllSheetsResultNotification 
+          processAllSheetsResult={processAllSheetsResult} 
+          setProcessAllSheetsResult={setProcessAllSheetsResult} 
+        />
         
         <ProcessResultNotification 
           processResult={processResult} 
@@ -325,16 +334,18 @@ export default function CourseDetailPage({ params }) {
         <CourseInfo course={course} />
         
         {/* Linked sheets section */}
-        <LinkedSheets
-          id={id}
-          linkedSheets={linkedSheets}
-          loadingSheets={loadingSheets}
-          fetchLinkedSheets={fetchLinkedSheets}
-          sheetData={sheetData}
-          loadingSheetData={loadingSheetData}
-          fetchSheetData={fetchSheetData}
-          setSheetData={setSheetData}
-        />
+                  <LinkedSheets
+            id={id}
+            linkedSheets={linkedSheets}
+            loadingSheets={loadingSheets}
+            fetchLinkedSheets={fetchLinkedSheets}
+            sheetData={sheetData}
+            loadingSheetData={loadingSheetData}
+            fetchSheetData={fetchSheetData}
+            setSheetData={setSheetData}
+            handleProcessAllSheets={handleProcessAllSheets}
+            processingAllSheets={processingAllSheets}
+          />
         
         {/* API Sheet Data section - New */}
         {/* Removed to avoid duplication with LinkedSheets */}

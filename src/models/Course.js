@@ -46,6 +46,23 @@ const courseSchema = new mongoose.Schema({
       ref: 'Sheet'
     }
   ],
+  // Thêm field sheetsData để lưu dữ liệu đồng bộ từ sheet
+  sheetsData: [
+    {
+      _id: mongoose.Schema.Types.ObjectId,
+      title: String,
+      name: String,
+      values: [[mongoose.Schema.Types.Mixed]],
+      rows: [mongoose.Schema.Types.Mixed],
+      header: [String],
+      hyperlinks: [mongoose.Schema.Types.Mixed],
+      htmlData: [mongoose.Schema.Types.Mixed],
+      merges: [mongoose.Schema.Types.Mixed]
+    }
+  ],
+  lastSyncedAt: {
+    type: Date
+  },
   createdAt: {
     type: Date,
     default: Date.now
