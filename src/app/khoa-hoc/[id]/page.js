@@ -341,7 +341,72 @@ export default function CourseDetailPage({ params }) {
   const getSheetTitle = (index, sheets) => {
     if (!sheets || !sheets[index]) return `Khóa ${index + 1}`;
     const sheet = sheets[index];
-    return sheet?.properties?.title || `Khóa ${index + 1}`;
+    return sheet?.title || sheet?.name || sheet?.properties?.title || `Khóa ${index + 1}`;
+  };
+
+  // Hàm kiểm tra và sử dụng sheetsData thay vì originalData.sheets
+  const getSheetData = () => {
+    // Ưu tiên sử dụng sheetsData nếu có
+    if (course?.sheetsData && course.sheetsData.length > 0) {
+      return {
+        sheets: course.sheetsData,
+        usingSheetsData: true
+      };
+    } 
+    // Backup: Sử dụng originalData.sheets nếu sheetsData không có
+    else if (course?.originalData?.sheets && course.originalData.sheets.length > 0) {
+      return {
+        sheets: course.originalData.sheets,
+        usingSheetsData: false
+      };
+    }
+    return { sheets: [], usingSheetsData: false };
+  };
+
+  // Hàm lấy dữ liệu hàng và cột từ sheet
+  const getSheetRows = (sheet, sheetIndex, useSheetData) => {
+    if (useSheetData) {
+      // Lấy từ sheetsData
+      return {
+        rows: sheet.values || [],
+        header: sheet.header || [],
+        hasRows: !!(sheet.values && sheet.values.length > 0)
+      };
+    } else {
+      // Lấy từ originalData.sheets
+      return {
+        rows: sheet?.data?.[0]?.rowData || [],
+        header: sheet?.data?.[0]?.rowData?.[0]?.values || [],
+        hasRows: !!(sheet?.data?.[0]?.rowData && sheet.data[0].rowData.length > 0)
+      };
+    }
+  };
+
+  // Hàm trả về giá trị hiển thị từ một ô trong bảng
+  const getCellValue = (cell, useSheetData) => {
+    if (useSheetData) {
+      // Giá trị từ sheetsData
+      return cell || '';
+    } else {
+      // Giá trị từ originalData.sheets
+      return cell?.formattedValue || '';
+    }
+  };
+
+  // Hàm lấy URL liên kết từ ô trong bảng
+  const getCellLink = (cell, cellData, rowIndex, cellIndex, useSheetData) => {
+    if (useSheetData) {
+      // Lấy liên kết từ sheetsData (hyperlinks)
+      const hyperlinkKey = `${rowIndex},${cellIndex}`;
+      const hyperlink = course.sheetsData[activeSheet].hyperlinks?.find(h => 
+        h.key === hyperlinkKey || 
+        (h.rowIndex === rowIndex && h.colIndex === cellIndex)
+      );
+      return hyperlink?.url || null;
+    } else {
+      // Lấy liên kết từ originalData
+      return cell?.userEnteredFormat?.textFormat?.link?.uri || cell?.hyperlink || null;
+    }
   };
 
   // Hàm xử lý và thay thế link drive cũ bằng link mới từ processedDriveFiles
@@ -734,6 +799,26 @@ export default function CourseDetailPage({ params }) {
     }, 100);
   }, [activeSheet, course]);
 
+  // Hàm format ngày tháng
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '';
+    
+    // Đảm bảo dateStr là chuỗi
+    const strValue = String(dateStr);
+    
+    // Tách ngày/tháng và năm
+    const parts = strValue.match(/^(\d{1,2}\/\d{1,2})\/(\d{4})$/);
+    if (parts) {
+      return (
+        <>
+          <div className="font-medium">{parts[1]}</div>
+          <div className="text-xs opacity-80">{parts[2]}</div>
+        </>
+      );
+    }
+    return strValue;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white p-6">
@@ -1020,277 +1105,395 @@ export default function CourseDetailPage({ params }) {
         </div>
         
         {/* Dữ liệu khóa học */}
-        {course.originalData && (
+        {(course.sheetsData || course.originalData) && (
           <div className="">
-            
-
             {/* Hiển thị dữ liệu dưới dạng bảng */}
-            {course.originalData?.sheets && course.originalData.sheets.length > 0 && (
-              <div className="mt-6 bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-                {/* Chọn khóa học khi có nhiều sheet */}
-                {course.originalData?.sheets && course.originalData.sheets.length > 1 && (
-                  <div className="border-b border-gray-200 px-4 sm:px-6 py-4 bg-gradient-to-r from-gray-50 to-white">
-                    <h3 className="text-base font-medium text-gray-800 mb-3 flex items-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
-                      </svg>
-                      Chọn khóa học:
-                    </h3>
-                    <div className="flex flex-wrap gap-2 overflow-x-auto pb-2">
-                      {course.originalData.sheets.map((sheet, index) => (
-                        <button
-                          key={index}
-                          onClick={() => setActiveSheet(index)}
-                          className={`
-                            px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap
-                            ${activeSheet === index 
-                              ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-md' 
-                              : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-                            }
-                          `}
-                        >
-                          <div className="flex items-center">
-                            <span>{getSheetTitle(index, course.originalData.sheets)}</span>
-                            {sheet?.data?.[0]?.rowData && (
-                              <span className={`text-xs ml-2 px-2 py-0.5 rounded-full ${
-                                activeSheet === index ? 'bg-indigo-500 text-white' : 'bg-gray-100 text-gray-600'
-                              }`}>
-                                {(sheet.data[0].rowData.length - 1) || 0}
-                              </span>
-                            )}
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <div className="overflow-x-auto">
-                  {/* Hiển thị sheet được chọn */}
-                  <div key={activeSheet} className="mb-0">
-                    <div className="px-4 sm:px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-indigo-50 to-indigo-100 flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-2">
-                      <div className="font-medium text-gray-800 flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            {(() => {
+              const { sheets, usingSheetsData } = getSheetData();
+              if (sheets.length === 0) return null;
+              
+              return (
+                <div className="mt-6 bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                  {/* Chọn khóa học khi có nhiều sheet */}
+                  {sheets.length > 1 && (
+                    <div className="border-b border-gray-200 px-4 sm:px-6 py-4 bg-gradient-to-r from-gray-50 to-white">
+                      <h3 className="text-base font-medium text-gray-800 mb-3 flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
                         </svg>
-                        <span className="font-bold text-indigo-800">{getSheetTitle(activeSheet, course.originalData.sheets)}</span>
-                      </div>
-                      {course.originalData.sheets[activeSheet]?.data?.[0]?.rowData && (
-                        <div className="text-sm bg-indigo-600 text-white px-3 py-1 rounded-full font-medium shadow-sm ml-7 sm:ml-0">
-                          Tổng số: {(course.originalData.sheets[activeSheet].data[0].rowData.length - 1) || 0} buổi
-                        </div>
-                      )}
-                    </div>
-                    
-                    {/* Chọn chế độ xem cho thiết bị di động */}
-                    <div className="md:hidden pb-2 pt-1 px-2 flex items-center justify-between border-b border-gray-200">
-                      <div className="text-sm font-medium text-gray-700">Chế độ xem:</div>
-                      <div className="flex space-x-2">
-                        <button 
-                          onClick={() => setViewMode('table')}
-                          className={`px-3 py-1 text-xs rounded-md flex items-center ${
-                            viewMode === 'table' 
-                              ? 'bg-indigo-600 text-white' 
-                              : 'bg-gray-200 text-gray-700'
-                          }`}
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                          </svg>
-                          Bảng
-                        </button>
-                        <button 
-                          onClick={() => setViewMode('list')}
-                          className={`px-3 py-1 text-xs rounded-md flex items-center ${
-                            viewMode === 'list' 
-                              ? 'bg-indigo-600 text-white' 
-                              : 'bg-gray-200 text-gray-700'
-                          }`}
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-                          </svg>
-                          Danh sách
-                        </button>
+                        Chọn khóa học:
+                      </h3>
+                      <div className="flex flex-wrap gap-2 overflow-x-auto pb-2">
+                        {sheets.map((sheet, index) => {
+                          // Lấy số dòng
+                          const { rows, hasRows } = getSheetRows(sheet, index, usingSheetsData);
+                          const rowCount = usingSheetsData ? 
+                            (rows.length - 1) || 0 : 
+                            (hasRows ? (rows.length - 1) || 0 : 0);
+                            
+                          return (
+                            <button
+                              key={index}
+                              onClick={() => setActiveSheet(index)}
+                              className={`
+                                px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap
+                                ${activeSheet === index 
+                                  ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-md' 
+                                  : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                                }
+                              `}
+                            >
+                              <div className="flex items-center">
+                                <span>{getSheetTitle(index, sheets)}</span>
+                                <span className={`text-xs ml-2 px-2 py-0.5 rounded-full ${
+                                  activeSheet === index ? 'bg-indigo-500 text-white' : 'bg-gray-100 text-gray-600'
+                                }`}>
+                                  {rowCount}
+                                </span>
+                              </div>
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
+                  )}
 
-                    {/* Chế độ xem bảng */}
-                    {viewMode === 'table' ? (
-                      course.originalData.sheets[activeSheet]?.data?.[0]?.rowData && course.originalData.sheets[activeSheet].data[0].rowData.length > 1 ? (
-                        <div className="relative">
-                          <div className="md:hidden bg-blue-50 p-2 border-b border-blue-100 flex items-center justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500 mr-2 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                  <div className="overflow-x-auto">
+                    {/* Hiển thị sheet được chọn */}
+                    <div key={activeSheet} className="mb-0">
+                      <div className="px-4 sm:px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-indigo-50 to-indigo-100 flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-2">
+                        <div className="font-medium text-gray-800 flex items-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                          </svg>
+                          <span className="font-bold text-indigo-800">{getSheetTitle(activeSheet, sheets)}</span>
+                        </div>
+                        <div className="text-sm bg-indigo-600 text-white px-3 py-1 rounded-full font-medium shadow-sm ml-7 sm:ml-0">
+                          {(() => {
+                            const { rows, hasRows } = getSheetRows(sheets[activeSheet], activeSheet, usingSheetsData);
+                            const rowCount = usingSheetsData ? 
+                              (rows.length - 1) || 0 : 
+                              (hasRows ? (rows.length - 1) || 0 : 0);
+                            return `Tổng số: ${rowCount} buổi`;
+                          })()}
+                        </div>
+                      </div>
+                      
+                      {/* Chọn chế độ xem cho thiết bị di động */}
+                      <div className="md:hidden pb-2 pt-1 px-2 flex items-center justify-between border-b border-gray-200">
+                        <div className="text-sm font-medium text-gray-700">Chế độ xem:</div>
+                        <div className="flex space-x-2">
+                          <button 
+                            onClick={() => setViewMode('table')}
+                            className={`px-3 py-1 text-xs rounded-md flex items-center ${
+                              viewMode === 'table' 
+                                ? 'bg-indigo-600 text-white' 
+                                : 'bg-gray-200 text-gray-700'
+                            }`}
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                             </svg>
-                            <span className="text-sm font-bold text-blue-700">Vuốt ngang để xem toàn bộ bảng</span>
-                          </div>
-                          <div className="overflow-x-auto pb-2" style={{ WebkitOverflowScrolling: 'touch', scrollbarWidth: 'thin' }}>
-                            <table className="w-full divide-y divide-gray-200 border-collapse" style={{ tableLayout: 'auto' }}>
-                              <thead>
-                                <tr className="bg-gradient-to-r from-indigo-600 to-indigo-700">
-                                  {course.originalData.sheets[activeSheet].data[0].rowData[0]?.values?.map((cell, index) => (
-                                    <th 
-                                      key={index} 
-                                      className={`px-2 py-3 text-left text-xs font-medium text-white uppercase tracking-wider ${
-                                        index === 0 
-                                        ? 'text-center min-w-[90px] w-auto break-words hyphens-auto sticky left-0 z-20 bg-indigo-700 shadow-lg border-r-2 border-indigo-500' 
-                                        : 'content-title min-w-[100px] max-w-[350px]'
-                                      }`}
-                                    >
-                                      <div className="flex items-center justify-between">
-                                        <span className="break-words">{cell.formattedValue || ''}</span>
-                                        {index > 0 && 
-                                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 ml-1 opacity-70 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
-                                          </svg>
-                                        }
-                                      </div>
-                                    </th>
-                                  ))}
-                                </tr>
-                              </thead>
-                              <tbody className="bg-white divide-y divide-gray-200">
-                                {course.originalData.sheets[activeSheet].data[0].rowData.slice(1).map((row, rowIndex) => (
-                                  <tr 
-                                    key={rowIndex} 
-                                    className="group hover:bg-indigo-50 transition-colors duration-150"
-                                  >
-                                    {row.values && row.values.map((cell, cellIndex) => {
-                                      // Xác định loại link nếu có
-                                      const originalUrl = cell.userEnteredFormat?.textFormat?.link?.uri || cell.hyperlink;
-                                      const { url } = getUpdatedUrl(originalUrl);
-                                      const isLink = url ? true : false;
-                                      const linkType = isLink 
-                                        ? isYoutubeLink(url) 
-                                          ? 'youtube' 
-                                          : isPdfLink(url) 
-                                            ? 'pdf' 
-                                            : isGoogleDriveLink(url) 
-                                              ? 'drive' 
-                                              : 'external'
-                                        : null;
-                                      
-                                      // Hàm format ngày tháng
-                                      const formatDate = (dateStr) => {
-                                        if (!dateStr) return '';
-                                        // Tách ngày/tháng và năm
-                                        const parts = dateStr.match(/^(\d{1,2}\/\d{1,2})\/(\d{4})$/);
-                                        if (parts) {
-                                          return (
-                                            <>
-                                              <div className="font-medium">{parts[1]}</div>
-                                              <div className="text-xs opacity-80">{parts[2]}</div>
-                                            </>
-                                          );
-                                        }
-                                        return dateStr;
-                                      };
+                            Bảng
+                          </button>
+                          <button 
+                            onClick={() => setViewMode('list')}
+                            className={`px-3 py-1 text-xs rounded-md flex items-center ${
+                              viewMode === 'list' 
+                                ? 'bg-indigo-600 text-white' 
+                                : 'bg-gray-200 text-gray-700'
+                            }`}
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                            </svg>
+                            Danh sách
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Chế độ xem bảng */}
+                      {viewMode === 'table' ? (
+                        (() => {
+                          const { rows, header, hasRows } = getSheetRows(sheets[activeSheet], activeSheet, usingSheetsData);
+                          
+                          if (!hasRows) {
+                            return (
+                              <div className="p-8 text-center text-gray-500">
+                                Không có dữ liệu khóa học.
+                              </div>
+                            );
+                          }
+                          
+                          // Xác định hàng tiêu đề và dữ liệu dựa trên nguồn dữ liệu
+                          const headerRow = usingSheetsData ? header : (rows[0]?.values || []);
+                          const dataRows = usingSheetsData ? rows.slice(1) : rows.slice(1);
+                          
+                          return (
+                            <div className="relative">
+                              <div className="md:hidden bg-blue-50 p-2 border-b border-blue-100 flex items-center justify-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500 mr-2 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                                </svg>
+                                <span className="text-sm font-bold text-blue-700">Vuốt ngang để xem toàn bộ bảng</span>
+                              </div>
+                              <div className="overflow-x-auto pb-2" style={{ WebkitOverflowScrolling: 'touch', scrollbarWidth: 'thin' }}>
+                                <table className="w-full divide-y divide-gray-200 border-collapse" style={{ tableLayout: 'auto' }}>
+                                  <thead>
+                                    <tr className="bg-gradient-to-r from-indigo-600 to-indigo-700">
+                                      {headerRow.map((cell, index) => (
+                                        <th 
+                                          key={index} 
+                                          className={`px-2 py-3 text-left text-xs font-medium text-white uppercase tracking-wider ${
+                                            index === 0 
+                                              ? 'text-center min-w-[90px] w-auto break-words hyphens-auto sticky left-0 z-20 bg-indigo-700 shadow-lg border-r-2 border-indigo-500' 
+                                              : 'content-title min-w-[100px] max-w-[350px]'
+                                          }`}
+                                        >
+                                          <div className="flex items-center justify-between">
+                                            <span className="break-words">{getCellValue(cell, usingSheetsData)}</span>
+                                            {index > 0 && 
+                                              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 ml-1 opacity-70 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
+                                              </svg>
+                                            }
+                                          </div>
+                                        </th>
+                                      ))}
+                                    </tr>
+                                  </thead>
+                                  <tbody className="bg-white divide-y divide-gray-200">
+                                    {dataRows.map((row, rowIndex) => {
+                                      // Dữ liệu hàng dựa trên nguồn dữ liệu
+                                      const rowCells = usingSheetsData ? row : (row.values || []);
                                       
                                       return (
-                                        <td 
-                                          key={cellIndex} 
-                                          className={`px-2 py-3 border-r border-gray-100 last:border-r-0 ${
-                                            cellIndex === 0 
-                                              ? 'font-semibold text-indigo-700 text-center bg-indigo-100 group-hover:bg-indigo-200 sticky left-0 z-10 min-w-[90px] w-auto shadow-lg border-r-2 border-gray-200 break-words text-sm hyphens-auto' 
-                                              : `text-gray-700 content-cell ${
-                                                  !cell.formattedValue || cell.formattedValue.length < 30 
-                                                    ? 'short-content' 
-                                                    : cell.formattedValue.length < 100 
-                                                      ? 'medium-content' 
-                                                      : 'long-content'
-                                                }`
-                                          }`}
-                                          title={cell.formattedValue || ''}
+                                        <tr 
+                                          key={rowIndex} 
+                                          className="group hover:bg-indigo-50 transition-colors duration-150"
                                         >
-                                          {cellIndex === 0 
-                                            ? (
-                                              <div className="break-words hyphens-auto text-center" title={cell.formattedValue || ''}>
-                                                {cell.formattedValue ? formatDate(cell.formattedValue) : ''}
+                                          {rowCells.map((cell, cellIndex) => {
+                                            // Xác định giá trị của ô
+                                            const cellValue = getCellValue(cell, usingSheetsData);
+                                            
+                                            // Xác định URL liên kết nếu có
+                                            const originalUrl = getCellLink(cell, rowCells, rowIndex + 1, cellIndex, usingSheetsData);
+                                            const { url } = getUpdatedUrl(originalUrl);
+                                            const isLink = !!url;
+                                            const linkType = isLink 
+                                              ? isYoutubeLink(url) 
+                                                ? 'youtube' 
+                                                : isPdfLink(url) 
+                                                  ? 'pdf' 
+                                                  : isGoogleDriveLink(url) 
+                                                    ? 'drive' 
+                                                    : 'external'
+                                              : null;
+
+                                            // Phần còn lại của code xử lý cell ở đây
+                                            return (
+                                              // Giữ nguyên phần còn lại
+                                              <td 
+                                                key={cellIndex} 
+                                                className={`px-2 py-3 border-r border-gray-100 last:border-r-0 ${
+                                                  cellIndex === 0 
+                                                    ? 'font-semibold text-indigo-700 text-center bg-indigo-100 group-hover:bg-indigo-200 sticky left-0 z-10 min-w-[90px] w-auto shadow-lg border-r-2 border-gray-200 break-words text-sm hyphens-auto' 
+                                                    : `text-gray-700 content-cell ${
+                                                        !cellValue || cellValue.length < 30 
+                                                          ? 'short-content' 
+                                                          : cellValue.length < 100 
+                                                            ? 'medium-content' 
+                                                            : 'long-content'
+                                                      }`
+                                                }`}
+                                                title={cellValue || ''}
+                                              >
+                                                {cellIndex === 0 
+                                                  ? (
+                                                      <div className="break-words hyphens-auto text-center" title={cellValue || ''}>
+                                                        {cellValue ? formatDate(cellValue) : ''}
+                                                      </div>
+                                                    )
+                                                    : isLink
+                                                      ? (
+                                                          <a 
+                                                            onClick={(e) => {
+                                                              e.preventDefault();
+                                                              handleLinkClick(originalUrl, cellValue);
+                                                            }}
+                                                            href="#"
+                                                            data-type={linkType}
+                                                            className="inline-flex items-center text-indigo-600 font-medium hover:text-indigo-800 transition-colors duration-150 group cursor-pointer hover:underline"
+                                                            title={cellValue || (linkType === 'youtube' ? 'Video' : linkType === 'pdf' ? 'PDF' : 'Tài liệu')}
+                                                          >
+                                                            <span className="icon-container mr-1 flex-shrink-0">
+                                                              {linkType === 'youtube' ? (
+                                                                <span className="flex items-center justify-center h-6 w-6 rounded-full bg-red-100 text-red-600">
+                                                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                                                  </svg>
+                                                                </span>
+                                                              ) : linkType === 'pdf' ? (
+                                                                <span className="flex items-center justify-center h-6 w-6 rounded-full bg-pink-100 text-pink-600">
+                                                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M9 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
+                                                                  </svg>
+                                                                </span>
+                                                              ) : linkType === 'drive' ? (
+                                                                <span className="flex items-center justify-center h-6 w-6 rounded-full bg-green-100 text-green-600">
+                                                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
+                                                                  </svg>
+                                                                </span>
+                                                              ) : (
+                                                                <span className="flex items-center justify-center h-6 w-6 rounded-full bg-blue-100 text-blue-600">
+                                                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                                                  </svg>
+                                                                </span>
+                                                              )}
+                                                            </span>
+                                                            <span className="break-words whitespace-normal no-truncate text-sm" title={cellValue || ''}>
+                                                              {cellValue || (linkType === 'youtube' ? 'Video' : linkType === 'pdf' ? 'PDF' : 'Tài liệu')}
+                                                            </span>
+                                                          </a>
+                                                        ) 
+                                                      : (
+                                                          <span className="break-words whitespace-normal no-truncate text-sm" title={cellValue || ''}>
+                                                            {cellValue || ''}
+                                                          </span>
+                                                        )
+                                                }
+                                              </td>
+                                            );
+                                          })}
+                                        </tr>
+                                      );
+                                    })}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          );
+                        })()
+                      ) : (
+                        // Chế độ xem danh sách cho di động
+                        <div className="md:hidden">
+                          {(() => {
+                            const { rows, header, hasRows } = getSheetRows(sheets[activeSheet], activeSheet, usingSheetsData);
+                            
+                            if (!hasRows) {
+                              return (
+                                <div className="p-8 text-center text-gray-500">
+                                  Không có dữ liệu khóa học.
+                                </div>
+                              );
+                            }
+                            
+                            // Xác định hàng tiêu đề và dữ liệu dựa trên nguồn dữ liệu
+                            const headerRow = usingSheetsData ? header : (rows[0]?.values || []);
+                            const dataRows = usingSheetsData ? rows.slice(1) : rows.slice(1);
+                            
+                            return (
+                              <div className="divide-y divide-gray-200">
+                                {dataRows.map((row, rowIndex) => {
+                                  // Dữ liệu hàng dựa trên nguồn dữ liệu
+                                  const rowCells = usingSheetsData ? row : (row.values || []);
+                                  if (!rowCells || rowCells.length === 0) return null;
+                                  
+                                  // Lấy giá trị ô đầu tiên (thường là ngày/số buổi)
+                                  const firstCellValue = getCellValue(rowCells[0], usingSheetsData);
+                                  
+                                  return (
+                                    <div 
+                                      key={rowIndex} 
+                                      className="p-4 bg-white hover:bg-indigo-50 transition-colors duration-150 relative"
+                                    >
+                                      <div className="font-bold text-indigo-700 text-center mb-3 border-b border-indigo-100 pb-2">
+                                        {firstCellValue ? formatDate(firstCellValue) : `Buổi ${rowIndex + 1}`}
+                                      </div>
+                                      
+                                      <div className="space-y-3">
+                                        {rowCells.slice(1).map((cell, cellIndex) => {
+                                          // Bỏ qua các ô trống
+                                          const cellValue = getCellValue(cell, usingSheetsData);
+                                          if (!cellValue) return null;
+                                          
+                                          // Lấy tiêu đề cột
+                                          const headerValue = cellIndex + 1 < headerRow.length ? 
+                                            getCellValue(headerRow[cellIndex + 1], usingSheetsData) : 
+                                            `Cột ${cellIndex + 1}`;
+                                          
+                                          // Xác định URL liên kết nếu có
+                                          const originalUrl = getCellLink(cell, rowCells, rowIndex + 1, cellIndex + 1, usingSheetsData);
+                                          const { url } = getUpdatedUrl(originalUrl);
+                                          const isLink = !!url;
+                                          const linkType = isLink 
+                                            ? isYoutubeLink(url) 
+                                              ? 'youtube' 
+                                              : isPdfLink(url) 
+                                                ? 'pdf' 
+                                                : isGoogleDriveLink(url) 
+                                                  ? 'drive' 
+                                                  : 'external'
+                                            : null;
+                                            
+                                          return (
+                                            <div key={cellIndex} className="flex flex-col">
+                                              <div className="text-xs font-medium text-gray-500 mb-1">
+                                                {headerValue}:
                                               </div>
-                                            )
-                                            : isLink
-                                              ? (
+                                              <div>
+                                                {isLink ? (
                                                   <a 
                                                     onClick={(e) => {
                                                       e.preventDefault();
-                                                      handleLinkClick(originalUrl, cell.formattedValue);
+                                                      handleLinkClick(originalUrl, cellValue);
                                                     }}
                                                     href="#"
-                                                    data-type={linkType}
-                                                    className="inline-flex items-center text-indigo-600 font-medium hover:text-indigo-800 transition-colors duration-150 group cursor-pointer hover:underline"
-                                                    title={cell.formattedValue || (linkType === 'youtube' ? 'Video' : linkType === 'pdf' ? 'PDF' : 'Tài liệu')}
+                                                    className="inline-flex items-center text-indigo-600 font-medium hover:text-indigo-800"
                                                   >
-                                                    <span className="icon-container mr-1 flex-shrink-0">
-                                                      {linkType === 'youtube' ? (
-                                                        <span className="flex items-center justify-center h-6 w-6 rounded-full bg-red-100 text-red-600">
-                                                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <span className="icon-container mr-1">
+                                                      {linkType === 'youtube' && (
+                                                        <span className="text-red-600 inline-flex">
+                                                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
                                                           </svg>
                                                         </span>
-                                                      ) : linkType === 'pdf' ? (
-                                                        <span className="flex items-center justify-center h-6 w-6 rounded-full bg-pink-100 text-pink-600">
-                                                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                      )}
+                                                      {linkType === 'pdf' && (
+                                                        <span className="text-pink-600 inline-flex">
+                                                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M9 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
-                                                          </svg>
-                                                        </span>
-                                                      ) : linkType === 'drive' ? (
-                                                        <span className="flex items-center justify-center h-6 w-6 rounded-full bg-green-100 text-green-600">
-                                                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
-                                                          </svg>
-                                                        </span>
-                                                      ) : (
-                                                        <span className="flex items-center justify-center h-6 w-6 rounded-full bg-blue-100 text-blue-600">
-                                                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                                                           </svg>
                                                         </span>
                                                       )}
                                                     </span>
-                                                    <span className="break-words whitespace-normal no-truncate text-sm" title={cell.formattedValue || ''}>
-                                                      {cell.formattedValue || (linkType === 'youtube' ? 'Video' : linkType === 'pdf' ? 'PDF' : 'Tài liệu')}
-                                                    </span>
+                                                    {cellValue}
                                                   </a>
-                                                ) 
-                                              : (
-                                                  <span className="break-words whitespace-normal no-truncate text-sm" title={cell.formattedValue || ''}>
-                                                    {cell.formattedValue || ''}
+                                                ) : (
+                                                  <span className="text-gray-700">
+                                                    {cellValue}
                                                   </span>
-                                                )
-                                          }
-                                        </td>
-                                      );
-                                    })}
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
+                                                )}
+                                              </div>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            );
+                          })()}
                         </div>
-                      ) : (
-                        <div className="p-6 text-center">
-                          <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-indigo-100 text-indigo-500 mb-4">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                            </svg>
-                          </div>
-                          <h3 className="text-lg font-medium text-gray-800 mb-1">Không có dữ liệu</h3>
-                          <p className="text-gray-500 max-w-md mx-auto">
-                            Hiện không có thông tin buổi học nào được tìm thấy trong hệ thống.
-                          </p>
-                        </div>
-                      )
-                    ) : (
-                      /* Chế độ xem danh sách cho di động */
-                      <div className="md:hidden">
-                        {/* ... existing list view content ... */}
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
           </div>
         )}
         

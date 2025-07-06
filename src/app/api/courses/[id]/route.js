@@ -151,6 +151,12 @@ export async function GET(request, { params }) {
     if ((responseType === 'full' || responseType === 'auto') && 
         (!requireEnrollment || isEnrolled || canViewAllCourses)) {
       responseData.originalData = course.originalData;
+      
+      // Thêm dữ liệu sheets mới nếu có
+      if (course.sheetsData && course.sheetsData.length > 0) {
+        console.log(`[API] Trả về sheetsData với ${course.sheetsData.length} sheets`);
+        responseData.sheetsData = course.sheetsData;
+      }
     } else if (requireEnrollment && !isEnrolled && !canViewAllCourses && 
                (responseType === 'full' || responseType === 'auto')) {
       // Nếu yêu cầu đăng ký nhưng người dùng chưa đăng ký và không có quyền xem tất cả khóa học
