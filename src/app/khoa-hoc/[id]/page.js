@@ -403,18 +403,63 @@ export default function CourseDetailPage() {
   // Hàm lấy dữ liệu hàng và cột từ sheet
   const getSheetRows = (sheet, sheetIndex, useSheetData) => {
     if (useSheetData) {
-      // Lấy từ sheetsData
+      // Log cấu trúc dữ liệu gốc
+      console.log('Sheet data structure:', {
+        totalValues: sheet.values?.length,
+        headerLength: sheet.header?.length,
+        firstRow: sheet.values?.[0],
+        secondRow: sheet.values?.[1],
+        hyperlinks: sheet.hyperlinks?.slice(0, 3) // Chỉ log 3 hyperlinks đầu tiên
+      });
+
+      const header = sheet.header || [];
+      let rows = [];
+
+      if (sheet.values && Array.isArray(sheet.values)) {
+        // Bỏ qua row đầu tiên vì là header
+        rows = sheet.values.slice(1).map((row, idx) => {
+          console.log(`Processing row ${idx + 1}:`, row);
+          if (!Array.isArray(row)) return new Array(header.length).fill('');
+          
+          const normalizedRow = new Array(header.length).fill('');
+          row.forEach((cell, colIdx) => {
+            if (colIdx < header.length) {
+              normalizedRow[colIdx] = cell;
+            }
+          });
+          return normalizedRow;
+        });
+      }
+
       return {
-        rows: sheet.values || [],
-        header: sheet.header || [],
-        hasRows: !!(sheet.values && sheet.values.length > 0)
-      };
+        rows: rows,
+        header: header,
+        hasRows: rows.length > 0
+      }
     } else {
       // Lấy từ originalData.sheets
+      const header = sheet?.data?.[0]?.rowData?.[0]?.values || [];
+      let rows = [];
+
+      if (sheet?.data?.[0]?.rowData) {
+        // Bỏ qua row đầu tiên vì là header
+        rows = sheet.data[0].rowData.slice(1).map(row => {
+          const values = row.values || [];
+          const normalizedRow = new Array(header.length).fill('');
+          
+          values.forEach((cell, idx) => {
+            if (idx < header.length) {
+              normalizedRow[idx] = cell;
+            }
+          });
+          return normalizedRow;
+        });
+      }
+
       return {
-        rows: sheet?.data?.[0]?.rowData || [],
-        header: sheet?.data?.[0]?.rowData?.[0]?.values || [],
-        hasRows: !!(sheet?.data?.[0]?.rowData && sheet.data[0].rowData.length > 0)
+        rows: rows,
+        header: header,
+        hasRows: rows.length > 0
       };
     }
   };
@@ -1327,389 +1372,174 @@ export default function CourseDetailPage() {
               const { sheets, usingSheetsData } = getSheetData();
               if (sheets.length === 0) return null;
               
-              return (
-              <div className="mt-6 bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-                {/* Chọn khóa học khi có nhiều sheet */}
-                  {sheets.length > 1 && (
-                  <div className="border-b border-gray-200 px-4 sm:px-6 py-4 bg-gradient-to-r from-gray-50 to-white">
-                    <h3 className="text-base font-medium text-gray-800 mb-3 flex items-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
-                      </svg>
-                      Chọn khóa học:
-                    </h3>
-                    <div className="flex flex-wrap gap-2 overflow-x-auto pb-2">
-                        {sheets.map((sheet, index) => {
-                          // Lấy số dòng
-                          const { rows, hasRows } = getSheetRows(sheet, index, usingSheetsData);
-                          const rowCount = usingSheetsData ? 
-                            (rows.length - 1) || 0 : 
-                            (hasRows ? (rows.length - 1) || 0 : 0);
-                            
-                          return (
-                        <button
-                          key={index}
-                          onClick={() => setActiveSheet(index)}
-                          className={`
-                            px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap
-                            ${activeSheet === index 
-                              ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-md' 
-                              : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-                            }
-                          `}
-                        >
-                          <div className="flex items-center">
-                                <span>{getSheetTitle(index, sheets)}</span>
-                              <span className={`text-xs ml-2 px-2 py-0.5 rounded-full ${
-                                activeSheet === index ? 'bg-indigo-500 text-white' : 'bg-gray-100 text-gray-600'
-                              }`}>
-                                  {rowCount}
-                              </span>
-                          </div>
-                        </button>
-                          );
-                        })}
-                    </div>
+              // Lấy dữ liệu của sheet hiện tại
+              const { header, rows, hasRows } = getSheetRows(sheets[activeSheet], activeSheet, usingSheetsData);
+              
+              if (!hasRows) {
+                return (
+                  <div className="p-8 text-center text-gray-500">
+                    Không có dữ liệu khóa học.
                   </div>
-                )}
+                );
+              }
 
-                <div className="overflow-x-auto">
-                  {/* Hiển thị sheet được chọn */}
-                  <div key={activeSheet} className="mb-0">
-                    <div className="px-4 sm:px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-indigo-50 to-indigo-100 flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-2">
-                      <div className="font-medium text-gray-800 flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              return (
+                <div className="mt-6 bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                  {sheets.length > 1 && (
+                    <div className="border-b border-gray-200 px-4 sm:px-6 py-4 bg-gradient-to-r from-gray-50 to-white">
+                      <h3 className="text-base font-medium text-gray-800 mb-3 flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
                         </svg>
-                          <span className="font-bold text-indigo-800">{getSheetTitle(activeSheet, sheets)}</span>
-                      </div>
-                        <div className="text-sm bg-indigo-600 text-white px-3 py-1 rounded-full font-medium shadow-sm ml-7 sm:ml-0">
-                          {(() => {
-                            const { rows, hasRows } = getSheetRows(sheets[activeSheet], activeSheet, usingSheetsData);
+                        Chọn khóa học:
+                      </h3>
+                      <div className="flex flex-wrap gap-2 overflow-x-auto pb-2">
+                          {sheets.map((sheet, index) => {
+                            // Lấy số dòng
+                            const { rows, hasRows } = getSheetRows(sheet, index, usingSheetsData);
                             const rowCount = usingSheetsData ? 
                               (rows.length - 1) || 0 : 
                               (hasRows ? (rows.length - 1) || 0 : 0);
-                            return `Tổng số: ${rowCount} buổi`;
-                          })()}
-                        </div>
-                    </div>
-                    
-                    {/* Chọn chế độ xem cho thiết bị di động */}
-                    <div className="md:hidden pb-2 pt-1 px-2 flex items-center justify-between border-b border-gray-200">
-                      <div className="text-sm font-medium text-gray-700">Chế độ xem:</div>
-                      <div className="flex space-x-2">
-                        <button 
-                          onClick={() => setViewMode('table')}
-                          className={`px-3 py-1 text-xs rounded-md flex items-center ${
-                            viewMode === 'table' 
-                              ? 'bg-indigo-600 text-white' 
-                              : 'bg-gray-200 text-gray-700'
-                          }`}
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                          </svg>
-                          Bảng
-                        </button>
-                        <button 
-                          onClick={() => setViewMode('list')}
-                          className={`px-3 py-1 text-xs rounded-md flex items-center ${
-                            viewMode === 'list' 
-                              ? 'bg-indigo-600 text-white' 
-                              : 'bg-gray-200 text-gray-700'
-                          }`}
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-                          </svg>
-                          Danh sách
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Chế độ xem bảng */}
-                    {viewMode === 'table' ? (
-                        (() => {
-                          const { rows, header, hasRows } = getSheetRows(sheets[activeSheet], activeSheet, usingSheetsData);
-                          
-                          if (!hasRows) {
+                            
                             return (
-                              <div className="p-8 text-center text-gray-500">
-                                Không có dữ liệu khóa học.
-                              </div>
+                          <button
+                            key={index}
+                            onClick={() => setActiveSheet(index)}
+                            className={`
+                              px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap
+                              ${activeSheet === index 
+                                ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-md' 
+                                : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                              }
+                            `}
+                          >
+                            <div className="flex items-center">
+                                  <span>{getSheetTitle(index, sheets)}</span>
+                                <span className={`text-xs ml-2 px-2 py-0.5 rounded-full ${
+                                  activeSheet === index ? 'bg-indigo-500 text-white' : 'bg-gray-100 text-gray-600'
+                                }`}>
+                                    {rowCount}
+                                </span>
+                            </div>
+                          </button>
                             );
-                          }
-                          
-                          // Xác định hàng tiêu đề và dữ liệu dựa trên nguồn dữ liệu
-                          const headerRow = usingSheetsData ? header : (rows[0]?.values || []);
-                          const dataRows = usingSheetsData ? rows.slice(1) : rows.slice(1);
-                          
-                          return (
-                        <div className="relative">
-                          <div className="md:hidden bg-blue-50 p-2 border-b border-blue-100 flex items-center justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500 mr-2 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                            </svg>
-                            <span className="text-sm font-bold text-blue-700">Vuốt ngang để xem toàn bộ bảng</span>
-                          </div>
-                          <div className="overflow-x-auto pb-2" style={{ WebkitOverflowScrolling: 'touch', scrollbarWidth: 'thin' }}>
-                            <table className="w-full divide-y divide-gray-200 border-collapse" style={{ tableLayout: 'auto' }}>
-                              <thead>
-                                <tr className="bg-gradient-to-r from-indigo-600 to-indigo-700">
-                                      {headerRow.map((cell, index) => (
-                                    <th 
-                                      key={index} 
-                                      className={`px-2 py-3 text-left text-xs font-medium text-white uppercase tracking-wider ${
-                                        index === 0 
-                                        ? 'text-center min-w-[90px] w-auto break-words hyphens-auto sticky left-0 z-20 bg-indigo-700 shadow-lg border-r-2 border-indigo-500' 
-                                        : 'content-title min-w-[100px] max-w-[350px]'
-                                      }`}
-                                    >
-                                      <div className="flex items-center justify-between">
-                                            <span className="break-words">{getCellValue(cell, usingSheetsData)}</span>
-                                        {index > 0 && 
-                                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 ml-1 opacity-70 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
-                                          </svg>
-                                        }
-                                      </div>
-                                    </th>
-                                  ))}
-                                </tr>
-                              </thead>
-                              <tbody className="bg-white divide-y divide-gray-200">
-                                    {dataRows.map((row, rowIndex) => {
-                                      // Dữ liệu hàng dựa trên nguồn dữ liệu
-                                      const rowCells = usingSheetsData ? row : (row.values || []);
-                                      
-                                      return (
-                                  <tr 
-                                    key={rowIndex} 
-                                    className="group hover:bg-indigo-50 transition-colors duration-150"
-                                  >
-                                          {rowCells.map((cell, cellIndex) => {
-                                            // Xác định giá trị của ô
-                                            const cellValue = getCellValue(cell, usingSheetsData);
-                                            
-                                            // Xác định URL liên kết nếu có
-                                            const originalUrl = getCellLink(cell, rowCells, rowIndex + 1, cellIndex, usingSheetsData);
-                                            
-                                            // Debug cho các ô quan trọng
-                                            if (rowIndex === 0 && (cellIndex === 3 || cellIndex === 4)) {
-                                              console.log(`Kết quả URL cho ô [${rowIndex+1},${cellIndex}]:`, originalUrl);
-                                            }
-                                            
-                                      const { url } = getUpdatedUrl(originalUrl);
-                                            const isLink = !!url;
-                                      const linkType = isLink 
-                                        ? isYoutubeLink(url) 
-                                          ? 'youtube' 
-                                          : isPdfLink(url) 
-                                            ? 'pdf' 
-                                            : isGoogleDriveLink(url) 
-                                              ? 'drive' 
-                                              : 'external'
-                                        : null;
-                                      
-                                            // Phần còn lại của code xử lý cell ở đây
-                                          return (
-                                              // Giữ nguyên phần còn lại
-                                        <td 
-                                          key={cellIndex} 
-                                          className={`px-2 py-3 border-r border-gray-100 last:border-r-0 ${
-                                            cellIndex === 0 
-                                              ? 'font-semibold text-indigo-700 text-center bg-indigo-100 group-hover:bg-indigo-200 sticky left-0 z-10 min-w-[90px] w-auto shadow-lg border-r-2 border-gray-200 break-words text-sm hyphens-auto' 
-                                              : `text-gray-700 content-cell ${
-                                                        !cellValue || cellValue.length < 30 
-                                                    ? 'short-content' 
-                                                          : cellValue.length < 100 
-                                                      ? 'medium-content' 
-                                                      : 'long-content'
-                                                }`
-                                          }`}
-                                                title={cellValue || ''}
-                                        >
-                                          {cellIndex === 0 
-                                            ? (
-                                                      <div className="break-words hyphens-auto text-center" title={cellValue || ''}>
-                                                        {cellValue ? formatDate(cellValue) : ''}
-                                              </div>
-                                            )
-                                            : isLink
-                                              ? (
-                                                  <a 
-                                                    onClick={(e) => {
-                                                      e.preventDefault();
-                                                              handleLinkClick(originalUrl, cellValue);
-                                                    }}
-                                                    href="#"
-                                                    data-type={linkType}
-                                                    className="inline-flex items-center text-indigo-600 font-medium hover:text-indigo-800 transition-colors duration-150 group cursor-pointer hover:underline"
-                                                            title={cellValue || (linkType === 'youtube' ? 'Video' : linkType === 'pdf' ? 'PDF' : 'Tài liệu')}
-                                                  >
-                                                    <span className="icon-container mr-1 flex-shrink-0">
-                                                      {linkType === 'youtube' ? (
-                                                        <span className="flex items-center justify-center h-6 w-6 rounded-full bg-red-100 text-red-600">
-                                                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                                                          </svg>
-                                                        </span>
-                                                      ) : linkType === 'pdf' ? (
-                                                        <span className="flex items-center justify-center h-6 w-6 rounded-full bg-pink-100 text-pink-600">
-                                                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M9 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
-                                                          </svg>
-                                                        </span>
-                                                      ) : linkType === 'drive' ? (
-                                                        <span className="flex items-center justify-center h-6 w-6 rounded-full bg-green-100 text-green-600">
-                                                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
-                                                          </svg>
-                                                        </span>
-                                                      ) : (
-                                                        <span className="flex items-center justify-center h-6 w-6 rounded-full bg-blue-100 text-blue-600">
-                                                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                                          </svg>
-                                                        </span>
-                                                      )}
-                                                    </span>
-                                                            <span className="break-words whitespace-normal no-truncate text-sm" title={cellValue || ''}>
-                                                              {cellValue || (linkType === 'youtube' ? 'Video' : linkType === 'pdf' ? 'PDF' : 'Tài liệu')}
-                                                    </span>
-                                                  </a>
-                                                ) 
-                                              : (
-                                                          <span className="break-words whitespace-normal no-truncate text-sm" title={cellValue || ''}>
-                                                            {cellValue || ''}
-                                                  </span>
-                                                )
-                                          }
-                                        </td>
-                                      );
-                                    })}
-                                  </tr>
-                                      );
-                                    })}
-                              </tbody>
-                            </table>
-                          </div>
-                        </div>
-                          );
-                        })()
-                      ) : (
-                        // Chế độ xem danh sách cho di động
-                        <div className="md:hidden">
-                          {(() => {
-                            const { rows, header, hasRows } = getSheetRows(sheets[activeSheet], activeSheet, usingSheetsData);
-                            
-                            if (!hasRows) {
-                              return (
-                                <div className="p-8 text-center text-gray-500">
-                                  Không có dữ liệu khóa học.
-                          </div>
-                              );
-                            }
-                            
-                            // Xác định hàng tiêu đề và dữ liệu dựa trên nguồn dữ liệu
-                            const headerRow = usingSheetsData ? header : (rows[0]?.values || []);
-                            const dataRows = usingSheetsData ? rows.slice(1) : rows.slice(1);
-                            
-                            return (
-                              <div className="divide-y divide-gray-200">
-                                {dataRows.map((row, rowIndex) => {
-                                  // Dữ liệu hàng dựa trên nguồn dữ liệu
-                                  const rowCells = usingSheetsData ? row : (row.values || []);
-                                  if (!rowCells || rowCells.length === 0) return null;
-                                  
-                                  // Lấy giá trị ô đầu tiên (thường là ngày/số buổi)
-                                  const firstCellValue = getCellValue(rowCells[0], usingSheetsData);
-                                  
-                                  return (
-                                    <div 
-                                      key={rowIndex} 
-                                      className="p-4 bg-white hover:bg-indigo-50 transition-colors duration-150 relative"
-                                    >
-                                      <div className="font-bold text-indigo-700 text-center mb-3 border-b border-indigo-100 pb-2">
-                                        {firstCellValue ? formatDate(firstCellValue) : `Buổi ${rowIndex + 1}`}
-                        </div>
-                                      
-                                      <div className="space-y-3">
-                                        {rowCells.slice(1).map((cell, cellIndex) => {
-                                          // Bỏ qua các ô trống
-                                          const cellValue = getCellValue(cell, usingSheetsData);
-                                          if (!cellValue) return null;
-                                          
-                                          // Lấy tiêu đề cột
-                                          const headerValue = cellIndex + 1 < headerRow.length ? 
-                                            getCellValue(headerRow[cellIndex + 1], usingSheetsData) : 
-                                            `Cột ${cellIndex + 1}`;
-                                          
-                                          // Xác định URL liên kết nếu có
-                                          const originalUrl = getCellLink(cell, rowCells, rowIndex + 1, cellIndex + 1, usingSheetsData);
-                                          const { url } = getUpdatedUrl(originalUrl);
-                                          const isLink = !!url;
-                                          const linkType = isLink 
-                                            ? isYoutubeLink(url) 
-                                              ? 'youtube' 
-                                              : isPdfLink(url) 
-                                                ? 'pdf' 
-                                                : isGoogleDriveLink(url) 
-                                                  ? 'drive' 
-                                                  : 'external'
-                                            : null;
-                                            
-                                          return (
-                                            <div key={cellIndex} className="flex flex-col">
-                                              <div className="text-xs font-medium text-gray-500 mb-1">
-                                                {headerValue}:
+                          })}
                       </div>
-                                              <div>
-                                                {isLink ? (
-                                                  <a 
-                                                    onClick={(e) => {
-                                                      e.preventDefault();
-                                                      handleLinkClick(originalUrl, cellValue);
-                                                    }}
-                                                    href="#"
-                                                    className="inline-flex items-center text-indigo-600 font-medium hover:text-indigo-800"
-                                                  >
-                                                    <span className="icon-container mr-1">
-                                                      {linkType === 'youtube' && (
-                                                        <span className="text-red-600 inline-flex">
-                                                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                                                          </svg>
-                                                        </span>
-                                                      )}
-                                                      {linkType === 'pdf' && (
-                                                        <span className="text-pink-600 inline-flex">
-                                                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M9 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
-                                                          </svg>
-                                                        </span>
-                                                      )}
-                                                    </span>
-                                                    {cellValue}
-                                                  </a>
-                                                ) : (
-                                                  <span className="text-gray-700">
-                                                    {cellValue}
-                                                  </span>
-                    )}
-                  </div>
-                </div>
-                                          );
-                                        })}
-                                      </div>
-                                    </div>
+                    </div>
+                  )}
+
+                  <div className="overflow-x-auto">
+                    <div key={activeSheet} className="mb-0">
+                      <div className="px-4 sm:px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-indigo-50 to-indigo-100 flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-2">
+                        <div className="font-medium text-gray-800 flex items-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                          </svg>
+                            <span className="font-bold text-indigo-800">{getSheetTitle(activeSheet, sheets)}</span>
+                        </div>
+                          <div className="text-sm bg-indigo-600 text-white px-3 py-1 rounded-full font-medium shadow-sm ml-7 sm:ml-0">
+                            {(() => {
+                              const { rows, hasRows } = getSheetRows(sheets[activeSheet], activeSheet, usingSheetsData);
+                              const rowCount = usingSheetsData ? 
+                                (rows.length - 1) || 0 : 
+                                (hasRows ? (rows.length - 1) || 0 : 0);
+                              return `Tổng số: ${rowCount} buổi`;
+                            })()}
+                          </div>
+                      </div>
+                      
+                      <div className="relative overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200">
+                          <thead>
+                            <tr className="bg-gradient-to-r from-indigo-600 to-indigo-700">
+                              {header.map((headerCell, headerIndex) => (
+                                <th
+                                  key={headerIndex}
+                                  className={`
+                                    px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider
+                                    ${headerIndex === 0 ? 'sticky left-0 z-20 bg-indigo-700 min-w-[100px]' : 'min-w-[150px]'}
+                                  `}
+                                >
+                                  <div className="flex items-center space-x-1">
+                                    <span className="break-words">
+                                      {getCellValue(headerCell, usingSheetsData)}
+                                    </span>
+                                  </div>
+                                </th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200">
+                            {rows.map((row, rowIndex) => (
+                              <tr key={rowIndex} className="hover:bg-gray-50">
+                                {header.map((_, colIndex) => {
+                                  const cell = row[colIndex];
+                                  const cellValue = getCellValue(cell, usingSheetsData);
+                                  
+                                  // Debug log chi tiết hơn
+                                  if (colIndex === 3 || colIndex === 4) {
+                                    console.log(`Row ${rowIndex + 2} (actual position in sheet):`, {
+                                      rowIndexInCode: rowIndex,
+                                      adjustedRowIndex: rowIndex + 2,
+                                      colIndex,
+                                      cellValue,
+                                      cell
+                                    });
+                                  }
+
+                                  const originalUrl = getCellLink(
+                                    cell, 
+                                    row,
+                                    rowIndex, // Sử dụng trực tiếp rowIndex không cộng thêm
+                                    colIndex,
+                                    usingSheetsData
+                                  );
+
+                                  // Log khi tìm thấy URL
+                                  if (originalUrl) {
+                                    console.log(`Link found at position:`, {
+                                      rowIndex,
+                                      colIndex,
+                                      url: originalUrl
+                                    });
+                                  }
+
+                                  return (
+                                    <td
+                                      key={colIndex}
+                                      className={`
+                                        px-6 py-4 whitespace-nowrap text-sm
+                                        ${colIndex === 0 ? 'sticky left-0 bg-white z-10 font-medium text-indigo-600' : 'text-gray-900'}
+                                      `}
+                                    >
+                                      {colIndex === 0 ? (
+                                        // Cột đầu tiên - thường là ngày/buổi học
+                                        <div className="text-center">
+                                          {formatDate(cellValue)}
+                                        </div>
+                                      ) : originalUrl ? (
+                                        // Các ô có link
+                                        <button
+                                          onClick={() => handleLinkClick(originalUrl, cellValue)}
+                                          className="text-blue-600 hover:text-blue-800 hover:underline flex items-center space-x-1"
+                                        >
+                                          <span className="break-words">
+                                            {cellValue}
+                                          </span>
+                                        </button>
+                                      ) : cellValue ? ( // Chỉ hiển thị span nếu có giá trị
+                                        <span className="break-words">
+                                          {cellValue}
+                                        </span>
+                                      ) : null}
+                                    </td>
                                   );
                                 })}
-                              </div>
-                            );
-                          })()}
-              </div>
-            )}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1870,6 +1700,43 @@ export default function CourseDetailPage() {
         }
         .animate-fadeIn {
           animation: fadeIn 0.3s ease-out forwards;
+        }
+        .table-container {
+          position: relative;
+          overflow-x: auto;
+          overflow-y: visible;
+          margin: 0 -1rem;
+        }
+
+        table {
+          border-collapse: separate;
+          border-spacing: 0;
+          width: 100%;
+        }
+
+        th, td {
+          border-right: 1px solid #e5e7eb;
+          border-bottom: 1px solid #e5e7eb;
+        }
+
+        th:first-child,
+        td:first-child {
+          position: sticky;
+          left: 0;
+          z-index: 10;
+        }
+
+        th:first-child {
+          z-index: 20;
+        }
+
+        tr:hover td:first-child {
+          background-color: #f9fafb;
+        }
+
+        .break-words {
+          word-break: break-word;
+          white-space: normal;
         }
       `}</style>
     </div>
