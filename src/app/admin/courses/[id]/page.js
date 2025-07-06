@@ -1932,7 +1932,7 @@ const renderAddLinkField = (header, value) => {
       </p>
     </div>
   );
-};
+  };
 
   if (loading) {
     return (
@@ -2733,13 +2733,13 @@ const renderAddLinkField = (header, value) => {
         )}
         
         {/* PDF Modal */}
-        <PDFModal
+          <PDFModal
           isOpen={pdfModal.isOpen}
-          onClose={closePdfModal}
+            onClose={closePdfModal}
           fileUrl={pdfModal.fileUrl}
           title={pdfModal.title}
-        />
-
+          />
+        
         {/* Modal xử lý dữ liệu */}
         {showProcessModal && (
           <MediaProcessingModal

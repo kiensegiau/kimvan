@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
+import { useAuth } from '@/hooks/useAuth';
+import { decodeProxyLink, getUpdatedUrl } from '@/utils/proxy-utils';
 import { ArrowLeftIcon, CloudArrowDownIcon, ExclamationCircleIcon, XMarkIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
-import { use } from 'react';
-import YouTubeModal from '../components/YouTubeModal';
-import YouTubePlaylistModal from '../components/YouTubePlaylistModal';
-import PDFModal from '../components/PDFModal';
+import YouTubeModal from '@/app/khoa-hoc/components/YouTubeModal';
+import PDFModal from '@/app/khoa-hoc/components/PDFModal';
+import YouTubePlaylistModal from '@/app/khoa-hoc/components/YouTubePlaylistModal';
 import LoadingOverlay from '../components/LoadingOverlay';
 import CryptoJS from 'crypto-js';
 
@@ -15,10 +16,10 @@ const ENCRYPTION_KEY = 'kimvan-secure-key-2024';
 // Thời gian cache - 12 giờ tính bằng milliseconds
 const CACHE_DURATION = 12 * 60 * 60 * 1000;
 
-export default function CourseDetailPage({ params }) {
+export default function CourseDetailPage() {
   const router = useRouter();
-  const resolvedParams = use(params);
-  const id = resolvedParams.id;
+  const params = useParams();
+  const id = params?.id;
   
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -156,6 +157,31 @@ export default function CourseDetailPage({ params }) {
         try {
           // Giải mã toàn bộ đối tượng
           fullCourseData = decryptData(encryptedResponse._secureData);
+          
+          // Log để kiểm tra cấu trúc dữ liệu
+          console.log('Dữ liệu từ API - Các trường:', Object.keys(fullCourseData));
+          
+          // Kiểm tra sheetsData nếu có
+          if (fullCourseData.sheetsData) {
+            console.log('sheetsData có', fullCourseData.sheetsData.length, 'sheets');
+            
+            // Kiểm tra sheet đầu tiên
+            if (fullCourseData.sheetsData.length > 0) {
+              const firstSheet = fullCourseData.sheetsData[0];
+              console.log('Sheet đầu tiên - Các trường:', Object.keys(firstSheet));
+              
+              // Kiểm tra hyperlinks
+              if (firstSheet.hyperlinks) {
+                console.log('Số lượng hyperlinks:', firstSheet.hyperlinks.length);
+                if (firstSheet.hyperlinks.length > 0) {
+                  console.log('Mẫu hyperlink:', firstSheet.hyperlinks[0]);
+                }
+              } else {
+                console.log('Không tìm thấy hyperlinks trong sheet');
+              }
+            }
+          }
+          
           setCourse(fullCourseData);
           setPermissionChecked(true); // Đánh dấu đã kiểm tra quyền
           // Lưu vào cache
@@ -198,7 +224,8 @@ export default function CourseDetailPage({ params }) {
         saveToCache(fullCourseData);
       } else if (!encryptedResponse.originalData) {
         // Kiểm tra nếu không có dữ liệu gốc
-        setError("Khóa học không có dữ liệu. Vui lòng liên hệ quản trị viên.");
+        setError('Khóa học không có dữ liệu chi tiết.');
+        setPermissionChecked(true); // Đánh dấu đã kiểm tra quyền
         if (showLoading) setLoading(false);
         return;
       } else {
@@ -210,17 +237,17 @@ export default function CourseDetailPage({ params }) {
         saveToCache(fullCourseData);
       }
       
+      if (showLoading) setLoading(false);
+      
       // Hiệu ứng fade-in
       setTimeout(() => {
         setIsLoaded(true);
-      }, showLoading ? 100 : 0);
+      }, 50); // Giảm thời gian chờ xuống 50ms
       
-      if (showLoading) setLoading(false);
     } catch (error) {
-      if (showLoading) {
+      console.error('Lỗi khi lấy thông tin khóa học:', error);
         setError(`Không thể lấy thông tin khóa học: ${error.message}`);
-        setLoading(false);
-      }
+      if (showLoading) setLoading(false);
     }
   };
 
@@ -348,6 +375,15 @@ export default function CourseDetailPage({ params }) {
   const getSheetData = () => {
     // Ưu tiên sử dụng sheetsData nếu có
     if (course?.sheetsData && course.sheetsData.length > 0) {
+      console.log('Sử dụng sheetsData:', course.sheetsData.length, 'sheets');
+      
+      // Debug hyperlinks
+      if (course.sheetsData[0].hyperlinks) {
+        console.log('Cấu trúc hyperlinks:', course.sheetsData[0].hyperlinks.slice(0, 3));
+      } else {
+        console.log('Không tìm thấy hyperlinks trong sheetsData');
+      }
+      
       return {
         sheets: course.sheetsData,
         usingSheetsData: true
@@ -355,6 +391,7 @@ export default function CourseDetailPage({ params }) {
     } 
     // Backup: Sử dụng originalData.sheets nếu sheetsData không có
     else if (course?.originalData?.sheets && course.originalData.sheets.length > 0) {
+      console.log('Sử dụng originalData.sheets:', course.originalData.sheets.length, 'sheets');
       return {
         sheets: course.originalData.sheets,
         usingSheetsData: false
@@ -393,24 +430,413 @@ export default function CourseDetailPage({ params }) {
     }
   };
 
+  // Hàm trích xuất hyperlinks từ sheet data
+  const extractHyperlinks = (sheet) => {
+    // Mảng lưu trữ tất cả hyperlinks tìm thấy
+    const allLinks = [];
+    
+    // Kiểm tra nếu sheet có trường hyperlinks
+    if (sheet.hyperlinks && Array.isArray(sheet.hyperlinks)) {
+      // Log để debug cấu trúc hyperlinks
+      console.log('Cấu trúc hyperlinks:', sheet.hyperlinks);
+      
+      // Thêm tất cả hyperlinks vào mảng
+      allLinks.push(...sheet.hyperlinks);
+      
+      // Tạo các bản sao với định dạng khác để tăng khả năng tìm kiếm
+      sheet.hyperlinks.forEach(link => {
+        // Đảm bảo link có cả row và col
+        if (link.row !== undefined && link.col !== undefined) {
+          // Tạo bản sao với rowIndex và colIndex (một số API trả về dạng này)
+          allLinks.push({
+            ...link,
+            rowIndex: link.row,
+            colIndex: link.col
+          });
+          
+          // Tạo bản sao với key (một số API trả về dạng này)
+          allLinks.push({
+            ...link,
+            key: `${link.row},${link.col}`
+          });
+          
+          // Thêm bản sao với row và col dạng số (để xử lý trường hợp row/col là chuỗi)
+          allLinks.push({
+            ...link,
+            row: Number(link.row),
+            col: Number(link.col)
+          });
+        }
+      });
+    }
+    
+    // Kiểm tra nếu sheet có trường links
+    if (sheet.links && Array.isArray(sheet.links)) {
+      allLinks.push(...sheet.links);
+    }
+    
+    // Kiểm tra nếu sheet có trường hyperlinkMap
+    if (sheet.hyperlinkMap && typeof sheet.hyperlinkMap === 'object') {
+      Object.entries(sheet.hyperlinkMap).forEach(([key, url]) => {
+        allLinks.push({ key, url });
+      });
+    }
+    
+    // Kiểm tra nếu sheet có trường data với hyperlinks
+    if (sheet.data && Array.isArray(sheet.data) && sheet.data.length > 0) {
+      sheet.data.forEach(dataObj => {
+        if (dataObj.hyperlinks && Array.isArray(dataObj.hyperlinks)) {
+          allLinks.push(...dataObj.hyperlinks);
+        }
+      });
+    }
+    
+    // Kiểm tra nếu sheet có trường htmlData với hyperlinks
+    if (sheet.htmlData && typeof sheet.htmlData === 'string') {
+      // Tìm tất cả các thẻ <a> trong htmlData
+      const linkRegex = /<a\s+(?:[^>]*?\s+)?href=["']([^"']*)["'][^>]*>(.*?)<\/a>/g;
+      let match;
+      while ((match = linkRegex.exec(sheet.htmlData)) !== null) {
+        const url = match[1];
+        const text = match[2].replace(/<[^>]*>/g, ''); // Loại bỏ HTML tags
+        allLinks.push({ url, text });
+      }
+    }
+    
+    // Kiểm tra nếu sheet có trường optimizedHtmlData với hyperlinks
+    if (sheet.optimizedHtmlData && typeof sheet.optimizedHtmlData === 'string') {
+      // Tìm tất cả các thẻ <a> trong optimizedHtmlData
+      const linkRegex = /<a\s+(?:[^>]*?\s+)?href=["']([^"']*)["'][^>]*>(.*?)<\/a>/g;
+      let match;
+      while ((match = linkRegex.exec(sheet.optimizedHtmlData)) !== null) {
+        const url = match[1];
+        const text = match[2].replace(/<[^>]*>/g, ''); // Loại bỏ HTML tags
+        allLinks.push({ url, text });
+      }
+    }
+    
+    // Kiểm tra nếu sheet có trường values (mảng 2 chiều)
+    if (sheet.values && Array.isArray(sheet.values)) {
+      // Tạo bản đồ các ô có thể chứa URL
+      sheet.values.forEach((row, rowIdx) => {
+        if (Array.isArray(row)) {
+          row.forEach((cell, colIdx) => {
+            if (typeof cell === 'string' && (
+              cell.startsWith('http://') || 
+              cell.startsWith('https://') || 
+              cell.startsWith('www.')
+            )) {
+              allLinks.push({
+                row: rowIdx + 1, // Chuyển từ 0-based sang 1-based
+                col: colIdx,
+                rowIndex: rowIdx + 1,
+                colIndex: colIdx,
+                url: cell,
+                text: cell
+              });
+            }
+          });
+        }
+      });
+    }
+    
+    // Debug: Hiển thị các liên kết tìm thấy
+    console.log('Tất cả hyperlinks tìm thấy:', allLinks);
+    
+    return allLinks;
+  };
+
+  // Hàm kiểm tra xem một chuỗi có chứa URL không
+  const extractUrlFromText = (text) => {
+    if (!text || typeof text !== 'string') return null;
+    
+    // Regex để tìm URL trong văn bản
+    const urlRegex = /(https?:\/\/[^\s]+)|(www\.[^\s]+)/i;
+    const match = text.match(urlRegex);
+    
+    if (match) {
+      let url = match[0];
+      // Thêm http:// nếu URL bắt đầu bằng www.
+      if (url.startsWith('www.')) {
+        url = 'http://' + url;
+      }
+      return url;
+    }
+    
+    return null;
+  };
+
   // Hàm lấy URL liên kết từ ô trong bảng
   const getCellLink = (cell, cellData, rowIndex, cellIndex, useSheetData) => {
     if (useSheetData) {
+      // Debug thông tin cho các ô quan trọng
+      if (rowIndex === 1 && (cellIndex === 3 || cellIndex === 4)) {
+        console.log(`Kiểm tra ô quan trọng [${rowIndex},${cellIndex}]:`, cell);
+      }
+      
       // Lấy liên kết từ sheetsData (hyperlinks)
-      const hyperlinkKey = `${rowIndex},${cellIndex}`;
-      const hyperlink = course.sheetsData[activeSheet].hyperlinks?.find(h => 
-        h.key === hyperlinkKey || 
-        (h.rowIndex === rowIndex && h.colIndex === cellIndex)
-      );
-      return hyperlink?.url || null;
-    } else {
-      // Lấy liên kết từ originalData
-      return cell?.userEnteredFormat?.textFormat?.link?.uri || cell?.hyperlink || null;
+      if (course.sheetsData && course.sheetsData[activeSheet]) {
+        // Trích xuất tất cả hyperlinks từ sheet
+        const allLinks = extractHyperlinks(course.sheetsData[activeSheet]);
+        
+        if (allLinks.length > 0) {
+          // Log để debug
+          if (rowIndex === 1 && (cellIndex === 3 || cellIndex === 4)) {
+            console.log(`Tìm hyperlink cho ô [${rowIndex},${cellIndex}], allLinks:`, allLinks);
+          }
+          
+          // Tìm chính xác theo row và col (cấu trúc mới)
+          const hyperlinkByRowCol = allLinks.find(h => 
+            (h.row === rowIndex && h.col === cellIndex)
+          );
+          
+          if (hyperlinkByRowCol && hyperlinkByRowCol.url) {
+            console.log('Tìm thấy hyperlink theo row/col chính xác:', hyperlinkByRowCol);
+            return hyperlinkByRowCol.url;
+          }
+          
+          // Tìm theo row và col (có thể là số hoặc chuỗi)
+          const hyperlinkByRowColStr = allLinks.find(h => 
+            (String(h.row) === String(rowIndex) && String(h.col) === String(cellIndex))
+          );
+          
+          if (hyperlinkByRowColStr && hyperlinkByRowColStr.url) {
+            console.log('Tìm thấy hyperlink theo row/col (dạng chuỗi):', hyperlinkByRowColStr);
+            return hyperlinkByRowColStr.url;
+          }
+          
+          // Tìm theo row và col (index bắt đầu từ 0)
+          const hyperlinkByRowColZeroBased = allLinks.find(h => 
+            (h.row === rowIndex-1 && h.col === cellIndex-1)
+          );
+          
+          if (hyperlinkByRowColZeroBased && hyperlinkByRowColZeroBased.url) {
+            console.log('Tìm thấy hyperlink theo row/col (zero-based):', hyperlinkByRowColZeroBased);
+            return hyperlinkByRowColZeroBased.url;
+          }
+          
+          // Tạo các khóa tìm kiếm khác nhau (các định dạng có thể có)
+          const possibleKeys = [
+            `${rowIndex},${cellIndex}`,
+            `${rowIndex-1},${cellIndex-1}`, // Có thể index bắt đầu từ 0
+            `R${rowIndex}C${cellIndex}`,
+            `R${rowIndex-1}C${cellIndex-1}`
+          ];
+          
+          // Tìm theo key
+          for (const key of possibleKeys) {
+            const hyperlink = allLinks.find(h => h.key === key);
+            if (hyperlink && hyperlink.url) {
+              console.log('Tìm thấy hyperlink theo key:', key, hyperlink.url);
+              return hyperlink.url;
+            }
+          }
+          
+          // Tìm theo vị trí (cấu trúc cũ)
+          const hyperlinkByPosition = allLinks.find(h => 
+            (h.rowIndex === rowIndex && h.colIndex === cellIndex) ||
+            (h.rowIndex === rowIndex-1 && h.colIndex === cellIndex-1)
+          );
+          
+          if (hyperlinkByPosition && hyperlinkByPosition.url) {
+            console.log('Tìm thấy hyperlink theo rowIndex/colIndex:', hyperlinkByPosition);
+            return hyperlinkByPosition.url;
+          }
+          
+          // Tìm theo nội dung text
+          if (cell) {
+            const cellStr = String(cell);
+            const hyperlinkByText = allLinks.find(h => 
+              (h.text && (h.text === cellStr || cellStr.includes(h.text) || (h.text && h.text.includes(cellStr))))
+            );
+            
+            if (hyperlinkByText && hyperlinkByText.url) {
+              console.log('Tìm thấy hyperlink theo text:', hyperlinkByText);
+              return hyperlinkByText.url;
+            }
+          }
+        }
+      }
+      
+      // Kiểm tra xem cell có phải là URL không hoặc có chứa URL không
+      if (cell?.formattedValue) {
+        const extractedUrl = extractUrlFromText(cell.formattedValue);
+        if (extractedUrl) return extractedUrl;
+      }
+      
+      return null;
     }
   };
 
+  // Các hàm decodeProxyLink và getUpdatedUrl đã được import từ utils/proxy-utils.js
+
+  // Hàm xử lý khi click vào link
+  const handleLinkClick = async (url, title) => {
+    if (!url) return;
+    
+    // Kiểm tra xem có phải link proxy không
+    const { url: decodedUrl, isProxy, originalUrl } = getUpdatedUrl(url);
+    
+    if (!decodedUrl) return;
+    
+    setProcessingLink(true);
+    
+    try {
+      console.log('Xử lý link:', { originalUrl, decodedUrl, isProxy });
+      
+      // Xử lý theo loại link
+      if (isYoutubeLink(decodedUrl)) {
+        // Xử lý link YouTube
+        if (isYoutubePlaylist(decodedUrl)) {
+          // Trích xuất ID playlist và video
+          const playlistId = extractYoutubePlaylistId(decodedUrl);
+          const videoId = extractVideoIdFromPlaylist(decodedUrl);
+          
+          console.log('YouTube Playlist:', { playlistId, videoId });
+          
+          if (playlistId) {
+            // Mở modal playlist YouTube
+            setYoutubePlaylistModal({
+              isOpen: true,
+              playlistId,
+              videoId,
+              title: title || 'YouTube Playlist'
+            });
+          } else {
+            const videoId = extractYoutubeId(decodedUrl);
+            if (videoId) {
+              // Mở modal video YouTube
+              setYoutubeModal({
+                isOpen: true,
+                videoId,
+                title: title || 'YouTube Video'
+              });
+            } else {
+              // Nếu không thể trích xuất ID, sử dụng URL gốc
+              window.open(originalUrl, '_blank');
+            }
+          }
+        } else {
+          // Xử lý video YouTube thông thường
+          const videoId = extractYoutubeId(decodedUrl);
+          console.log('YouTube Video:', { videoId });
+          
+          if (videoId) {
+            // Mở modal video YouTube
+            setYoutubeModal({
+              isOpen: true,
+              videoId,
+              title: title || 'YouTube Video'
+            });
+          } else {
+            // Nếu không thể trích xuất ID, sử dụng URL gốc
+            window.open(originalUrl, '_blank');
+          }
+        }
+      } else if (isPdfLink(decodedUrl)) {
+        // Xử lý link PDF - mở trong modal
+        console.log('PDF:', decodedUrl);
+        setPdfModal({
+          isOpen: true,
+          fileUrl: isProxy ? originalUrl : decodedUrl, // Sử dụng URL proxy nếu có
+          title: title || 'PDF Document'
+        });
+      } else if (isGoogleDriveLink(decodedUrl)) {
+        // Xử lý link Google Drive
+        console.log('Google Drive:', decodedUrl);
+        
+        if (isGoogleDriveFolder(decodedUrl)) {
+          // Xử lý thư mục Google Drive (mở trong tab mới)
+          window.open(originalUrl, '_blank');
+        } else {
+          // Xử lý file Google Drive - mở trong modal PDF
+          setPdfModal({
+            isOpen: true,
+            fileUrl: isProxy ? originalUrl : decodedUrl, // Sử dụng URL proxy nếu có
+            title: title || 'Google Drive Document'
+          });
+        }
+      } else {
+        // Mở link khác trong tab mới, sử dụng URL proxy nếu có
+        console.log('External link:', decodedUrl);
+        window.open(isProxy ? originalUrl : decodedUrl, '_blank');
+      }
+    } catch (error) {
+      console.error('Lỗi khi xử lý link:', error);
+      alert(`Không thể mở liên kết: ${error.message}`);
+    } finally {
+      setProcessingLink(false);
+    }
+  };
+
+  // Hàm đăng ký khóa học - chỉ hiển thị thông báo
+  const enrollCourse = async () => {
+    alert('Chỉ quản trị viên mới có thể đăng ký khóa học cho người dùng. Vui lòng liên hệ quản trị viên để được hỗ trợ.');
+  };
+
+  // Tải thông tin khóa học khi component được tạo
+  useEffect(() => {
+    fetchCourseDetail();
+  }, [id]);
+
+  // Set sheet đầu tiên nếu có dữ liệu sheets
+  useEffect(() => {
+    if (course?.originalData?.sheets && course.originalData.sheets.length > 0) {
+      setActiveSheet(0);
+    }
+  }, [course]);
+
+  // Điều chỉnh kích thước cột dựa trên nội dung
+  useEffect(() => {
+    setTimeout(() => {
+      const adjustColumnWidths = () => {
+        const contentCells = document.querySelectorAll('.column-content');
+        
+        contentCells.forEach(cell => {
+          const textLength = cell.textContent?.trim().length || 0;
+          
+          if (textLength < 30) {
+            cell.style.width = 'fit-content';
+            cell.style.minWidth = '100px';
+            cell.style.maxWidth = '150px';
+          } else if (textLength < 100) {
+            cell.style.width = 'fit-content';
+            cell.style.minWidth = '150px';
+            cell.style.maxWidth = '250px';
+          } else {
+            cell.style.width = 'auto';
+            cell.style.minWidth = '200px';
+            cell.style.maxWidth = '350px';
+          }
+        });
+      };
+      
+      adjustColumnWidths();
+    }, 100);
+  }, [activeSheet, course]);
+
+  // Hàm format ngày tháng
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '';
+    
+    // Đảm bảo dateStr là chuỗi
+    const strValue = String(dateStr);
+    
+    // Tách ngày/tháng và năm
+    const parts = strValue.match(/^(\d{1,2}\/\d{1,2})\/(\d{4})$/);
+    if (parts) {
+      return (
+        <>
+          <div className="font-medium">{parts[1]}</div>
+          <div className="text-xs opacity-80">{parts[2]}</div>
+        </>
+      );
+    }
+    return strValue;
+  };
+
   // Hàm xử lý và thay thế link drive cũ bằng link mới từ processedDriveFiles
-  const getUpdatedUrl = (originalUrl) => {
+  const getProcessedDriveUrl = (originalUrl) => {
     if (!originalUrl) {
       return { url: originalUrl, isProcessed: false };
     }
@@ -573,6 +999,16 @@ export default function CourseDetailPage({ params }) {
     }
   };
   
+  // Hàm mở modal YouTube Playlist
+  const openYoutubePlaylistModal = (playlistId, videoId, title) => {
+    setYoutubePlaylistModal({ 
+      isOpen: true, 
+      playlistId, 
+      videoId, 
+      title 
+    });
+  };
+  
   // Hàm đóng modal YouTube
   const closeYoutubeModal = () => {
     setYoutubeModal({ isOpen: false, videoId: null, title: '' });
@@ -596,227 +1032,6 @@ export default function CourseDetailPage({ params }) {
   // Hàm đóng modal PDF
   const closePdfModal = () => {
     setPdfModal({ isOpen: false, fileUrl: null, title: '' });
-  };
-
-  // Hàm xử lý click vào link
-  const handleLinkClick = async (url, title) => {
-    if (!url) return;
-    
-    // Debug log
-    console.log('Clicked URL:', url);
-    console.log('Is YouTube Playlist:', isYoutubePlaylist(url));
-    
-    // Kiểm tra xem link đã được xử lý chưa
-    const processedUrlInfo = getUpdatedUrl(url);
-    
-    // Nếu là playlist YouTube, xử lý trực tiếp không cần qua API
-    if (isYoutubePlaylist(url)) {
-      console.log('Xử lý YouTube Playlist trực tiếp');
-      const playlistId = extractYoutubePlaylistId(url);
-      const videoId = extractVideoIdFromPlaylist(url);
-      
-      console.log('Playlist ID:', playlistId);
-      console.log('Video ID:', videoId);
-      
-      if (playlistId) {
-        setYoutubePlaylistModal({ 
-          isOpen: true, 
-          playlistId, 
-          videoId, 
-          title 
-        });
-        return;
-      }
-    }
-    
-    // Kiểm tra nếu là thư mục Google Drive thì mở link trực tiếp
-    if (isGoogleDriveFolder(processedUrlInfo.url)) {
-      window.open(processedUrlInfo.url, '_blank');
-      return;
-    }
-    
-    try {
-      // Hiển thị loading
-      setProcessingLink(true);
-
-      // Nếu là link Google Drive và chưa có URL mới
-      if (isGoogleDriveLink(url) && !processedUrlInfo.isProcessed && !isGoogleDriveFolder(url)) {
-        // Hiển thị modal thông báo đang cập nhật tài liệu
-        setPdfModal({ 
-          isOpen: true, 
-          fileUrl: null, 
-          title: title,
-          isUpdating: true
-        });
-        setProcessingLink(false);
-        return;
-      }
-      
-      // Gọi API để xử lý link
-      const response = await fetch('/api/links', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          url: processedUrlInfo.url, // Sử dụng URL đã được xử lý nếu có
-          type: isYoutubePlaylist(processedUrlInfo.url) ? 'youtube_playlist' :
-                isYoutubeLink(processedUrlInfo.url) ? 'youtube' : 
-                isPdfLink(processedUrlInfo.url) ? 'pdf' : 
-                isGoogleDriveLink(processedUrlInfo.url) ? 'drive' : 'external'
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Không thể xử lý link');
-      }
-
-      const data = await response.json();
-      const processedUrl = data.processedUrl;
-      const encryptedOriginalUrl = data.originalUrl; // Lưu URL đã mã hóa
-      
-      // Ẩn loading
-      setProcessingLink(false);
-      
-      // Mở link đã xử lý theo loại
-      if (isYoutubePlaylist(processedUrl)) {
-        const playlistId = extractYoutubePlaylistId(processedUrl);
-        const videoId = extractVideoIdFromPlaylist(processedUrl);
-        
-        if (playlistId) {
-          setYoutubePlaylistModal({ 
-            isOpen: true, 
-            playlistId, 
-            videoId, 
-            title 
-          });
-        } else {
-          openYoutubeModal(processedUrl, title);
-        }
-      } else if (isYoutubeLink(processedUrl)) {
-        openYoutubeModal(processedUrl, title);
-      } else if ((isPdfLink(processedUrl) || isGoogleDriveLink(processedUrl)) && !isGoogleDriveFolder(processedUrl)) {
-        setPdfModal({ 
-          isOpen: true, 
-          fileUrl: processedUrl, 
-          title: title,
-          isUpdating: false
-        });
-      } else {
-        // Sử dụng API để chuyển hướng thay vì mở link trực tiếp
-        window.open(`/api/links?url=${encodeURIComponent(encryptedOriginalUrl)}`, '_blank');
-      }
-    } catch (error) {
-      console.error('Lỗi khi xử lý link:', error);
-      // Ẩn loading
-      setProcessingLink(false);
-      
-      // Mở URL với thông tin đã xử lý
-      if (isYoutubePlaylist(processedUrlInfo.url)) {
-        const playlistId = extractYoutubePlaylistId(processedUrlInfo.url);
-        const videoId = extractVideoIdFromPlaylist(processedUrlInfo.url);
-        
-        if (playlistId) {
-          setYoutubePlaylistModal({ 
-            isOpen: true, 
-            playlistId, 
-            videoId, 
-            title 
-          });
-        } else {
-          openYoutubeModal(processedUrlInfo.url, title);
-        }
-      } else if (isYoutubeLink(processedUrlInfo.url)) {
-        openYoutubeModal(processedUrlInfo.url, title);
-      } else if (isGoogleDriveFolder(processedUrlInfo.url)) {
-        window.open(processedUrlInfo.url, '_blank');
-      } else if (isPdfLink(processedUrlInfo.url) || isGoogleDriveLink(processedUrlInfo.url)) {
-        // Nếu là Google Drive và chưa có URL đã xử lý, hiển thị thông báo đang cập nhật
-        if (isGoogleDriveLink(processedUrlInfo.url) && !processedUrlInfo.isProcessed) {
-          setPdfModal({ 
-            isOpen: true, 
-            fileUrl: null, 
-            title: title,
-            isUpdating: true
-          });
-        } else {
-          setPdfModal({ 
-            isOpen: true, 
-            fileUrl: processedUrlInfo.url, 
-            title: title,
-            isUpdating: false
-          });
-        }
-      } else {
-        window.open(processedUrlInfo.url, '_blank');
-      }
-    }
-  };
-
-  // Hàm đăng ký khóa học - chỉ hiển thị thông báo
-  const enrollCourse = async () => {
-    alert('Chỉ quản trị viên mới có thể đăng ký khóa học cho người dùng. Vui lòng liên hệ quản trị viên để được hỗ trợ.');
-  };
-
-  // Tải thông tin khóa học khi component được tạo
-  useEffect(() => {
-    fetchCourseDetail();
-  }, [id]);
-
-  // Set sheet đầu tiên nếu có dữ liệu sheets
-  useEffect(() => {
-    if (course?.originalData?.sheets && course.originalData.sheets.length > 0) {
-      setActiveSheet(0);
-    }
-  }, [course]);
-
-  // Điều chỉnh kích thước cột dựa trên nội dung
-  useEffect(() => {
-    setTimeout(() => {
-      const adjustColumnWidths = () => {
-        const contentCells = document.querySelectorAll('.column-content');
-        
-        contentCells.forEach(cell => {
-          const textLength = cell.textContent?.trim().length || 0;
-          
-          if (textLength < 30) {
-            cell.style.width = 'fit-content';
-            cell.style.minWidth = '100px';
-            cell.style.maxWidth = '150px';
-          } else if (textLength < 100) {
-            cell.style.width = 'fit-content';
-            cell.style.minWidth = '150px';
-            cell.style.maxWidth = '250px';
-          } else {
-            cell.style.width = 'auto';
-            cell.style.minWidth = '200px';
-            cell.style.maxWidth = '350px';
-          }
-        });
-      };
-      
-      adjustColumnWidths();
-    }, 100);
-  }, [activeSheet, course]);
-
-  // Hàm format ngày tháng
-  const formatDate = (dateStr) => {
-    if (!dateStr) return '';
-    
-    // Đảm bảo dateStr là chuỗi
-    const strValue = String(dateStr);
-    
-    // Tách ngày/tháng và năm
-    const parts = strValue.match(/^(\d{1,2}\/\d{1,2})\/(\d{4})$/);
-    if (parts) {
-      return (
-        <>
-          <div className="font-medium">{parts[1]}</div>
-          <div className="text-xs opacity-80">{parts[2]}</div>
-        </>
-      );
-    }
-    return strValue;
   };
 
   if (loading) {
@@ -1113,17 +1328,17 @@ export default function CourseDetailPage({ params }) {
               if (sheets.length === 0) return null;
               
               return (
-                <div className="mt-6 bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-                  {/* Chọn khóa học khi có nhiều sheet */}
+              <div className="mt-6 bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                {/* Chọn khóa học khi có nhiều sheet */}
                   {sheets.length > 1 && (
-                    <div className="border-b border-gray-200 px-4 sm:px-6 py-4 bg-gradient-to-r from-gray-50 to-white">
-                      <h3 className="text-base font-medium text-gray-800 mb-3 flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
-                        </svg>
-                        Chọn khóa học:
-                      </h3>
-                      <div className="flex flex-wrap gap-2 overflow-x-auto pb-2">
+                  <div className="border-b border-gray-200 px-4 sm:px-6 py-4 bg-gradient-to-r from-gray-50 to-white">
+                    <h3 className="text-base font-medium text-gray-800 mb-3 flex items-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
+                      </svg>
+                      Chọn khóa học:
+                    </h3>
+                    <div className="flex flex-wrap gap-2 overflow-x-auto pb-2">
                         {sheets.map((sheet, index) => {
                           // Lấy số dòng
                           const { rows, hasRows } = getSheetRows(sheet, index, usingSheetsData);
@@ -1132,42 +1347,42 @@ export default function CourseDetailPage({ params }) {
                             (hasRows ? (rows.length - 1) || 0 : 0);
                             
                           return (
-                            <button
-                              key={index}
-                              onClick={() => setActiveSheet(index)}
-                              className={`
-                                px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap
-                                ${activeSheet === index 
-                                  ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-md' 
-                                  : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-                                }
-                              `}
-                            >
-                              <div className="flex items-center">
+                        <button
+                          key={index}
+                          onClick={() => setActiveSheet(index)}
+                          className={`
+                            px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap
+                            ${activeSheet === index 
+                              ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-md' 
+                              : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                            }
+                          `}
+                        >
+                          <div className="flex items-center">
                                 <span>{getSheetTitle(index, sheets)}</span>
-                                <span className={`text-xs ml-2 px-2 py-0.5 rounded-full ${
-                                  activeSheet === index ? 'bg-indigo-500 text-white' : 'bg-gray-100 text-gray-600'
-                                }`}>
+                              <span className={`text-xs ml-2 px-2 py-0.5 rounded-full ${
+                                activeSheet === index ? 'bg-indigo-500 text-white' : 'bg-gray-100 text-gray-600'
+                              }`}>
                                   {rowCount}
-                                </span>
-                              </div>
-                            </button>
+                              </span>
+                          </div>
+                        </button>
                           );
                         })}
-                      </div>
                     </div>
-                  )}
+                  </div>
+                )}
 
-                  <div className="overflow-x-auto">
-                    {/* Hiển thị sheet được chọn */}
-                    <div key={activeSheet} className="mb-0">
-                      <div className="px-4 sm:px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-indigo-50 to-indigo-100 flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-2">
-                        <div className="font-medium text-gray-800 flex items-center">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                          </svg>
+                <div className="overflow-x-auto">
+                  {/* Hiển thị sheet được chọn */}
+                  <div key={activeSheet} className="mb-0">
+                    <div className="px-4 sm:px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-indigo-50 to-indigo-100 flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-2">
+                      <div className="font-medium text-gray-800 flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                        </svg>
                           <span className="font-bold text-indigo-800">{getSheetTitle(activeSheet, sheets)}</span>
-                        </div>
+                      </div>
                         <div className="text-sm bg-indigo-600 text-white px-3 py-1 rounded-full font-medium shadow-sm ml-7 sm:ml-0">
                           {(() => {
                             const { rows, hasRows } = getSheetRows(sheets[activeSheet], activeSheet, usingSheetsData);
@@ -1177,43 +1392,43 @@ export default function CourseDetailPage({ params }) {
                             return `Tổng số: ${rowCount} buổi`;
                           })()}
                         </div>
+                    </div>
+                    
+                    {/* Chọn chế độ xem cho thiết bị di động */}
+                    <div className="md:hidden pb-2 pt-1 px-2 flex items-center justify-between border-b border-gray-200">
+                      <div className="text-sm font-medium text-gray-700">Chế độ xem:</div>
+                      <div className="flex space-x-2">
+                        <button 
+                          onClick={() => setViewMode('table')}
+                          className={`px-3 py-1 text-xs rounded-md flex items-center ${
+                            viewMode === 'table' 
+                              ? 'bg-indigo-600 text-white' 
+                              : 'bg-gray-200 text-gray-700'
+                          }`}
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          </svg>
+                          Bảng
+                        </button>
+                        <button 
+                          onClick={() => setViewMode('list')}
+                          className={`px-3 py-1 text-xs rounded-md flex items-center ${
+                            viewMode === 'list' 
+                              ? 'bg-indigo-600 text-white' 
+                              : 'bg-gray-200 text-gray-700'
+                          }`}
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                          </svg>
+                          Danh sách
+                        </button>
                       </div>
-                      
-                      {/* Chọn chế độ xem cho thiết bị di động */}
-                      <div className="md:hidden pb-2 pt-1 px-2 flex items-center justify-between border-b border-gray-200">
-                        <div className="text-sm font-medium text-gray-700">Chế độ xem:</div>
-                        <div className="flex space-x-2">
-                          <button 
-                            onClick={() => setViewMode('table')}
-                            className={`px-3 py-1 text-xs rounded-md flex items-center ${
-                              viewMode === 'table' 
-                                ? 'bg-indigo-600 text-white' 
-                                : 'bg-gray-200 text-gray-700'
-                            }`}
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                            </svg>
-                            Bảng
-                          </button>
-                          <button 
-                            onClick={() => setViewMode('list')}
-                            className={`px-3 py-1 text-xs rounded-md flex items-center ${
-                              viewMode === 'list' 
-                                ? 'bg-indigo-600 text-white' 
-                                : 'bg-gray-200 text-gray-700'
-                            }`}
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-                            </svg>
-                            Danh sách
-                          </button>
-                        </div>
-                      </div>
+                    </div>
 
-                      {/* Chế độ xem bảng */}
-                      {viewMode === 'table' ? (
+                    {/* Chế độ xem bảng */}
+                    {viewMode === 'table' ? (
                         (() => {
                           const { rows, header, hasRows } = getSheetRows(sheets[activeSheet], activeSheet, usingSheetsData);
                           
@@ -1230,150 +1445,156 @@ export default function CourseDetailPage({ params }) {
                           const dataRows = usingSheetsData ? rows.slice(1) : rows.slice(1);
                           
                           return (
-                            <div className="relative">
-                              <div className="md:hidden bg-blue-50 p-2 border-b border-blue-100 flex items-center justify-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500 mr-2 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                                </svg>
-                                <span className="text-sm font-bold text-blue-700">Vuốt ngang để xem toàn bộ bảng</span>
-                              </div>
-                              <div className="overflow-x-auto pb-2" style={{ WebkitOverflowScrolling: 'touch', scrollbarWidth: 'thin' }}>
-                                <table className="w-full divide-y divide-gray-200 border-collapse" style={{ tableLayout: 'auto' }}>
-                                  <thead>
-                                    <tr className="bg-gradient-to-r from-indigo-600 to-indigo-700">
+                        <div className="relative">
+                          <div className="md:hidden bg-blue-50 p-2 border-b border-blue-100 flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500 mr-2 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                            </svg>
+                            <span className="text-sm font-bold text-blue-700">Vuốt ngang để xem toàn bộ bảng</span>
+                          </div>
+                          <div className="overflow-x-auto pb-2" style={{ WebkitOverflowScrolling: 'touch', scrollbarWidth: 'thin' }}>
+                            <table className="w-full divide-y divide-gray-200 border-collapse" style={{ tableLayout: 'auto' }}>
+                              <thead>
+                                <tr className="bg-gradient-to-r from-indigo-600 to-indigo-700">
                                       {headerRow.map((cell, index) => (
-                                        <th 
-                                          key={index} 
-                                          className={`px-2 py-3 text-left text-xs font-medium text-white uppercase tracking-wider ${
-                                            index === 0 
-                                              ? 'text-center min-w-[90px] w-auto break-words hyphens-auto sticky left-0 z-20 bg-indigo-700 shadow-lg border-r-2 border-indigo-500' 
-                                              : 'content-title min-w-[100px] max-w-[350px]'
-                                          }`}
-                                        >
-                                          <div className="flex items-center justify-between">
+                                    <th 
+                                      key={index} 
+                                      className={`px-2 py-3 text-left text-xs font-medium text-white uppercase tracking-wider ${
+                                        index === 0 
+                                        ? 'text-center min-w-[90px] w-auto break-words hyphens-auto sticky left-0 z-20 bg-indigo-700 shadow-lg border-r-2 border-indigo-500' 
+                                        : 'content-title min-w-[100px] max-w-[350px]'
+                                      }`}
+                                    >
+                                      <div className="flex items-center justify-between">
                                             <span className="break-words">{getCellValue(cell, usingSheetsData)}</span>
-                                            {index > 0 && 
-                                              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 ml-1 opacity-70 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
-                                              </svg>
-                                            }
-                                          </div>
-                                        </th>
-                                      ))}
-                                    </tr>
-                                  </thead>
-                                  <tbody className="bg-white divide-y divide-gray-200">
+                                        {index > 0 && 
+                                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 ml-1 opacity-70 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
+                                          </svg>
+                                        }
+                                      </div>
+                                    </th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody className="bg-white divide-y divide-gray-200">
                                     {dataRows.map((row, rowIndex) => {
                                       // Dữ liệu hàng dựa trên nguồn dữ liệu
                                       const rowCells = usingSheetsData ? row : (row.values || []);
                                       
                                       return (
-                                        <tr 
-                                          key={rowIndex} 
-                                          className="group hover:bg-indigo-50 transition-colors duration-150"
-                                        >
+                                  <tr 
+                                    key={rowIndex} 
+                                    className="group hover:bg-indigo-50 transition-colors duration-150"
+                                  >
                                           {rowCells.map((cell, cellIndex) => {
                                             // Xác định giá trị của ô
                                             const cellValue = getCellValue(cell, usingSheetsData);
                                             
                                             // Xác định URL liên kết nếu có
                                             const originalUrl = getCellLink(cell, rowCells, rowIndex + 1, cellIndex, usingSheetsData);
-                                            const { url } = getUpdatedUrl(originalUrl);
+                                            
+                                            // Debug cho các ô quan trọng
+                                            if (rowIndex === 0 && (cellIndex === 3 || cellIndex === 4)) {
+                                              console.log(`Kết quả URL cho ô [${rowIndex+1},${cellIndex}]:`, originalUrl);
+                                            }
+                                            
+                                      const { url } = getUpdatedUrl(originalUrl);
                                             const isLink = !!url;
-                                            const linkType = isLink 
-                                              ? isYoutubeLink(url) 
-                                                ? 'youtube' 
-                                                : isPdfLink(url) 
-                                                  ? 'pdf' 
-                                                  : isGoogleDriveLink(url) 
-                                                    ? 'drive' 
-                                                    : 'external'
-                                              : null;
-
+                                      const linkType = isLink 
+                                        ? isYoutubeLink(url) 
+                                          ? 'youtube' 
+                                          : isPdfLink(url) 
+                                            ? 'pdf' 
+                                            : isGoogleDriveLink(url) 
+                                              ? 'drive' 
+                                              : 'external'
+                                        : null;
+                                      
                                             // Phần còn lại của code xử lý cell ở đây
-                                            return (
+                                          return (
                                               // Giữ nguyên phần còn lại
-                                              <td 
-                                                key={cellIndex} 
-                                                className={`px-2 py-3 border-r border-gray-100 last:border-r-0 ${
-                                                  cellIndex === 0 
-                                                    ? 'font-semibold text-indigo-700 text-center bg-indigo-100 group-hover:bg-indigo-200 sticky left-0 z-10 min-w-[90px] w-auto shadow-lg border-r-2 border-gray-200 break-words text-sm hyphens-auto' 
-                                                    : `text-gray-700 content-cell ${
+                                        <td 
+                                          key={cellIndex} 
+                                          className={`px-2 py-3 border-r border-gray-100 last:border-r-0 ${
+                                            cellIndex === 0 
+                                              ? 'font-semibold text-indigo-700 text-center bg-indigo-100 group-hover:bg-indigo-200 sticky left-0 z-10 min-w-[90px] w-auto shadow-lg border-r-2 border-gray-200 break-words text-sm hyphens-auto' 
+                                              : `text-gray-700 content-cell ${
                                                         !cellValue || cellValue.length < 30 
-                                                          ? 'short-content' 
+                                                    ? 'short-content' 
                                                           : cellValue.length < 100 
-                                                            ? 'medium-content' 
-                                                            : 'long-content'
-                                                      }`
-                                                }`}
+                                                      ? 'medium-content' 
+                                                      : 'long-content'
+                                                }`
+                                          }`}
                                                 title={cellValue || ''}
-                                              >
-                                                {cellIndex === 0 
-                                                  ? (
+                                        >
+                                          {cellIndex === 0 
+                                            ? (
                                                       <div className="break-words hyphens-auto text-center" title={cellValue || ''}>
                                                         {cellValue ? formatDate(cellValue) : ''}
-                                                      </div>
-                                                    )
-                                                    : isLink
-                                                      ? (
-                                                          <a 
-                                                            onClick={(e) => {
-                                                              e.preventDefault();
+                                              </div>
+                                            )
+                                            : isLink
+                                              ? (
+                                                  <a 
+                                                    onClick={(e) => {
+                                                      e.preventDefault();
                                                               handleLinkClick(originalUrl, cellValue);
-                                                            }}
-                                                            href="#"
-                                                            data-type={linkType}
-                                                            className="inline-flex items-center text-indigo-600 font-medium hover:text-indigo-800 transition-colors duration-150 group cursor-pointer hover:underline"
+                                                    }}
+                                                    href="#"
+                                                    data-type={linkType}
+                                                    className="inline-flex items-center text-indigo-600 font-medium hover:text-indigo-800 transition-colors duration-150 group cursor-pointer hover:underline"
                                                             title={cellValue || (linkType === 'youtube' ? 'Video' : linkType === 'pdf' ? 'PDF' : 'Tài liệu')}
-                                                          >
-                                                            <span className="icon-container mr-1 flex-shrink-0">
-                                                              {linkType === 'youtube' ? (
-                                                                <span className="flex items-center justify-center h-6 w-6 rounded-full bg-red-100 text-red-600">
-                                                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                                                                  </svg>
-                                                                </span>
-                                                              ) : linkType === 'pdf' ? (
-                                                                <span className="flex items-center justify-center h-6 w-6 rounded-full bg-pink-100 text-pink-600">
-                                                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M9 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
-                                                                  </svg>
-                                                                </span>
-                                                              ) : linkType === 'drive' ? (
-                                                                <span className="flex items-center justify-center h-6 w-6 rounded-full bg-green-100 text-green-600">
-                                                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
-                                                                  </svg>
-                                                                </span>
-                                                              ) : (
-                                                                <span className="flex items-center justify-center h-6 w-6 rounded-full bg-blue-100 text-blue-600">
-                                                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                                                  </svg>
-                                                                </span>
-                                                              )}
-                                                            </span>
+                                                  >
+                                                    <span className="icon-container mr-1 flex-shrink-0">
+                                                      {linkType === 'youtube' ? (
+                                                        <span className="flex items-center justify-center h-6 w-6 rounded-full bg-red-100 text-red-600">
+                                                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                                          </svg>
+                                                        </span>
+                                                      ) : linkType === 'pdf' ? (
+                                                        <span className="flex items-center justify-center h-6 w-6 rounded-full bg-pink-100 text-pink-600">
+                                                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M9 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
+                                                          </svg>
+                                                        </span>
+                                                      ) : linkType === 'drive' ? (
+                                                        <span className="flex items-center justify-center h-6 w-6 rounded-full bg-green-100 text-green-600">
+                                                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
+                                                          </svg>
+                                                        </span>
+                                                      ) : (
+                                                        <span className="flex items-center justify-center h-6 w-6 rounded-full bg-blue-100 text-blue-600">
+                                                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                                          </svg>
+                                                        </span>
+                                                      )}
+                                                    </span>
                                                             <span className="break-words whitespace-normal no-truncate text-sm" title={cellValue || ''}>
                                                               {cellValue || (linkType === 'youtube' ? 'Video' : linkType === 'pdf' ? 'PDF' : 'Tài liệu')}
-                                                            </span>
-                                                          </a>
-                                                        ) 
-                                                      : (
+                                                    </span>
+                                                  </a>
+                                                ) 
+                                              : (
                                                           <span className="break-words whitespace-normal no-truncate text-sm" title={cellValue || ''}>
                                                             {cellValue || ''}
-                                                          </span>
-                                                        )
-                                                }
-                                              </td>
-                                            );
-                                          })}
-                                        </tr>
+                                                  </span>
+                                                )
+                                          }
+                                        </td>
                                       );
                                     })}
-                                  </tbody>
-                                </table>
-                              </div>
-                            </div>
+                                  </tr>
+                                      );
+                                    })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
                           );
                         })()
                       ) : (
@@ -1386,7 +1607,7 @@ export default function CourseDetailPage({ params }) {
                               return (
                                 <div className="p-8 text-center text-gray-500">
                                   Không có dữ liệu khóa học.
-                                </div>
+                          </div>
                               );
                             }
                             
@@ -1411,7 +1632,7 @@ export default function CourseDetailPage({ params }) {
                                     >
                                       <div className="font-bold text-indigo-700 text-center mb-3 border-b border-indigo-100 pb-2">
                                         {firstCellValue ? formatDate(firstCellValue) : `Buổi ${rowIndex + 1}`}
-                                      </div>
+                        </div>
                                       
                                       <div className="space-y-3">
                                         {rowCells.slice(1).map((cell, cellIndex) => {
@@ -1442,7 +1663,7 @@ export default function CourseDetailPage({ params }) {
                                             <div key={cellIndex} className="flex flex-col">
                                               <div className="text-xs font-medium text-gray-500 mb-1">
                                                 {headerValue}:
-                                              </div>
+                      </div>
                                               <div>
                                                 {isLink ? (
                                                   <a 
@@ -1475,9 +1696,9 @@ export default function CourseDetailPage({ params }) {
                                                   <span className="text-gray-700">
                                                     {cellValue}
                                                   </span>
-                                                )}
-                                              </div>
-                                            </div>
+                    )}
+                  </div>
+                </div>
                                           );
                                         })}
                                       </div>
@@ -1487,8 +1708,8 @@ export default function CourseDetailPage({ params }) {
                               </div>
                             );
                           })()}
-                        </div>
-                      )}
+              </div>
+            )}
                     </div>
                   </div>
                 </div>
