@@ -1985,9 +1985,9 @@
         {
           "userEnteredFormat": {
             "backgroundColor": {
-              "red": 0.78039217,
-              "green": 0.8235294,
-              "blue": 0.99607843
+              "red": 0.8784314,
+              "green": 0.90588236,
+              "blue": 1
             },
             "borders": {
               "right": {
@@ -2026,17 +2026,17 @@
             },
             "backgroundColorStyle": {
               "rgbColor": {
-                "red": 0.78039217,
-                "green": 0.8235294,
-                "blue": 0.99607843
+                "red": 0.8784314,
+                "green": 0.90588236,
+                "blue": 1
               }
             }
           },
           "effectiveFormat": {
             "backgroundColor": {
-              "red": 0.78039217,
-              "green": 0.8235294,
-              "blue": 0.99607843
+              "red": 0.8784314,
+              "green": 0.90588236,
+              "blue": 1
             },
             "borders": {
               "right": {
@@ -2087,9 +2087,9 @@
             },
             "backgroundColorStyle": {
               "rgbColor": {
-                "red": 0.78039217,
-                "green": 0.8235294,
-                "blue": 0.99607843
+                "red": 0.8784314,
+                "green": 0.90588236,
+                "blue": 1
               }
             }
           }
@@ -2097,8 +2097,8 @@
         {
           "userEnteredFormat": {
             "backgroundColor": {
-              "red": 0.93333334,
-              "green": 0.9490196,
+              "red": 1,
+              "green": 1,
               "blue": 1
             },
             "borders": {
@@ -2138,16 +2138,16 @@
             },
             "backgroundColorStyle": {
               "rgbColor": {
-                "red": 0.93333334,
-                "green": 0.9490196,
+                "red": 1,
+                "green": 1,
                 "blue": 1
               }
             }
           },
           "effectiveFormat": {
             "backgroundColor": {
-              "red": 0.93333334,
-              "green": 0.9490196,
+              "red": 1,
+              "green": 1,
               "blue": 1
             },
             "borders": {
@@ -2198,8 +2198,8 @@
             },
             "backgroundColorStyle": {
               "rgbColor": {
-                "red": 0.93333334,
-                "green": 0.9490196,
+                "red": 1,
+                "green": 1,
                 "blue": 1
               }
             }
@@ -2208,8 +2208,8 @@
         {
           "userEnteredFormat": {
             "backgroundColor": {
-              "red": 0.93333334,
-              "green": 0.9490196,
+              "red": 1,
+              "green": 1,
               "blue": 1
             },
             "borders": {
@@ -2249,16 +2249,16 @@
             },
             "backgroundColorStyle": {
               "rgbColor": {
-                "red": 0.93333334,
-                "green": 0.9490196,
+                "red": 1,
+                "green": 1,
                 "blue": 1
               }
             }
           },
           "effectiveFormat": {
             "backgroundColor": {
-              "red": 0.93333334,
-              "green": 0.9490196,
+              "red": 1,
+              "green": 1,
               "blue": 1
             },
             "borders": {
@@ -2309,8 +2309,8 @@
             },
             "backgroundColorStyle": {
               "rgbColor": {
-                "red": 0.93333334,
-                "green": 0.9490196,
+                "red": 1,
+                "green": 1,
                 "blue": 1
               }
             }
@@ -2319,8 +2319,8 @@
         {
           "userEnteredFormat": {
             "backgroundColor": {
-              "red": 0.93333334,
-              "green": 0.9490196,
+              "red": 1,
+              "green": 1,
               "blue": 1
             },
             "borders": {
@@ -2360,16 +2360,16 @@
             },
             "backgroundColorStyle": {
               "rgbColor": {
-                "red": 0.93333334,
-                "green": 0.9490196,
+                "red": 1,
+                "green": 1,
                 "blue": 1
               }
             }
           },
           "effectiveFormat": {
             "backgroundColor": {
-              "red": 0.93333334,
-              "green": 0.9490196,
+              "red": 1,
+              "green": 1,
               "blue": 1
             },
             "borders": {
@@ -2420,8 +2420,8 @@
             },
             "backgroundColorStyle": {
               "rgbColor": {
-                "red": 0.93333334,
-                "green": 0.9490196,
+                "red": 1,
+                "green": 1,
                 "blue": 1
               }
             }
@@ -2430,8 +2430,8 @@
         {
           "userEnteredFormat": {
             "backgroundColor": {
-              "red": 0.93333334,
-              "green": 0.9490196,
+              "red": 1,
+              "green": 1,
               "blue": 1
             },
             "borders": {
@@ -2471,16 +2471,16 @@
             },
             "backgroundColorStyle": {
               "rgbColor": {
-                "red": 0.93333334,
-                "green": 0.9490196,
+                "red": 1,
+                "green": 1,
                 "blue": 1
               }
             }
           },
           "effectiveFormat": {
             "backgroundColor": {
-              "red": 0.93333334,
-              "green": 0.9490196,
+              "red": 1,
+              "green": 1,
               "blue": 1
             },
             "borders": {
@@ -2531,8 +2531,8 @@
             },
             "backgroundColorStyle": {
               "rgbColor": {
-                "red": 0.93333334,
-                "green": 0.9490196,
+                "red": 1,
+                "green": 1,
                 "blue": 1
               }
             }
@@ -2541,8 +2541,8 @@
         {
           "userEnteredFormat": {
             "backgroundColor": {
-              "red": 0.93333334,
-              "green": 0.9490196,
+              "red": 1,
+              "green": 1,
               "blue": 1
             },
             "borders": {
@@ -2582,16 +2582,16 @@
             },
             "backgroundColorStyle": {
               "rgbColor": {
-                "red": 0.93333334,
-                "green": 0.9490196,
+                "red": 1,
+                "green": 1,
                 "blue": 1
               }
             }
           },
           "effectiveFormat": {
             "backgroundColor": {
-              "red": 0.93333334,
-              "green": 0.9490196,
+              "red": 1,
+              "green": 1,
               "blue": 1
             },
             "borders": {
@@ -2642,8 +2642,8 @@
             },
             "backgroundColorStyle": {
               "rgbColor": {
-                "red": 0.93333334,
-                "green": 0.9490196,
+                "red": 1,
+                "green": 1,
                 "blue": 1
               }
             }
@@ -2652,8 +2652,8 @@
         {
           "userEnteredFormat": {
             "backgroundColor": {
-              "red": 0.93333334,
-              "green": 0.9490196,
+              "red": 1,
+              "green": 1,
               "blue": 1
             },
             "borders": {
@@ -2693,16 +2693,16 @@
             },
             "backgroundColorStyle": {
               "rgbColor": {
-                "red": 0.93333334,
-                "green": 0.9490196,
+                "red": 1,
+                "green": 1,
                 "blue": 1
               }
             }
           },
           "effectiveFormat": {
             "backgroundColor": {
-              "red": 0.93333334,
-              "green": 0.9490196,
+              "red": 1,
+              "green": 1,
               "blue": 1
             },
             "borders": {
@@ -2753,8 +2753,8 @@
             },
             "backgroundColorStyle": {
               "rgbColor": {
-                "red": 0.93333334,
-                "green": 0.9490196,
+                "red": 1,
+                "green": 1,
                 "blue": 1
               }
             }
@@ -2763,8 +2763,8 @@
         {
           "userEnteredFormat": {
             "backgroundColor": {
-              "red": 0.93333334,
-              "green": 0.9490196,
+              "red": 1,
+              "green": 1,
               "blue": 1
             },
             "borders": {
@@ -2804,16 +2804,16 @@
             },
             "backgroundColorStyle": {
               "rgbColor": {
-                "red": 0.93333334,
-                "green": 0.9490196,
+                "red": 1,
+                "green": 1,
                 "blue": 1
               }
             }
           },
           "effectiveFormat": {
             "backgroundColor": {
-              "red": 0.93333334,
-              "green": 0.9490196,
+              "red": 1,
+              "green": 1,
               "blue": 1
             },
             "borders": {
@@ -2864,8 +2864,8 @@
             },
             "backgroundColorStyle": {
               "rgbColor": {
-                "red": 0.93333334,
-                "green": 0.9490196,
+                "red": 1,
+                "green": 1,
                 "blue": 1
               }
             }
@@ -2874,8 +2874,8 @@
         {
           "userEnteredFormat": {
             "backgroundColor": {
-              "red": 0.93333334,
-              "green": 0.9490196,
+              "red": 1,
+              "green": 1,
               "blue": 1
             },
             "wrapStrategy": "WRAP",
@@ -2897,16 +2897,16 @@
             },
             "backgroundColorStyle": {
               "rgbColor": {
-                "red": 0.93333334,
-                "green": 0.9490196,
+                "red": 1,
+                "green": 1,
                 "blue": 1
               }
             }
           },
           "effectiveFormat": {
             "backgroundColor": {
-              "red": 0.93333334,
-              "green": 0.9490196,
+              "red": 1,
+              "green": 1,
               "blue": 1
             },
             "padding": {
@@ -2939,8 +2939,8 @@
             },
             "backgroundColorStyle": {
               "rgbColor": {
-                "red": 0.93333334,
-                "green": 0.9490196,
+                "red": 1,
+                "green": 1,
                 "blue": 1
               }
             }
@@ -2960,9 +2960,9 @@
           "formattedValue": "TDPXX12_Định luật I của nhiệt động lực học",
           "userEnteredFormat": {
             "backgroundColor": {
-              "red": 0.8784314,
-              "green": 0.90588236,
-              "blue": 1
+              "red": 0.78039217,
+              "green": 0.8235294,
+              "blue": 0.99607843
             },
             "horizontalAlignment": "CENTER",
             "wrapStrategy": "WRAP",
@@ -2983,17 +2983,17 @@
             },
             "backgroundColorStyle": {
               "rgbColor": {
-                "red": 0.8784314,
-                "green": 0.90588236,
-                "blue": 1
+                "red": 0.78039217,
+                "green": 0.8235294,
+                "blue": 0.99607843
               }
             }
           },
           "effectiveFormat": {
             "backgroundColor": {
-              "red": 0.8784314,
-              "green": 0.90588236,
-              "blue": 1
+              "red": 0.78039217,
+              "green": 0.8235294,
+              "blue": 0.99607843
             },
             "padding": {
               "top": 2,
@@ -3027,9 +3027,9 @@
             "hyperlinkDisplayType": "PLAIN_TEXT",
             "backgroundColorStyle": {
               "rgbColor": {
-                "red": 0.8784314,
-                "green": 0.90588236,
-                "blue": 1
+                "red": 0.78039217,
+                "green": 0.8235294,
+                "blue": 0.99607843
               }
             }
           }
@@ -3171,8 +3171,8 @@
           "formattedValue": "Định luật I của nhiệt động lực học",
           "userEnteredFormat": {
             "backgroundColor": {
-              "red": 1,
-              "green": 1,
+              "red": 0.93333334,
+              "green": 0.9490196,
               "blue": 1
             },
             "wrapStrategy": "WRAP",
@@ -3193,16 +3193,16 @@
             },
             "backgroundColorStyle": {
               "rgbColor": {
-                "red": 1,
-                "green": 1,
+                "red": 0.93333334,
+                "green": 0.9490196,
                 "blue": 1
               }
             }
           },
           "effectiveFormat": {
             "backgroundColor": {
-              "red": 1,
-              "green": 1,
+              "red": 0.93333334,
+              "green": 0.9490196,
               "blue": 1
             },
             "padding": {
@@ -3237,8 +3237,8 @@
             "hyperlinkDisplayType": "PLAIN_TEXT",
             "backgroundColorStyle": {
               "rgbColor": {
-                "red": 1,
-                "green": 1,
+                "red": 0.93333334,
+                "green": 0.9490196,
                 "blue": 1
               }
             }
@@ -3381,8 +3381,8 @@
           "formattedValue": "Không có",
           "userEnteredFormat": {
             "backgroundColor": {
-              "red": 1,
-              "green": 1,
+              "red": 0.93333334,
+              "green": 0.9490196,
               "blue": 1
             },
             "wrapStrategy": "WRAP",
@@ -3403,16 +3403,16 @@
             },
             "backgroundColorStyle": {
               "rgbColor": {
-                "red": 1,
-                "green": 1,
+                "red": 0.93333334,
+                "green": 0.9490196,
                 "blue": 1
               }
             }
           },
           "effectiveFormat": {
             "backgroundColor": {
-              "red": 1,
-              "green": 1,
+              "red": 0.93333334,
+              "green": 0.9490196,
               "blue": 1
             },
             "padding": {
@@ -3447,8 +3447,8 @@
             "hyperlinkDisplayType": "PLAIN_TEXT",
             "backgroundColorStyle": {
               "rgbColor": {
-                "red": 1,
-                "green": 1,
+                "red": 0.93333334,
+                "green": 0.9490196,
                 "blue": 1
               }
             }
@@ -3580,6 +3580,414 @@
               "format": {}
             }
           ]
+        },
+        {
+          "userEnteredFormat": {
+            "backgroundColor": {
+              "red": 0.93333334,
+              "green": 0.9490196,
+              "blue": 1
+            },
+            "borders": {
+              "right": {
+                "style": "SOLID",
+                "width": 1,
+                "color": {
+                  "red": 0.9529412,
+                  "green": 0.95686275,
+                  "blue": 0.9647059
+                },
+                "colorStyle": {
+                  "rgbColor": {
+                    "red": 0.9529412,
+                    "green": 0.95686275,
+                    "blue": 0.9647059
+                  }
+                }
+              }
+            },
+            "wrapStrategy": "WRAP",
+            "textFormat": {
+              "foregroundColor": {
+                "red": 0.21568628,
+                "green": 0.25490198,
+                "blue": 0.31764707
+              },
+              "fontFamily": "Inter, \"Inter Fallback\"",
+              "fontSize": 12,
+              "foregroundColorStyle": {
+                "rgbColor": {
+                  "red": 0.21568628,
+                  "green": 0.25490198,
+                  "blue": 0.31764707
+                }
+              }
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 0.93333334,
+                "green": 0.9490196,
+                "blue": 1
+              }
+            }
+          },
+          "effectiveFormat": {
+            "backgroundColor": {
+              "red": 0.93333334,
+              "green": 0.9490196,
+              "blue": 1
+            },
+            "borders": {
+              "right": {
+                "style": "SOLID",
+                "width": 1,
+                "color": {
+                  "red": 0.9529412,
+                  "green": 0.95686275,
+                  "blue": 0.9647059
+                },
+                "colorStyle": {
+                  "rgbColor": {
+                    "red": 0.9529412,
+                    "green": 0.95686275,
+                    "blue": 0.9647059
+                  }
+                }
+              }
+            },
+            "padding": {
+              "top": 2,
+              "right": 3,
+              "bottom": 2,
+              "left": 3
+            },
+            "verticalAlignment": "BOTTOM",
+            "wrapStrategy": "WRAP",
+            "textFormat": {
+              "foregroundColor": {
+                "red": 0.21568628,
+                "green": 0.25490198,
+                "blue": 0.31764707
+              },
+              "fontFamily": "Inter, \"Inter Fallback\"",
+              "fontSize": 12,
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "foregroundColorStyle": {
+                "rgbColor": {
+                  "red": 0.21568628,
+                  "green": 0.25490198,
+                  "blue": 0.31764707
+                }
+              }
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 0.93333334,
+                "green": 0.9490196,
+                "blue": 1
+              }
+            }
+          }
+        },
+        {
+          "userEnteredFormat": {
+            "backgroundColor": {
+              "red": 0.93333334,
+              "green": 0.9490196,
+              "blue": 1
+            },
+            "borders": {
+              "right": {
+                "style": "SOLID",
+                "width": 1,
+                "color": {
+                  "red": 0.9529412,
+                  "green": 0.95686275,
+                  "blue": 0.9647059
+                },
+                "colorStyle": {
+                  "rgbColor": {
+                    "red": 0.9529412,
+                    "green": 0.95686275,
+                    "blue": 0.9647059
+                  }
+                }
+              }
+            },
+            "wrapStrategy": "WRAP",
+            "textFormat": {
+              "foregroundColor": {
+                "red": 0.21568628,
+                "green": 0.25490198,
+                "blue": 0.31764707
+              },
+              "fontFamily": "Inter, \"Inter Fallback\"",
+              "fontSize": 12,
+              "foregroundColorStyle": {
+                "rgbColor": {
+                  "red": 0.21568628,
+                  "green": 0.25490198,
+                  "blue": 0.31764707
+                }
+              }
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 0.93333334,
+                "green": 0.9490196,
+                "blue": 1
+              }
+            }
+          },
+          "effectiveFormat": {
+            "backgroundColor": {
+              "red": 0.93333334,
+              "green": 0.9490196,
+              "blue": 1
+            },
+            "borders": {
+              "right": {
+                "style": "SOLID",
+                "width": 1,
+                "color": {
+                  "red": 0.9529412,
+                  "green": 0.95686275,
+                  "blue": 0.9647059
+                },
+                "colorStyle": {
+                  "rgbColor": {
+                    "red": 0.9529412,
+                    "green": 0.95686275,
+                    "blue": 0.9647059
+                  }
+                }
+              }
+            },
+            "padding": {
+              "top": 2,
+              "right": 3,
+              "bottom": 2,
+              "left": 3
+            },
+            "verticalAlignment": "BOTTOM",
+            "wrapStrategy": "WRAP",
+            "textFormat": {
+              "foregroundColor": {
+                "red": 0.21568628,
+                "green": 0.25490198,
+                "blue": 0.31764707
+              },
+              "fontFamily": "Inter, \"Inter Fallback\"",
+              "fontSize": 12,
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "foregroundColorStyle": {
+                "rgbColor": {
+                  "red": 0.21568628,
+                  "green": 0.25490198,
+                  "blue": 0.31764707
+                }
+              }
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 0.93333334,
+                "green": 0.9490196,
+                "blue": 1
+              }
+            }
+          }
+        },
+        {
+          "userEnteredFormat": {
+            "backgroundColor": {
+              "red": 0.93333334,
+              "green": 0.9490196,
+              "blue": 1
+            },
+            "borders": {
+              "right": {
+                "style": "SOLID",
+                "width": 1,
+                "color": {
+                  "red": 0.9529412,
+                  "green": 0.95686275,
+                  "blue": 0.9647059
+                },
+                "colorStyle": {
+                  "rgbColor": {
+                    "red": 0.9529412,
+                    "green": 0.95686275,
+                    "blue": 0.9647059
+                  }
+                }
+              }
+            },
+            "wrapStrategy": "WRAP",
+            "textFormat": {
+              "foregroundColor": {
+                "red": 0.21568628,
+                "green": 0.25490198,
+                "blue": 0.31764707
+              },
+              "fontFamily": "Inter, \"Inter Fallback\"",
+              "fontSize": 12,
+              "foregroundColorStyle": {
+                "rgbColor": {
+                  "red": 0.21568628,
+                  "green": 0.25490198,
+                  "blue": 0.31764707
+                }
+              }
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 0.93333334,
+                "green": 0.9490196,
+                "blue": 1
+              }
+            }
+          },
+          "effectiveFormat": {
+            "backgroundColor": {
+              "red": 0.93333334,
+              "green": 0.9490196,
+              "blue": 1
+            },
+            "borders": {
+              "right": {
+                "style": "SOLID",
+                "width": 1,
+                "color": {
+                  "red": 0.9529412,
+                  "green": 0.95686275,
+                  "blue": 0.9647059
+                },
+                "colorStyle": {
+                  "rgbColor": {
+                    "red": 0.9529412,
+                    "green": 0.95686275,
+                    "blue": 0.9647059
+                  }
+                }
+              }
+            },
+            "padding": {
+              "top": 2,
+              "right": 3,
+              "bottom": 2,
+              "left": 3
+            },
+            "verticalAlignment": "BOTTOM",
+            "wrapStrategy": "WRAP",
+            "textFormat": {
+              "foregroundColor": {
+                "red": 0.21568628,
+                "green": 0.25490198,
+                "blue": 0.31764707
+              },
+              "fontFamily": "Inter, \"Inter Fallback\"",
+              "fontSize": 12,
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "foregroundColorStyle": {
+                "rgbColor": {
+                  "red": 0.21568628,
+                  "green": 0.25490198,
+                  "blue": 0.31764707
+                }
+              }
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 0.93333334,
+                "green": 0.9490196,
+                "blue": 1
+              }
+            }
+          }
+        },
+        {
+          "userEnteredFormat": {
+            "backgroundColor": {
+              "red": 0.93333334,
+              "green": 0.9490196,
+              "blue": 1
+            },
+            "wrapStrategy": "WRAP",
+            "textFormat": {
+              "foregroundColor": {
+                "red": 0.21568628,
+                "green": 0.25490198,
+                "blue": 0.31764707
+              },
+              "fontFamily": "Inter, \"Inter Fallback\"",
+              "fontSize": 12,
+              "foregroundColorStyle": {
+                "rgbColor": {
+                  "red": 0.21568628,
+                  "green": 0.25490198,
+                  "blue": 0.31764707
+                }
+              }
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 0.93333334,
+                "green": 0.9490196,
+                "blue": 1
+              }
+            }
+          },
+          "effectiveFormat": {
+            "backgroundColor": {
+              "red": 0.93333334,
+              "green": 0.9490196,
+              "blue": 1
+            },
+            "padding": {
+              "top": 2,
+              "right": 3,
+              "bottom": 2,
+              "left": 3
+            },
+            "verticalAlignment": "BOTTOM",
+            "wrapStrategy": "WRAP",
+            "textFormat": {
+              "foregroundColor": {
+                "red": 0.21568628,
+                "green": 0.25490198,
+                "blue": 0.31764707
+              },
+              "fontFamily": "Inter, \"Inter Fallback\"",
+              "fontSize": 12,
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "foregroundColorStyle": {
+                "rgbColor": {
+                  "red": 0.21568628,
+                  "green": 0.25490198,
+                  "blue": 0.31764707
+                }
+              }
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 0.93333334,
+                "green": 0.9490196,
+                "blue": 1
+              }
+            }
+          }
         }
       ]
     }
@@ -3587,5 +3995,5 @@
   "range": "'Trang tính1'!A1:Z1000",
   "majorDimension": "ROWS",
   "merges": [],
-  "fetchedAt": 1751738229440
+  "fetchedAt": 1751738216032
 }

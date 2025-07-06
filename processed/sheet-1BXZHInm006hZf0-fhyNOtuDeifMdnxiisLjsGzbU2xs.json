@@ -88,7 +88,7 @@
       "TÀI LIỆU"
     ],
     [
-      "",
+      9,
       45818,
       "0105 - Nội năng và Định luật 1 Nhiệt động lực học",
       "LIVE",
@@ -98,7 +98,7 @@
       "CHỮA TEST"
     ],
     [
-      "",
+      10,
       45820,
       "0106 - Động cơ nhiệt",
       "LIVE",
@@ -108,7 +108,7 @@
       "CHỮA TEST"
     ],
     [
-      "",
+      11,
       45822,
       "Luyện tập 0105: Nội năng và Định luật I của nhiệt động lực học",
       "LIVE",
@@ -116,7 +116,7 @@
       "BÀI GIẢNG"
     ],
     [
-      "",
+      12,
       45825,
       "Vật Lí Nhiệt - 0107 - Nhiệt Dung Riêng",
       "LIVE",
@@ -125,13 +125,13 @@
       "THI ONLINE"
     ],
     [
-      "",
+      13,
       45827,
       "Chữa bài thi online 0107 - Nhiệt dung riêng",
       "LIVE"
     ],
     [
-      "",
+      14,
       45829,
       "",
       "LIVE",
@@ -140,27 +140,27 @@
       "THI ONLINE"
     ],
     [
-      "",
+      15,
       45830,
       "Đề Kiểm Tra Toàn Diện Chương 1 - Thầy VNA - Đề Số 2",
       "LIVE",
       "TÀI LIỆU"
     ],
     [
-      "",
+      16,
       45834,
       "0106 - Luyện tập trao đổi nhiệt - chữa bài thi online",
       "LIVE"
     ],
     [
-      "",
+      17,
       45836,
       "0108 - Nhiệt nóng chảy riêng",
       "LIVE",
       "TÀI LIỆU"
     ],
     [
-      "",
+      18,
       45837,
       "Đề Kiểm Tra Toàn Diện Chương 1 - Thầy VNA - Đề Số 3 - Kết thúc Tháng 6",
       "",
@@ -15042,9 +15042,44 @@
     {
       "values": [
         {
+          "userEnteredValue": {
+            "numberValue": 9
+          },
+          "effectiveValue": {
+            "numberValue": 9
+          },
+          "formattedValue": "9",
           "userEnteredFormat": {
             "numberFormat": {
               "type": "NUMBER"
+            },
+            "backgroundColor": {
+              "red": 0.8784314,
+              "green": 0.90588236,
+              "blue": 1
+            },
+            "wrapStrategy": "WRAP",
+            "textFormat": {
+              "foregroundColor": {
+                "red": 0.2627451,
+                "green": 0.21960784,
+                "blue": 0.7921569
+              },
+              "fontFamily": "Inter, \"Inter Fallback\"",
+              "foregroundColorStyle": {
+                "rgbColor": {
+                  "red": 0.2627451,
+                  "green": 0.21960784,
+                  "blue": 0.7921569
+                }
+              }
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 0.8784314,
+                "green": 0.90588236,
+                "blue": 1
+              }
             }
           },
           "effectiveFormat": {
@@ -15052,8 +15087,8 @@
               "type": "NUMBER"
             },
             "backgroundColor": {
-              "red": 1,
-              "green": 1,
+              "red": 0.8784314,
+              "green": 0.90588236,
               "blue": 1
             },
             "borders": {
@@ -15061,14 +15096,14 @@
                 "style": "SOLID",
                 "width": 1,
                 "color": {
-                  "red": 1,
-                  "green": 1,
+                  "red": 0.8784314,
+                  "green": 0.90588236,
                   "blue": 1
                 },
                 "colorStyle": {
                   "rgbColor": {
-                    "red": 1,
-                    "green": 1,
+                    "red": 0.8784314,
+                    "green": 0.90588236,
                     "blue": 1
                   }
                 }
@@ -15077,14 +15112,14 @@
                 "style": "SOLID",
                 "width": 1,
                 "color": {
-                  "red": 1,
-                  "green": 1,
+                  "red": 0.8784314,
+                  "green": 0.90588236,
                   "blue": 1
                 },
                 "colorStyle": {
                   "rgbColor": {
-                    "red": 1,
-                    "green": 1,
+                    "red": 0.8784314,
+                    "green": 0.90588236,
                     "blue": 1
                   }
                 }
@@ -15109,14 +15144,14 @@
                 "style": "SOLID",
                 "width": 1,
                 "color": {
-                  "red": 1,
-                  "green": 1,
+                  "red": 0.8784314,
+                  "green": 0.90588236,
                   "blue": 1
                 },
                 "colorStyle": {
                   "rgbColor": {
-                    "red": 1,
-                    "green": 1,
+                    "red": 0.8784314,
+                    "green": 0.90588236,
                     "blue": 1
                   }
                 }
@@ -15128,15 +15163,16 @@
               "bottom": 2,
               "left": 8
             },
+            "horizontalAlignment": "RIGHT",
             "verticalAlignment": "MIDDLE",
-            "wrapStrategy": "CLIP",
+            "wrapStrategy": "WRAP",
             "textFormat": {
               "foregroundColor": {
                 "red": 0.2627451,
-                "green": 0.2627451,
-                "blue": 0.2627451
+                "green": 0.21960784,
+                "blue": 0.7921569
               },
-              "fontFamily": "Roboto",
+              "fontFamily": "Inter, \"Inter Fallback\"",
               "fontSize": 10,
               "bold": false,
               "italic": false,
@@ -15145,15 +15181,16 @@
               "foregroundColorStyle": {
                 "rgbColor": {
                   "red": 0.2627451,
-                  "green": 0.2627451,
-                  "blue": 0.2627451
+                  "green": 0.21960784,
+                  "blue": 0.7921569
                 }
               }
             },
+            "hyperlinkDisplayType": "PLAIN_TEXT",
             "backgroundColorStyle": {
               "rgbColor": {
-                "red": 1,
-                "green": 1,
+                "red": 0.8784314,
+                "green": 0.90588236,
                 "blue": 1
               }
             }
@@ -16126,9 +16163,44 @@
     {
       "values": [
         {
+          "userEnteredValue": {
+            "numberValue": 10
+          },
+          "effectiveValue": {
+            "numberValue": 10
+          },
+          "formattedValue": "10",
           "userEnteredFormat": {
             "numberFormat": {
               "type": "NUMBER"
+            },
+            "backgroundColor": {
+              "red": 0.78039217,
+              "green": 0.8235294,
+              "blue": 0.99607843
+            },
+            "wrapStrategy": "WRAP",
+            "textFormat": {
+              "foregroundColor": {
+                "red": 0.2627451,
+                "green": 0.21960784,
+                "blue": 0.7921569
+              },
+              "fontFamily": "Inter, \"Inter Fallback\"",
+              "foregroundColorStyle": {
+                "rgbColor": {
+                  "red": 0.2627451,
+                  "green": 0.21960784,
+                  "blue": 0.7921569
+                }
+              }
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 0.78039217,
+                "green": 0.8235294,
+                "blue": 0.99607843
+              }
             }
           },
           "effectiveFormat": {
@@ -16136,24 +16208,24 @@
               "type": "NUMBER"
             },
             "backgroundColor": {
-              "red": 0.9647059,
-              "green": 0.972549,
-              "blue": 0.9764706
+              "red": 0.78039217,
+              "green": 0.8235294,
+              "blue": 0.99607843
             },
             "borders": {
               "top": {
                 "style": "SOLID",
                 "width": 1,
                 "color": {
-                  "red": 0.9647059,
-                  "green": 0.972549,
-                  "blue": 0.9764706
+                  "red": 0.78039217,
+                  "green": 0.8235294,
+                  "blue": 0.99607843
                 },
                 "colorStyle": {
                   "rgbColor": {
-                    "red": 0.9647059,
-                    "green": 0.972549,
-                    "blue": 0.9764706
+                    "red": 0.78039217,
+                    "green": 0.8235294,
+                    "blue": 0.99607843
                   }
                 }
               },
@@ -16161,15 +16233,15 @@
                 "style": "SOLID",
                 "width": 1,
                 "color": {
-                  "red": 0.9647059,
-                  "green": 0.972549,
-                  "blue": 0.9764706
+                  "red": 0.78039217,
+                  "green": 0.8235294,
+                  "blue": 0.99607843
                 },
                 "colorStyle": {
                   "rgbColor": {
-                    "red": 0.9647059,
-                    "green": 0.972549,
-                    "blue": 0.9764706
+                    "red": 0.78039217,
+                    "green": 0.8235294,
+                    "blue": 0.99607843
                   }
                 }
               },
@@ -16193,15 +16265,15 @@
                 "style": "SOLID",
                 "width": 1,
                 "color": {
-                  "red": 0.9647059,
-                  "green": 0.972549,
-                  "blue": 0.9764706
+                  "red": 0.78039217,
+                  "green": 0.8235294,
+                  "blue": 0.99607843
                 },
                 "colorStyle": {
                   "rgbColor": {
-                    "red": 0.9647059,
-                    "green": 0.972549,
-                    "blue": 0.9764706
+                    "red": 0.78039217,
+                    "green": 0.8235294,
+                    "blue": 0.99607843
                   }
                 }
               }
@@ -16212,15 +16284,16 @@
               "bottom": 2,
               "left": 8
             },
+            "horizontalAlignment": "RIGHT",
             "verticalAlignment": "MIDDLE",
-            "wrapStrategy": "CLIP",
+            "wrapStrategy": "WRAP",
             "textFormat": {
               "foregroundColor": {
                 "red": 0.2627451,
-                "green": 0.2627451,
-                "blue": 0.2627451
+                "green": 0.21960784,
+                "blue": 0.7921569
               },
-              "fontFamily": "Roboto",
+              "fontFamily": "Inter, \"Inter Fallback\"",
               "fontSize": 10,
               "bold": false,
               "italic": false,
@@ -16229,16 +16302,17 @@
               "foregroundColorStyle": {
                 "rgbColor": {
                   "red": 0.2627451,
-                  "green": 0.2627451,
-                  "blue": 0.2627451
+                  "green": 0.21960784,
+                  "blue": 0.7921569
                 }
               }
             },
+            "hyperlinkDisplayType": "PLAIN_TEXT",
             "backgroundColorStyle": {
               "rgbColor": {
-                "red": 0.9647059,
-                "green": 0.972549,
-                "blue": 0.9764706
+                "red": 0.78039217,
+                "green": 0.8235294,
+                "blue": 0.99607843
               }
             }
           }
@@ -17299,9 +17373,44 @@
     {
       "values": [
         {
+          "userEnteredValue": {
+            "numberValue": 11
+          },
+          "effectiveValue": {
+            "numberValue": 11
+          },
+          "formattedValue": "11",
           "userEnteredFormat": {
             "numberFormat": {
               "type": "NUMBER"
+            },
+            "backgroundColor": {
+              "red": 0.8784314,
+              "green": 0.90588236,
+              "blue": 1
+            },
+            "wrapStrategy": "WRAP",
+            "textFormat": {
+              "foregroundColor": {
+                "red": 0.2627451,
+                "green": 0.21960784,
+                "blue": 0.7921569
+              },
+              "fontFamily": "Inter, \"Inter Fallback\"",
+              "foregroundColorStyle": {
+                "rgbColor": {
+                  "red": 0.2627451,
+                  "green": 0.21960784,
+                  "blue": 0.7921569
+                }
+              }
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 0.8784314,
+                "green": 0.90588236,
+                "blue": 1
+              }
             }
           },
           "effectiveFormat": {
@@ -17309,8 +17418,8 @@
               "type": "NUMBER"
             },
             "backgroundColor": {
-              "red": 1,
-              "green": 1,
+              "red": 0.8784314,
+              "green": 0.90588236,
               "blue": 1
             },
             "borders": {
@@ -17318,14 +17427,14 @@
                 "style": "SOLID",
                 "width": 1,
                 "color": {
-                  "red": 1,
-                  "green": 1,
+                  "red": 0.8784314,
+                  "green": 0.90588236,
                   "blue": 1
                 },
                 "colorStyle": {
                   "rgbColor": {
-                    "red": 1,
-                    "green": 1,
+                    "red": 0.8784314,
+                    "green": 0.90588236,
                     "blue": 1
                   }
                 }
@@ -17334,14 +17443,14 @@
                 "style": "SOLID",
                 "width": 1,
                 "color": {
-                  "red": 1,
-                  "green": 1,
+                  "red": 0.8784314,
+                  "green": 0.90588236,
                   "blue": 1
                 },
                 "colorStyle": {
                   "rgbColor": {
-                    "red": 1,
-                    "green": 1,
+                    "red": 0.8784314,
+                    "green": 0.90588236,
                     "blue": 1
                   }
                 }
@@ -17366,14 +17475,14 @@
                 "style": "SOLID",
                 "width": 1,
                 "color": {
-                  "red": 1,
-                  "green": 1,
+                  "red": 0.8784314,
+                  "green": 0.90588236,
                   "blue": 1
                 },
                 "colorStyle": {
                   "rgbColor": {
-                    "red": 1,
-                    "green": 1,
+                    "red": 0.8784314,
+                    "green": 0.90588236,
                     "blue": 1
                   }
                 }
@@ -17385,15 +17494,16 @@
               "bottom": 2,
               "left": 8
             },
+            "horizontalAlignment": "RIGHT",
             "verticalAlignment": "MIDDLE",
-            "wrapStrategy": "CLIP",
+            "wrapStrategy": "WRAP",
             "textFormat": {
               "foregroundColor": {
                 "red": 0.2627451,
-                "green": 0.2627451,
-                "blue": 0.2627451
+                "green": 0.21960784,
+                "blue": 0.7921569
               },
-              "fontFamily": "Roboto",
+              "fontFamily": "Inter, \"Inter Fallback\"",
               "fontSize": 10,
               "bold": false,
               "italic": false,
@@ -17402,15 +17512,16 @@
               "foregroundColorStyle": {
                 "rgbColor": {
                   "red": 0.2627451,
-                  "green": 0.2627451,
-                  "blue": 0.2627451
+                  "green": 0.21960784,
+                  "blue": 0.7921569
                 }
               }
             },
+            "hyperlinkDisplayType": "PLAIN_TEXT",
             "backgroundColorStyle": {
               "rgbColor": {
-                "red": 1,
-                "green": 1,
+                "red": 0.8784314,
+                "green": 0.90588236,
                 "blue": 1
               }
             }
@@ -18451,9 +18562,44 @@
     {
       "values": [
         {
+          "userEnteredValue": {
+            "numberValue": 12
+          },
+          "effectiveValue": {
+            "numberValue": 12
+          },
+          "formattedValue": "12",
           "userEnteredFormat": {
             "numberFormat": {
               "type": "NUMBER"
+            },
+            "backgroundColor": {
+              "red": 0.78039217,
+              "green": 0.8235294,
+              "blue": 0.99607843
+            },
+            "wrapStrategy": "WRAP",
+            "textFormat": {
+              "foregroundColor": {
+                "red": 0.2627451,
+                "green": 0.21960784,
+                "blue": 0.7921569
+              },
+              "fontFamily": "Inter, \"Inter Fallback\"",
+              "foregroundColorStyle": {
+                "rgbColor": {
+                  "red": 0.2627451,
+                  "green": 0.21960784,
+                  "blue": 0.7921569
+                }
+              }
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 0.78039217,
+                "green": 0.8235294,
+                "blue": 0.99607843
+              }
             }
           },
           "effectiveFormat": {
@@ -18461,24 +18607,24 @@
               "type": "NUMBER"
             },
             "backgroundColor": {
-              "red": 0.9647059,
-              "green": 0.972549,
-              "blue": 0.9764706
+              "red": 0.78039217,
+              "green": 0.8235294,
+              "blue": 0.99607843
             },
             "borders": {
               "top": {
                 "style": "SOLID",
                 "width": 1,
                 "color": {
-                  "red": 0.9647059,
-                  "green": 0.972549,
-                  "blue": 0.9764706
+                  "red": 0.78039217,
+                  "green": 0.8235294,
+                  "blue": 0.99607843
                 },
                 "colorStyle": {
                   "rgbColor": {
-                    "red": 0.9647059,
-                    "green": 0.972549,
-                    "blue": 0.9764706
+                    "red": 0.78039217,
+                    "green": 0.8235294,
+                    "blue": 0.99607843
                   }
                 }
               },
@@ -18486,15 +18632,15 @@
                 "style": "SOLID",
                 "width": 1,
                 "color": {
-                  "red": 0.9647059,
-                  "green": 0.972549,
-                  "blue": 0.9764706
+                  "red": 0.78039217,
+                  "green": 0.8235294,
+                  "blue": 0.99607843
                 },
                 "colorStyle": {
                   "rgbColor": {
-                    "red": 0.9647059,
-                    "green": 0.972549,
-                    "blue": 0.9764706
+                    "red": 0.78039217,
+                    "green": 0.8235294,
+                    "blue": 0.99607843
                   }
                 }
               },
@@ -18518,15 +18664,15 @@
                 "style": "SOLID",
                 "width": 1,
                 "color": {
-                  "red": 0.9647059,
-                  "green": 0.972549,
-                  "blue": 0.9764706
+                  "red": 0.78039217,
+                  "green": 0.8235294,
+                  "blue": 0.99607843
                 },
                 "colorStyle": {
                   "rgbColor": {
-                    "red": 0.9647059,
-                    "green": 0.972549,
-                    "blue": 0.9764706
+                    "red": 0.78039217,
+                    "green": 0.8235294,
+                    "blue": 0.99607843
                   }
                 }
               }
@@ -18537,15 +18683,16 @@
               "bottom": 2,
               "left": 8
             },
+            "horizontalAlignment": "RIGHT",
             "verticalAlignment": "MIDDLE",
-            "wrapStrategy": "CLIP",
+            "wrapStrategy": "WRAP",
             "textFormat": {
               "foregroundColor": {
                 "red": 0.2627451,
-                "green": 0.2627451,
-                "blue": 0.2627451
+                "green": 0.21960784,
+                "blue": 0.7921569
               },
-              "fontFamily": "Roboto",
+              "fontFamily": "Inter, \"Inter Fallback\"",
               "fontSize": 10,
               "bold": false,
               "italic": false,
@@ -18554,16 +18701,17 @@
               "foregroundColorStyle": {
                 "rgbColor": {
                   "red": 0.2627451,
-                  "green": 0.2627451,
-                  "blue": 0.2627451
+                  "green": 0.21960784,
+                  "blue": 0.7921569
                 }
               }
             },
+            "hyperlinkDisplayType": "PLAIN_TEXT",
             "backgroundColorStyle": {
               "rgbColor": {
-                "red": 0.9647059,
-                "green": 0.972549,
-                "blue": 0.9764706
+                "red": 0.78039217,
+                "green": 0.8235294,
+                "blue": 0.99607843
               }
             }
           }
@@ -19603,9 +19751,44 @@
     {
       "values": [
         {
+          "userEnteredValue": {
+            "numberValue": 13
+          },
+          "effectiveValue": {
+            "numberValue": 13
+          },
+          "formattedValue": "13",
           "userEnteredFormat": {
             "numberFormat": {
               "type": "NUMBER"
+            },
+            "backgroundColor": {
+              "red": 0.8784314,
+              "green": 0.90588236,
+              "blue": 1
+            },
+            "wrapStrategy": "WRAP",
+            "textFormat": {
+              "foregroundColor": {
+                "red": 0.2627451,
+                "green": 0.21960784,
+                "blue": 0.7921569
+              },
+              "fontFamily": "Inter, \"Inter Fallback\"",
+              "foregroundColorStyle": {
+                "rgbColor": {
+                  "red": 0.2627451,
+                  "green": 0.21960784,
+                  "blue": 0.7921569
+                }
+              }
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 0.8784314,
+                "green": 0.90588236,
+                "blue": 1
+              }
             }
           },
           "effectiveFormat": {
@@ -19613,8 +19796,8 @@
               "type": "NUMBER"
             },
             "backgroundColor": {
-              "red": 1,
-              "green": 1,
+              "red": 0.8784314,
+              "green": 0.90588236,
               "blue": 1
             },
             "borders": {
@@ -19622,14 +19805,14 @@
                 "style": "SOLID",
                 "width": 1,
                 "color": {
-                  "red": 1,
-                  "green": 1,
+                  "red": 0.8784314,
+                  "green": 0.90588236,
                   "blue": 1
                 },
                 "colorStyle": {
                   "rgbColor": {
-                    "red": 1,
-                    "green": 1,
+                    "red": 0.8784314,
+                    "green": 0.90588236,
                     "blue": 1
                   }
                 }
@@ -19638,14 +19821,14 @@
                 "style": "SOLID",
                 "width": 1,
                 "color": {
-                  "red": 1,
-                  "green": 1,
+                  "red": 0.8784314,
+                  "green": 0.90588236,
                   "blue": 1
                 },
                 "colorStyle": {
                   "rgbColor": {
-                    "red": 1,
-                    "green": 1,
+                    "red": 0.8784314,
+                    "green": 0.90588236,
                     "blue": 1
                   }
                 }
@@ -19670,14 +19853,14 @@
                 "style": "SOLID",
                 "width": 1,
                 "color": {
-                  "red": 1,
-                  "green": 1,
+                  "red": 0.8784314,
+                  "green": 0.90588236,
                   "blue": 1
                 },
                 "colorStyle": {
                   "rgbColor": {
-                    "red": 1,
-                    "green": 1,
+                    "red": 0.8784314,
+                    "green": 0.90588236,
                     "blue": 1
                   }
                 }
@@ -19689,15 +19872,16 @@
               "bottom": 2,
               "left": 8
             },
+            "horizontalAlignment": "RIGHT",
             "verticalAlignment": "MIDDLE",
-            "wrapStrategy": "CLIP",
+            "wrapStrategy": "WRAP",
             "textFormat": {
               "foregroundColor": {
                 "red": 0.2627451,
-                "green": 0.2627451,
-                "blue": 0.2627451
+                "green": 0.21960784,
+                "blue": 0.7921569
               },
-              "fontFamily": "Roboto",
+              "fontFamily": "Inter, \"Inter Fallback\"",
               "fontSize": 10,
               "bold": false,
               "italic": false,
@@ -19706,15 +19890,16 @@
               "foregroundColorStyle": {
                 "rgbColor": {
                   "red": 0.2627451,
-                  "green": 0.2627451,
-                  "blue": 0.2627451
+                  "green": 0.21960784,
+                  "blue": 0.7921569
                 }
               }
             },
+            "hyperlinkDisplayType": "PLAIN_TEXT",
             "backgroundColorStyle": {
               "rgbColor": {
-                "red": 1,
-                "green": 1,
+                "red": 0.8784314,
+                "green": 0.90588236,
                 "blue": 1
               }
             }
@@ -20277,9 +20462,44 @@
     {
       "values": [
         {
+          "userEnteredValue": {
+            "numberValue": 14
+          },
+          "effectiveValue": {
+            "numberValue": 14
+          },
+          "formattedValue": "14",
           "userEnteredFormat": {
             "numberFormat": {
               "type": "NUMBER"
+            },
+            "backgroundColor": {
+              "red": 0.78039217,
+              "green": 0.8235294,
+              "blue": 0.99607843
+            },
+            "wrapStrategy": "WRAP",
+            "textFormat": {
+              "foregroundColor": {
+                "red": 0.2627451,
+                "green": 0.21960784,
+                "blue": 0.7921569
+              },
+              "fontFamily": "Inter, \"Inter Fallback\"",
+              "foregroundColorStyle": {
+                "rgbColor": {
+                  "red": 0.2627451,
+                  "green": 0.21960784,
+                  "blue": 0.7921569
+                }
+              }
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 0.78039217,
+                "green": 0.8235294,
+                "blue": 0.99607843
+              }
             }
           },
           "effectiveFormat": {
@@ -20287,24 +20507,24 @@
               "type": "NUMBER"
             },
             "backgroundColor": {
-              "red": 0.9647059,
-              "green": 0.972549,
-              "blue": 0.9764706
+              "red": 0.78039217,
+              "green": 0.8235294,
+              "blue": 0.99607843
             },
             "borders": {
               "top": {
                 "style": "SOLID",
                 "width": 1,
                 "color": {
-                  "red": 0.9647059,
-                  "green": 0.972549,
-                  "blue": 0.9764706
+                  "red": 0.78039217,
+                  "green": 0.8235294,
+                  "blue": 0.99607843
                 },
                 "colorStyle": {
                   "rgbColor": {
-                    "red": 0.9647059,
-                    "green": 0.972549,
-                    "blue": 0.9764706
+                    "red": 0.78039217,
+                    "green": 0.8235294,
+                    "blue": 0.99607843
                   }
                 }
               },
@@ -20312,15 +20532,15 @@
                 "style": "SOLID",
                 "width": 1,
                 "color": {
-                  "red": 0.9647059,
-                  "green": 0.972549,
-                  "blue": 0.9764706
+                  "red": 0.78039217,
+                  "green": 0.8235294,
+                  "blue": 0.99607843
                 },
                 "colorStyle": {
                   "rgbColor": {
-                    "red": 0.9647059,
-                    "green": 0.972549,
-                    "blue": 0.9764706
+                    "red": 0.78039217,
+                    "green": 0.8235294,
+                    "blue": 0.99607843
                   }
                 }
               },
@@ -20344,15 +20564,15 @@
                 "style": "SOLID",
                 "width": 1,
                 "color": {
-                  "red": 0.9647059,
-                  "green": 0.972549,
-                  "blue": 0.9764706
+                  "red": 0.78039217,
+                  "green": 0.8235294,
+                  "blue": 0.99607843
                 },
                 "colorStyle": {
                   "rgbColor": {
-                    "red": 0.9647059,
-                    "green": 0.972549,
-                    "blue": 0.9764706
+                    "red": 0.78039217,
+                    "green": 0.8235294,
+                    "blue": 0.99607843
                   }
                 }
               }
@@ -20363,15 +20583,16 @@
               "bottom": 2,
               "left": 8
             },
+            "horizontalAlignment": "RIGHT",
             "verticalAlignment": "MIDDLE",
-            "wrapStrategy": "CLIP",
+            "wrapStrategy": "WRAP",
             "textFormat": {
               "foregroundColor": {
                 "red": 0.2627451,
-                "green": 0.2627451,
-                "blue": 0.2627451
+                "green": 0.21960784,
+                "blue": 0.7921569
               },
-              "fontFamily": "Roboto",
+              "fontFamily": "Inter, \"Inter Fallback\"",
               "fontSize": 10,
               "bold": false,
               "italic": false,
@@ -20380,16 +20601,17 @@
               "foregroundColorStyle": {
                 "rgbColor": {
                   "red": 0.2627451,
-                  "green": 0.2627451,
-                  "blue": 0.2627451
+                  "green": 0.21960784,
+                  "blue": 0.7921569
                 }
               }
             },
+            "hyperlinkDisplayType": "PLAIN_TEXT",
             "backgroundColorStyle": {
               "rgbColor": {
-                "red": 0.9647059,
-                "green": 0.972549,
-                "blue": 0.9764706
+                "red": 0.78039217,
+                "green": 0.8235294,
+                "blue": 0.99607843
               }
             }
           }
@@ -21203,9 +21425,44 @@
     {
       "values": [
         {
+          "userEnteredValue": {
+            "numberValue": 15
+          },
+          "effectiveValue": {
+            "numberValue": 15
+          },
+          "formattedValue": "15",
           "userEnteredFormat": {
             "numberFormat": {
               "type": "NUMBER"
+            },
+            "backgroundColor": {
+              "red": 0.8784314,
+              "green": 0.90588236,
+              "blue": 1
+            },
+            "wrapStrategy": "WRAP",
+            "textFormat": {
+              "foregroundColor": {
+                "red": 0.2627451,
+                "green": 0.21960784,
+                "blue": 0.7921569
+              },
+              "fontFamily": "Inter, \"Inter Fallback\"",
+              "foregroundColorStyle": {
+                "rgbColor": {
+                  "red": 0.2627451,
+                  "green": 0.21960784,
+                  "blue": 0.7921569
+                }
+              }
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 0.8784314,
+                "green": 0.90588236,
+                "blue": 1
+              }
             }
           },
           "effectiveFormat": {
@@ -21213,8 +21470,8 @@
               "type": "NUMBER"
             },
             "backgroundColor": {
-              "red": 1,
-              "green": 1,
+              "red": 0.8784314,
+              "green": 0.90588236,
               "blue": 1
             },
             "borders": {
@@ -21222,14 +21479,14 @@
                 "style": "SOLID",
                 "width": 1,
                 "color": {
-                  "red": 1,
-                  "green": 1,
+                  "red": 0.8784314,
+                  "green": 0.90588236,
                   "blue": 1
                 },
                 "colorStyle": {
                   "rgbColor": {
-                    "red": 1,
-                    "green": 1,
+                    "red": 0.8784314,
+                    "green": 0.90588236,
                     "blue": 1
                   }
                 }
@@ -21238,14 +21495,14 @@
                 "style": "SOLID",
                 "width": 1,
                 "color": {
-                  "red": 1,
-                  "green": 1,
+                  "red": 0.8784314,
+                  "green": 0.90588236,
                   "blue": 1
                 },
                 "colorStyle": {
                   "rgbColor": {
-                    "red": 1,
-                    "green": 1,
+                    "red": 0.8784314,
+                    "green": 0.90588236,
                     "blue": 1
                   }
                 }
@@ -21270,14 +21527,14 @@
                 "style": "SOLID",
                 "width": 1,
                 "color": {
-                  "red": 1,
-                  "green": 1,
+                  "red": 0.8784314,
+                  "green": 0.90588236,
                   "blue": 1
                 },
                 "colorStyle": {
                   "rgbColor": {
-                    "red": 1,
-                    "green": 1,
+                    "red": 0.8784314,
+                    "green": 0.90588236,
                     "blue": 1
                   }
                 }
@@ -21289,15 +21546,16 @@
               "bottom": 2,
               "left": 8
             },
+            "horizontalAlignment": "RIGHT",
             "verticalAlignment": "MIDDLE",
-            "wrapStrategy": "CLIP",
+            "wrapStrategy": "WRAP",
             "textFormat": {
               "foregroundColor": {
                 "red": 0.2627451,
-                "green": 0.2627451,
-                "blue": 0.2627451
+                "green": 0.21960784,
+                "blue": 0.7921569
               },
-              "fontFamily": "Roboto",
+              "fontFamily": "Inter, \"Inter Fallback\"",
               "fontSize": 10,
               "bold": false,
               "italic": false,
@@ -21306,15 +21564,16 @@
               "foregroundColorStyle": {
                 "rgbColor": {
                   "red": 0.2627451,
-                  "green": 0.2627451,
-                  "blue": 0.2627451
+                  "green": 0.21960784,
+                  "blue": 0.7921569
                 }
               }
             },
+            "hyperlinkDisplayType": "PLAIN_TEXT",
             "backgroundColorStyle": {
               "rgbColor": {
-                "red": 1,
-                "green": 1,
+                "red": 0.8784314,
+                "green": 0.90588236,
                 "blue": 1
               }
             }
@@ -22007,9 +22266,44 @@
     {
       "values": [
         {
+          "userEnteredValue": {
+            "numberValue": 16
+          },
+          "effectiveValue": {
+            "numberValue": 16
+          },
+          "formattedValue": "16",
           "userEnteredFormat": {
             "numberFormat": {
               "type": "NUMBER"
+            },
+            "backgroundColor": {
+              "red": 0.78039217,
+              "green": 0.8235294,
+              "blue": 0.99607843
+            },
+            "wrapStrategy": "WRAP",
+            "textFormat": {
+              "foregroundColor": {
+                "red": 0.2627451,
+                "green": 0.21960784,
+                "blue": 0.7921569
+              },
+              "fontFamily": "Inter, \"Inter Fallback\"",
+              "foregroundColorStyle": {
+                "rgbColor": {
+                  "red": 0.2627451,
+                  "green": 0.21960784,
+                  "blue": 0.7921569
+                }
+              }
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 0.78039217,
+                "green": 0.8235294,
+                "blue": 0.99607843
+              }
             }
           },
           "effectiveFormat": {
@@ -22017,24 +22311,24 @@
               "type": "NUMBER"
             },
             "backgroundColor": {
-              "red": 0.9647059,
-              "green": 0.972549,
-              "blue": 0.9764706
+              "red": 0.78039217,
+              "green": 0.8235294,
+              "blue": 0.99607843
             },
             "borders": {
               "top": {
                 "style": "SOLID",
                 "width": 1,
                 "color": {
-                  "red": 0.9647059,
-                  "green": 0.972549,
-                  "blue": 0.9764706
+                  "red": 0.78039217,
+                  "green": 0.8235294,
+                  "blue": 0.99607843
                 },
                 "colorStyle": {
                   "rgbColor": {
-                    "red": 0.9647059,
-                    "green": 0.972549,
-                    "blue": 0.9764706
+                    "red": 0.78039217,
+                    "green": 0.8235294,
+                    "blue": 0.99607843
                   }
                 }
               },
@@ -22042,15 +22336,15 @@
                 "style": "SOLID",
                 "width": 1,
                 "color": {
-                  "red": 0.9647059,
-                  "green": 0.972549,
-                  "blue": 0.9764706
+                  "red": 0.78039217,
+                  "green": 0.8235294,
+                  "blue": 0.99607843
                 },
                 "colorStyle": {
                   "rgbColor": {
-                    "red": 0.9647059,
-                    "green": 0.972549,
-                    "blue": 0.9764706
+                    "red": 0.78039217,
+                    "green": 0.8235294,
+                    "blue": 0.99607843
                   }
                 }
               },
@@ -22074,15 +22368,15 @@
                 "style": "SOLID",
                 "width": 1,
                 "color": {
-                  "red": 0.9647059,
-                  "green": 0.972549,
-                  "blue": 0.9764706
+                  "red": 0.78039217,
+                  "green": 0.8235294,
+                  "blue": 0.99607843
                 },
                 "colorStyle": {
                   "rgbColor": {
-                    "red": 0.9647059,
-                    "green": 0.972549,
-                    "blue": 0.9764706
+                    "red": 0.78039217,
+                    "green": 0.8235294,
+                    "blue": 0.99607843
                   }
                 }
               }
@@ -22093,15 +22387,16 @@
               "bottom": 2,
               "left": 8
             },
+            "horizontalAlignment": "RIGHT",
             "verticalAlignment": "MIDDLE",
-            "wrapStrategy": "CLIP",
+            "wrapStrategy": "WRAP",
             "textFormat": {
               "foregroundColor": {
                 "red": 0.2627451,
-                "green": 0.2627451,
-                "blue": 0.2627451
+                "green": 0.21960784,
+                "blue": 0.7921569
               },
-              "fontFamily": "Roboto",
+              "fontFamily": "Inter, \"Inter Fallback\"",
               "fontSize": 10,
               "bold": false,
               "italic": false,
@@ -22110,16 +22405,17 @@
               "foregroundColorStyle": {
                 "rgbColor": {
                   "red": 0.2627451,
-                  "green": 0.2627451,
-                  "blue": 0.2627451
+                  "green": 0.21960784,
+                  "blue": 0.7921569
                 }
               }
             },
+            "hyperlinkDisplayType": "PLAIN_TEXT",
             "backgroundColorStyle": {
               "rgbColor": {
-                "red": 0.9647059,
-                "green": 0.972549,
-                "blue": 0.9764706
+                "red": 0.78039217,
+                "green": 0.8235294,
+                "blue": 0.99607843
               }
             }
           }
@@ -22653,9 +22949,44 @@
     {
       "values": [
         {
+          "userEnteredValue": {
+            "numberValue": 17
+          },
+          "effectiveValue": {
+            "numberValue": 17
+          },
+          "formattedValue": "17",
           "userEnteredFormat": {
             "numberFormat": {
               "type": "NUMBER"
+            },
+            "backgroundColor": {
+              "red": 0.8784314,
+              "green": 0.90588236,
+              "blue": 1
+            },
+            "wrapStrategy": "WRAP",
+            "textFormat": {
+              "foregroundColor": {
+                "red": 0.2627451,
+                "green": 0.21960784,
+                "blue": 0.7921569
+              },
+              "fontFamily": "Inter, \"Inter Fallback\"",
+              "foregroundColorStyle": {
+                "rgbColor": {
+                  "red": 0.2627451,
+                  "green": 0.21960784,
+                  "blue": 0.7921569
+                }
+              }
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 0.8784314,
+                "green": 0.90588236,
+                "blue": 1
+              }
             }
           },
           "effectiveFormat": {
@@ -22663,8 +22994,8 @@
               "type": "NUMBER"
             },
             "backgroundColor": {
-              "red": 1,
-              "green": 1,
+              "red": 0.8784314,
+              "green": 0.90588236,
               "blue": 1
             },
             "borders": {
@@ -22672,14 +23003,14 @@
                 "style": "SOLID",
                 "width": 1,
                 "color": {
-                  "red": 1,
-                  "green": 1,
+                  "red": 0.8784314,
+                  "green": 0.90588236,
                   "blue": 1
                 },
                 "colorStyle": {
                   "rgbColor": {
-                    "red": 1,
-                    "green": 1,
+                    "red": 0.8784314,
+                    "green": 0.90588236,
                     "blue": 1
                   }
                 }
@@ -22688,14 +23019,14 @@
                 "style": "SOLID",
                 "width": 1,
                 "color": {
-                  "red": 1,
-                  "green": 1,
+                  "red": 0.8784314,
+                  "green": 0.90588236,
                   "blue": 1
                 },
                 "colorStyle": {
                   "rgbColor": {
-                    "red": 1,
-                    "green": 1,
+                    "red": 0.8784314,
+                    "green": 0.90588236,
                     "blue": 1
                   }
                 }
@@ -22720,14 +23051,14 @@
                 "style": "SOLID",
                 "width": 1,
                 "color": {
-                  "red": 1,
-                  "green": 1,
+                  "red": 0.8784314,
+                  "green": 0.90588236,
                   "blue": 1
                 },
                 "colorStyle": {
                   "rgbColor": {
-                    "red": 1,
-                    "green": 1,
+                    "red": 0.8784314,
+                    "green": 0.90588236,
                     "blue": 1
                   }
                 }
@@ -22739,15 +23070,16 @@
               "bottom": 2,
               "left": 8
             },
+            "horizontalAlignment": "RIGHT",
             "verticalAlignment": "MIDDLE",
-            "wrapStrategy": "CLIP",
+            "wrapStrategy": "WRAP",
             "textFormat": {
               "foregroundColor": {
                 "red": 0.2627451,
-                "green": 0.2627451,
-                "blue": 0.2627451
+                "green": 0.21960784,
+                "blue": 0.7921569
               },
-              "fontFamily": "Roboto",
+              "fontFamily": "Inter, \"Inter Fallback\"",
               "fontSize": 10,
               "bold": false,
               "italic": false,
@@ -22756,15 +23088,16 @@
               "foregroundColorStyle": {
                 "rgbColor": {
                   "red": 0.2627451,
-                  "green": 0.2627451,
-                  "blue": 0.2627451
+                  "green": 0.21960784,
+                  "blue": 0.7921569
                 }
               }
             },
+            "hyperlinkDisplayType": "PLAIN_TEXT",
             "backgroundColorStyle": {
               "rgbColor": {
-                "red": 1,
-                "green": 1,
+                "red": 0.8784314,
+                "green": 0.90588236,
                 "blue": 1
               }
             }
@@ -23429,9 +23762,44 @@
     {
       "values": [
         {
+          "userEnteredValue": {
+            "numberValue": 18
+          },
+          "effectiveValue": {
+            "numberValue": 18
+          },
+          "formattedValue": "18",
           "userEnteredFormat": {
             "numberFormat": {
               "type": "NUMBER"
+            },
+            "backgroundColor": {
+              "red": 0.78039217,
+              "green": 0.8235294,
+              "blue": 0.99607843
+            },
+            "wrapStrategy": "WRAP",
+            "textFormat": {
+              "foregroundColor": {
+                "red": 0.2627451,
+                "green": 0.21960784,
+                "blue": 0.7921569
+              },
+              "fontFamily": "Inter, \"Inter Fallback\"",
+              "foregroundColorStyle": {
+                "rgbColor": {
+                  "red": 0.2627451,
+                  "green": 0.21960784,
+                  "blue": 0.7921569
+                }
+              }
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 0.78039217,
+                "green": 0.8235294,
+                "blue": 0.99607843
+              }
             }
           },
           "effectiveFormat": {
@@ -23439,24 +23807,24 @@
               "type": "NUMBER"
             },
             "backgroundColor": {
-              "red": 0.9647059,
-              "green": 0.972549,
-              "blue": 0.9764706
+              "red": 0.78039217,
+              "green": 0.8235294,
+              "blue": 0.99607843
             },
             "borders": {
               "top": {
                 "style": "SOLID",
                 "width": 1,
                 "color": {
-                  "red": 0.9647059,
-                  "green": 0.972549,
-                  "blue": 0.9764706
+                  "red": 0.78039217,
+                  "green": 0.8235294,
+                  "blue": 0.99607843
                 },
                 "colorStyle": {
                   "rgbColor": {
-                    "red": 0.9647059,
-                    "green": 0.972549,
-                    "blue": 0.9764706
+                    "red": 0.78039217,
+                    "green": 0.8235294,
+                    "blue": 0.99607843
                   }
                 }
               },
@@ -23496,15 +23864,15 @@
                 "style": "SOLID",
                 "width": 1,
                 "color": {
-                  "red": 0.9647059,
-                  "green": 0.972549,
-                  "blue": 0.9764706
+                  "red": 0.78039217,
+                  "green": 0.8235294,
+                  "blue": 0.99607843
                 },
                 "colorStyle": {
                   "rgbColor": {
-                    "red": 0.9647059,
-                    "green": 0.972549,
-                    "blue": 0.9764706
+                    "red": 0.78039217,
+                    "green": 0.8235294,
+                    "blue": 0.99607843
                   }
                 }
               }
@@ -23515,15 +23883,16 @@
               "bottom": 2,
               "left": 8
             },
+            "horizontalAlignment": "RIGHT",
             "verticalAlignment": "MIDDLE",
-            "wrapStrategy": "CLIP",
+            "wrapStrategy": "WRAP",
             "textFormat": {
               "foregroundColor": {
                 "red": 0.2627451,
-                "green": 0.2627451,
-                "blue": 0.2627451
+                "green": 0.21960784,
+                "blue": 0.7921569
               },
-              "fontFamily": "Roboto",
+              "fontFamily": "Inter, \"Inter Fallback\"",
               "fontSize": 10,
               "bold": false,
               "italic": false,
@@ -23532,16 +23901,17 @@
               "foregroundColorStyle": {
                 "rgbColor": {
                   "red": 0.2627451,
-                  "green": 0.2627451,
-                  "blue": 0.2627451
+                  "green": 0.21960784,
+                  "blue": 0.7921569
                 }
               }
             },
+            "hyperlinkDisplayType": "PLAIN_TEXT",
             "backgroundColorStyle": {
               "rgbColor": {
-                "red": 0.9647059,
-                "green": 0.972549,
-                "blue": 0.9764706
+                "red": 0.78039217,
+                "green": 0.8235294,
+                "blue": 0.99607843
               }
             }
           }
@@ -24067,5 +24437,5 @@
   "range": "'Trang tính1'!A1:Z1000",
   "majorDimension": "ROWS",
   "merges": [],
-  "fetchedAt": 1751527325713
+  "fetchedAt": 1751738218419
 }

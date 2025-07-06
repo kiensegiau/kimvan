@@ -1,0 +1,2621 @@
+{
+  "values": [
+    [
+      "STT",
+      "NGÀY HỌC",
+      "TÊN BÀI HỌC",
+      "FILE ĐỀ",
+      "LIVESTREAM",
+      "SLIDE NOTES"
+    ],
+    [],
+    [
+      1,
+      45839,
+      "🎉 KHAI GIẢNG KHÓA LIVEVIP2K8",
+      "",
+      "LIVESTREAM"
+    ],
+    [
+      "",
+      "",
+      "CHUYÊN ĐỀ 1 - TRỌNG TÂM (ESTER & LIPID)"
+    ],
+    [
+      1,
+      45840,
+      "LIVE 1 - LÝ THUYẾT TRỌNG TÂM ESTER | VIP1",
+      "FILE ĐỀ",
+      "LIVESTREAM",
+      "SLIDE NOTES"
+    ],
+    [
+      2,
+      45841,
+      "LIVE 2 - LÝ THUYẾT TRỌNG TÂM ESTER | VIP2",
+      "FILE ĐỀ",
+      "LIVESTREAM",
+      "SLIDE NOTES"
+    ],
+    [
+      3,
+      45842,
+      "LIVE 3 - LÝ THUYẾT TRỌNG TÂM ESTER | VIP3",
+      "FILE ĐỀ"
+    ]
+  ],
+  "htmlData": [
+    {
+      "values": [
+        {
+          "userEnteredValue": {
+            "stringValue": "STT"
+          },
+          "effectiveValue": {
+            "stringValue": "STT"
+          },
+          "formattedValue": "STT",
+          "userEnteredFormat": {
+            "backgroundColor": {
+              "red": 1,
+              "green": 1
+            },
+            "horizontalAlignment": "CENTER",
+            "textFormat": {
+              "fontFamily": "\"Times New Roman\""
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1
+              }
+            }
+          },
+          "effectiveFormat": {
+            "backgroundColor": {
+              "red": 1,
+              "green": 1
+            },
+            "padding": {
+              "top": 2,
+              "right": 3,
+              "bottom": 2,
+              "left": 3
+            },
+            "horizontalAlignment": "CENTER",
+            "verticalAlignment": "BOTTOM",
+            "wrapStrategy": "OVERFLOW_CELL",
+            "textFormat": {
+              "foregroundColor": {},
+              "fontFamily": "\"Times New Roman\"",
+              "fontSize": 10,
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "foregroundColorStyle": {
+                "rgbColor": {}
+              }
+            },
+            "hyperlinkDisplayType": "PLAIN_TEXT",
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1
+              }
+            }
+          }
+        },
+        {
+          "userEnteredValue": {
+            "stringValue": "NGÀY HỌC"
+          },
+          "effectiveValue": {
+            "stringValue": "NGÀY HỌC"
+          },
+          "formattedValue": "NGÀY HỌC",
+          "userEnteredFormat": {
+            "backgroundColor": {
+              "red": 1,
+              "green": 1
+            },
+            "horizontalAlignment": "CENTER",
+            "textFormat": {
+              "fontFamily": "\"Times New Roman\""
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1
+              }
+            }
+          },
+          "effectiveFormat": {
+            "backgroundColor": {
+              "red": 1,
+              "green": 1
+            },
+            "padding": {
+              "top": 2,
+              "right": 3,
+              "bottom": 2,
+              "left": 3
+            },
+            "horizontalAlignment": "CENTER",
+            "verticalAlignment": "BOTTOM",
+            "wrapStrategy": "OVERFLOW_CELL",
+            "textFormat": {
+              "foregroundColor": {},
+              "fontFamily": "\"Times New Roman\"",
+              "fontSize": 10,
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "foregroundColorStyle": {
+                "rgbColor": {}
+              }
+            },
+            "hyperlinkDisplayType": "PLAIN_TEXT",
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1
+              }
+            }
+          }
+        },
+        {
+          "userEnteredValue": {
+            "stringValue": "TÊN BÀI HỌC"
+          },
+          "effectiveValue": {
+            "stringValue": "TÊN BÀI HỌC"
+          },
+          "formattedValue": "TÊN BÀI HỌC",
+          "userEnteredFormat": {
+            "backgroundColor": {
+              "red": 1,
+              "green": 1
+            },
+            "horizontalAlignment": "CENTER",
+            "textFormat": {
+              "fontFamily": "\"Times New Roman\""
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1
+              }
+            }
+          },
+          "effectiveFormat": {
+            "backgroundColor": {
+              "red": 1,
+              "green": 1
+            },
+            "padding": {
+              "top": 2,
+              "right": 3,
+              "bottom": 2,
+              "left": 3
+            },
+            "horizontalAlignment": "CENTER",
+            "verticalAlignment": "BOTTOM",
+            "wrapStrategy": "OVERFLOW_CELL",
+            "textFormat": {
+              "foregroundColor": {},
+              "fontFamily": "\"Times New Roman\"",
+              "fontSize": 10,
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "foregroundColorStyle": {
+                "rgbColor": {}
+              }
+            },
+            "hyperlinkDisplayType": "PLAIN_TEXT",
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1
+              }
+            }
+          }
+        },
+        {
+          "userEnteredValue": {
+            "stringValue": "FILE ĐỀ"
+          },
+          "effectiveValue": {
+            "stringValue": "FILE ĐỀ"
+          },
+          "formattedValue": "FILE ĐỀ",
+          "userEnteredFormat": {
+            "backgroundColor": {
+              "red": 1,
+              "green": 1
+            },
+            "horizontalAlignment": "CENTER",
+            "textFormat": {
+              "fontFamily": "\"Times New Roman\""
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1
+              }
+            }
+          },
+          "effectiveFormat": {
+            "backgroundColor": {
+              "red": 1,
+              "green": 1
+            },
+            "padding": {
+              "top": 2,
+              "right": 3,
+              "bottom": 2,
+              "left": 3
+            },
+            "horizontalAlignment": "CENTER",
+            "verticalAlignment": "BOTTOM",
+            "wrapStrategy": "OVERFLOW_CELL",
+            "textFormat": {
+              "foregroundColor": {},
+              "fontFamily": "\"Times New Roman\"",
+              "fontSize": 10,
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "foregroundColorStyle": {
+                "rgbColor": {}
+              }
+            },
+            "hyperlinkDisplayType": "PLAIN_TEXT",
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1
+              }
+            }
+          }
+        },
+        {
+          "userEnteredValue": {
+            "stringValue": "LIVESTREAM"
+          },
+          "effectiveValue": {
+            "stringValue": "LIVESTREAM"
+          },
+          "formattedValue": "LIVESTREAM",
+          "userEnteredFormat": {
+            "backgroundColor": {
+              "red": 1,
+              "green": 1
+            },
+            "horizontalAlignment": "CENTER",
+            "textFormat": {
+              "fontFamily": "\"Times New Roman\""
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1
+              }
+            }
+          },
+          "effectiveFormat": {
+            "backgroundColor": {
+              "red": 1,
+              "green": 1
+            },
+            "padding": {
+              "top": 2,
+              "right": 3,
+              "bottom": 2,
+              "left": 3
+            },
+            "horizontalAlignment": "CENTER",
+            "verticalAlignment": "BOTTOM",
+            "wrapStrategy": "OVERFLOW_CELL",
+            "textFormat": {
+              "foregroundColor": {},
+              "fontFamily": "\"Times New Roman\"",
+              "fontSize": 10,
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "foregroundColorStyle": {
+                "rgbColor": {}
+              }
+            },
+            "hyperlinkDisplayType": "PLAIN_TEXT",
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1
+              }
+            }
+          }
+        },
+        {
+          "userEnteredValue": {
+            "stringValue": "SLIDE NOTES"
+          },
+          "effectiveValue": {
+            "stringValue": "SLIDE NOTES"
+          },
+          "formattedValue": "SLIDE NOTES",
+          "userEnteredFormat": {
+            "backgroundColor": {
+              "red": 1,
+              "green": 1
+            },
+            "horizontalAlignment": "CENTER",
+            "textFormat": {
+              "fontFamily": "\"Times New Roman\""
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1
+              }
+            }
+          },
+          "effectiveFormat": {
+            "backgroundColor": {
+              "red": 1,
+              "green": 1
+            },
+            "padding": {
+              "top": 2,
+              "right": 3,
+              "bottom": 2,
+              "left": 3
+            },
+            "horizontalAlignment": "CENTER",
+            "verticalAlignment": "BOTTOM",
+            "wrapStrategy": "OVERFLOW_CELL",
+            "textFormat": {
+              "foregroundColor": {},
+              "fontFamily": "\"Times New Roman\"",
+              "fontSize": 10,
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "foregroundColorStyle": {
+                "rgbColor": {}
+              }
+            },
+            "hyperlinkDisplayType": "PLAIN_TEXT",
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "values": [
+        {
+          "userEnteredFormat": {
+            "backgroundColor": {
+              "red": 0.8352941,
+              "green": 0.6509804,
+              "blue": 0.7411765
+            },
+            "horizontalAlignment": "CENTER",
+            "textFormat": {
+              "fontFamily": "\"Times New Roman\""
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 0.8352941,
+                "green": 0.6509804,
+                "blue": 0.7411765
+              }
+            }
+          },
+          "effectiveFormat": {
+            "backgroundColor": {
+              "red": 0.8352941,
+              "green": 0.6509804,
+              "blue": 0.7411765
+            },
+            "padding": {
+              "top": 2,
+              "right": 3,
+              "bottom": 2,
+              "left": 3
+            },
+            "horizontalAlignment": "CENTER",
+            "verticalAlignment": "BOTTOM",
+            "wrapStrategy": "OVERFLOW_CELL",
+            "textFormat": {
+              "foregroundColor": {},
+              "fontFamily": "\"Times New Roman\"",
+              "fontSize": 10,
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "foregroundColorStyle": {
+                "rgbColor": {}
+              }
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 0.8352941,
+                "green": 0.6509804,
+                "blue": 0.7411765
+              }
+            }
+          }
+        },
+        {
+          "userEnteredFormat": {
+            "backgroundColor": {
+              "red": 0.8352941,
+              "green": 0.6509804,
+              "blue": 0.7411765
+            },
+            "horizontalAlignment": "CENTER",
+            "textFormat": {
+              "fontFamily": "\"Times New Roman\""
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 0.8352941,
+                "green": 0.6509804,
+                "blue": 0.7411765
+              }
+            }
+          },
+          "effectiveFormat": {
+            "backgroundColor": {
+              "red": 0.8352941,
+              "green": 0.6509804,
+              "blue": 0.7411765
+            },
+            "padding": {
+              "top": 2,
+              "right": 3,
+              "bottom": 2,
+              "left": 3
+            },
+            "horizontalAlignment": "CENTER",
+            "verticalAlignment": "BOTTOM",
+            "wrapStrategy": "OVERFLOW_CELL",
+            "textFormat": {
+              "foregroundColor": {},
+              "fontFamily": "\"Times New Roman\"",
+              "fontSize": 10,
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "foregroundColorStyle": {
+                "rgbColor": {}
+              }
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 0.8352941,
+                "green": 0.6509804,
+                "blue": 0.7411765
+              }
+            }
+          }
+        },
+        {
+          "userEnteredFormat": {
+            "backgroundColor": {
+              "red": 0.8352941,
+              "green": 0.6509804,
+              "blue": 0.7411765
+            },
+            "horizontalAlignment": "CENTER",
+            "textFormat": {
+              "fontFamily": "\"Times New Roman\""
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 0.8352941,
+                "green": 0.6509804,
+                "blue": 0.7411765
+              }
+            }
+          },
+          "effectiveFormat": {
+            "backgroundColor": {
+              "red": 0.8352941,
+              "green": 0.6509804,
+              "blue": 0.7411765
+            },
+            "padding": {
+              "top": 2,
+              "right": 3,
+              "bottom": 2,
+              "left": 3
+            },
+            "horizontalAlignment": "CENTER",
+            "verticalAlignment": "BOTTOM",
+            "wrapStrategy": "OVERFLOW_CELL",
+            "textFormat": {
+              "foregroundColor": {},
+              "fontFamily": "\"Times New Roman\"",
+              "fontSize": 10,
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "foregroundColorStyle": {
+                "rgbColor": {}
+              }
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 0.8352941,
+                "green": 0.6509804,
+                "blue": 0.7411765
+              }
+            }
+          }
+        },
+        {
+          "userEnteredFormat": {
+            "backgroundColor": {
+              "red": 0.8352941,
+              "green": 0.6509804,
+              "blue": 0.7411765
+            },
+            "horizontalAlignment": "CENTER",
+            "textFormat": {
+              "fontFamily": "\"Times New Roman\""
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 0.8352941,
+                "green": 0.6509804,
+                "blue": 0.7411765
+              }
+            }
+          },
+          "effectiveFormat": {
+            "backgroundColor": {
+              "red": 0.8352941,
+              "green": 0.6509804,
+              "blue": 0.7411765
+            },
+            "padding": {
+              "top": 2,
+              "right": 3,
+              "bottom": 2,
+              "left": 3
+            },
+            "horizontalAlignment": "CENTER",
+            "verticalAlignment": "BOTTOM",
+            "wrapStrategy": "OVERFLOW_CELL",
+            "textFormat": {
+              "foregroundColor": {},
+              "fontFamily": "\"Times New Roman\"",
+              "fontSize": 10,
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "foregroundColorStyle": {
+                "rgbColor": {}
+              }
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 0.8352941,
+                "green": 0.6509804,
+                "blue": 0.7411765
+              }
+            }
+          }
+        },
+        {
+          "userEnteredFormat": {
+            "backgroundColor": {
+              "red": 0.8352941,
+              "green": 0.6509804,
+              "blue": 0.7411765
+            },
+            "horizontalAlignment": "CENTER",
+            "textFormat": {
+              "fontFamily": "\"Times New Roman\""
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 0.8352941,
+                "green": 0.6509804,
+                "blue": 0.7411765
+              }
+            }
+          },
+          "effectiveFormat": {
+            "backgroundColor": {
+              "red": 0.8352941,
+              "green": 0.6509804,
+              "blue": 0.7411765
+            },
+            "padding": {
+              "top": 2,
+              "right": 3,
+              "bottom": 2,
+              "left": 3
+            },
+            "horizontalAlignment": "CENTER",
+            "verticalAlignment": "BOTTOM",
+            "wrapStrategy": "OVERFLOW_CELL",
+            "textFormat": {
+              "foregroundColor": {},
+              "fontFamily": "\"Times New Roman\"",
+              "fontSize": 10,
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "foregroundColorStyle": {
+                "rgbColor": {}
+              }
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 0.8352941,
+                "green": 0.6509804,
+                "blue": 0.7411765
+              }
+            }
+          }
+        },
+        {
+          "userEnteredFormat": {
+            "backgroundColor": {
+              "red": 0.8352941,
+              "green": 0.6509804,
+              "blue": 0.7411765
+            },
+            "horizontalAlignment": "CENTER",
+            "textFormat": {
+              "fontFamily": "\"Times New Roman\""
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 0.8352941,
+                "green": 0.6509804,
+                "blue": 0.7411765
+              }
+            }
+          },
+          "effectiveFormat": {
+            "backgroundColor": {
+              "red": 0.8352941,
+              "green": 0.6509804,
+              "blue": 0.7411765
+            },
+            "padding": {
+              "top": 2,
+              "right": 3,
+              "bottom": 2,
+              "left": 3
+            },
+            "horizontalAlignment": "CENTER",
+            "verticalAlignment": "BOTTOM",
+            "wrapStrategy": "OVERFLOW_CELL",
+            "textFormat": {
+              "foregroundColor": {},
+              "fontFamily": "\"Times New Roman\"",
+              "fontSize": 10,
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "foregroundColorStyle": {
+                "rgbColor": {}
+              }
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 0.8352941,
+                "green": 0.6509804,
+                "blue": 0.7411765
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "values": [
+        {
+          "userEnteredValue": {
+            "numberValue": 1
+          },
+          "effectiveValue": {
+            "numberValue": 1
+          },
+          "formattedValue": "1",
+          "userEnteredFormat": {
+            "horizontalAlignment": "CENTER",
+            "textFormat": {
+              "fontFamily": "\"Times New Roman\""
+            }
+          },
+          "effectiveFormat": {
+            "backgroundColor": {
+              "red": 1,
+              "green": 1,
+              "blue": 1
+            },
+            "padding": {
+              "top": 2,
+              "right": 3,
+              "bottom": 2,
+              "left": 3
+            },
+            "horizontalAlignment": "CENTER",
+            "verticalAlignment": "BOTTOM",
+            "wrapStrategy": "OVERFLOW_CELL",
+            "textFormat": {
+              "foregroundColor": {},
+              "fontFamily": "\"Times New Roman\"",
+              "fontSize": 10,
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "foregroundColorStyle": {
+                "rgbColor": {}
+              }
+            },
+            "hyperlinkDisplayType": "PLAIN_TEXT",
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            }
+          }
+        },
+        {
+          "userEnteredValue": {
+            "numberValue": 45839
+          },
+          "effectiveValue": {
+            "numberValue": 45839
+          },
+          "formattedValue": "01/07/2025",
+          "userEnteredFormat": {
+            "numberFormat": {
+              "type": "DATE",
+              "pattern": "dd/mm/yyyy"
+            },
+            "horizontalAlignment": "CENTER",
+            "textFormat": {
+              "fontFamily": "\"Times New Roman\""
+            }
+          },
+          "effectiveFormat": {
+            "numberFormat": {
+              "type": "DATE",
+              "pattern": "dd/mm/yyyy"
+            },
+            "backgroundColor": {
+              "red": 1,
+              "green": 1,
+              "blue": 1
+            },
+            "padding": {
+              "top": 2,
+              "right": 3,
+              "bottom": 2,
+              "left": 3
+            },
+            "horizontalAlignment": "CENTER",
+            "verticalAlignment": "BOTTOM",
+            "wrapStrategy": "OVERFLOW_CELL",
+            "textFormat": {
+              "foregroundColor": {},
+              "fontFamily": "\"Times New Roman\"",
+              "fontSize": 10,
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "foregroundColorStyle": {
+                "rgbColor": {}
+              }
+            },
+            "hyperlinkDisplayType": "PLAIN_TEXT",
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            }
+          }
+        },
+        {
+          "userEnteredValue": {
+            "stringValue": "🎉 KHAI GIẢNG KHÓA LIVEVIP2K8"
+          },
+          "effectiveValue": {
+            "stringValue": "🎉 KHAI GIẢNG KHÓA LIVEVIP2K8"
+          },
+          "formattedValue": "🎉 KHAI GIẢNG KHÓA LIVEVIP2K8",
+          "userEnteredFormat": {
+            "backgroundColor": {
+              "red": 1,
+              "green": 1,
+              "blue": 1
+            },
+            "horizontalAlignment": "CENTER",
+            "textFormat": {
+              "fontFamily": "\"Times New Roman\""
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            }
+          },
+          "effectiveFormat": {
+            "backgroundColor": {
+              "red": 1,
+              "green": 1,
+              "blue": 1
+            },
+            "padding": {
+              "top": 2,
+              "right": 3,
+              "bottom": 2,
+              "left": 3
+            },
+            "horizontalAlignment": "CENTER",
+            "verticalAlignment": "BOTTOM",
+            "wrapStrategy": "OVERFLOW_CELL",
+            "textFormat": {
+              "foregroundColor": {},
+              "fontFamily": "\"Times New Roman\"",
+              "fontSize": 10,
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "foregroundColorStyle": {
+                "rgbColor": {}
+              }
+            },
+            "hyperlinkDisplayType": "PLAIN_TEXT",
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            }
+          }
+        },
+        {
+          "userEnteredFormat": {
+            "horizontalAlignment": "CENTER",
+            "textFormat": {
+              "fontFamily": "\"Times New Roman\""
+            }
+          },
+          "effectiveFormat": {
+            "backgroundColor": {
+              "red": 1,
+              "green": 1,
+              "blue": 1
+            },
+            "padding": {
+              "top": 2,
+              "right": 3,
+              "bottom": 2,
+              "left": 3
+            },
+            "horizontalAlignment": "CENTER",
+            "verticalAlignment": "BOTTOM",
+            "wrapStrategy": "OVERFLOW_CELL",
+            "textFormat": {
+              "foregroundColor": {},
+              "fontFamily": "\"Times New Roman\"",
+              "fontSize": 10,
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "foregroundColorStyle": {
+                "rgbColor": {}
+              }
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            }
+          }
+        },
+        {
+          "userEnteredValue": {
+            "stringValue": "LIVESTREAM"
+          },
+          "effectiveValue": {
+            "stringValue": "LIVESTREAM"
+          },
+          "formattedValue": "LIVESTREAM",
+          "userEnteredFormat": {
+            "horizontalAlignment": "CENTER",
+            "textFormat": {
+              "fontFamily": "\"Times New Roman\"",
+              "link": {
+                "uri": "https://www.youtube.com/watch?v=eY5anvS-gkI"
+              }
+            },
+            "hyperlinkDisplayType": "LINKED"
+          },
+          "effectiveFormat": {
+            "backgroundColor": {
+              "red": 1,
+              "green": 1,
+              "blue": 1
+            },
+            "padding": {
+              "top": 2,
+              "right": 3,
+              "bottom": 2,
+              "left": 3
+            },
+            "horizontalAlignment": "CENTER",
+            "verticalAlignment": "BOTTOM",
+            "wrapStrategy": "OVERFLOW_CELL",
+            "textFormat": {
+              "foregroundColor": {
+                "red": 0.06666667,
+                "green": 0.33333334,
+                "blue": 0.8
+              },
+              "fontFamily": "\"Times New Roman\"",
+              "fontSize": 10,
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": true,
+              "foregroundColorStyle": {
+                "rgbColor": {
+                  "red": 0.06666667,
+                  "green": 0.33333334,
+                  "blue": 0.8
+                }
+              },
+              "link": {
+                "uri": "https://www.youtube.com/watch?v=eY5anvS-gkI"
+              }
+            },
+            "hyperlinkDisplayType": "LINKED",
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            }
+          },
+          "hyperlink": "https://www.youtube.com/watch?v=eY5anvS-gkI"
+        },
+        {
+          "userEnteredFormat": {
+            "horizontalAlignment": "CENTER",
+            "textFormat": {
+              "fontFamily": "\"Times New Roman\""
+            }
+          },
+          "effectiveFormat": {
+            "backgroundColor": {
+              "red": 1,
+              "green": 1,
+              "blue": 1
+            },
+            "padding": {
+              "top": 2,
+              "right": 3,
+              "bottom": 2,
+              "left": 3
+            },
+            "horizontalAlignment": "CENTER",
+            "verticalAlignment": "BOTTOM",
+            "wrapStrategy": "OVERFLOW_CELL",
+            "textFormat": {
+              "foregroundColor": {},
+              "fontFamily": "\"Times New Roman\"",
+              "fontSize": 10,
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "foregroundColorStyle": {
+                "rgbColor": {}
+              }
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "values": [
+        {
+          "userEnteredFormat": {
+            "backgroundColor": {
+              "red": 0.8352941,
+              "green": 0.6509804,
+              "blue": 0.7411765
+            },
+            "horizontalAlignment": "CENTER",
+            "textFormat": {
+              "fontFamily": "\"Times New Roman\""
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 0.8352941,
+                "green": 0.6509804,
+                "blue": 0.7411765
+              }
+            }
+          },
+          "effectiveFormat": {
+            "backgroundColor": {
+              "red": 0.8352941,
+              "green": 0.6509804,
+              "blue": 0.7411765
+            },
+            "padding": {
+              "top": 2,
+              "right": 3,
+              "bottom": 2,
+              "left": 3
+            },
+            "horizontalAlignment": "CENTER",
+            "verticalAlignment": "BOTTOM",
+            "wrapStrategy": "OVERFLOW_CELL",
+            "textFormat": {
+              "foregroundColor": {},
+              "fontFamily": "\"Times New Roman\"",
+              "fontSize": 10,
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "foregroundColorStyle": {
+                "rgbColor": {}
+              }
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 0.8352941,
+                "green": 0.6509804,
+                "blue": 0.7411765
+              }
+            }
+          }
+        },
+        {
+          "userEnteredFormat": {
+            "backgroundColor": {
+              "red": 0.8352941,
+              "green": 0.6509804,
+              "blue": 0.7411765
+            },
+            "horizontalAlignment": "CENTER",
+            "textFormat": {
+              "fontFamily": "\"Times New Roman\""
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 0.8352941,
+                "green": 0.6509804,
+                "blue": 0.7411765
+              }
+            }
+          },
+          "effectiveFormat": {
+            "backgroundColor": {
+              "red": 0.8352941,
+              "green": 0.6509804,
+              "blue": 0.7411765
+            },
+            "padding": {
+              "top": 2,
+              "right": 3,
+              "bottom": 2,
+              "left": 3
+            },
+            "horizontalAlignment": "CENTER",
+            "verticalAlignment": "BOTTOM",
+            "wrapStrategy": "OVERFLOW_CELL",
+            "textFormat": {
+              "foregroundColor": {},
+              "fontFamily": "\"Times New Roman\"",
+              "fontSize": 10,
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "foregroundColorStyle": {
+                "rgbColor": {}
+              }
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 0.8352941,
+                "green": 0.6509804,
+                "blue": 0.7411765
+              }
+            }
+          }
+        },
+        {
+          "userEnteredValue": {
+            "stringValue": "CHUYÊN ĐỀ 1 - TRỌNG TÂM (ESTER & LIPID)"
+          },
+          "effectiveValue": {
+            "stringValue": "CHUYÊN ĐỀ 1 - TRỌNG TÂM (ESTER & LIPID)"
+          },
+          "formattedValue": "CHUYÊN ĐỀ 1 - TRỌNG TÂM (ESTER & LIPID)",
+          "userEnteredFormat": {
+            "backgroundColor": {
+              "red": 0.8352941,
+              "green": 0.6509804,
+              "blue": 0.7411765
+            },
+            "horizontalAlignment": "CENTER",
+            "textFormat": {
+              "fontFamily": "\"Times New Roman\""
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 0.8352941,
+                "green": 0.6509804,
+                "blue": 0.7411765
+              }
+            }
+          },
+          "effectiveFormat": {
+            "backgroundColor": {
+              "red": 0.8352941,
+              "green": 0.6509804,
+              "blue": 0.7411765
+            },
+            "padding": {
+              "top": 2,
+              "right": 3,
+              "bottom": 2,
+              "left": 3
+            },
+            "horizontalAlignment": "CENTER",
+            "verticalAlignment": "BOTTOM",
+            "wrapStrategy": "OVERFLOW_CELL",
+            "textFormat": {
+              "foregroundColor": {},
+              "fontFamily": "\"Times New Roman\"",
+              "fontSize": 10,
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "foregroundColorStyle": {
+                "rgbColor": {}
+              }
+            },
+            "hyperlinkDisplayType": "PLAIN_TEXT",
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 0.8352941,
+                "green": 0.6509804,
+                "blue": 0.7411765
+              }
+            }
+          }
+        },
+        {
+          "userEnteredFormat": {
+            "backgroundColor": {
+              "red": 0.8352941,
+              "green": 0.6509804,
+              "blue": 0.7411765
+            },
+            "horizontalAlignment": "CENTER",
+            "textFormat": {
+              "fontFamily": "\"Times New Roman\""
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 0.8352941,
+                "green": 0.6509804,
+                "blue": 0.7411765
+              }
+            }
+          },
+          "effectiveFormat": {
+            "backgroundColor": {
+              "red": 0.8352941,
+              "green": 0.6509804,
+              "blue": 0.7411765
+            },
+            "padding": {
+              "top": 2,
+              "right": 3,
+              "bottom": 2,
+              "left": 3
+            },
+            "horizontalAlignment": "CENTER",
+            "verticalAlignment": "BOTTOM",
+            "wrapStrategy": "OVERFLOW_CELL",
+            "textFormat": {
+              "foregroundColor": {},
+              "fontFamily": "\"Times New Roman\"",
+              "fontSize": 10,
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "foregroundColorStyle": {
+                "rgbColor": {}
+              }
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 0.8352941,
+                "green": 0.6509804,
+                "blue": 0.7411765
+              }
+            }
+          }
+        },
+        {
+          "userEnteredFormat": {
+            "backgroundColor": {
+              "red": 0.8352941,
+              "green": 0.6509804,
+              "blue": 0.7411765
+            },
+            "horizontalAlignment": "CENTER",
+            "textFormat": {
+              "fontFamily": "\"Times New Roman\""
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 0.8352941,
+                "green": 0.6509804,
+                "blue": 0.7411765
+              }
+            }
+          },
+          "effectiveFormat": {
+            "backgroundColor": {
+              "red": 0.8352941,
+              "green": 0.6509804,
+              "blue": 0.7411765
+            },
+            "padding": {
+              "top": 2,
+              "right": 3,
+              "bottom": 2,
+              "left": 3
+            },
+            "horizontalAlignment": "CENTER",
+            "verticalAlignment": "BOTTOM",
+            "wrapStrategy": "OVERFLOW_CELL",
+            "textFormat": {
+              "foregroundColor": {},
+              "fontFamily": "\"Times New Roman\"",
+              "fontSize": 10,
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "foregroundColorStyle": {
+                "rgbColor": {}
+              }
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 0.8352941,
+                "green": 0.6509804,
+                "blue": 0.7411765
+              }
+            }
+          }
+        },
+        {
+          "userEnteredFormat": {
+            "backgroundColor": {
+              "red": 0.8352941,
+              "green": 0.6509804,
+              "blue": 0.7411765
+            },
+            "horizontalAlignment": "CENTER",
+            "textFormat": {
+              "fontFamily": "\"Times New Roman\""
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 0.8352941,
+                "green": 0.6509804,
+                "blue": 0.7411765
+              }
+            }
+          },
+          "effectiveFormat": {
+            "backgroundColor": {
+              "red": 0.8352941,
+              "green": 0.6509804,
+              "blue": 0.7411765
+            },
+            "padding": {
+              "top": 2,
+              "right": 3,
+              "bottom": 2,
+              "left": 3
+            },
+            "horizontalAlignment": "CENTER",
+            "verticalAlignment": "BOTTOM",
+            "wrapStrategy": "OVERFLOW_CELL",
+            "textFormat": {
+              "foregroundColor": {},
+              "fontFamily": "\"Times New Roman\"",
+              "fontSize": 10,
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "foregroundColorStyle": {
+                "rgbColor": {}
+              }
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 0.8352941,
+                "green": 0.6509804,
+                "blue": 0.7411765
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "values": [
+        {
+          "userEnteredValue": {
+            "numberValue": 1
+          },
+          "effectiveValue": {
+            "numberValue": 1
+          },
+          "formattedValue": "1",
+          "userEnteredFormat": {
+            "horizontalAlignment": "CENTER",
+            "textFormat": {
+              "fontFamily": "\"Times New Roman\""
+            }
+          },
+          "effectiveFormat": {
+            "backgroundColor": {
+              "red": 1,
+              "green": 1,
+              "blue": 1
+            },
+            "padding": {
+              "top": 2,
+              "right": 3,
+              "bottom": 2,
+              "left": 3
+            },
+            "horizontalAlignment": "CENTER",
+            "verticalAlignment": "BOTTOM",
+            "wrapStrategy": "OVERFLOW_CELL",
+            "textFormat": {
+              "foregroundColor": {},
+              "fontFamily": "\"Times New Roman\"",
+              "fontSize": 10,
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "foregroundColorStyle": {
+                "rgbColor": {}
+              }
+            },
+            "hyperlinkDisplayType": "PLAIN_TEXT",
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            }
+          }
+        },
+        {
+          "userEnteredValue": {
+            "numberValue": 45840
+          },
+          "effectiveValue": {
+            "numberValue": 45840
+          },
+          "formattedValue": "02/07/2025",
+          "userEnteredFormat": {
+            "numberFormat": {
+              "type": "DATE",
+              "pattern": "dd/mm/yyyy"
+            },
+            "horizontalAlignment": "CENTER",
+            "textFormat": {
+              "fontFamily": "\"Times New Roman\""
+            }
+          },
+          "effectiveFormat": {
+            "numberFormat": {
+              "type": "DATE",
+              "pattern": "dd/mm/yyyy"
+            },
+            "backgroundColor": {
+              "red": 1,
+              "green": 1,
+              "blue": 1
+            },
+            "padding": {
+              "top": 2,
+              "right": 3,
+              "bottom": 2,
+              "left": 3
+            },
+            "horizontalAlignment": "CENTER",
+            "verticalAlignment": "BOTTOM",
+            "wrapStrategy": "OVERFLOW_CELL",
+            "textFormat": {
+              "foregroundColor": {},
+              "fontFamily": "\"Times New Roman\"",
+              "fontSize": 10,
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "foregroundColorStyle": {
+                "rgbColor": {}
+              }
+            },
+            "hyperlinkDisplayType": "PLAIN_TEXT",
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            }
+          }
+        },
+        {
+          "userEnteredValue": {
+            "stringValue": "LIVE 1 - LÝ THUYẾT TRỌNG TÂM ESTER | VIP1"
+          },
+          "effectiveValue": {
+            "stringValue": "LIVE 1 - LÝ THUYẾT TRỌNG TÂM ESTER | VIP1"
+          },
+          "formattedValue": "LIVE 1 - LÝ THUYẾT TRỌNG TÂM ESTER | VIP1",
+          "userEnteredFormat": {
+            "backgroundColor": {
+              "red": 1,
+              "green": 1,
+              "blue": 1
+            },
+            "horizontalAlignment": "CENTER",
+            "textFormat": {
+              "fontFamily": "\"Times New Roman\""
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            }
+          },
+          "effectiveFormat": {
+            "backgroundColor": {
+              "red": 1,
+              "green": 1,
+              "blue": 1
+            },
+            "padding": {
+              "top": 2,
+              "right": 3,
+              "bottom": 2,
+              "left": 3
+            },
+            "horizontalAlignment": "CENTER",
+            "verticalAlignment": "BOTTOM",
+            "wrapStrategy": "OVERFLOW_CELL",
+            "textFormat": {
+              "foregroundColor": {},
+              "fontFamily": "\"Times New Roman\"",
+              "fontSize": 10,
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "foregroundColorStyle": {
+                "rgbColor": {}
+              }
+            },
+            "hyperlinkDisplayType": "PLAIN_TEXT",
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            }
+          }
+        },
+        {
+          "userEnteredValue": {
+            "stringValue": "FILE ĐỀ"
+          },
+          "effectiveValue": {
+            "stringValue": "FILE ĐỀ"
+          },
+          "formattedValue": "FILE ĐỀ",
+          "userEnteredFormat": {
+            "backgroundColor": {
+              "red": 0.8980392,
+              "green": 0.6,
+              "blue": 1
+            },
+            "horizontalAlignment": "CENTER",
+            "textFormat": {
+              "foregroundColor": {
+                "blue": 0.69803923
+              },
+              "fontFamily": "\"Times New Roman\"",
+              "bold": true,
+              "foregroundColorStyle": {
+                "rgbColor": {
+                  "blue": 0.69803923
+                }
+              },
+              "link": {
+                "uri": "https://drive.google.com/file/d/1L_uIH0iY-ZlDv1JcjSG6EIMEP5lS1PcS/view?usp=drivesdk"
+              }
+            },
+            "hyperlinkDisplayType": "LINKED",
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 0.8980392,
+                "green": 0.6,
+                "blue": 1
+              }
+            }
+          },
+          "effectiveFormat": {
+            "backgroundColor": {
+              "red": 0.8980392,
+              "green": 0.6,
+              "blue": 1
+            },
+            "padding": {
+              "top": 2,
+              "right": 3,
+              "bottom": 2,
+              "left": 3
+            },
+            "horizontalAlignment": "CENTER",
+            "verticalAlignment": "BOTTOM",
+            "wrapStrategy": "OVERFLOW_CELL",
+            "textFormat": {
+              "foregroundColor": {
+                "blue": 0.69803923
+              },
+              "fontFamily": "\"Times New Roman\"",
+              "fontSize": 10,
+              "bold": true,
+              "italic": false,
+              "strikethrough": false,
+              "underline": true,
+              "foregroundColorStyle": {
+                "rgbColor": {
+                  "blue": 0.69803923
+                }
+              },
+              "link": {
+                "uri": "https://drive.google.com/file/d/1L_uIH0iY-ZlDv1JcjSG6EIMEP5lS1PcS/view?usp=drivesdk"
+              }
+            },
+            "hyperlinkDisplayType": "LINKED",
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 0.8980392,
+                "green": 0.6,
+                "blue": 1
+              }
+            }
+          },
+          "hyperlink": "https://drive.google.com/file/d/1L_uIH0iY-ZlDv1JcjSG6EIMEP5lS1PcS/view?usp=drivesdk",
+          "note": "Link gốc: https://drive.google.com/file/d/1NDjK-2VhStyqi3xaUd__FZcRT1M67PMl/view\nĐã xử lý lúc: 23:02:15 5/7/2025"
+        },
+        {
+          "userEnteredValue": {
+            "stringValue": "LIVESTREAM"
+          },
+          "effectiveValue": {
+            "stringValue": "LIVESTREAM"
+          },
+          "formattedValue": "LIVESTREAM",
+          "userEnteredFormat": {
+            "horizontalAlignment": "CENTER",
+            "textFormat": {
+              "fontFamily": "\"Times New Roman\"",
+              "link": {
+                "uri": "https://www.youtube.com/watch?v=mtBFXgPjrIo"
+              }
+            },
+            "hyperlinkDisplayType": "LINKED"
+          },
+          "effectiveFormat": {
+            "backgroundColor": {
+              "red": 1,
+              "green": 1,
+              "blue": 1
+            },
+            "padding": {
+              "top": 2,
+              "right": 3,
+              "bottom": 2,
+              "left": 3
+            },
+            "horizontalAlignment": "CENTER",
+            "verticalAlignment": "BOTTOM",
+            "wrapStrategy": "OVERFLOW_CELL",
+            "textFormat": {
+              "foregroundColor": {
+                "red": 0.06666667,
+                "green": 0.33333334,
+                "blue": 0.8
+              },
+              "fontFamily": "\"Times New Roman\"",
+              "fontSize": 10,
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": true,
+              "foregroundColorStyle": {
+                "rgbColor": {
+                  "red": 0.06666667,
+                  "green": 0.33333334,
+                  "blue": 0.8
+                }
+              },
+              "link": {
+                "uri": "https://www.youtube.com/watch?v=mtBFXgPjrIo"
+              }
+            },
+            "hyperlinkDisplayType": "LINKED",
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            }
+          },
+          "hyperlink": "https://www.youtube.com/watch?v=mtBFXgPjrIo"
+        },
+        {
+          "userEnteredValue": {
+            "stringValue": "SLIDE NOTES"
+          },
+          "effectiveValue": {
+            "stringValue": "SLIDE NOTES"
+          },
+          "formattedValue": "SLIDE NOTES",
+          "userEnteredFormat": {
+            "backgroundColor": {
+              "red": 0.8980392,
+              "green": 0.6,
+              "blue": 1
+            },
+            "horizontalAlignment": "CENTER",
+            "textFormat": {
+              "foregroundColor": {
+                "blue": 0.69803923
+              },
+              "fontFamily": "\"Times New Roman\"",
+              "bold": true,
+              "foregroundColorStyle": {
+                "rgbColor": {
+                  "blue": 0.69803923
+                }
+              },
+              "link": {
+                "uri": "https://drive.google.com/file/d/1mh64v5Vtgjxc-PLkD97C0OVGBAtzUmYH/view?usp=drivesdk"
+              }
+            },
+            "hyperlinkDisplayType": "LINKED",
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 0.8980392,
+                "green": 0.6,
+                "blue": 1
+              }
+            }
+          },
+          "effectiveFormat": {
+            "backgroundColor": {
+              "red": 0.8980392,
+              "green": 0.6,
+              "blue": 1
+            },
+            "padding": {
+              "top": 2,
+              "right": 3,
+              "bottom": 2,
+              "left": 3
+            },
+            "horizontalAlignment": "CENTER",
+            "verticalAlignment": "BOTTOM",
+            "wrapStrategy": "OVERFLOW_CELL",
+            "textFormat": {
+              "foregroundColor": {
+                "blue": 0.69803923
+              },
+              "fontFamily": "\"Times New Roman\"",
+              "fontSize": 10,
+              "bold": true,
+              "italic": false,
+              "strikethrough": false,
+              "underline": true,
+              "foregroundColorStyle": {
+                "rgbColor": {
+                  "blue": 0.69803923
+                }
+              },
+              "link": {
+                "uri": "https://drive.google.com/file/d/1mh64v5Vtgjxc-PLkD97C0OVGBAtzUmYH/view?usp=drivesdk"
+              }
+            },
+            "hyperlinkDisplayType": "LINKED",
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 0.8980392,
+                "green": 0.6,
+                "blue": 1
+              }
+            }
+          },
+          "hyperlink": "https://drive.google.com/file/d/1mh64v5Vtgjxc-PLkD97C0OVGBAtzUmYH/view?usp=drivesdk",
+          "note": "Link gốc: https://drive.google.com/file/d/1tjacR4RcP4NGz2qIGojYXuwp-I8XbUw9/view\nĐã xử lý lúc: 23:02:15 5/7/2025"
+        }
+      ]
+    },
+    {
+      "values": [
+        {
+          "userEnteredValue": {
+            "numberValue": 2
+          },
+          "effectiveValue": {
+            "numberValue": 2
+          },
+          "formattedValue": "2",
+          "userEnteredFormat": {
+            "horizontalAlignment": "CENTER",
+            "textFormat": {
+              "fontFamily": "\"Times New Roman\""
+            }
+          },
+          "effectiveFormat": {
+            "backgroundColor": {
+              "red": 1,
+              "green": 1,
+              "blue": 1
+            },
+            "padding": {
+              "top": 2,
+              "right": 3,
+              "bottom": 2,
+              "left": 3
+            },
+            "horizontalAlignment": "CENTER",
+            "verticalAlignment": "BOTTOM",
+            "wrapStrategy": "OVERFLOW_CELL",
+            "textFormat": {
+              "foregroundColor": {},
+              "fontFamily": "\"Times New Roman\"",
+              "fontSize": 10,
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "foregroundColorStyle": {
+                "rgbColor": {}
+              }
+            },
+            "hyperlinkDisplayType": "PLAIN_TEXT",
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            }
+          }
+        },
+        {
+          "userEnteredValue": {
+            "numberValue": 45841
+          },
+          "effectiveValue": {
+            "numberValue": 45841
+          },
+          "formattedValue": "03/07/2025",
+          "userEnteredFormat": {
+            "numberFormat": {
+              "type": "DATE",
+              "pattern": "dd/mm/yyyy"
+            },
+            "horizontalAlignment": "CENTER",
+            "textFormat": {
+              "fontFamily": "\"Times New Roman\""
+            }
+          },
+          "effectiveFormat": {
+            "numberFormat": {
+              "type": "DATE",
+              "pattern": "dd/mm/yyyy"
+            },
+            "backgroundColor": {
+              "red": 1,
+              "green": 1,
+              "blue": 1
+            },
+            "padding": {
+              "top": 2,
+              "right": 3,
+              "bottom": 2,
+              "left": 3
+            },
+            "horizontalAlignment": "CENTER",
+            "verticalAlignment": "BOTTOM",
+            "wrapStrategy": "OVERFLOW_CELL",
+            "textFormat": {
+              "foregroundColor": {},
+              "fontFamily": "\"Times New Roman\"",
+              "fontSize": 10,
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "foregroundColorStyle": {
+                "rgbColor": {}
+              }
+            },
+            "hyperlinkDisplayType": "PLAIN_TEXT",
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            }
+          }
+        },
+        {
+          "userEnteredValue": {
+            "stringValue": "LIVE 2 - LÝ THUYẾT TRỌNG TÂM ESTER | VIP2"
+          },
+          "effectiveValue": {
+            "stringValue": "LIVE 2 - LÝ THUYẾT TRỌNG TÂM ESTER | VIP2"
+          },
+          "formattedValue": "LIVE 2 - LÝ THUYẾT TRỌNG TÂM ESTER | VIP2",
+          "userEnteredFormat": {
+            "backgroundColor": {
+              "red": 1,
+              "green": 1,
+              "blue": 1
+            },
+            "horizontalAlignment": "CENTER",
+            "textFormat": {
+              "fontFamily": "\"Times New Roman\""
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            }
+          },
+          "effectiveFormat": {
+            "backgroundColor": {
+              "red": 1,
+              "green": 1,
+              "blue": 1
+            },
+            "padding": {
+              "top": 2,
+              "right": 3,
+              "bottom": 2,
+              "left": 3
+            },
+            "horizontalAlignment": "CENTER",
+            "verticalAlignment": "BOTTOM",
+            "wrapStrategy": "OVERFLOW_CELL",
+            "textFormat": {
+              "foregroundColor": {},
+              "fontFamily": "\"Times New Roman\"",
+              "fontSize": 10,
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "foregroundColorStyle": {
+                "rgbColor": {}
+              }
+            },
+            "hyperlinkDisplayType": "PLAIN_TEXT",
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            }
+          }
+        },
+        {
+          "userEnteredValue": {
+            "stringValue": "FILE ĐỀ"
+          },
+          "effectiveValue": {
+            "stringValue": "FILE ĐỀ"
+          },
+          "formattedValue": "FILE ĐỀ",
+          "userEnteredFormat": {
+            "backgroundColor": {
+              "red": 0.8980392,
+              "green": 0.6,
+              "blue": 1
+            },
+            "horizontalAlignment": "CENTER",
+            "textFormat": {
+              "foregroundColor": {
+                "blue": 0.69803923
+              },
+              "fontFamily": "\"Times New Roman\"",
+              "bold": true,
+              "foregroundColorStyle": {
+                "rgbColor": {
+                  "blue": 0.69803923
+                }
+              },
+              "link": {
+                "uri": "https://drive.google.com/file/d/1cjBkG5Dte1MZ90gp-G6alDN0nBndCzO1/view?usp=drivesdk"
+              }
+            },
+            "hyperlinkDisplayType": "LINKED",
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 0.8980392,
+                "green": 0.6,
+                "blue": 1
+              }
+            }
+          },
+          "effectiveFormat": {
+            "backgroundColor": {
+              "red": 0.8980392,
+              "green": 0.6,
+              "blue": 1
+            },
+            "padding": {
+              "top": 2,
+              "right": 3,
+              "bottom": 2,
+              "left": 3
+            },
+            "horizontalAlignment": "CENTER",
+            "verticalAlignment": "BOTTOM",
+            "wrapStrategy": "OVERFLOW_CELL",
+            "textFormat": {
+              "foregroundColor": {
+                "blue": 0.69803923
+              },
+              "fontFamily": "\"Times New Roman\"",
+              "fontSize": 10,
+              "bold": true,
+              "italic": false,
+              "strikethrough": false,
+              "underline": true,
+              "foregroundColorStyle": {
+                "rgbColor": {
+                  "blue": 0.69803923
+                }
+              },
+              "link": {
+                "uri": "https://drive.google.com/file/d/1cjBkG5Dte1MZ90gp-G6alDN0nBndCzO1/view?usp=drivesdk"
+              }
+            },
+            "hyperlinkDisplayType": "LINKED",
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 0.8980392,
+                "green": 0.6,
+                "blue": 1
+              }
+            }
+          },
+          "hyperlink": "https://drive.google.com/file/d/1cjBkG5Dte1MZ90gp-G6alDN0nBndCzO1/view?usp=drivesdk",
+          "note": "Link gốc: https://drive.google.com/file/d/1io6_bbgC1Ot8z3W2U9n5aU-LjZJD26cT/view\nĐã xử lý lúc: 23:02:15 5/7/2025"
+        },
+        {
+          "userEnteredValue": {
+            "stringValue": "LIVESTREAM"
+          },
+          "effectiveValue": {
+            "stringValue": "LIVESTREAM"
+          },
+          "formattedValue": "LIVESTREAM",
+          "userEnteredFormat": {
+            "horizontalAlignment": "CENTER",
+            "textFormat": {
+              "fontFamily": "\"Times New Roman\"",
+              "link": {
+                "uri": "https://www.youtube.com/watch?v=cAKUlK9EYXc&feature=youtu.be"
+              }
+            },
+            "hyperlinkDisplayType": "LINKED"
+          },
+          "effectiveFormat": {
+            "backgroundColor": {
+              "red": 1,
+              "green": 1,
+              "blue": 1
+            },
+            "padding": {
+              "top": 2,
+              "right": 3,
+              "bottom": 2,
+              "left": 3
+            },
+            "horizontalAlignment": "CENTER",
+            "verticalAlignment": "BOTTOM",
+            "wrapStrategy": "OVERFLOW_CELL",
+            "textFormat": {
+              "foregroundColor": {
+                "red": 0.06666667,
+                "green": 0.33333334,
+                "blue": 0.8
+              },
+              "fontFamily": "\"Times New Roman\"",
+              "fontSize": 10,
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": true,
+              "foregroundColorStyle": {
+                "rgbColor": {
+                  "red": 0.06666667,
+                  "green": 0.33333334,
+                  "blue": 0.8
+                }
+              },
+              "link": {
+                "uri": "https://www.youtube.com/watch?v=cAKUlK9EYXc&feature=youtu.be"
+              }
+            },
+            "hyperlinkDisplayType": "LINKED",
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            }
+          },
+          "hyperlink": "https://www.youtube.com/watch?v=cAKUlK9EYXc&feature=youtu.be"
+        },
+        {
+          "userEnteredValue": {
+            "stringValue": "SLIDE NOTES"
+          },
+          "effectiveValue": {
+            "stringValue": "SLIDE NOTES"
+          },
+          "formattedValue": "SLIDE NOTES",
+          "userEnteredFormat": {
+            "backgroundColor": {
+              "red": 0.8980392,
+              "green": 0.6,
+              "blue": 1
+            },
+            "horizontalAlignment": "CENTER",
+            "textFormat": {
+              "foregroundColor": {
+                "blue": 0.69803923
+              },
+              "fontFamily": "\"Times New Roman\"",
+              "bold": true,
+              "foregroundColorStyle": {
+                "rgbColor": {
+                  "blue": 0.69803923
+                }
+              },
+              "link": {
+                "uri": "https://drive.google.com/file/d/1hfi2O46VCa-_GD0IuYMSo0U8ktN-BE8U/view?usp=drivesdk"
+              }
+            },
+            "hyperlinkDisplayType": "LINKED",
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 0.8980392,
+                "green": 0.6,
+                "blue": 1
+              }
+            }
+          },
+          "effectiveFormat": {
+            "backgroundColor": {
+              "red": 0.8980392,
+              "green": 0.6,
+              "blue": 1
+            },
+            "padding": {
+              "top": 2,
+              "right": 3,
+              "bottom": 2,
+              "left": 3
+            },
+            "horizontalAlignment": "CENTER",
+            "verticalAlignment": "BOTTOM",
+            "wrapStrategy": "OVERFLOW_CELL",
+            "textFormat": {
+              "foregroundColor": {
+                "blue": 0.69803923
+              },
+              "fontFamily": "\"Times New Roman\"",
+              "fontSize": 10,
+              "bold": true,
+              "italic": false,
+              "strikethrough": false,
+              "underline": true,
+              "foregroundColorStyle": {
+                "rgbColor": {
+                  "blue": 0.69803923
+                }
+              },
+              "link": {
+                "uri": "https://drive.google.com/file/d/1hfi2O46VCa-_GD0IuYMSo0U8ktN-BE8U/view?usp=drivesdk"
+              }
+            },
+            "hyperlinkDisplayType": "LINKED",
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 0.8980392,
+                "green": 0.6,
+                "blue": 1
+              }
+            }
+          },
+          "hyperlink": "https://drive.google.com/file/d/1hfi2O46VCa-_GD0IuYMSo0U8ktN-BE8U/view?usp=drivesdk",
+          "note": "Link gốc: https://drive.google.com/file/d/1Dz4rDUBCo9A1-m2R8nsD34o9ijpQo_Sk/view\nĐã xử lý lúc: 23:02:16 5/7/2025"
+        }
+      ]
+    },
+    {
+      "values": [
+        {
+          "userEnteredValue": {
+            "numberValue": 3
+          },
+          "effectiveValue": {
+            "numberValue": 3
+          },
+          "formattedValue": "3",
+          "userEnteredFormat": {
+            "backgroundColor": {
+              "red": 1,
+              "green": 1
+            },
+            "horizontalAlignment": "CENTER",
+            "textFormat": {
+              "fontFamily": "\"Times New Roman\""
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1
+              }
+            }
+          },
+          "effectiveFormat": {
+            "backgroundColor": {
+              "red": 1,
+              "green": 1
+            },
+            "padding": {
+              "top": 2,
+              "right": 3,
+              "bottom": 2,
+              "left": 3
+            },
+            "horizontalAlignment": "CENTER",
+            "verticalAlignment": "BOTTOM",
+            "wrapStrategy": "OVERFLOW_CELL",
+            "textFormat": {
+              "foregroundColor": {},
+              "fontFamily": "\"Times New Roman\"",
+              "fontSize": 10,
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "foregroundColorStyle": {
+                "rgbColor": {}
+              }
+            },
+            "hyperlinkDisplayType": "PLAIN_TEXT",
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1
+              }
+            }
+          }
+        },
+        {
+          "userEnteredValue": {
+            "numberValue": 45842
+          },
+          "effectiveValue": {
+            "numberValue": 45842
+          },
+          "formattedValue": "04/07/2025",
+          "userEnteredFormat": {
+            "numberFormat": {
+              "type": "DATE",
+              "pattern": "dd/mm/yyyy"
+            },
+            "backgroundColor": {
+              "red": 1,
+              "green": 1
+            },
+            "horizontalAlignment": "CENTER",
+            "textFormat": {
+              "fontFamily": "\"Times New Roman\""
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1
+              }
+            }
+          },
+          "effectiveFormat": {
+            "numberFormat": {
+              "type": "DATE",
+              "pattern": "dd/mm/yyyy"
+            },
+            "backgroundColor": {
+              "red": 1,
+              "green": 1
+            },
+            "padding": {
+              "top": 2,
+              "right": 3,
+              "bottom": 2,
+              "left": 3
+            },
+            "horizontalAlignment": "CENTER",
+            "verticalAlignment": "BOTTOM",
+            "wrapStrategy": "OVERFLOW_CELL",
+            "textFormat": {
+              "foregroundColor": {},
+              "fontFamily": "\"Times New Roman\"",
+              "fontSize": 10,
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "foregroundColorStyle": {
+                "rgbColor": {}
+              }
+            },
+            "hyperlinkDisplayType": "PLAIN_TEXT",
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1
+              }
+            }
+          }
+        },
+        {
+          "userEnteredValue": {
+            "stringValue": "LIVE 3 - LÝ THUYẾT TRỌNG TÂM ESTER | VIP3"
+          },
+          "effectiveValue": {
+            "stringValue": "LIVE 3 - LÝ THUYẾT TRỌNG TÂM ESTER | VIP3"
+          },
+          "formattedValue": "LIVE 3 - LÝ THUYẾT TRỌNG TÂM ESTER | VIP3",
+          "userEnteredFormat": {
+            "backgroundColor": {
+              "red": 1,
+              "green": 1
+            },
+            "horizontalAlignment": "CENTER",
+            "textFormat": {
+              "fontFamily": "\"Times New Roman\""
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1
+              }
+            }
+          },
+          "effectiveFormat": {
+            "backgroundColor": {
+              "red": 1,
+              "green": 1
+            },
+            "padding": {
+              "top": 2,
+              "right": 3,
+              "bottom": 2,
+              "left": 3
+            },
+            "horizontalAlignment": "CENTER",
+            "verticalAlignment": "BOTTOM",
+            "wrapStrategy": "OVERFLOW_CELL",
+            "textFormat": {
+              "foregroundColor": {},
+              "fontFamily": "\"Times New Roman\"",
+              "fontSize": 10,
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "foregroundColorStyle": {
+                "rgbColor": {}
+              }
+            },
+            "hyperlinkDisplayType": "PLAIN_TEXT",
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1
+              }
+            }
+          }
+        },
+        {
+          "userEnteredValue": {
+            "stringValue": "FILE ĐỀ"
+          },
+          "effectiveValue": {
+            "stringValue": "FILE ĐỀ"
+          },
+          "formattedValue": "FILE ĐỀ",
+          "userEnteredFormat": {
+            "backgroundColor": {
+              "red": 0.8980392,
+              "green": 0.6,
+              "blue": 1
+            },
+            "horizontalAlignment": "CENTER",
+            "textFormat": {
+              "foregroundColor": {
+                "blue": 0.69803923
+              },
+              "fontFamily": "\"Times New Roman\"",
+              "bold": true,
+              "foregroundColorStyle": {
+                "rgbColor": {
+                  "blue": 0.69803923
+                }
+              },
+              "link": {
+                "uri": "https://drive.google.com/file/d/1Q-_D_3lApybvhoPMWlL1hJxSAYQbgzP6/view?usp=drivesdk"
+              }
+            },
+            "hyperlinkDisplayType": "LINKED",
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 0.8980392,
+                "green": 0.6,
+                "blue": 1
+              }
+            }
+          },
+          "effectiveFormat": {
+            "backgroundColor": {
+              "red": 0.8980392,
+              "green": 0.6,
+              "blue": 1
+            },
+            "padding": {
+              "top": 2,
+              "right": 3,
+              "bottom": 2,
+              "left": 3
+            },
+            "horizontalAlignment": "CENTER",
+            "verticalAlignment": "BOTTOM",
+            "wrapStrategy": "OVERFLOW_CELL",
+            "textFormat": {
+              "foregroundColor": {
+                "blue": 0.69803923
+              },
+              "fontFamily": "\"Times New Roman\"",
+              "fontSize": 10,
+              "bold": true,
+              "italic": false,
+              "strikethrough": false,
+              "underline": true,
+              "foregroundColorStyle": {
+                "rgbColor": {
+                  "blue": 0.69803923
+                }
+              },
+              "link": {
+                "uri": "https://drive.google.com/file/d/1Q-_D_3lApybvhoPMWlL1hJxSAYQbgzP6/view?usp=drivesdk"
+              }
+            },
+            "hyperlinkDisplayType": "LINKED",
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 0.8980392,
+                "green": 0.6,
+                "blue": 1
+              }
+            }
+          },
+          "hyperlink": "https://drive.google.com/file/d/1Q-_D_3lApybvhoPMWlL1hJxSAYQbgzP6/view?usp=drivesdk",
+          "note": "Link gốc: https://drive.google.com/file/d/1uhAI9qcaTJfq6Pbyan9L_4v-fLkuCpQz/view\nĐã xử lý lúc: 23:02:16 5/7/2025"
+        },
+        {
+          "userEnteredFormat": {
+            "backgroundColor": {
+              "red": 1,
+              "green": 1
+            },
+            "horizontalAlignment": "CENTER",
+            "textFormat": {
+              "fontFamily": "\"Times New Roman\""
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1
+              }
+            }
+          },
+          "effectiveFormat": {
+            "backgroundColor": {
+              "red": 1,
+              "green": 1
+            },
+            "padding": {
+              "top": 2,
+              "right": 3,
+              "bottom": 2,
+              "left": 3
+            },
+            "horizontalAlignment": "CENTER",
+            "verticalAlignment": "BOTTOM",
+            "wrapStrategy": "OVERFLOW_CELL",
+            "textFormat": {
+              "foregroundColor": {},
+              "fontFamily": "\"Times New Roman\"",
+              "fontSize": 10,
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "foregroundColorStyle": {
+                "rgbColor": {}
+              }
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1
+              }
+            }
+          }
+        },
+        {
+          "userEnteredFormat": {
+            "backgroundColor": {
+              "red": 1,
+              "green": 1
+            },
+            "horizontalAlignment": "CENTER",
+            "textFormat": {
+              "fontFamily": "\"Times New Roman\""
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1
+              }
+            }
+          },
+          "effectiveFormat": {
+            "backgroundColor": {
+              "red": 1,
+              "green": 1
+            },
+            "padding": {
+              "top": 2,
+              "right": 3,
+              "bottom": 2,
+              "left": 3
+            },
+            "horizontalAlignment": "CENTER",
+            "verticalAlignment": "BOTTOM",
+            "wrapStrategy": "OVERFLOW_CELL",
+            "textFormat": {
+              "foregroundColor": {},
+              "fontFamily": "\"Times New Roman\"",
+              "fontSize": 10,
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "foregroundColorStyle": {
+                "rgbColor": {}
+              }
+            },
+            "backgroundColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "range": "'Trang tính1'!A1:Z1000",
+  "majorDimension": "ROWS",
+  "merges": [],
+  "fetchedAt": 1751738213430
+}
