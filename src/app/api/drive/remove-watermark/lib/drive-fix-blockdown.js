@@ -127,7 +127,7 @@ export async function processPDF(inputPath, outputPath, config = DEFAULT_CONFIG,
         const skipProcessing = config && (config.skipWatermarkRemoval || config.skipImageProcessing || config.preserveOriginal || config.noProcessing);
         const suffix = skipProcessing ? '_original' : '_clean';
         
-        outputPath = path.join(tempDir, `blocked_${fileId}${suffix}.pdf`);
+        outputPath = path.join(tempDir, `TÀI LIỆU${fileId}${suffix}.pdf`);
       } else {
         throw new Error('Không thể xác định đường dẫn đầu ra');
       }
@@ -142,7 +142,7 @@ export async function processPDF(inputPath, outputPath, config = DEFAULT_CONFIG,
     if (isBlocked && fileId) {
       // Xử lý PDF bị chặn từ Google Drive
       console.log(`🔒 Phát hiện PDF bị chặn từ Google Drive, sử dụng phương pháp đặc biệt...`);
-      const fileName = inputPath ? path.basename(inputPath) : `blocked_${fileId}.pdf`;
+      const fileName = inputPath ? path.basename(inputPath) : `TÀI LIỆU${fileId}.pdf`;
       
       // Thêm xử lý timeout và retry
       let retryCount = 0;

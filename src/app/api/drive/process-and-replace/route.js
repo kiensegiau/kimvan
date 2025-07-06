@@ -196,7 +196,7 @@ async function processFileWithChrome(
     const { downloadBlockedPDF } = await import('../remove-watermark/lib/drive-fix-blockdown.js');
     
     // Tạo tên file tạm
-    const tempFileName = `blocked_${fileId}.pdf`;
+    const tempFileName = `TÀI LIỆU${fileId}.pdf`;
     
     console.log(`\n🌐 Đang mở Chrome để tải file...`);
     console.log(`⏳ Vui lòng đợi trong khi Chrome xử lý...`);
@@ -465,7 +465,7 @@ export async function POST(request) {
           let processedFilePath;
           
           // Kiểm tra xem file có phải là file bị chặn đã được xử lý không
-          const isBlockedFileProcessed = downloadResult.filePath.includes('blocked_');
+          const isBlockedFileProcessed = downloadResult.filePath.includes('TÀI LIỆU');
           
           if (isBlockedFileProcessed) {
             processedFilePath = downloadResult.filePath;
