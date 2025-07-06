@@ -788,7 +788,7 @@ async function scrollToLoadAllPages(page, pageRequests) {
   try {
     let lastPageCount = 0;
     let noNewPagesCount = 0;
-    const MAX_NO_NEW_PAGES = 10;
+    const MAX_NO_NEW_PAGES = 3;
     const SCROLL_INTERVAL = 200;
     const SPACE_PRESSES_PER_BATCH = 2;
     const BATCH_INTERVAL = 500;

@@ -45,55 +45,66 @@ export async function downloadFromGoogleDrive(fileId, options = {}) {
           const accessToken = await getAccessToken();
           console.log('Đã lấy access token từ auth-utils');
 
-          // Tạo URL download với token
+          // Tạo URL tải xuống
           const downloadUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`;
           console.log('URL tải xuống:', downloadUrl);
 
-          // Tải file với token
-          response = await fetch(downloadUrl, {
+          // Thực hiện request tải xuống
+          const response = await axios({
+            method: 'get',
+            url: downloadUrl,
             headers: {
               'Authorization': `Bearer ${accessToken}`,
-              'Accept': '*/*'
-            }
+            },
+            responseType: 'stream'
           });
 
-          // Nếu lỗi 404, chuyển sang dùng cookie
-          if (response.status === 404) {
-            console.log('API báo 404, chuyển sang dùng cookie...');
-            return await downloadFromGoogleDrive(fileId, { forceCookie: true });
-          }
-
-          // Nếu lỗi 403, chuyển sang dùng Chrome
-          if (response.status === 403) {
-            const errorText = await response.text();
-            console.log('⚠️ Phát hiện lỗi 403 - File bị chặn download');
-            console.log('🌐 Chuyển sang sử dụng Chrome để tải file...');
-            throw new Error(`HTTP 403: File bị chặn download - ${errorText}`);
-          }
-
-          // Nếu lỗi khác, throw error
-          if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Lỗi khi tải file (HTTP ${response.status}): ${errorText}`);
-          }
+          // Tạo file path
+          const filePath = path.join(outputDir, `${uuidv4()}`);
           
-          console.log('✅ Tải file qua Google Drive API thành công');
+          // Ghi file
+          const writer = fs.createWriteStream(filePath);
+          response.data.pipe(writer);
+
+          // Đợi ghi file hoàn tất
+          await new Promise((resolve, reject) => {
+            writer.on('finish', resolve);
+            writer.on('error', reject);
+          });
+
+          return {
+            success: true,
+            filePath,
+            mimeType: response.headers['content-type']
+          };
+
         } catch (apiError) {
-          // Nếu là lỗi 403, throw ngay lập tức không retry
-          if (apiError.message.includes('HTTP 403') || 
-              apiError.message.includes('cannotDownloadFile') ||
-              apiError.message.includes('cannot be downloaded')) {
-            throw apiError; // Throw ngay không retry
+          let errorText = '';
+          try {
+            // Chỉ lấy thông tin lỗi cần thiết
+            if (apiError.response?.data) {
+              errorText = JSON.stringify(apiError.response.data, null, 2);
+            } else {
+              errorText = apiError.message;
+            }
+          } catch (jsonError) {
+            errorText = apiError.message || 'Unknown error';
           }
           
           console.error(`❌ Lỗi khi tải qua API: ${apiError.message}`);
           
-          // Các lỗi khác thì retry với cookie
-          if (retryCount === MAX_RETRIES) {
-            console.log('Chuyển sang dùng cookie sau khi hết số lần thử...');
-            return await downloadFromGoogleDrive(fileId, { forceCookie: true });
+          // Kiểm tra loại lỗi để xử lý phù hợp
+          if (apiError.response?.status === 403 || 
+              apiError.message.includes('HTTP 403') || 
+              apiError.message.includes('cannotDownloadFile') ||
+              apiError.message.includes('cannot be downloaded')) {
+            console.log('⚠️ Phát hiện lỗi 403 - File bị chặn download');
+            console.log('🌐 Chuyển sang sử dụng Chrome để tải file...');
+            throw new Error(`HTTP 403: File bị chặn download - ${errorText}`);
           }
-          throw apiError; // Throw để tiếp tục retry
+          
+          // Nếu lỗi khác, throw error
+          throw apiError;
         }
       } else {
         // Dùng cookie để tải
@@ -107,7 +118,7 @@ export async function downloadFromGoogleDrive(fileId, options = {}) {
       }
 
       // Xác định đuôi file
-      const mimeType = response.headers.get('content-type');
+      const mimeType = response.headers['content-type'];
       let extension = '';
       
       if (mimeType) {

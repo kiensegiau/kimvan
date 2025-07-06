@@ -453,136 +453,72 @@ export async function POST(request) {
       tempDir = path.join(os.tmpdir(), uuidv4());
       fs.mkdirSync(tempDir, { recursive: true });
       
-      // Thử tải file trực tiếp
       try {
+        // Thử tải file trực tiếp
         const downloadResult = await downloadFromGoogleDrive(fileId);
         
         if (downloadResult.success) {
-          console.log(`✅ Tải file thành công: ${downloadResult.filePath}`);
+          console.log(`✅ Đã tải thành công file: ${downloadResult.filePath}`);
           console.log(`📄 MIME type: ${downloadResult.mimeType}`);
           
           // Tiếp tục xử lý file như bình thường
           let processedFilePath;
           
           // Kiểm tra xem file có phải là file bị chặn đã được xử lý không
-          const isBlockedFileProcessed = downloadResult.filePath && 
-            downloadResult.filePath.includes('blocked_') && 
-            downloadResult.filePath.includes('_clean');
-            
+          const isBlockedFileProcessed = downloadResult.filePath.includes('blocked_');
+          
           if (isBlockedFileProcessed) {
-            console.log('File đã được xử lý bởi drive-fix-blockdown, bỏ qua bước xử lý thông thường');
             processedFilePath = downloadResult.filePath;
           } else {
-            // Xử lý file theo loại
-            if (downloadResult.mimeType.includes('pdf')) {
-              console.log('Phát hiện file PDF, tiến hành xử lý xóa watermark...');
-              const processResult = await processFile(downloadResult.filePath, downloadResult.mimeType, apiKey);
-              processedFilePath = processResult.processedPath;
-            } else {
-              console.log(`Phát hiện file không phải PDF (${downloadResult.mimeType}), chỉ tải xuống và upload lại`);
-              processedFilePath = downloadResult.filePath;
-            }
+            processedFilePath = await processFile(downloadResult.filePath, downloadResult.mimeType);
           }
           
           // Upload file đã xử lý lên Drive
-          console.log(`\n🔄 Đang upload file đã xử lý lên Drive...`);
-          const uploadResult = await uploadToGoogleDrive(processedFilePath, targetFolderId, path.basename(processedFilePath));
+          const uploadResult = await uploadToGoogleDrive(processedFilePath, targetFolderName || courseName || 'Unknown');
           
-          // Cập nhật sheet nếu cần
-          if (updateSheet) {
-            console.log(`\n🔄 Cập nhật Google Sheet...`);
-            await updateGoogleSheetCell(
-              sheetId,
-              googleSheetName,
-              rowIndex,
-              cellIndex,
-              uploadResult.webViewLink,
-              sheetId,
-              googleSheetName,
-              displayText,
-              driveLink,
-              startTime
-            );
+          // Cập nhật cell trong sheet
+          if (uploadResult.success) {
+            await updateSheetCell(fileId, {
+              newLink: uploadResult.webViewLink,
+              oldLink: driveLink,
+              source: isBlockedFileProcessed ? '403_chrome' : 'direct'
+            });
           }
           
-          // Dọn dẹp
-          try {
-            if (tempDir) {
-              fs.rmSync(tempDir, { recursive: true, force: true });
-              console.log(`\n🧹 Đã xóa thư mục tạm: ${tempDir}`);
-            }
-          } catch (cleanupError) {
-            console.error('Lỗi khi dọn dẹp:', cleanupError);
-          }
-          
-          return NextResponse.json({
-            success: true,
-            message: 'Đã xử lý file thành công',
-            link: uploadResult.webViewLink
-          });
-        } else {
-          throw new Error(downloadResult.error || 'Unknown error during download');
+          return NextResponse.json(uploadResult);
         }
-      } catch (error) {
-        // Xử lý lỗi 403 - File bị chặn
-        if (error.message.includes('HTTP 403') || error.message.includes('cannotDownloadFile')) {
+      } catch (downloadError) {
+        // Xử lý lỗi 403 ngay lập tức
+        if (downloadError.message.includes('HTTP 403') || downloadError.message.includes('cannotDownloadFile')) {
           console.log('⚠️ Phát hiện lỗi 403 - File bị chặn download');
           console.log('🌐 Chuyển sang sử dụng Chrome để tải file...');
           
-          // Thêm vào hàng đợi xử lý bằng Chrome
-          const chromeResult = await addToProcessingQueue({
+          // Thêm vào hàng đợi xử lý Chrome
+          console.log('\n📋 Thêm file vào hàng đợi xử lý Chrome:');
+          console.log(`🔍 File ID: ${fileId}`);
+          console.log(`📄 Tên file: ${targetFolderName || courseName || 'Unknown'}`);
+          console.log(`⚠️ Loại lỗi: 403`);
+          
+          // Thêm vào hàng đợi và xử lý
+          await addToProcessingQueue({
             fileId,
-            fileName: displayText || 'Unknown',
-            tempDir,
             driveLink,
-            targetFolderId,
-            targetFolderName: courseName || 'Unknown',
-            courseName,
-            apiKey,
-            updateSheet,
-            courseId,
-            sheetIndex,
-            rowIndex,
-            cellIndex,
-            sheetId,
-            googleSheetName,
-            displayText,
-            request,
-            startTime,
+            targetFolderName: targetFolderName || courseName || 'Unknown',
             errorType: '403'
           });
-
-          return NextResponse.json(chromeResult);
+          
+          return NextResponse.json({ 
+            status: 'queued',
+            message: 'File đã được thêm vào hàng đợi xử lý Chrome'
+          });
         }
         
-        // Nếu không phải lỗi 403, thử lại với cookie
-        console.log('Chuyển sang dùng cookie...');
-        return await downloadFromGoogleDrive(fileId, { forceCookie: true });
+        // Các lỗi khác thì throw
+        throw downloadError;
       }
-      
-      // ... rest of the code ...
     } catch (error) {
-      console.error('Lỗi khi xử lý file:', error);
-        
-      // Dọn dẹp thư mục tạm nếu có lỗi
-      if (tempDir) {
-        try {
-          fs.rmSync(tempDir, { recursive: true, force: true });
-          console.log(`Đã xóa thư mục tạm: ${tempDir}`);
-        } catch (cleanupError) {
-          console.error('Lỗi khi dọn dẹp thư mục tạm:', cleanupError);
-        }
-      }
-        
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: error.message,
-          fileId,
-          driveLink
-        },
-        { status: 500 }
-      );
+      console.error('❌ Lỗi:', error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
   } catch (error) {
     console.error('Lỗi khi xử lý và thay thế file:', error);
