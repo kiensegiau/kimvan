@@ -439,12 +439,28 @@ export default function CourseDetailPage() {
       value = cell?.formattedValue || '';
     }
 
-    // Nếu là cột đầu tiên (cột ngày) và giá trị là số 5 chữ số
-    if (colIndex === 0 && /^\d{5}$/.test(String(value).trim())) {
-      const date = excelSerialDateToJSDate(parseInt(value));
-      const day = date.getDate().toString().padStart(2, '0');
-      const month = (date.getMonth() + 1).toString().padStart(2, '0');
-      return `${day}/${month}/${date.getFullYear()}`;
+    // Chỉ xử lý chuyển đổi ngày cho các cột không phải cột đầu tiên
+    // Cột đầu tiên sẽ được xử lý bởi hàm formatDate
+    if (colIndex > 0) {
+      const strValue = String(value).trim();
+      if (/^\d+$/.test(strValue)) {
+        try {
+          const numValue = parseInt(strValue);
+          // Số ngày Excel thường > 1000 (tương ứng với năm >1902)
+          if (numValue > 1000 && numValue < 2958465) { // Giới hạn hợp lý cho số ngày Excel
+            const date = excelSerialDateToJSDate(numValue);
+            const day = date.getDate().toString().padStart(2, '0');
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const year = date.getFullYear();
+            // Kiểm tra năm hợp lý (để tránh chuyển đổi nhầm các số khác)
+            if (year >= 1900 && year <= 2100) {
+              return `${day}/${month}/${year}`;
+            }
+          }
+        } catch (error) {
+          // Bỏ qua lỗi và trả về giá trị gốc
+        }
+      }
     }
 
     return value;
@@ -794,11 +810,24 @@ export default function CourseDetailPage() {
 
   // Hàm chuyển đổi số ngày Excel thành Date
   const excelSerialDateToJSDate = (serialDate) => {
-    // Excel bắt đầu từ 1/1/1900, nhưng có lỗi tính năm nhuận nên trừ đi 1
-    const utc_days = Math.floor(serialDate - 25569);
-    const utc_value = utc_days * 86400;
-    const date_info = new Date(utc_value * 1000);
-    return date_info;
+    try {
+      // Excel bắt đầu từ 1/1/1900, nhưng có lỗi tính năm nhuận nên trừ đi 1
+      // Nếu serialDate < 60, không cần điều chỉnh
+      // Nếu serialDate >= 60, cần trừ đi 1 để bù cho lỗi năm nhuận 1900 của Excel
+      const adjustedSerialDate = serialDate >= 60 ? serialDate - 1 : serialDate;
+      
+      // Số ngày tính từ 1/1/1970 (Unix epoch)
+      const utc_days = Math.floor(adjustedSerialDate - 25569);
+      const utc_value = utc_days * 86400;
+      const date_info = new Date(utc_value * 1000);
+      
+      // Đảm bảo múi giờ địa phương
+      const offset = date_info.getTimezoneOffset();
+      return new Date(date_info.getTime() + (offset * 60 * 1000));
+    } catch (error) {
+      console.error('Lỗi chuyển đổi ngày Excel:', error);
+      return new Date(); // Trả về ngày hiện tại nếu có lỗi
+    }
   };
 
   // Hàm format ngày tháng
@@ -808,27 +837,38 @@ export default function CourseDetailPage() {
     // Đảm bảo dateStr là chuỗi
     const strValue = String(dateStr).trim();
     
-    // Kiểm tra nếu là số ngày kiểu Excel (5 chữ số)
-    if (/^\d{5}$/.test(strValue)) {
-      const date = excelSerialDateToJSDate(parseInt(strValue));
-      const day = date.getDate().toString().padStart(2, '0');
-      const month = (date.getMonth() + 1).toString().padStart(2, '0');
-      const year = date.getFullYear();
-      return (
-        <>
-          <div className="font-medium">{day}/{month}</div>
-          <div className="text-xs opacity-80">{year}</div>
-        </>
-      );
+    // Kiểm tra nếu là số ngày kiểu Excel (số nguyên)
+    if (/^\d+$/.test(strValue)) {
+      try {
+        const numValue = parseInt(strValue);
+        // Số ngày Excel thường > 1000 (tương ứng với năm >1902)
+        if (numValue > 1000) {
+          const date = excelSerialDateToJSDate(numValue);
+          const day = date.getDate().toString().padStart(2, '0');
+          const month = (date.getMonth() + 1).toString().padStart(2, '0');
+          const year = date.getFullYear();
+          // Kiểm tra năm hợp lý (để tránh chuyển đổi nhầm các số khác)
+          if (year >= 1900 && year <= 2100) {
+            return (
+              <>
+                <div className="font-medium">{day}/{month}</div>
+                <div className="text-xs opacity-80">{year}</div>
+              </>
+            );
+          }
+        }
+      } catch (error) {
+        console.error('Lỗi chuyển đổi ngày:', error);
+      }
     }
 
-    // Xử lý định dạng dd/mm/yyyy như cũ
-    const parts = strValue.match(/^(\d{1,2}\/\d{1,2})\/(\d{4})$/);
+    // Xử lý định dạng dd/mm/yyyy đã được định dạng từ getCellValue hoặc từ dữ liệu gốc
+    const parts = strValue.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
     if (parts) {
       return (
         <>
-          <div className="font-medium">{parts[1]}</div>
-          <div className="text-xs opacity-80">{parts[2]}</div>
+          <div className="font-medium">{parts[1]}/{parts[2]}</div>
+          <div className="text-xs opacity-80">{parts[3]}</div>
         </>
       );
     }
