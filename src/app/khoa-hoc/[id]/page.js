@@ -6,7 +6,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { decodeProxyLink, getUpdatedUrl } from '@/utils/proxy-utils';
 import { ArrowLeftIcon, CloudArrowDownIcon, ExclamationCircleIcon, XMarkIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 import YouTubeModal from '../components/YouTubeModal';
-import PDFModal from '../components/PDFModal';
 import YouTubePlaylistModal from '../components/YouTubePlaylistModal';
 import LoadingOverlay from '../components/LoadingOverlay';
 import CryptoJS from 'crypto-js';
@@ -34,11 +33,6 @@ export default function CourseDetailPage() {
     isOpen: false,
     playlistId: '',
     videoId: '',
-    title: ''
-  });
-  const [pdfModal, setPdfModal] = useState({
-    isOpen: false,
-    fileUrl: '',
     title: ''
   });
   const [isLoaded, setIsLoaded] = useState(false);
@@ -729,16 +723,17 @@ export default function CourseDetailPage() {
                 videoId: originalVideoId,
                 title: title || 'YouTube Video'
               });
+            } else {
+              // Nếu không phải YouTube hoặc không có videoId, mở trong tab mới
+              window.open(decodedUrl, '_blank');
             }
           }
         }
-      } else if (isPdfLink(decodedUrl) || (!isGoogleDriveFolder(decodedUrl) && isGoogleDriveLink(decodedUrl))) {
-        setPdfModal({
-          isOpen: true,
-          fileUrl: decodedUrl,
-          title: title || 'Document'
-        });
-      } else if (isGoogleDriveFolder(decodedUrl)) {
+      } else if (isPdfLink(decodedUrl)) {
+        // Mở PDF trong tab mới thay vì modal
+        window.open(decodedUrl, '_blank');
+      } else if (isGoogleDriveLink(decodedUrl)) {
+        // Mở tất cả các liên kết Google Drive trong tab mới
         window.open(decodedUrl, '_blank');
       } else {
         // Kiểm tra URL gốc nếu decoded URL không phải YouTube
@@ -751,12 +746,24 @@ export default function CourseDetailPage() {
               videoId,
               title: title || 'YouTube Video'
             });
+          } else {
+            // Nếu không phải YouTube, mở trong tab mới
+            window.open(decodedUrl || originalUrl, '_blank');
           }
+        } else {
+          // Mở tất cả các liên kết khác trong tab mới
+          window.open(decodedUrl || originalUrl, '_blank');
         }
       }
     } catch (error) {
       console.error('Lỗi khi xử lý link:', error);
       alert(`Không thể mở liên kết: ${error.message}`);
+      // Nếu có lỗi, vẫn cố gắng mở liên kết trong tab mới
+      try {
+        window.open(decodedUrl || originalUrl || url, '_blank');
+      } catch (e) {
+        // Bỏ qua lỗi nếu không thể mở
+      }
     } finally {
       setProcessingLink(false);
     }
@@ -1063,16 +1070,6 @@ export default function CourseDetailPage() {
       videoId: null, 
       title: '' 
     });
-  };
-
-  // Hàm mở modal PDF
-  const openPdfModal = (url, title = '') => {
-    setPdfModal({ isOpen: true, fileUrl: url, title });
-  };
-
-  // Hàm đóng modal PDF
-  const closePdfModal = () => {
-    setPdfModal({ isOpen: false, fileUrl: null, title: '' });
   };
 
   if (loading) {
@@ -1544,14 +1541,6 @@ export default function CourseDetailPage() {
             title={youtubePlaylistModal.title}
           />
         )}
-        
-        {/* PDF Modal */}
-        <PDFModal
-          isOpen={pdfModal.isOpen}
-          onClose={closePdfModal}
-          fileUrl={pdfModal.fileUrl}
-          title={pdfModal.title}
-        />
 
         {/* Footer */}
         <div className="mt-6 border-t border-gray-200 pt-6 pb-2 px-4 sm:px-8">
