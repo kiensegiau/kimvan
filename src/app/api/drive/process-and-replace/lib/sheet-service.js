@@ -23,15 +23,27 @@ export async function updateSheetCell(courseId, sheetIndex, rowIndex, cellIndex,
       ? `Link gốc: ${originalLink}\nĐã bỏ qua xử lý lúc: ${new Date().toLocaleString('vi-VN')}\nLý do: File gốc từ khoahocshare6.0@gmail.com`
       : `Link gốc: ${originalUrl}\nĐã xử lý lúc: ${new Date().toLocaleString('vi-VN')}`;
 
-    const cellStyle = {
-      backgroundColor: { red: 0.9, green: 0.6, blue: 1.0 },
-      textFormat: {
-        foregroundColor: { red: 0, green: 0, blue: 0.8 },
-        bold: true
-      }
+    // Tạo cell data với định dạng và hyperlink
+    const cellData = {
+      formattedValue: displayText,
+      hyperlink: skipProcessing ? originalLink : newUrl,
+      userEnteredFormat: {
+        backgroundColor: { red: 0.9, green: 0.6, blue: 1.0 },
+        textFormat: {
+          foregroundColor: { red: 0, green: 0, blue: 0.8 },
+          bold: true,
+          link: { uri: skipProcessing ? originalLink : newUrl }
+        }
+      },
+      note: noteContent
     };
 
-    const response = await fetch('/api/courses/' + courseId + '/update-cell', {
+    // Xác định base URL
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 
+                   (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
+
+    // Gọi API update-cell
+    const response = await fetch(`${baseUrl}/api/courses/${courseId}/update-cell`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -40,13 +52,8 @@ export async function updateSheetCell(courseId, sheetIndex, rowIndex, cellIndex,
       body: JSON.stringify({
         sheetIndex,
         rowIndex,
-        cellIndex,
-        cellData: {
-          formattedValue: displayText,
-          hyperlink: skipProcessing ? originalLink : newUrl,
-          note: noteContent,
-          userEnteredFormat: cellStyle
-        }
+        columnIndex: cellIndex,
+        cellData
       })
     });
 
@@ -55,12 +62,18 @@ export async function updateSheetCell(courseId, sheetIndex, rowIndex, cellIndex,
     }
 
     const result = await response.json();
+    
+    if (!result.success) {
+      throw new Error(result.error || 'Lỗi không xác định khi cập nhật cell');
+    }
+
     return {
       success: true,
       message: skipProcessing ? 'Đã cập nhật cell (bỏ qua xử lý)' : 'Đã cập nhật cell',
       updatedCell: result
     };
   } catch (error) {
+    console.error('Lỗi khi cập nhật cell:', error);
     return {
       success: false,
       error: `Lỗi khi cập nhật cell: ${error.message}`
@@ -88,15 +101,12 @@ export async function updateGoogleSheetCell(sheetId, sheetName, rowIndex, cellIn
       ? `Link gốc: ${originalLink}\nĐã bỏ qua xử lý lúc: ${new Date().toLocaleString('vi-VN')}\nLý do: File gốc từ khoahocshare6.0@gmail.com`
       : `Link gốc: ${originalUrl}\nĐã xử lý lúc: ${new Date().toLocaleString('vi-VN')}`;
 
-    const cellStyle = {
-      backgroundColor: { red: 0.9, green: 0.6, blue: 1.0 },
-      textFormat: {
-        foregroundColor: { red: 0, green: 0, blue: 0.8 },
-        bold: true
-      }
-    };
+    // Xác định base URL
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 
+                   (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
 
-    const response = await fetch('/api/sheets/' + sheetId + '/update-cell', {
+    // Gọi API update-cell
+    const response = await fetch(`${baseUrl}/api/sheets/${sheetId}/update-cell`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -107,7 +117,7 @@ export async function updateGoogleSheetCell(sheetId, sheetName, rowIndex, cellIn
         columnIndex: cellIndex,
         value: displayText,
         url: skipProcessing ? originalLink : newUrl,
-        originalUrl: originalUrl
+        originalUrl
       })
     });
 
@@ -116,12 +126,18 @@ export async function updateGoogleSheetCell(sheetId, sheetName, rowIndex, cellIn
     }
 
     const result = await response.json();
+    
+    if (!result.success) {
+      throw new Error(result.error || 'Lỗi không xác định khi cập nhật cell');
+    }
+
     return {
       success: true,
       message: skipProcessing ? 'Đã cập nhật Google Sheet cell (bỏ qua xử lý)' : 'Đã cập nhật Google Sheet cell',
       updatedCell: result
     };
   } catch (error) {
+    console.error('Lỗi khi cập nhật Google Sheet cell:', error);
     return {
       success: false,
       error: `Lỗi khi cập nhật Google Sheet cell: ${error.message}`

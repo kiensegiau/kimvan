@@ -1073,9 +1073,20 @@ async function processFolder(folderId, options, parentFolderInfo = null, depth =
       if (!parentFolderInfo && updateSheet) {
         try {
           console.log(`\n${indent}📝 Cập nhật link folder mới vào sheet...`);
+          console.log(`${indent}Thông tin cập nhật:`);
+          console.log(`${indent}- Original Link: ${results.originalFolderLink}`);
+          console.log(`${indent}- New Link: ${results.folderLink}`);
+          console.log(`${indent}- Display Text: ${displayText || results.folderName}`);
           
+          let sheetUpdateResult;
           if (courseId && sheetIndex !== undefined && rowIndex !== undefined && cellIndex !== undefined) {
-            const sheetUpdateResult = await updateSheetCell(
+            console.log(`${indent}Cập nhật vào database:`);
+            console.log(`${indent}- Course ID: ${courseId}`);
+            console.log(`${indent}- Sheet Index: ${sheetIndex}`);
+            console.log(`${indent}- Row Index: ${rowIndex}`);
+            console.log(`${indent}- Cell Index: ${cellIndex}`);
+            
+            sheetUpdateResult = await updateSheetCell(
               courseId,
               sheetIndex,
               rowIndex,
@@ -1086,14 +1097,15 @@ async function processFolder(folderId, options, parentFolderInfo = null, depth =
               request
             );
             
-            results.sheetUpdate = {
-              success: sheetUpdateResult?.success || false,
-              message: sheetUpdateResult?.message || sheetUpdateResult?.error || 'Đã cập nhật sheet',
-              details: sheetUpdateResult?.updatedCell || null
-            };
-            console.log(`${indent}✅ Đã cập nhật sheet thành công`);
+            console.log(`${indent}Kết quả cập nhật database:`, JSON.stringify(sheetUpdateResult, null, 2));
           } else if (sheetId && googleSheetName && rowIndex !== undefined && cellIndex !== undefined) {
-            const sheetUpdateResult = await updateGoogleSheetCell(
+            console.log(`${indent}Cập nhật trực tiếp vào Google Sheet:`);
+            console.log(`${indent}- Sheet ID: ${sheetId}`);
+            console.log(`${indent}- Sheet Name: ${googleSheetName}`);
+            console.log(`${indent}- Row Index: ${rowIndex}`);
+            console.log(`${indent}- Cell Index: ${cellIndex}`);
+            
+            sheetUpdateResult = await updateGoogleSheetCell(
               sheetId,
               googleSheetName,
               rowIndex,
@@ -1104,18 +1116,33 @@ async function processFolder(folderId, options, parentFolderInfo = null, depth =
               request
             );
             
+            console.log(`${indent}Kết quả cập nhật Google Sheet:`, JSON.stringify(sheetUpdateResult, null, 2));
+          }
+          
+          if (!sheetUpdateResult || !sheetUpdateResult.success) {
+            console.error(`${indent}❌ Cập nhật sheet thất bại:`, sheetUpdateResult?.error || 'Không có thông tin lỗi');
             results.sheetUpdate = {
-              success: sheetUpdateResult?.success || false,
-              message: sheetUpdateResult?.message || 'Đã cập nhật Google Sheet',
+              success: false,
+              message: `Lỗi khi cập nhật sheet: ${sheetUpdateResult?.error || 'Không xác định'}`,
               details: sheetUpdateResult
             };
-            console.log(`${indent}✅ Đã cập nhật Google Sheet thành công`);
+          } else {
+            console.log(`${indent}✅ Cập nhật sheet thành công`);
+            if (sheetUpdateResult.updatedCell) {
+              console.log(`${indent}Cell đã cập nhật:`, JSON.stringify(sheetUpdateResult.updatedCell, null, 2));
+            }
+            results.sheetUpdate = {
+              success: true,
+              message: 'Đã cập nhật sheet thành công',
+              details: sheetUpdateResult
+            };
           }
         } catch (sheetError) {
           console.error(`${indent}❌ Lỗi khi cập nhật sheet:`, sheetError);
           results.sheetUpdate = {
             success: false,
-            message: `Lỗi khi cập nhật sheet: ${sheetError.message}`
+            message: `Lỗi khi cập nhật sheet: ${sheetError.message}`,
+            error: sheetError
           };
         }
       }
