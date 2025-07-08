@@ -607,6 +607,37 @@ function addToProcessingQueue(params) {
 }
 
 /**
+ * Kiểm tra file đã tồn tại trong folder đích chưa
+ */
+async function checkFileExistsInTarget(fileName, parentId, drive) {
+  try {
+    console.log(`🔍 Kiểm tra file ${fileName} trong folder ${parentId}...`);
+    const response = await drive.files.list({
+      q: `'${parentId}' in parents and name = '${fileName}' and trashed = false`,
+      fields: 'files(id, name, webViewLink, mimeType)',
+      supportsAllDrives: true
+    });
+
+    if (response.data.files.length > 0) {
+      const existingFile = response.data.files[0];
+      console.log(`⚠️ Đã tồn tại file: ${existingFile.name} (${existingFile.id})`);
+      return {
+        exists: true,
+        file: existingFile
+      };
+    }
+
+    console.log(`✅ File chưa tồn tại trong folder đích`);
+    return {
+      exists: false
+    };
+  } catch (error) {
+    console.error(`❌ Lỗi khi kiểm tra file:`, error);
+    throw error;
+  }
+}
+
+/**
  * Xử lý một file đơn lẻ với logic ưu tiên tải qua API
  */
 async function processSingleFile(file, options) {
@@ -647,6 +678,26 @@ async function processSingleFile(file, options) {
     
     // Khởi tạo Google Drive API
     const drive = google.drive({ version: 'v3', auth: oauth2Client });
+
+    // Kiểm tra file đã tồn tại chưa
+    const existingCheck = await checkFileExistsInTarget(file.name, targetFolderId, drive);
+    if (existingCheck.exists) {
+      console.log(`⚠️ File đã tồn tại trong folder đích, bỏ qua xử lý`);
+      return {
+        success: true,
+        skipped: true,
+        reason: 'File đã tồn tại trong folder đích',
+        originalFile: {
+          id: file.id,
+          link: `https://drive.google.com/file/d/${file.id}/view`
+        },
+        existingFile: {
+          id: existingCheck.file.id,
+          name: existingCheck.file.name,
+          link: existingCheck.file.webViewLink
+        }
+      };
+    }
 
     try {
       // Thử tải file bằng API trước
@@ -846,49 +897,52 @@ async function processFolder(folderId, options, parentFolderInfo = null, depth =
     // Tạo folder mới trong thư mục đích
     console.log(`${indent}📂 Đang tạo folder mới...`);
     
-    // Tạo metadata cho folder
-    const folderMetadata = {
-      name: folder.data.name,
-      mimeType: 'application/vnd.google-apps.folder',
-      parents: [newParentId]
-    };
-
-    // Nếu folder gốc hoặc folder cha nằm trong Shared Drive
-    if (folder.data.driveId) {
-      console.log(`${indent}📁 Folder nằm trong Shared Drive: ${folder.data.driveId}`);
-      folderMetadata.driveId = folder.data.driveId;
-    }
-
+    // Khai báo biến newFolder ở đây
     let newFolder;
+    
+    // Kiểm tra folder trùng lặp trước khi tạo
     try {
-      newFolder = await uploadDrive.files.create({
-        resource: folderMetadata,
-        fields: 'id,name,webViewLink',
+      const existingFolders = await downloadDrive.files.list({
+        q: `'${newParentId}' in parents and name = '${folder.data.name}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
+        fields: 'files(id, name, webViewLink)',
         supportsAllDrives: true
       });
-      
-      console.log(`${indent}📂 Đã tạo folder mới: ${newFolder.data.name}`);
-      console.log(`${indent}📎 ID: ${newFolder.data.id}`);
-      console.log(`${indent}🔗 Link: ${newFolder.data.webViewLink}`);
 
-      // Cập nhật quyền truy cập cho folder mới
-      try {
-        await uploadDrive.permissions.create({
-          fileId: newFolder.data.id,
-          requestBody: {
-            role: 'writer',
-            type: 'anyone'
-          },
+      if (existingFolders.data.files.length > 0) {
+        console.log(`${indent}⚠️ Đã tồn tại folder có tên tương tự: ${folder.data.name}`);
+        const existingFolder = existingFolders.data.files[0];
+        console.log(`${indent}📂 Sử dụng folder hiện có: ${existingFolder.name}`);
+        console.log(`${indent}📎 ID: ${existingFolder.id}`);
+        console.log(`${indent}🔗 Link: ${existingFolder.webViewLink}`);
+        newFolder = { data: existingFolder };
+      } else {
+        // Tạo metadata cho folder
+        const folderMetadata = {
+          name: folder.data.name,
+          mimeType: 'application/vnd.google-apps.folder',
+          parents: [newParentId]
+        };
+
+        // Nếu folder gốc hoặc folder cha nằm trong Shared Drive
+        if (folder.data.driveId) {
+          console.log(`${indent}📁 Folder nằm trong Shared Drive: ${folder.data.driveId}`);
+          folderMetadata.driveId = folder.data.driveId;
+        }
+
+        newFolder = await uploadDrive.files.create({
+          resource: folderMetadata,
+          fields: 'id,name,webViewLink',
           supportsAllDrives: true
         });
-        console.log(`${indent}✅ Đã cập nhật quyền truy cập cho folder mới`);
-      } catch (permError) {
-        console.warn(`${indent}⚠️ Không thể cập nhật quyền truy cập cho folder mới: ${permError.message}`);
+        
+        console.log(`${indent}📂 Đã tạo folder mới: ${newFolder.data.name}`);
+        console.log(`${indent}📎 ID: ${newFolder.data.id}`);
+        console.log(`${indent}🔗 Link: ${newFolder.data.webViewLink}`);
       }
     } catch (createError) {
-      console.error(`${indent}❌ Lỗi khi tạo folder mới:`, createError.message);
+      console.error(`${indent}❌ Lỗi khi tạo/kiểm tra folder:`, createError.message);
       if (createError.code === 403) {
-        throw new Error(`Không có quyền tạo folder trong thư mục đích. Vui lòng kiểm tra quyền truy cập và thử lại.`);
+        throw new Error(`Không có quyền truy cập folder trong thư mục đích. Vui lòng kiểm tra quyền truy cập và thử lại.`);
       }
       throw createError;
     }
@@ -1095,8 +1149,8 @@ export async function POST(request) {
       targetFolderId,
       folderId,
       folderName,
-      courseName, // Thêm courseName
-      sheetName,  // Thêm sheetName
+      courseName,
+      sheetName,
       apiKey,
       updateSheet = false,
       courseId,
@@ -1109,7 +1163,7 @@ export async function POST(request) {
     } = requestBody;
 
     // Sử dụng targetFolderId hoặc folderId
-    const finalTargetFolderId = targetFolderId || folderId;
+    let finalTargetFolderId = targetFolderId || folderId;
 
     // Sử dụng folderName hoặc courseName hoặc sheetName
     const finalFolderName = folderName || courseName || sheetName || 'Unknown';
@@ -1173,9 +1227,14 @@ export async function POST(request) {
     if (mimeTypeResult.isFolder) {
       console.log('\n📂 PHÁT HIỆN FOLDER - BẮT ĐẦU XỬ LÝ ĐỆ QUY');
       console.log(`📁 Target folder ID: ${finalTargetFolderId}`);
+      
+      // Kiểm tra tên folder sheet
+      if (!finalFolderName) {
+        throw new Error('Thiếu tên folder sheet (Sheet folder name)');
+      }
       console.log(`📁 Sheet folder name: ${finalFolderName}`);
 
-      // Validate target folder exists
+      // Validate và tạo folder sheet name
       try {
         const { getTokenByType } = await import('../remove-watermark/lib/utils.js');
         const downloadToken = getTokenByType('download');
@@ -1191,17 +1250,59 @@ export async function POST(request) {
         oauth2Client.setCredentials(downloadToken);
         const drive = google.drive({ version: 'v3', auth: oauth2Client });
 
-        // Check if target folder exists
-        await drive.files.get({
+        // Kiểm tra folder đích tồn tại
+        const targetFolder = await drive.files.get({
           fileId: finalTargetFolderId,
           fields: 'id,name',
           supportsAllDrives: true
         });
+        console.log(`📁 Đã xác nhận folder đích tồn tại: ${targetFolder.data.name} (${finalTargetFolderId})`);
+
+        // Kiểm tra xem folder sheet name đã tồn tại chưa
+        const existingFolders = await drive.files.list({
+          q: `'${finalTargetFolderId}' in parents and name = '${finalFolderName}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
+          fields: 'files(id, name)',
+          supportsAllDrives: true
+        });
+
+        let sheetFolder;
+        if (existingFolders.data.files.length > 0) {
+          // Sử dụng folder sheet name đã tồn tại
+          sheetFolder = existingFolders.data.files[0];
+          console.log(`📁 Đã tìm thấy folder sheet name: ${sheetFolder.name} (${sheetFolder.id})`);
+        } else {
+          // Tạo folder sheet name mới
+          console.log(`📁 Tạo folder sheet name mới: ${finalFolderName}`);
+          const folderMetadata = {
+            name: finalFolderName,
+            mimeType: 'application/vnd.google-apps.folder',
+            parents: [finalTargetFolderId]
+          };
+
+          sheetFolder = (await drive.files.create({
+            resource: folderMetadata,
+            fields: 'id,name',
+            supportsAllDrives: true
+          })).data;
+          console.log(`📁 Đã tạo folder sheet name: ${sheetFolder.name} (${sheetFolder.id})`);
+        }
+
+        // Cập nhật targetFolderId thành ID của folder sheet name
+        finalTargetFolderId = sheetFolder.id;
+
+        // Kiểm tra folder nguồn tồn tại
+        const sourceFolder = await drive.files.get({
+          fileId: finalFileId,
+          fields: 'id,name',
+          supportsAllDrives: true
+        });
+        console.log(`📁 Đã xác nhận folder nguồn tồn tại: ${sourceFolder.data.name} (${finalFileId})`);
+
       } catch (error) {
         if (error.code === 404) {
-          throw new Error(`Không tìm thấy folder đích (${finalTargetFolderId})`);
+          throw new Error(`Không tìm thấy folder (${error.message.includes(finalTargetFolderId) ? 'đích' : 'nguồn'})`);
         }
-        throw new Error(`Lỗi khi kiểm tra folder đích: ${error.message}`);
+        throw new Error(`Lỗi khi kiểm tra/tạo folder: ${error.message}`);
       }
 
       const folderResult = await processFolder(finalFileId, {
