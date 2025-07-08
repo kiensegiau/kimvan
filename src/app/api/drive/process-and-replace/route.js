@@ -613,6 +613,11 @@ export async function POST(request) {
       );
     }
 
+    // Xác định folder đích dựa trên thông tin request
+    const targetFolderId = folderId || "1Lt10aHyWp9VtPaImzInE0DmIcbrjJgpN"; // Mặc định nếu không có
+    let targetFolderName = "";
+    console.log(`📂 Target folder ID: ${targetFolderId}`);
+
     // Kiểm tra thông tin file bằng API upload
     try {
       const fileInfo = await checkFileInfo(fileId);
@@ -814,10 +819,6 @@ export async function POST(request) {
       console.log(`⚠️ Không thể kiểm tra thông tin file: ${error.message}`);
     }
     
-    // Xác định folder đích dựa trên thông tin request trước khi kiểm tra file
-    let targetFolderId = folderId || "1Lt10aHyWp9VtPaImzInE0DmIcbrjJgpN"; // Mặc định nếu không có
-    let targetFolderName = "";
-
     try {
       console.log(`\n🔄 Thử tải file trực tiếp với token download...`);
       
