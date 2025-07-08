@@ -1573,50 +1573,74 @@ export default function CoursesPage() {
         try {
           console.log(`🔄 Bắt đầu xử lý khóa học ${index + 1}/${coursesWithKimvanId.length}: ${currentCourse.name}`);
           
-          // Gọi API để xử lý khóa học
-          const response = await fetch(`/api/courses/${currentCourse._id}/process-all-sheets`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            }
-          });
+          // Gọi API để xử lý khóa học - sử dụng URL tuyệt đối
+          const baseUrl = window.location.origin;
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 giây timeout
           
-          const data = await response.json();
-          
-          if (!response.ok) {
-            throw new Error(data.message || `Không thể xử lý khóa học ${currentCourse.name}`);
-          }
-          
-          console.log(`✅ Xử lý khóa học ${currentCourse.name} thành công`);
-          
-          // Đồng bộ với minicourse sau khi xử lý
           try {
-            const courseResponse = await fetch(`/api/admin/courses/${currentCourse._id}`);
-            if (courseResponse.ok) {
-              const courseData = await courseResponse.json();
-              await syncToMiniCourse(courseData);
-              console.log(`Đã đồng bộ minicourse cho khóa học ${currentCourse._id} sau khi xử lý`);
+            const response = await fetch(`${baseUrl}/api/courses/${currentCourse._id}/process-all-sheets`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              signal: controller.signal
+            });
+            
+            clearTimeout(timeoutId);
+            const data = await response.json();
+            
+            if (!response.ok) {
+              throw new Error(data.message || `Không thể xử lý khóa học ${currentCourse.name}`);
             }
-          } catch (syncError) {
-            console.error(`Lỗi khi đồng bộ minicourse cho khóa học ${currentCourse._id}:`, syncError);
+            
+            console.log(`✅ Xử lý khóa học ${currentCourse.name} thành công`);
+            
+            // Đồng bộ với minicourse sau khi xử lý
+            try {
+              const courseResponse = await fetch(`${baseUrl}/api/admin/courses/${currentCourse._id}`);
+              if (courseResponse.ok) {
+                const courseData = await courseResponse.json();
+                await syncToMiniCourse(courseData);
+                console.log(`Đã đồng bộ minicourse cho khóa học ${currentCourse._id} sau khi xử lý`);
+              }
+            } catch (syncError) {
+              console.error(`Lỗi khi đồng bộ minicourse cho khóa học ${currentCourse._id}:`, syncError);
+            }
+            
+            // Thêm kết quả thành công
+            results.details.push({
+              courseId: currentCourse._id, 
+              courseName: currentCourse.name,
+              message: 'Xử lý thành công',
+              timestamp: new Date().toISOString()
+            });
+          } catch (apiErr) {
+            console.error(`❌ Lỗi khi gọi API xử lý khóa học ${currentCourse.name}:`, apiErr);
+            
+            // Thêm kết quả lỗi
+            const errorMessage = apiErr.name === 'AbortError' 
+              ? 'Quá thời gian chờ - yêu cầu bị hủy sau 60 giây' 
+              : (apiErr.message || 'Đã xảy ra lỗi khi xử lý');
+              
+            results.errors.push({
+              courseId: currentCourse._id, 
+              courseName: currentCourse.name,
+              message: errorMessage,
+              timestamp: new Date().toISOString()
+            });
+          } finally {
+            // Đảm bảo rằng timeout luôn được xóa
+            clearTimeout(timeoutId);
           }
-          
-          // Thêm kết quả thành công
-          results.details.push({
-            courseId: currentCourse._id, 
-            courseName: currentCourse.name,
-            message: 'Xử lý thành công',
-            timestamp: new Date().toISOString()
-          });
           
         } catch (err) {
-          console.error(`❌ Lỗi khi xử lý khóa học ${currentCourse.name}:`, err);
+          console.error(`❌ Lỗi ngoại lệ khi xử lý khóa học ${currentCourse.name}:`, err);
           
-          // Thêm kết quả lỗi
           results.errors.push({
             courseId: currentCourse._id, 
             courseName: currentCourse.name,
-            message: err.message || 'Đã xảy ra lỗi khi xử lý',
+            message: 'Lỗi không mong đợi: ' + (err.message || 'Không xác định'),
             timestamp: new Date().toISOString()
           });
         } finally {
