@@ -776,29 +776,42 @@ async function processFolder(folderId, options, parentFolderInfo = null, depth =
     // Import hàm getTokenByType từ utils
     const { getTokenByType } = await import('../remove-watermark/lib/utils.js');
     
-    // Lấy token tải xuống
+    // Lấy token tải lên để tạo folder
+    const uploadToken = getTokenByType('upload');
+    if (!uploadToken) {
+      throw new Error('Không tìm thấy token Google Drive tải lên');
+    }
+
+    // Lấy token tải xuống để đọc file
     const downloadToken = getTokenByType('download');
     if (!downloadToken) {
       throw new Error('Không tìm thấy token Google Drive tải xuống');
     }
     
-    // Tạo OAuth2 client
-    const oauth2Client = new google.auth.OAuth2(
+    // Tạo OAuth2 client cho upload
+    const uploadOAuth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID,
       process.env.GOOGLE_CLIENT_SECRET,
       process.env.GOOGLE_REDIRECT_URI
     );
-    
-    // Thiết lập credentials
-    oauth2Client.setCredentials(downloadToken);
-    
-    // Khởi tạo Google Drive API
-    const drive = google.drive({ version: 'v3', auth: oauth2Client });
+    uploadOAuth2Client.setCredentials(uploadToken);
 
-    // Lấy thông tin folder gốc
-    const folder = await drive.files.get({
+    // Tạo OAuth2 client cho download
+    const downloadOAuth2Client = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET,
+      process.env.GOOGLE_REDIRECT_URI
+    );
+    downloadOAuth2Client.setCredentials(downloadToken);
+    
+    // Khởi tạo Drive API cho upload và download
+    const uploadDrive = google.drive({ version: 'v3', auth: uploadOAuth2Client });
+    const downloadDrive = google.drive({ version: 'v3', auth: downloadOAuth2Client });
+
+    // Lấy thông tin folder gốc và kiểm tra xem nó có trong Shared Drive không
+    const folder = await downloadDrive.files.get({
       fileId: folderId,
-      fields: 'name,parents',
+      fields: 'name,parents,driveId',
       supportsAllDrives: true
     });
 
@@ -808,31 +821,77 @@ async function processFolder(folderId, options, parentFolderInfo = null, depth =
     // Log thông tin về folder cha
     if (!parentFolderInfo) {
       try {
-        const parentFolder = await drive.files.get({
+        const parentFolder = await downloadDrive.files.get({
           fileId: targetFolderId,
-          fields: 'name',
+          fields: 'name,driveId',
           supportsAllDrives: true
         });
         console.log(`${indent}📁 Folder cha: ${parentFolder.data.name} (${targetFolderId})`);
+        
+        // Kiểm tra quyền truy cập vào folder cha
+        try {
+          await uploadDrive.permissions.list({
+            fileId: targetFolderId,
+            supportsAllDrives: true
+          });
+        } catch (permError) {
+          console.error(`${indent}❌ Không có quyền truy cập vào folder cha: ${permError.message}`);
+          throw new Error('Không có quyền truy cập vào folder đích. Vui lòng kiểm tra quyền truy cập và thử lại.');
+        }
       } catch (error) {
         console.warn(`${indent}⚠️ Không thể lấy thông tin folder cha: ${error.message}`);
       }
     }
 
     // Tạo folder mới trong thư mục đích
-    const newFolder = await drive.files.create({
-      requestBody: {
-        name: folder.data.name,
-        mimeType: 'application/vnd.google-apps.folder',
-        parents: [newParentId]
-      },
-      fields: 'id,name,webViewLink',
-      supportsAllDrives: true
-    });
+    console.log(`${indent}📂 Đang tạo folder mới...`);
+    
+    // Tạo metadata cho folder
+    const folderMetadata = {
+      name: folder.data.name,
+      mimeType: 'application/vnd.google-apps.folder',
+      parents: [newParentId]
+    };
 
-    console.log(`${indent}📂 Đã tạo folder mới: ${newFolder.data.name}`);
-    console.log(`${indent}📎 ID: ${newFolder.data.id}`);
-    console.log(`${indent}🔗 Link: ${newFolder.data.webViewLink}`);
+    // Nếu folder gốc hoặc folder cha nằm trong Shared Drive
+    if (folder.data.driveId) {
+      console.log(`${indent}📁 Folder nằm trong Shared Drive: ${folder.data.driveId}`);
+      folderMetadata.driveId = folder.data.driveId;
+    }
+
+    let newFolder;
+    try {
+      newFolder = await uploadDrive.files.create({
+        resource: folderMetadata,
+        fields: 'id,name,webViewLink',
+        supportsAllDrives: true
+      });
+      
+      console.log(`${indent}📂 Đã tạo folder mới: ${newFolder.data.name}`);
+      console.log(`${indent}📎 ID: ${newFolder.data.id}`);
+      console.log(`${indent}🔗 Link: ${newFolder.data.webViewLink}`);
+
+      // Cập nhật quyền truy cập cho folder mới
+      try {
+        await uploadDrive.permissions.create({
+          fileId: newFolder.data.id,
+          requestBody: {
+            role: 'writer',
+            type: 'anyone'
+          },
+          supportsAllDrives: true
+        });
+        console.log(`${indent}✅ Đã cập nhật quyền truy cập cho folder mới`);
+      } catch (permError) {
+        console.warn(`${indent}⚠️ Không thể cập nhật quyền truy cập cho folder mới: ${permError.message}`);
+      }
+    } catch (createError) {
+      console.error(`${indent}❌ Lỗi khi tạo folder mới:`, createError.message);
+      if (createError.code === 403) {
+        throw new Error(`Không có quyền tạo folder trong thư mục đích. Vui lòng kiểm tra quyền truy cập và thử lại.`);
+      }
+      throw createError;
+    }
 
     // Log cấu trúc folder
     let folderPath = [];
@@ -843,9 +902,9 @@ async function processFolder(folderId, options, parentFolderInfo = null, depth =
     console.log(`${indent}📍 Vị trí: ${sheetFolderName || 'Sheet folder'} > ${folderPath.join(' > ')}`);
 
     // Lấy danh sách các file trong folder
-    const files = await drive.files.list({
+    const files = await downloadDrive.files.list({
       q: `'${folderId}' in parents`,
-      fields: 'files(id, name, mimeType)',
+      fields: 'files(id, name, mimeType, driveId)',
       supportsAllDrives: true,
       includeItemsFromAllDrives: true
     });
@@ -863,156 +922,156 @@ async function processFolder(folderId, options, parentFolderInfo = null, depth =
       errors: []
     };
 
-    // Xử lý từng file trong folder
-    for (const file of files.data.files) {
-      try {
-        // Kiểm tra nếu là folder con
-        if (file.mimeType === 'application/vnd.google-apps.folder') {
-          console.log(`\n${indent}  📂 Xử lý folder con: ${file.name} (${file.id})`);
-          const subFolderResult = await processFolder(
-            file.id,
-            {
-              ...options,
-              targetFolderId: newFolder.data.id
-            },
-            {
-              id: newFolder.data.id,
-              name: newFolder.data.name,
-              path: folderPath,
-              link: newFolder.data.webViewLink
-            },
-            depth + 1
-          );
-          
-          results.processedFiles.push({
-            id: file.id,
-            name: file.name,
-            type: 'folder',
-            result: subFolderResult
-          });
-          continue;
-        }
-
-        // Kiểm tra MIME type của file
-        console.log(`${indent}  🔍 Kiểm tra file: ${file.name} (${file.id})`);
-        const mimeTypeResult = await checkMimeType(file.id);
-        
-        // Bỏ qua nếu là Google Doc
-        if (mimeTypeResult.isGoogleDoc) {
-          console.log(`${indent}  ⚠️ Bỏ qua Google Doc: ${file.name}`);
-          results.skippedFiles.push({
-            id: file.id,
-            name: file.name,
-            reason: 'Google Doc không được hỗ trợ'
-          });
-          continue;
-        }
-
-        // Xử lý file PDF hoặc video
-        if (mimeTypeResult.isPdf || mimeTypeResult.mimeType.includes('video/')) {
-          console.log(`${indent}  🔄 Xử lý ${mimeTypeResult.isPdf ? 'PDF' : 'video'}: ${file.name}`);
-          const fileResult = await processSingleFile(file, {
-            ...options,
-            targetFolderId: newFolder.data.id
-          });
-          
-          if (fileResult.success) {
-            console.log(`${indent}  ✅ Đã xử lý thành công: ${file.name}`);
+      // Xử lý từng file trong folder
+      for (const file of files.data.files) {
+        try {
+          // Kiểm tra nếu là folder con
+          if (file.mimeType === 'application/vnd.google-apps.folder') {
+            console.log(`\n${indent}  📂 Xử lý folder con: ${file.name} (${file.id})`);
+            const subFolderResult = await processFolder(
+              file.id,
+              {
+                ...options,
+                targetFolderId: newFolder.data.id
+              },
+              {
+                id: newFolder.data.id,
+                name: newFolder.data.name,
+                path: folderPath,
+                link: newFolder.data.webViewLink
+              },
+              depth + 1
+            );
+            
             results.processedFiles.push({
               id: file.id,
               name: file.name,
-              type: mimeTypeResult.isPdf ? 'pdf' : 'video',
-              result: fileResult
+              type: 'folder',
+              result: subFolderResult
             });
-          } else {
-            console.error(`${indent}  ❌ Lỗi khi xử lý: ${file.name}`);
-            results.errors.push({
+            continue;
+          }
+
+          // Kiểm tra MIME type của file
+          console.log(`${indent}  🔍 Kiểm tra file: ${file.name} (${file.id})`);
+          const mimeTypeResult = await checkMimeType(file.id);
+          
+          // Bỏ qua nếu là Google Doc
+          if (mimeTypeResult.isGoogleDoc) {
+            console.log(`${indent}  ⚠️ Bỏ qua Google Doc: ${file.name}`);
+            results.skippedFiles.push({
               id: file.id,
               name: file.name,
-              error: fileResult.error
+              reason: 'Google Doc không được hỗ trợ'
+            });
+            continue;
+          }
+
+          // Xử lý file PDF hoặc video
+          if (mimeTypeResult.isPdf || mimeTypeResult.mimeType.includes('video/')) {
+            console.log(`${indent}  🔄 Xử lý ${mimeTypeResult.isPdf ? 'PDF' : 'video'}: ${file.name}`);
+            const fileResult = await processSingleFile(file, {
+              ...options,
+              targetFolderId: newFolder.data.id
+            });
+            
+            if (fileResult.success) {
+              console.log(`${indent}  ✅ Đã xử lý thành công: ${file.name}`);
+              results.processedFiles.push({
+                id: file.id,
+                name: file.name,
+                type: mimeTypeResult.isPdf ? 'pdf' : 'video',
+                result: fileResult
+              });
+            } else {
+              console.error(`${indent}  ❌ Lỗi khi xử lý: ${file.name}`);
+              results.errors.push({
+                id: file.id,
+                name: file.name,
+                error: fileResult.error
+              });
+            }
+          } else {
+            console.log(`${indent}  ⚠️ Bỏ qua file không được hỗ trợ: ${file.name} (${mimeTypeResult.mimeType})`);
+            results.skippedFiles.push({
+              id: file.id,
+              name: file.name,
+              reason: `Không phải file PDF hoặc video (${mimeTypeResult.mimeType})`
             });
           }
-        } else {
-          console.log(`${indent}  ⚠️ Bỏ qua file không được hỗ trợ: ${file.name} (${mimeTypeResult.mimeType})`);
-          results.skippedFiles.push({
+        } catch (fileError) {
+          console.error(`${indent}  ❌ Lỗi khi xử lý file ${file.name}:`, fileError);
+          results.errors.push({
             id: file.id,
             name: file.name,
-            reason: `Không phải file PDF hoặc video (${mimeTypeResult.mimeType})`
+            error: fileError.message
           });
         }
-      } catch (fileError) {
-        console.error(`${indent}  ❌ Lỗi khi xử lý file ${file.name}:`, fileError);
-        results.errors.push({
-          id: file.id,
-          name: file.name,
-          error: fileError.message
-        });
       }
-    }
 
-    // Tổng kết kết quả xử lý folder
-    console.log(`\n${indent}📊 Kết quả xử lý folder ${newFolder.data.name}:`);
-    console.log(`${indent}✅ Đã xử lý: ${results.processedFiles.length} files`);
-    console.log(`${indent}⚠️ Bỏ qua: ${results.skippedFiles.length} files`);
-    console.log(`${indent}❌ Lỗi: ${results.errors.length} files`);
+      // Tổng kết kết quả xử lý folder
+      console.log(`\n${indent}📊 Kết quả xử lý folder ${newFolder.data.name}:`);
+      console.log(`${indent}✅ Đã xử lý: ${results.processedFiles.length} files`);
+      console.log(`${indent}⚠️ Bỏ qua: ${results.skippedFiles.length} files`);
+      console.log(`${indent}❌ Lỗi: ${results.errors.length} files`);
 
-    // Nếu đây là folder gốc và cần cập nhật sheet
-    if (!parentFolderInfo && updateSheet) {
-      try {
-        console.log(`\n${indent}📝 Cập nhật link folder mới vào sheet...`);
-        
-        if (courseId && sheetIndex !== undefined && rowIndex !== undefined && cellIndex !== undefined) {
-          const sheetUpdateResult = await updateSheetCell(
-            courseId,
-            sheetIndex,
-            rowIndex,
-            cellIndex,
-            results.originalFolderLink,
-            results.folderLink,
-            displayText || results.folderName,
-            request
-          );
+      // Nếu đây là folder gốc và cần cập nhật sheet
+      if (!parentFolderInfo && updateSheet) {
+        try {
+          console.log(`\n${indent}📝 Cập nhật link folder mới vào sheet...`);
           
+          if (courseId && sheetIndex !== undefined && rowIndex !== undefined && cellIndex !== undefined) {
+            const sheetUpdateResult = await updateSheetCell(
+              courseId,
+              sheetIndex,
+              rowIndex,
+              cellIndex,
+              results.originalFolderLink,
+              results.folderLink,
+              displayText || results.folderName,
+              request
+            );
+            
+            results.sheetUpdate = {
+              success: sheetUpdateResult?.success || false,
+              message: sheetUpdateResult?.message || sheetUpdateResult?.error || 'Đã cập nhật sheet',
+              details: sheetUpdateResult?.updatedCell || null
+            };
+            console.log(`${indent}✅ Đã cập nhật sheet thành công`);
+          } else if (sheetId && googleSheetName && rowIndex !== undefined && cellIndex !== undefined) {
+            const sheetUpdateResult = await updateGoogleSheetCell(
+              sheetId,
+              googleSheetName,
+              rowIndex,
+              cellIndex,
+              displayText || results.folderName,
+              results.folderLink,
+              results.originalFolderLink,
+              request
+            );
+            
+            results.sheetUpdate = {
+              success: sheetUpdateResult?.success || false,
+              message: sheetUpdateResult?.message || 'Đã cập nhật Google Sheet',
+              details: sheetUpdateResult
+            };
+            console.log(`${indent}✅ Đã cập nhật Google Sheet thành công`);
+          }
+        } catch (sheetError) {
+          console.error(`${indent}❌ Lỗi khi cập nhật sheet:`, sheetError);
           results.sheetUpdate = {
-            success: sheetUpdateResult?.success || false,
-            message: sheetUpdateResult?.message || sheetUpdateResult?.error || 'Đã cập nhật sheet',
-            details: sheetUpdateResult?.updatedCell || null
+            success: false,
+            message: `Lỗi khi cập nhật sheet: ${sheetError.message}`
           };
-          console.log(`${indent}✅ Đã cập nhật sheet thành công`);
-        } else if (sheetId && googleSheetName && rowIndex !== undefined && cellIndex !== undefined) {
-          const sheetUpdateResult = await updateGoogleSheetCell(
-            sheetId,
-            googleSheetName,
-            rowIndex,
-            cellIndex,
-            displayText || results.folderName,
-            results.folderLink,
-            results.originalFolderLink,
-            request
-          );
-          
-          results.sheetUpdate = {
-            success: sheetUpdateResult?.success || false,
-            message: sheetUpdateResult?.message || 'Đã cập nhật Google Sheet',
-            details: sheetUpdateResult
-          };
-          console.log(`${indent}✅ Đã cập nhật Google Sheet thành công`);
         }
-      } catch (sheetError) {
-        console.error(`${indent}❌ Lỗi khi cập nhật sheet:`, sheetError);
-        results.sheetUpdate = {
-          success: false,
-          message: `Lỗi khi cập nhật sheet: ${sheetError.message}`
-        };
       }
-    }
 
-    return results;
-  } catch (error) {
-    console.error(`${indent}❌ Lỗi khi xử lý folder ${folderId}:`, error);
-    throw error;
+      return results;
+    } catch (error) {
+      console.error(`${indent}❌ Lỗi khi xử lý folder ${folderId}:`, error);
+      throw error;
+    }
   }
-}
 
 export async function POST(request) {
   const startTime = Date.now();
