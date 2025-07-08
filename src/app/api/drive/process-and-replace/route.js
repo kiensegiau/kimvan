@@ -6,7 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { downloadFromGoogleDrive } from './lib/download-service.js';
 import { processFile } from './lib/file-processor.js';
 import { uploadToGoogleDrive } from './lib/upload-service.js';
-import { updateSheetCell } from './lib/sheet-service.js';
+import { updateSheetCell, updateGoogleSheetCell } from './lib/sheet-service.js';
 import { processPDF } from '../remove-watermark/lib/drive-fix-blockdown.js';
 import { extractDriveFileId } from '@/utils/drive-utils';
 
@@ -75,7 +75,7 @@ async function processAndUploadFile(
     // Upload file đã xử lý
     const uploadResult = await uploadToGoogleDrive(
       processedFilePath,
-      processedFileName,
+      path.basename(processedFilePath),
       mimeType || "application/pdf",
       targetFolderId,
       folderName
@@ -495,11 +495,27 @@ export async function POST(request) {
           if (isBlockedFileProcessed) {
             processedFilePath = downloadResult.filePath;
           } else {
-            processedFilePath = await processFile(downloadResult.filePath, downloadResult.mimeType);
+            const processResult = await processFile(downloadResult.filePath, downloadResult.mimeType);
+            processedFilePath = processResult.processedPath;
+            
+            // Kiểm tra và xử lý nếu processedPath là object
+            if (typeof processedFilePath === 'object' && processedFilePath !== null) {
+              if (processedFilePath.path) {
+                processedFilePath = processedFilePath.path;
+              } else {
+                throw new Error('Không thể xác định đường dẫn file đã xử lý');
+              }
+            }
           }
           
           // Upload file đã xử lý lên Drive
-          const uploadResult = await uploadToGoogleDrive(processedFilePath, targetFolderName || courseName || 'Unknown');
+          const uploadResult = await uploadToGoogleDrive(
+            processedFilePath,
+            path.basename(processedFilePath),
+            downloadResult.mimeType,
+            targetFolderId,
+            courseName
+          );
           
           // Cập nhật cell trong sheet
           if (uploadResult.success) {
@@ -510,7 +526,20 @@ export async function POST(request) {
             });
           }
           
-          return NextResponse.json(uploadResult);
+          return NextResponse.json({
+            success: true,
+            isFolder: false,
+            originalFile: {
+              id: fileId,
+              link: driveLink
+            },
+            processedFile: {
+              id: uploadResult.fileId,
+              name: uploadResult.fileName,
+              link: uploadResult.webViewLink
+            },
+            processingTime: Math.round((Date.now() - startTime) / 1000)
+          });
         }
       } catch (downloadError) {
         // Xử lý lỗi 403 ngay lập tức

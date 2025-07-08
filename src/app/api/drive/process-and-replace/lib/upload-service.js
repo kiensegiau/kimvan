@@ -168,15 +168,34 @@ export async function uploadToGoogleDrive(filePath, fileName, mimeType, folderId
         existingFile = duplicatesResponse.data.files[0];
         console.log(`File "${sanitizedFileName}" đã tồn tại trong folder đích (ID: ${existingFile.id})`);
         
-        // Trả về thông tin file đã tồn tại
+        // Cập nhật nội dung file đã tồn tại
+        console.log(`Cập nhật nội dung cho file đã tồn tại (ID: ${existingFile.id})...`);
+        
+        // Tạo media cho file
+        const media = {
+          mimeType: mimeType,
+          body: fs.createReadStream(filePath)
+        };
+        
+        // Cập nhật nội dung file
+        const updateResponse = await drive.files.update({
+          fileId: existingFile.id,
+          media: media,
+          fields: 'id, name, webViewLink, webContentLink'
+        });
+        
+        console.log(`Đã cập nhật nội dung file thành công: ${updateResponse.data.name} (ID: ${updateResponse.data.id})`);
+        
+        // Trả về thông tin file đã cập nhật
         return {
           success: true,
-          fileId: existingFile.id,
-          fileName: existingFile.name,
-          webViewLink: existingFile.webViewLink,
-          webContentLink: existingFile.webContentLink,
+          fileId: updateResponse.data.id,
+          fileName: updateResponse.data.name,
+          webViewLink: updateResponse.data.webViewLink,
+          webContentLink: updateResponse.data.webContentLink,
           duplicatesDeleted: 0,
-          fileAlreadyExists: true
+          fileAlreadyExists: true,
+          updated: true
         };
       } else {
         console.log(`Không tìm thấy file trùng tên trong folder đích.`);
@@ -197,23 +216,21 @@ export async function uploadToGoogleDrive(filePath, fileName, mimeType, folderId
       body: fs.createReadStream(filePath)
     };
     
-    // Tải file lên Drive
-    console.log(`Đang tải file "${sanitizedFileName}" lên thư mục "${folderName}" (ID: ${targetFolderId})...`);
-    
-    const uploadResponse = await drive.files.create({
+    // Tải file lên Drive và lấy webViewLink và webContentLink
+    const response = await drive.files.create({
       resource: fileMetadata,
       media: media,
       fields: 'id, name, webViewLink, webContentLink'
     });
     
-    console.log(`File đã được tải lên thành công: ${uploadResponse.data.name} (ID: ${uploadResponse.data.id})`);
+    console.log(`File đã được tải lên thành công: ${response.data.name} (ID: ${response.data.id})`);
     
     return {
       success: true,
-      fileId: uploadResponse.data.id,
-      fileName: uploadResponse.data.name,
-      webViewLink: uploadResponse.data.webViewLink,
-      webContentLink: uploadResponse.data.webContentLink,
+      fileId: response.data.id,
+      fileName: response.data.name,
+      webViewLink: response.data.webViewLink,
+      webContentLink: response.data.webContentLink,
       duplicatesDeleted: duplicatesDeleted,
       folderName: folderName,
       folderId: targetFolderId

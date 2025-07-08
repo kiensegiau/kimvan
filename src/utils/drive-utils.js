@@ -182,15 +182,71 @@ export function cleanGoogleUrl(url) {
 }
 
 /**
- * Placeholder function for processing a link (to be implemented)
+ * Process a link and return the processed result
+ * @param {string} url - The URL to process
+ * @returns {Promise<Object>} The processing result
  */
 export async function processLink(url) {
-  // This is a placeholder for future implementation
-  console.log('Processing link:', url);
-  return { 
-    url,
-    processed: true
-  };
+  try {
+    // Kiểm tra và làm sạch URL
+    const cleanedUrl = cleanGoogleUrl(url);
+    
+    // Kiểm tra xem có phải là Google Drive URL không
+    if (!isDriveUrl(cleanedUrl)) {
+      return {
+        success: false,
+        error: 'Không phải là Google Drive URL',
+        originalUrl: url
+      };
+    }
+    
+    // Lấy file ID
+    const fileId = extractDriveFileId(cleanedUrl);
+    if (!fileId) {
+      return {
+        success: false,
+        error: 'Không thể trích xuất file ID',
+        originalUrl: url
+      };
+    }
+    
+    // Gọi API để xử lý file
+    const response = await fetch('/api/drive/process-and-replace', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        driveLink: cleanedUrl,
+        updateSheet: false // Không cập nhật sheet vì chúng ta sẽ làm điều đó sau
+      })
+    });
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      return {
+        success: true,
+        originalUrl: url,
+        processedUrl: result.processedFile.link,
+        fileId: result.processedFile.id,
+        fileName: result.processedFile.name
+      };
+    } else {
+      return {
+        success: false,
+        error: result.error || 'Lỗi không xác định',
+        originalUrl: url
+      };
+    }
+  } catch (error) {
+    console.error('Lỗi khi xử lý link:', error);
+    return {
+      success: false,
+      error: error.message,
+      originalUrl: url
+    };
+  }
 }
 
 /**
