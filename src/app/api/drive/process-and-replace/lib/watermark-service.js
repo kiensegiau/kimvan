@@ -242,6 +242,14 @@ export async function processPDFWatermark(filePath, outputPath, apiKey, retryCou
       taskId = await createWatermarkRemovalTask(filePath, apiKey);
       console.log(`✅ Đã tạo nhiệm vụ xử lý với ID: ${taskId}`);
     } catch (createTaskError) {
+      // Kiểm tra lỗi 429 (Too Many Requests)
+      if (createTaskError.message.includes('429') && retryCount < 5) {
+        const waitTime = 10000 * (retryCount + 1); // Tăng thời gian chờ theo số lần thử
+        console.log(`⏱️ Lỗi 429 (Too Many Requests), chờ ${waitTime/1000} giây trước khi thử lại lần ${retryCount + 1}...`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+        return processPDFWatermark(filePath, outputPath, apiKey, retryCount + 1, useSimpleMethod);
+      }
+      
       // Kiểm tra lỗi API_KEY_NO_CREDIT đặc biệt
       if (createTaskError.message === 'API_KEY_NO_CREDIT' || 
           createTaskError.message.includes('401') || 
