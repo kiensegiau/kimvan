@@ -4,63 +4,8 @@ import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
 import os from 'os';
-import { getUserRole, ADMIN_ROLE } from '../../../auth/admin/check-permission/auth';
-import { revalidatePath } from 'next/cache';
-import { extractFileNameFromHeader } from '../../drive/remove-watermark/lib/utils';
-
-// Đường dẫn file lưu cookie
-const COOKIE_FILE_PATH = path.join(process.cwd(), 'kimvan-cookie.txt');
-const DATA_DIR = path.join(process.cwd(), 'data');
-
-/**
- * Lưu cookie vào file
- * @param {string} cookie - Cookie string cần lưu
- * @returns {boolean} - Kết quả lưu cookie
- */
-async function saveCookie(cookie) {
-  try {
-    // Đảm bảo thư mục data tồn tại
-    if (!fs.existsSync(DATA_DIR)) {
-      fs.mkdirSync(DATA_DIR, { recursive: true });
-    }
-
-    // Lưu cookie vào file chính
-    fs.writeFileSync(COOKIE_FILE_PATH, cookie);
-    
-    // Lưu cookie vào thư mục data dự phòng
-    const backupPath = path.join(DATA_DIR, 'kimvan-cookie.txt');
-    fs.writeFileSync(backupPath, cookie);
-    
-    return true;
-  } catch (error) {
-    console.error('Lỗi khi lưu cookie:', error);
-    return false;
-  }
-}
-
-/**
- * Đọc cookie từ file
- * @returns {string|null} - Cookie string hoặc null nếu không tồn tại
- */
-function readCookie() {
-  try {
-    // Thử đọc từ file chính
-    if (fs.existsSync(COOKIE_FILE_PATH)) {
-      return fs.readFileSync(COOKIE_FILE_PATH, 'utf8');
-    }
-    
-    // Nếu không có, thử đọc từ file dự phòng
-    const backupPath = path.join(DATA_DIR, 'kimvan-cookie.txt');
-    if (fs.existsSync(backupPath)) {
-      return fs.readFileSync(backupPath, 'utf8');
-    }
-    
-    return null;
-  } catch (error) {
-    console.error('Lỗi khi đọc cookie:', error);
-    return null;
-  }
-}
+import { getUserRole, ADMIN_ROLE } from '../../../../auth/admin/check-permission/auth';
+import { extractFileNameFromHeader } from '../../../drive/remove-watermark/lib/utils';
 
 /**
  * Test tải file bằng cookie
@@ -81,6 +26,9 @@ async function testCookieDownload(cookie, fileId) {
   const startTime = Date.now();
   
   try {
+    console.log(`🍪 Bắt đầu test cookie với file ID: ${fileId}`);
+    console.log(`🔗 URL tải xuống: ${downloadUrl}`);
+    
     // Tạo request với cookie
     const response = await axios({
       method: 'GET',
@@ -90,7 +38,9 @@ async function testCookieDownload(cookie, fileId) {
       headers: {
         'Cookie': cookie,
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-      }
+      },
+      maxContentLength: 100 * 1024 * 1024, // 100MB
+      maxBodyLength: 100 * 1024 * 1024 // 100MB
     });
     
     // Xử lý tên file từ header
@@ -99,6 +49,8 @@ async function testCookieDownload(cookie, fileId) {
     if (contentDisposition) {
       fileName = extractFileNameFromHeader(contentDisposition);
     }
+    
+    console.log(`📝 Tên file: ${fileName}`);
     
     // Tạo write stream
     const writer = fs.createWriteStream(tempFilePath);
@@ -114,11 +66,14 @@ async function testCookieDownload(cookie, fileId) {
     const stats = fs.statSync(tempFilePath);
     const fileSizeMB = stats.size / (1024 * 1024);
     
+    console.log(`📊 Kích thước file: ${fileSizeMB.toFixed(2)} MB`);
+    
     // Kiểm tra nếu file quá nhỏ (dưới 10KB), có thể là trang HTML lỗi
     if (stats.size < 10 * 1024) {
       // Đọc nội dung file để kiểm tra
       const content = fs.readFileSync(tempFilePath, 'utf8');
       if (content.includes('<html') || content.includes('Error') || content.includes('Access denied')) {
+        console.log(`❌ File tải về có vẻ là trang HTML lỗi, không phải file thực`);
         throw new Error('File tải về không hợp lệ (có thể là trang HTML lỗi)');
       }
     }
@@ -127,12 +82,15 @@ async function testCookieDownload(cookie, fileId) {
     const endTime = Date.now();
     const downloadTime = endTime - startTime;
     
+    console.log(`⏱️ Thời gian tải: ${downloadTime} ms`);
+    
     // Dọn dẹp file tạm
     try {
       fs.unlinkSync(tempFilePath);
       fs.rmdirSync(tempDir);
+      console.log(`🧹 Đã dọn dẹp file tạm`);
     } catch (cleanupError) {
-      console.warn('Lỗi khi dọn dẹp file tạm:', cleanupError);
+      console.warn(`⚠️ Lỗi khi dọn dẹp file tạm: ${cleanupError.message}`);
     }
     
     return {
@@ -142,7 +100,7 @@ async function testCookieDownload(cookie, fileId) {
       time: downloadTime
     };
   } catch (error) {
-    console.error('Lỗi khi test cookie:', error);
+    console.error(`❌ Lỗi khi test cookie: ${error.message}`);
     
     // Dọn dẹp file tạm nếu có lỗi
     try {
@@ -152,8 +110,9 @@ async function testCookieDownload(cookie, fileId) {
       if (fs.existsSync(tempDir)) {
         fs.rmdirSync(tempDir);
       }
+      console.log(`🧹 Đã dọn dẹp file tạm sau lỗi`);
     } catch (cleanupError) {
-      console.warn('Lỗi khi dọn dẹp file tạm:', cleanupError);
+      console.warn(`⚠️ Lỗi khi dọn dẹp file tạm sau lỗi: ${cleanupError.message}`);
     }
     
     return {
@@ -164,38 +123,7 @@ async function testCookieDownload(cookie, fileId) {
 }
 
 /**
- * Xử lý GET request để lấy cookie
- */
-export async function GET(req) {
-  try {
-    // Kiểm tra quyền
-    const role = await getUserRole(req);
-    if (role !== ADMIN_ROLE) {
-      return NextResponse.json({ error: 'Không có quyền truy cập' }, { status: 403 });
-    }
-
-    // Đọc cookie từ file
-    const cookie = readCookie();
-    
-    if (!cookie) {
-      return NextResponse.json({ 
-        success: false, 
-        message: 'Chưa có cookie được lưu' 
-      }, { status: 404 });
-    }
-    
-    return NextResponse.json({ success: true, cookie });
-  } catch (error) {
-    console.error('Lỗi khi lấy cookie:', error);
-    return NextResponse.json({ 
-      success: false, 
-      message: error.message 
-    }, { status: 500 });
-  }
-}
-
-/**
- * Xử lý POST request để lưu cookie
+ * Xử lý POST request để test cookie
  */
 export async function POST(req) {
   try {
@@ -205,9 +133,9 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Không có quyền truy cập' }, { status: 403 });
     }
 
-    // Lấy cookie từ request body
+    // Lấy cookie và fileId từ request body
     const body = await req.json();
-    const { cookie } = body;
+    const { cookie, fileId } = body;
     
     if (!cookie || typeof cookie !== 'string' || cookie.trim() === '') {
       return NextResponse.json({ 
@@ -216,25 +144,32 @@ export async function POST(req) {
       }, { status: 400 });
     }
     
-    // Lưu cookie vào file
-    const saveResult = await saveCookie(cookie);
-    
-    if (!saveResult) {
+    if (!fileId) {
       return NextResponse.json({ 
         success: false, 
-        message: 'Không thể lưu cookie' 
-      }, { status: 500 });
+        message: 'FileId không được để trống' 
+      }, { status: 400 });
     }
     
-    // Revalidate paths
-    revalidatePath('/admin/kimvan-cookie');
+    // Test cookie
+    const testResult = await testCookieDownload(cookie, fileId);
     
-    return NextResponse.json({ 
-      success: true, 
-      message: 'Đã lưu cookie thành công' 
-    });
+    if (testResult.success) {
+      return NextResponse.json({
+        success: true,
+        message: 'Cookie hoạt động tốt!',
+        fileName: testResult.fileName,
+        fileSizeMB: testResult.fileSizeMB,
+        time: testResult.time
+      });
+    } else {
+      return NextResponse.json({
+        success: false,
+        message: testResult.error || 'Không thể tải file'
+      }, { status: 400 });
+    }
   } catch (error) {
-    console.error('Lỗi khi lưu cookie:', error);
+    console.error('Lỗi khi test cookie:', error);
     return NextResponse.json({ 
       success: false, 
       message: error.message 

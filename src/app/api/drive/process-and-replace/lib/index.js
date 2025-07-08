@@ -1,5 +1,5 @@
 import { downloadFromGoogleDrive, checkFileInfo, listFilesInFolder } from './download-service';
-import { processFile, processFolder } from './file-processor';
+import { processFile, processFolder as processFileFolder } from './file-processor';
 import { uploadToGoogleDrive, findOrCreateFolder } from './upload-service';
 import { 
   processPDFWatermark, 
@@ -13,6 +13,20 @@ import {
   checkTaskStatus 
 } from './pdf-service';
 import { updateSheetCell, updateGoogleSheetCell } from './sheet-service';
+import { 
+  checkMimeType, 
+  checkFileInfo as checkFileMimeInfo,
+  classifyFileType
+} from './mime-service';
+import {
+  processAndUploadFile,
+  addToProcessingQueue,
+  processNextInQueue,
+  checkFileExistsInTarget,
+  processSingleFile,
+  processFolder
+} from './process-manager';
+import { downloadWithCookie } from './cookie-service';
 
 export {
   // Download services
@@ -22,7 +36,7 @@ export {
   
   // File processing
   processFile,
-  processFolder,
+  processFileFolder,
   
   // Upload services
   uploadToGoogleDrive,
@@ -41,5 +55,21 @@ export {
   
   // Sheet services
   updateSheetCell,
-  updateGoogleSheetCell
+  updateGoogleSheetCell,
+  
+  // MIME services
+  checkMimeType,
+  checkFileMimeInfo,
+  classifyFileType,
+  
+  // Process manager
+  processAndUploadFile,
+  addToProcessingQueue,
+  processNextInQueue,
+  checkFileExistsInTarget,
+  processSingleFile,
+  processFolder,
+  
+  // Cookie service
+  downloadWithCookie
 }; 

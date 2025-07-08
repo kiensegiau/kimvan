@@ -75,125 +75,215 @@ export async function processFile(filePath, mimeType, apiKey, originalFileId) {
         fs.mkdirSync(outputDir, { recursive: true });
       }
       
-      const result = await processPDFWatermark(filePath, processedPath, apiKeyToUse);
-      
-      // Kiểm tra nếu kết quả cho thấy đây là file video
-      if (result && !result.success && result.isVideo && !result.shouldRetry) {
-        console.log(`🎥 Phát hiện file video, chuyển sang xử lý video...`);
-        return {
-          success: false,
-          error: 'FILE_IS_VIDEO',
-          isVideo: true,
-          fileId: result.fileId,
-          fileName: result.fileName,
-          shouldRetry: false
-        };
-      }
-
-      // Nếu không thành công và cần thử lại với Chrome
-      if (!result.success && result.shouldRetry !== false) {
-        console.log('🔄 Thử lại với Chrome...');
+      try {
+        // Thử xử lý với API watermark trước
+        const result = await processPDFWatermark(filePath, processedPath, apiKeyToUse);
         
-        // Import các module cần thiết
-        const { processPDF } = await import('../../remove-watermark/lib/drive-fix-blockdown.js');
-        const { google } = await import('googleapis');
-        
-        // Sử dụng originalFileId được truyền vào nếu có
-        let fileId = originalFileId;
-        
-        // Nếu không có originalFileId, cố gắng trích xuất từ tên file
-        if (!fileId) {
-          const fileIdMatch = fileName.match(/TÀI LIỆU(.*?)(_processed)?$/);
-          fileId = fileIdMatch ? fileIdMatch[1] : null;
-          
-          // Nếu vẫn không tìm được fileId, thử lấy từ tên file khác
-          if (!fileId) {
-            // Trích xuất fileId từ đường dẫn file
-            const pathMatch = filePath.match(/([a-zA-Z0-9_-]{25,})/);
-            fileId = pathMatch ? pathMatch[1] : null;
-          }
-        }
-        
-        if (!fileId) {
-          console.error('Không tìm thấy file ID từ tên file hoặc đường dẫn. Bỏ qua xử lý Chrome.');
-          return {
-            success: false,
-            error: 'FILE_ID_NOT_FOUND',
-            message: 'Không thể xác định file ID để xử lý với Chrome',
-            processedPath: filePath
-          };
-        }
-        
-        console.log(`Tìm thấy File ID để xử lý với Chrome: ${fileId}`);
-        
-        // Tạo đường dẫn đầu ra rõ ràng
-        const outputDir = path.dirname(processedPath);
-        if (!fs.existsSync(outputDir)) {
-          fs.mkdirSync(outputDir, { recursive: true });
-          console.log(`Đã tạo thư mục đầu ra: ${outputDir}`);
-        }
-        
-        try {
-          // Truyền google object vào hàm processPDF qua config
-          const chromeResult = await processPDF(
-            null, // inputPath
-            processedPath, // outputPath
-            { 
-              debugMode: true,
-              google: google, // Truyền đối tượng Google API
-              skipWatermarkRemoval: true // Tạm thời bỏ qua xử lý watermark để tập trung vào việc tải xuống
-            }, 
-            true, // isBlocked
-            fileId // fileId
-          );
-        
-          if (!chromeResult.success) {
-            console.error(`Lỗi xử lý Chrome: ${chromeResult.error}`);
-            
-            if (chromeResult.error === 'NO_IMAGES_DOWNLOADED' || chromeResult.error === 'NO_IMAGES_CONVERTED') {
-              throw new Error(`Không thể tải các trang PDF: ${chromeResult.message}`);
-            }
-            
-            throw new Error(chromeResult.error || 'Không thể xử lý file bằng Chrome');
-          }
-          
-          // Lấy link mới từ kết quả Chrome
-          const newLink = chromeResult.webViewLink || chromeResult.filePath;
-          if (!newLink) {
-            throw new Error('Không thể lấy link mới từ kết quả xử lý Chrome');
-          }
-          
+        // Kiểm tra kết quả có chỉ ra việc bỏ qua do kích thước không
+        if (result && result.skippedDueToSize) {
+          console.log(`⚠️ Đã bỏ qua xử lý watermark do file quá lớn (${result.message || 'Unknown reason'})`);
           return {
             success: true,
-            processedPath: chromeResult.filePath || processedPath,
-            webViewLink: newLink // Thêm link mới vào kết quả
-          };
-        } catch (error) {
-          console.error(`Lỗi khi xử lý với Chrome: ${error.message}`);
-          return {
-            success: false,
-            error: error.message,
-            processedPath: filePath
+            processedPath: result.processedPath,
+            message: result.message || 'Đã bỏ qua xử lý watermark do file quá lớn',
+            skipReason: 'FILE_TOO_LARGE',
+            fileSizeMB: result.inputSize ? (result.inputSize / (1024 * 1024)).toFixed(2) : 'Unknown'
           };
         }
-      } else if (!result.success) {
-        throw new Error(result.error || 'Lỗi không xác định khi xử lý PDF');
+        
+        // Kiểm tra nếu kết quả cho thấy đây là file video
+        if (result && !result.success && result.isVideo && !result.shouldRetry) {
+          console.log(`🎥 Phát hiện file video, chuyển sang xử lý video...`);
+          return {
+            success: false,
+            error: 'FILE_IS_VIDEO',
+            isVideo: true,
+            fileId: result.fileId,
+            fileName: result.fileName,
+            shouldRetry: false
+          };
+        }
+        
+        // Nếu API xử lý watermark thất bại, chuyển sang phương pháp đơn giản
+        if (!result.success) {
+          console.log(`⚠️ Phát hiện lỗi "${result.error || 'Xử lý thất bại'}", phân tích sâu hơn...`);
+          console.log(`📊 Kích thước file: ${fileSizeMB.toFixed(2)} MB`);
+          
+          if (result.error && (result.error.includes('Xử lý thất bại') || result.error.includes('Lỗi khi xử lý PDF'))) {
+            console.log(`🔄 Thử lại lần 1 với API key khác do lỗi xử lý thất bại...`);
+            
+            // Thử lại với API key khác
+            const newApiKey = await getNextApiKey(true); // true để lấy key khác
+            
+            if (newApiKey && newApiKey !== apiKeyToUse) {
+              console.log(`🔄 Chuyển sang phương pháp đơn giản do lỗi xử lý thất bại...`);
+            }
+            
+            // Sử dụng phương pháp đơn giản
+            console.log(`⚠️ Sử dụng phương pháp đơn giản để xử lý file PDF (bỏ qua API xóa watermark)`);
+            
+            // Đọc PDF để lấy số trang
+            const PDFDocument = require('pdf-lib').PDFDocument;
+            const pdfBytes = fs.readFileSync(filePath);
+            const pdfDoc = await PDFDocument.load(pdfBytes);
+            const pageCount = pdfDoc.getPageCount();
+            console.log(`Số trang PDF: ${pageCount}`);
+            
+            // Xóa watermark dạng text ở header và footer và thêm logo
+            await removeHeaderFooterWatermark(filePath, processedPath);
+            console.log(`Đã cắt header và footer của PDF và thêm logo: ${processedPath}`);
+            console.log(`✅ Đã xử lý file bằng phương pháp đơn giản (chỉ thêm logo)`);
+            
+            return {
+              success: true,
+              processedPath: processedPath,
+              message: 'Đã xử lý bằng phương pháp đơn giản do API xóa watermark thất bại',
+              skipWatermark: true,
+              pages: pageCount
+            };
+          }
+          
+          // Nếu là lỗi khác liên quan đến việc tải file (không phải lỗi xử lý watermark),
+          // mới chuyển sang Chrome
+          if (result.shouldRetry !== false && 
+              (result.error && (result.error.includes('download') || 
+                              result.error.includes('tải') || 
+                              result.error.includes('access') || 
+                              result.error.includes('permission')))) {
+            console.log('🔄 Thử lại với Chrome do lỗi tải file...');
+            
+            // Import các module cần thiết
+            const { processPDF } = await import('../../remove-watermark/lib/drive-fix-blockdown.js');
+            const { google } = await import('googleapis');
+            
+            // Sử dụng originalFileId được truyền vào nếu có
+            let fileId = originalFileId;
+            
+            // Nếu không có originalFileId, cố gắng trích xuất từ tên file
+            if (!fileId) {
+              const fileIdMatch = fileName.match(/TÀI LIỆU(.*?)(_processed)?$/);
+              fileId = fileIdMatch ? fileIdMatch[1] : null;
+              
+              // Nếu vẫn không tìm được fileId, thử lấy từ tên file khác
+              if (!fileId) {
+                // Trích xuất fileId từ đường dẫn file
+                const pathMatch = filePath.match(/([a-zA-Z0-9_-]{25,})/);
+                fileId = pathMatch ? pathMatch[1] : null;
+              }
+            }
+            
+            if (!fileId) {
+              console.error('Không tìm thấy file ID từ tên file hoặc đường dẫn. Bỏ qua xử lý Chrome.');
+              return {
+                success: false,
+                error: 'FILE_ID_NOT_FOUND',
+                message: 'Không thể xác định file ID để xử lý với Chrome',
+                processedPath: filePath
+              };
+            }
+            
+            console.log(`Tìm thấy File ID để xử lý với Chrome: ${fileId}`);
+            
+            // Tạo đường dẫn đầu ra rõ ràng
+            const outputDir = path.dirname(processedPath);
+            if (!fs.existsSync(outputDir)) {
+              fs.mkdirSync(outputDir, { recursive: true });
+              console.log(`Đã tạo thư mục đầu ra: ${outputDir}`);
+            }
+            
+            try {
+              // Truyền google object vào hàm processPDF qua config
+              const chromeResult = await processPDF(
+                null, // inputPath
+                processedPath, // outputPath
+                { 
+                  debugMode: true,
+                  google: google, // Truyền đối tượng Google API
+                  skipWatermarkRemoval: true // Tạm thời bỏ qua xử lý watermark để tập trung vào việc tải xuống
+                }, 
+                true, // isBlocked
+                fileId // fileId
+              );
+            
+              if (!chromeResult.success) {
+                console.error(`Lỗi xử lý Chrome: ${chromeResult.error}`);
+                
+                if (chromeResult.error === 'NO_IMAGES_DOWNLOADED' || chromeResult.error === 'NO_IMAGES_CONVERTED') {
+                  throw new Error(`Không thể tải các trang PDF: ${chromeResult.message}`);
+                }
+                
+                throw new Error(chromeResult.error || 'Không thể xử lý file bằng Chrome');
+              }
+              
+              // Lấy link mới từ kết quả Chrome
+              const newLink = chromeResult.webViewLink || chromeResult.filePath;
+              if (!newLink) {
+                throw new Error('Không thể lấy link mới từ kết quả xử lý Chrome');
+              }
+              
+              return {
+                success: true,
+                processedPath: chromeResult.filePath || processedPath,
+                webViewLink: newLink // Thêm link mới vào kết quả
+              };
+            } catch (error) {
+              console.error(`Lỗi khi xử lý với Chrome: ${error.message}`);
+              return {
+                success: false,
+                error: error.message,
+                processedPath: filePath
+              };
+            }
+          } else {
+            // Lỗi xử lý watermark không cần thiết phải mở Chrome
+            console.log(`⚠️ Sử dụng phương pháp đơn giản do lỗi xử lý watermark: ${result.error}`);
+            
+            // Xóa watermark dạng text ở header và footer và thêm logo
+            await removeHeaderFooterWatermark(filePath, processedPath);
+            console.log(`Đã cắt header và footer của PDF và thêm logo: ${processedPath}`);
+            console.log(`✅ Đã xử lý file bằng phương pháp đơn giản (chỉ thêm logo)`);
+            
+            return {
+              success: true,
+              processedPath: processedPath,
+              message: `Đã xử lý bằng phương pháp đơn giản: ${result.error}`,
+              skipWatermark: true
+            };
+          }
+        }
+        
+        console.log(`PDF đã được xử lý thành công sau ${Math.round((Date.now() - processingStartTime)/1000)} giây`);
+        
+        // Xóa watermark dạng text ở header và footer và thêm logo
+        await removeHeaderFooterWatermark(processedPath, processedPath);
+        console.log(`Đã xóa watermark dạng text ở header và footer và thêm logo`);
+        
+        return {
+          success: true,
+          processedPath: result.processedPath || processedPath,
+          webViewLink: result.webViewLink, // Thêm link mới vào kết quả
+          inputSize: result.inputSize || 0,
+          outputSize: result.outputSize || 0,
+          pages: result.pages || 0
+        };
+      } catch (watermarkError) {
+        console.error(`❌ Lỗi khi xử lý watermark: ${watermarkError.message}`);
+        
+        // Sử dụng phương pháp đơn giản khi gặp lỗi
+        console.log(`⚠️ Sử dụng phương pháp đơn giản do lỗi xử lý watermark`);
+        
+        // Xóa watermark dạng text ở header và footer và thêm logo
+        await removeHeaderFooterWatermark(filePath, processedPath);
+        console.log(`Đã cắt header và footer của PDF và thêm logo: ${processedPath}`);
+        console.log(`✅ Đã xử lý file bằng phương pháp đơn giản (chỉ thêm logo)`);
+        
+        return {
+          success: true,
+          processedPath: processedPath,
+          message: `Đã xử lý bằng phương pháp đơn giản: ${watermarkError.message}`,
+          skipWatermark: true
+        };
       }
-      
-      console.log(`PDF đã được xử lý thành công sau ${Math.round((Date.now() - processingStartTime)/1000)} giây`);
-      
-      // Xóa watermark dạng text ở header và footer và thêm logo
-      await removeHeaderFooterWatermark(processedPath, processedPath);
-      console.log(`Đã xóa watermark dạng text ở header và footer và thêm logo`);
-      
-      return {
-        success: true,
-        processedPath: result.processedPath || processedPath,
-        webViewLink: result.webViewLink, // Thêm link mới vào kết quả
-        inputSize: result.inputSize || 0,
-        outputSize: result.outputSize || 0,
-        pages: result.pages || 0
-      };
     } else if (mimeType.includes('video')) {
       // Xử lý file video
       console.log('🎥 Đang xử lý file video...');

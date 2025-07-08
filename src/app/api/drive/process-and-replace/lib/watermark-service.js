@@ -1,4 +1,10 @@
+/**
+ * watermark-service.js
+ * Module xử lý watermark cho file PDF
+ */
+
 import fs from 'fs';
+import path from 'path';
 import axios from 'axios';
 import { 
   createWatermarkRemovalTask, 
@@ -428,6 +434,77 @@ export async function processPDFWatermark(filePath, outputPath, apiKey, retryCou
       }
     }
     
-    throw new Error(`Lỗi khi xử lý PDF: ${error.message}`);
+    // Kiểm tra lỗi "Xử lý thất bại"
+    if (error.message.includes('Xử lý thất bại')) {
+      console.log(`⚠️ Phát hiện lỗi "Xử lý thất bại", phân tích sâu hơn...`);
+      
+      // Kiểm tra kích thước file
+      let fileStat;
+      try {
+        fileStat = fs.statSync(filePath);
+        const fileSizeMB = fileStat.size / (1024 * 1024);
+        console.log(`📊 Kích thước file: ${fileSizeMB.toFixed(2)} MB`);
+        
+        // Nếu file quá lớn, có thể là lý do khiến xử lý thất bại
+        if (fileSizeMB > 30) {
+          console.log(`⚠️ File có kích thước lớn (${fileSizeMB.toFixed(2)} MB), có thể là nguyên nhân gây lỗi`);
+          
+          // Nếu đã thử lại ít nhất 2 lần hoặc file rất lớn, thử phương pháp khác
+          if (retryCount >= 2 || fileSizeMB > 50) {
+            console.log(`🔄 Thử sử dụng phương pháp xử lý thay thế cho file lớn...`);
+            
+            // Chuẩn bị file output
+            if (outputPath) {
+              // Sao chép file gốc nếu không thể xử lý được
+              fs.copyFileSync(filePath, outputPath);
+              console.log(`⚠️ Không thể xử lý watermark cho file lớn, đã sao chép file gốc`);
+              
+              return {
+                skippedDueToSize: true,
+                inputSize: fileStat.size,
+                outputSize: fileStat.size,
+                processedPath: outputPath,
+                message: `Không thể xử lý watermark cho file lớn ${fileSizeMB.toFixed(2)} MB`
+              };
+            }
+          }
+        }
+      } catch (statError) {
+        console.error(`Không thể đọc thông tin file: ${statError.message}`);
+      }
+      
+      // Thử với API key mới nếu chưa thử quá nhiều lần
+      if (retryCount < 3) {
+        console.log(`🔄 Thử lại lần ${retryCount + 1} với API key khác do lỗi xử lý thất bại...`);
+        
+        // Lấy API key mới
+        const newApiKey = await getNextApiKey();
+        if (newApiKey && newApiKey !== apiKey) {
+          console.log(`🔄 Thử lại với API key mới: ${newApiKey.substring(0, 5)}...`);
+          return processPDFWatermark(filePath, outputPath, newApiKey, retryCount + 1, useSimpleMethod);
+        }
+      }
+      
+      // Nếu đã thử nhiều lần hoặc không có API key mới, thử phương pháp đơn giản nếu chưa thử
+      if (!useSimpleMethod) {
+        console.log(`🔄 Chuyển sang phương pháp đơn giản do lỗi xử lý thất bại...`);
+        return processPDFWatermark(filePath, outputPath, apiKey, retryCount + 1, true);
+      }
+      
+      // Nếu đã thử phương pháp đơn giản mà vẫn thất bại, log thêm thông tin và trả về lỗi chi tiết
+      console.error(`❌ Đã thử tất cả các phương pháp nhưng không thành công xử lý watermark`);
+      throw new Error(`Không thể xử lý PDF sau nhiều lần thử: ${error.message}. Vui lòng kiểm tra lại file hoặc thử lại sau.`);
+    }
+    
+    // Ghi log chi tiết và ném lỗi
+    console.error(`❌ Chi tiết lỗi xử lý PDF:`, error);
+    
+    if (error.response) {
+      throw new Error(`Lỗi API xử lý PDF (${error.response.status}): ${error.message}`);
+    } else if (error.request) {
+      throw new Error(`Lỗi kết nối API xử lý PDF: ${error.message}`);
+    } else {
+      throw new Error(`Lỗi khi xử lý PDF: ${error.message}`);
+    }
   }
 } 
