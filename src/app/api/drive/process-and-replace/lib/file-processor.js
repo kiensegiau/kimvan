@@ -29,9 +29,10 @@ async function initVideoProcessor() {
  * @param {string} filePath - Đường dẫn đến file cần xử lý
  * @param {string} mimeType - MIME type của file
  * @param {string} apiKey - API key cho dịch vụ xóa watermark (tùy chọn)
+ * @param {string} originalFileId - File ID gốc từ Google Drive (tùy chọn)
  * @returns {Promise<Object>} - Kết quả xử lý file
  */
-export async function processFile(filePath, mimeType, apiKey) {
+export async function processFile(filePath, mimeType, apiKey, originalFileId) {
   console.log(`Đang xử lý file: ${filePath}`);
   
   // Tạo đường dẫn cho file đã xử lý
@@ -93,41 +94,74 @@ export async function processFile(filePath, mimeType, apiKey) {
       if (!result.success && result.shouldRetry !== false) {
         console.log('🔄 Thử lại với Chrome...');
         
-        // Import hàm processPDF từ drive-fix-blockdown
-        const { processPDF } = await import('../remove-watermark/lib/drive-fix-blockdown.js');
+        // Import các module cần thiết
+        const { processPDF } = await import('../../remove-watermark/lib/drive-fix-blockdown.js');
+        const { google } = await import('googleapis');
         
-        // Lấy fileId từ tên file nếu có
-        const fileIdMatch = fileName.match(/TÀI LIỆU(.*?)(_processed)?$/);
-        const fileId = fileIdMatch ? fileIdMatch[1] : null;
+        // Sử dụng originalFileId được truyền vào nếu có
+        let fileId = originalFileId;
+        
+        // Nếu không có originalFileId, cố gắng trích xuất từ tên file
+        if (!fileId) {
+          const fileIdMatch = fileName.match(/TÀI LIỆU(.*?)(_processed)?$/);
+          fileId = fileIdMatch ? fileIdMatch[1] : null;
+          
+          // Nếu vẫn không tìm được fileId, thử lấy từ tên file khác
+          if (!fileId) {
+            // Trích xuất fileId từ đường dẫn file
+            const pathMatch = filePath.match(/([a-zA-Z0-9_-]{25,})/);
+            fileId = pathMatch ? pathMatch[1] : null;
+          }
+        }
         
         if (!fileId) {
-          throw new Error('Không thể xác định file ID từ tên file');
+          console.error('Không tìm thấy file ID từ tên file hoặc đường dẫn. Bỏ qua xử lý Chrome.');
+          return {
+            success: false,
+            error: 'FILE_ID_NOT_FOUND',
+            message: 'Không thể xác định file ID để xử lý với Chrome',
+            processedPath: filePath
+          };
         }
         
-        // Xử lý với Chrome, đảm bảo có đường dẫn đầu ra
-        const chromeResult = await processPDF(
-          null, // inputPath
-          processedPath, // outputPath - đường dẫn đã được tạo ở trên
-          { debugMode: true }, // config
-          true, // isBlocked
-          fileId // fileId
-        );
+        console.log(`Tìm thấy File ID để xử lý với Chrome: ${fileId}`);
         
-        if (!chromeResult.success) {
-          throw new Error(chromeResult.error || 'Không thể xử lý file bằng Chrome');
+        try {
+          // Truyền google object vào hàm processPDF qua config
+          const chromeResult = await processPDF(
+            null, // inputPath
+            processedPath, // outputPath
+            { 
+              debugMode: true,
+              google: google // Truyền đối tượng Google API
+            }, 
+            true, // isBlocked
+            fileId // fileId
+          );
+          
+          if (!chromeResult.success) {
+            throw new Error(chromeResult.error || 'Không thể xử lý file bằng Chrome');
+          }
+          
+          // Lấy link mới từ kết quả Chrome
+          const newLink = chromeResult.webViewLink || chromeResult.filePath;
+          if (!newLink) {
+            throw new Error('Không thể lấy link mới từ kết quả xử lý Chrome');
+          }
+          
+          return {
+            success: true,
+            processedPath: chromeResult.filePath || processedPath,
+            webViewLink: newLink // Thêm link mới vào kết quả
+          };
+        } catch (error) {
+          console.error(`Lỗi khi xử lý với Chrome: ${error.message}`);
+          return {
+            success: false,
+            error: error.message,
+            processedPath: filePath
+          };
         }
-        
-        // Lấy link mới từ kết quả Chrome
-        const newLink = chromeResult.webViewLink || chromeResult.filePath;
-        if (!newLink) {
-          throw new Error('Không thể lấy link mới từ kết quả xử lý Chrome');
-        }
-        
-        return {
-          success: true,
-          processedPath: chromeResult.filePath || processedPath,
-          webViewLink: newLink // Thêm link mới vào kết quả
-        };
       } else if (!result.success) {
         throw new Error(result.error || 'Lỗi không xác định khi xử lý PDF');
       }
@@ -368,7 +402,7 @@ export async function processFolder(folderId, folderName, targetFolderId, apiKey
           try {
             if (mimeType.includes('pdf')) {
               // Xử lý file PDF
-              const processResult = await processFile(downloadResult.filePath, mimeType, apiKey);
+              const processResult = await processFile(downloadResult.filePath, mimeType, apiKey, file.id);
               processedFilePath = processResult.processedPath;
               
               // Kiểm tra xem processedPath có phải là đối tượng không

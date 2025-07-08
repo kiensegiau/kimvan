@@ -137,7 +137,7 @@ async function processAndUploadFile(
     console.log(`🔧 Xử lý watermark cho file PDF đã tải bằng Chrome (${sourceType})...`);
     
     // Xử lý file để loại bỏ watermark
-    const processResult = await processFile(filePath, mimeType || "application/pdf", apiKey);
+    const processResult = await processFile(filePath, mimeType || "application/pdf", apiKey, fileId);
 
     // Kiểm tra nếu file quá lớn
     if (processResult && !processResult.success && processResult.skipReason === 'FILE_TOO_LARGE') {
@@ -422,11 +422,55 @@ async function processNextInQueue() {
     console.log(`\n=== ĐANG XỬ LÝ FILE TRONG HÀNG ĐỢI ===`);
     console.log(`⏳ Còn ${processingQueue.length} file đang chờ...`);
     
+    // Kiểm tra fileId
+    if (!task.fileId) {
+      // Thử trích xuất fileId từ driveLink nếu có
+      if (task.driveLink) {
+        try {
+          const fileId = extractDriveFileId(task.driveLink);
+          if (fileId) {
+            console.log(`✅ Đã trích xuất fileId từ driveLink: ${fileId}`);
+            task.fileId = fileId;
+          } else {
+            throw new Error('Không thể trích xuất fileId từ driveLink');
+          }
+        } catch (error) {
+          console.error(`❌ Lỗi khi trích xuất fileId: ${error.message}`);
+          throw new Error('Không thể xử lý file không có fileId');
+        }
+      } else {
+        throw new Error('Không có fileId hoặc driveLink để xử lý');
+      }
+    }
+    
+    console.log(`🔍 Xử lý file với ID: ${task.fileId}`);
+    
+    // Tạo thư mục tạm cho file đầu ra
+    const tempDir = path.join(os.tmpdir(), uuidv4());
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
+    }
+    
+    // Tạo đường dẫn đầu ra
+    const outputPath = path.join(tempDir, `TÀI LIỆU${task.fileId}_processed.pdf`);
+    console.log(`📄 Đường dẫn đầu ra: ${outputPath}`);
+    
+    // Import google API
+    const { google } = await import('googleapis');
+    
     // Sử dụng drive-fix-blockdown để xử lý
-    const chromeResult = await processPDF(null, null, {
-      skipWatermarkRemoval: true,
-      debugMode: true
-    }, true, task.fileId);
+    const chromeResult = await processPDF(
+      null, // inputPath
+      outputPath, // outputPath - cung cấp đường dẫn cụ thể thay vì null
+      {
+        skipWatermarkRemoval: true,
+        debugMode: true,
+        google: google, // Truyền đối tượng Google API
+        tempDir: tempDir // Thêm thư mục tạm
+      }, 
+      true, // isBlocked
+      task.fileId
+    );
 
     // Kiểm tra nếu là file video
     if (!chromeResult.success && chromeResult.isVideo) {
@@ -1319,7 +1363,8 @@ export async function POST(request) {
         sheetId,
         googleSheetName,
         displayText,
-        request
+        request,
+        tempDir
       });
       
       if (chromeResult) {
@@ -1561,7 +1606,7 @@ export async function POST(request) {
       if (isBlockedFileProcessed) {
         processedFilePath = downloadResult.filePath;
       } else {
-        const processResult = await processFile(downloadResult.filePath, downloadResult.mimeType);
+        const processResult = await processFile(downloadResult.filePath, downloadResult.mimeType, null, finalFileId);
         
         // Check if it's a video file
         if (processResult && !processResult.success && processResult.isVideo) {
@@ -1654,16 +1699,16 @@ export async function POST(request) {
         console.log('⚠️ 403 được phát hiện - File bị chặn tải xuống');
         console.log('🌐 Chuyển sang Chrome để tải và xử lý file...');
         
-        // Add to Chrome processing queue
+        // Thêm vào hàng đợi xử lý Chrome
         console.log('\n📋 Thêm file vào hàng đợi xử lý Chrome:');
-        console.log(`🔍 File ID: ${fileId}`);
+        console.log(`🔍 File ID: ${finalFileId}`);
         console.log(`📄 Tên File: ${folderName || 'Không rõ'}`);
         console.log(`⚠️ Loại Lỗi: 403`);
         
-        // Add to queue and process
+        // Thêm vào hàng đợi và xử lý
         const chromeResult = await addToProcessingQueue({
-          fileId,
-          fileName: `video_${fileId}.mp4`,
+          fileId: finalFileId,
+          fileName: `video_${finalFileId}.mp4`,
           driveLink,
           targetFolderId: finalTargetFolderId || "1Lt10aHyWp9VtPaImzInE0DmIcbrjJgpN",
           targetFolderName: finalFolderName,
@@ -1676,10 +1721,11 @@ export async function POST(request) {
           sheetId,
           googleSheetName,
           displayText,
-          request
+          request,
+          tempDir: tempDir
         });
         
-        // If it's a video, return video result immediately
+        // Nếu là video, trả về kết quả ngay
         if (chromeResult && chromeResult.isVideo) {
           console.log(`🎥 Chrome phát hiện file video, trả về kết quả video`);
           return NextResponse.json(chromeResult);
