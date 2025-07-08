@@ -1625,7 +1625,7 @@ export default function CoursesPage() {
               </div>
               <div className="mt-4">
                 <div className="-mx-2 -my-1.5 flex">
-                  <button 
+                  <button   
                     type="button"
                     onClick={() => setSyncResults(null)}
                     className={`bg-${syncResults.success ? 'green' : 'orange'}-50 px-2 py-1.5 rounded-md text-sm font-medium text-${syncResults.success ? 'green' : 'orange'}-800 hover:bg-${syncResults.success ? 'green' : 'orange'}-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-${syncResults.success ? 'green' : 'orange'}-500`}
