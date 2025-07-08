@@ -26,9 +26,10 @@ import {
 
 // Hằng số
 const MAX_CONCURRENT = 2;
-const MAX_RETRIES = 3;
+const MAX_RETRIES = 1;
 const RETRY_DELAY = 5000;
 const BATCH_SIZE = 5;
+const PROCESS_TIMEOUT = 30 * 60 * 1000; // 30 phút timeout
 
 // Thêm biến toàn cục để quản lý các phiên Chrome đang hoạt động
 const activeBrowsers = new Map();
@@ -113,6 +114,59 @@ export async function processPDF(inputPath, outputPath, config = DEFAULT_CONFIG,
     if (!isBlocked && !fs.existsSync(inputPath)) {
       throw new Error(`File không tồn tại: ${inputPath}`);
     }
+
+    // Kiểm tra kích thước file nếu là file bị chặn
+    if (isBlocked && fileId) {
+      try {
+        // Import hàm getTokenByType từ utils
+        const { getTokenByType } = await import('./utils.js');
+        
+        // Lấy token tải xuống
+        const downloadToken = getTokenByType('download');
+        if (!downloadToken) {
+          throw new Error('Không tìm thấy token Google Drive');
+        }
+        
+        // Tạo OAuth2 client
+        const oauth2Client = new google.auth.OAuth2(
+          process.env.GOOGLE_CLIENT_ID,
+          process.env.GOOGLE_CLIENT_SECRET,
+          process.env.GOOGLE_REDIRECT_URI
+        );
+        
+        // Thiết lập credentials
+        oauth2Client.setCredentials(downloadToken);
+        
+        // Khởi tạo Google Drive API
+        const drive = google.drive({ version: 'v3', auth: oauth2Client });
+        
+        // Lấy thông tin file
+        const fileInfo = await drive.files.get({
+          fileId: fileId,
+          fields: 'size',
+          supportsAllDrives: true
+        });
+        
+        // Tính kích thước MB
+        const fileSizeMB = parseInt(fileInfo.data.size) / (1024 * 1024);
+        
+        // Nếu file lớn hơn 100MB, bỏ qua xử lý
+        if (fileSizeMB > 100) {
+          console.log(`⚠️ File quá lớn (${fileSizeMB.toFixed(2)} MB), bỏ qua xử lý tự động`);
+          return {
+            success: false,
+            error: `File quá lớn (${fileSizeMB.toFixed(2)} MB). Vui lòng xử lý thủ công file này.`,
+            fileSizeMB: fileSizeMB,
+            skipReason: 'FILE_TOO_LARGE'
+          };
+        }
+        
+        console.log(`📊 Kích thước file: ${fileSizeMB.toFixed(2)} MB`);
+      } catch (error) {
+        console.error(`❌ Lỗi khi kiểm tra kích thước file: ${error.message}`);
+        // Tiếp tục xử lý nếu không lấy được kích thước
+      }
+    }
     
     // Nếu không cung cấp đường dẫn đầu ra, tạo đường dẫn mặc định
     if (!outputPath) {
@@ -144,70 +198,46 @@ export async function processPDF(inputPath, outputPath, config = DEFAULT_CONFIG,
       console.log(`🔒 Phát hiện PDF bị chặn từ Google Drive, sử dụng phương pháp đặc biệt...`);
       const fileName = inputPath ? path.basename(inputPath) : `TÀI LIỆU${fileId}.pdf`;
       
-      // Thêm xử lý timeout và retry
-      let retryCount = 0;
-      const maxRetries = 3; // Tăng số lần retry lên 3
-      let lastError = null;
-      let chromeStartFailed = false; // Biến cờ để theo dõi lỗi khởi động Chrome
-      
-      while (retryCount <= maxRetries) {
-        try {
-          console.log(`Thử tải PDF bị chặn lần ${retryCount + 1}/${maxRetries + 1}...`);
-          
-          // Thiết lập timeout cho toàn bộ quá trình
-          const timeoutPromise = new Promise((_, reject) => {
-            setTimeout(() => reject(new Error('Quá thời gian xử lý (15 phút)')), 15 * 60 * 1000);
-          });
-          
-          // Chạy quá trình tải với timeout
-          result = await Promise.race([
-            downloadBlockedPDF(fileId, fileName, path.dirname(outputPath), config),
-            timeoutPromise
-          ]);
-          
-          // Kiểm tra kết quả
-          if (result) {
-            // Nếu là video, trả về ngay không retry
-            if (!result.success && result.isVideo) {
-              console.log(`🎥 Xác nhận file video, không thử lại`);
-              return result;
-            }
-            
-            // Nếu thành công hoặc lỗi Chrome không khởi động được
-            if (result.success || result.chromeStartFailed) {
-            break;
-            }
-          }
-          
-          // Các trường hợp lỗi khác
-            throw new Error(result?.error || 'Không thể tải PDF bị chặn');
-        } catch (downloadError) {
-          lastError = downloadError;
-          
-          // Nếu lỗi là do file video, trả về ngay
-          if (downloadError.message === 'NO_PDF_PAGES_DETECTED' && result?.isVideo) {
-            console.log(`🎥 Xác nhận file video từ lỗi, không thử lại`);
+      try {
+        console.log(`Bắt đầu tải PDF bị chặn...`);
+        
+        // Thiết lập timeout cho toàn bộ quá trình
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error(`Quá thời gian xử lý (${PROCESS_TIMEOUT/60000} phút)`)), PROCESS_TIMEOUT);
+        });
+        
+        // Chạy quá trình tải với timeout
+        result = await Promise.race([
+          downloadBlockedPDF(fileId, fileName, path.dirname(outputPath), config),
+          timeoutPromise
+        ]);
+        
+        // Kiểm tra kết quả
+        if (result) {
+          // Nếu là video, trả về ngay
+          if (!result.success && result.isVideo) {
+            console.log(`🎥 Xác nhận file video`);
             return result;
           }
           
-          retryCount++;
-          
-          // Nếu đã hết số lần thử lại, throw lỗi
-          if (retryCount > maxRetries) {
-            console.error(`❌ Đã thử ${maxRetries + 1} lần nhưng không thành công: ${downloadError.message}`);
-            throw downloadError;
+          // Nếu thành công hoặc lỗi Chrome không khởi động được
+          if (result.success || result.chromeStartFailed) {
+            return result;
           }
-          
-          // Tăng thời gian chờ giữa các lần thử
-          const delayTime = RETRY_DELAY * retryCount; // Tăng thời gian đợi theo số lần retry
-          console.log(`⚠️ Lỗi khi tải PDF bị chặn: ${downloadError.message}. Thử lại sau ${delayTime/1000} giây...`);
-          await new Promise(resolve => setTimeout(resolve, delayTime));
         }
-      }
-      
-      // Nếu không có kết quả thành công sau tất cả các lần thử
-      if (!result || !result.success) {
-        throw new Error(lastError?.message || 'Không thể tải PDF bị chặn sau nhiều lần thử');
+        
+        // Các trường hợp lỗi khác
+        throw new Error(result?.error || 'Không thể tải PDF bị chặn');
+      } catch (downloadError) {
+        console.error(`❌ Lỗi khi tải PDF bị chặn: ${downloadError.message}`);
+        
+        // Nếu lỗi là do file video, trả về ngay
+        if (downloadError.message === 'NO_PDF_PAGES_DETECTED' && result?.isVideo) {
+          console.log(`🎥 Xác nhận file video từ lỗi`);
+          return result;
+        }
+        
+        throw downloadError;
       }
     } else {
       // Xử lý PDF thông thường

@@ -547,7 +547,7 @@ export async function POST(request, { params }) {
             console.log(`Đang cấu hình để lưu vào thư mục có tên sheet: "${sheetName}"`);
             
             // Thêm logic retry cho fetch
-            const MAX_RETRIES = 5; // Tăng số lần retry từ 3 lên 5
+            const MAX_RETRIES = 1; // Tăng số lần retry từ 3 lên 5
             let lastError = null;
             let processResultJson = null;
             

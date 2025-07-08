@@ -5,6 +5,18 @@ const nextConfig = {
   images: {
     domains: ['lh3.googleusercontent.com', 'i.imgur.com', 'firebasestorage.googleapis.com'],
   },
+  api: {
+    bodyParser: {
+      sizeLimit: '50mb',
+    },
+    responseLimit: '50mb',
+    externalResolver: true,
+  },
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '50mb',
+    },
+  },
   webpack: (config, { isServer }) => {
     // Bỏ qua các module phụ thuộc tùy chọn của MongoDB gây cảnh báo
     config.resolve.fallback = {

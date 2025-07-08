@@ -135,6 +135,23 @@ async function processAndUploadFile(
     
     // Xử lý file để loại bỏ watermark
     const processResult = await processFile(filePath, mimeType || "application/pdf", apiKey);
+
+    // Kiểm tra nếu file quá lớn
+    if (processResult && !processResult.success && processResult.skipReason === 'FILE_TOO_LARGE') {
+      console.log(`⚠️ File quá lớn (${processResult.fileSizeMB.toFixed(2)} MB), bỏ qua xử lý tự động`);
+      return {
+        success: false,
+        skipped: true,
+        reason: 'FILE_TOO_LARGE',
+        message: processResult.error,
+        originalFile: {
+          id: fileId,
+          link: driveLink,
+          size: processResult.fileSizeMB
+        },
+        processingTime: Math.round((Date.now() - startTime) / 1000)
+      };
+    }
     
     // Kiểm tra nếu file là video
     if (processResult && !processResult.success && processResult.isVideo) {
@@ -205,7 +222,7 @@ async function processAndUploadFile(
           rowIndex,
           cellIndex,
           driveLink, // URL gốc
-          uploadResult.webViewLink, // URL mới
+          uploadResult.webViewLink || processResult.webViewLink, // Ưu tiên link từ upload, nếu không có thì dùng link từ xử lý Chrome
           displayText, // Text hiển thị
           request // Pass the request object
         );
@@ -220,7 +237,7 @@ async function processAndUploadFile(
           rowIndex,
           cellIndex,
           cellDisplayText,
-          uploadResult.webViewLink,
+          uploadResult.webViewLink || processResult.webViewLink, // Ưu tiên link từ upload, nếu không có thì dùng link từ xử lý Chrome
           driveLink, // URL gốc
           request // Pass the request object
         );
@@ -260,7 +277,7 @@ async function processAndUploadFile(
       processedFile: {
         id: uploadResult.fileId,
         name: uploadResult.fileName,
-        link: uploadResult.webViewLink
+        link: uploadResult.webViewLink || processResult.webViewLink // Ưu tiên link từ upload, nếu không có thì dùng link từ xử lý Chrome
       },
       processingTime: Math.round((Date.now() - startTime) / 1000),
       sheetUpdate: updateSheet ? {
@@ -1154,10 +1171,28 @@ async function processFolder(folderId, options, parentFolderInfo = null, depth =
     }
   }
 
+export const maxDuration = 1800; // 30 minutes timeout
+export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
+
 export async function POST(request) {
   const startTime = Date.now();
   const tempDir = path.join(os.tmpdir(), uuidv4());
   
+  // Tạo response stream để gửi updates
+  const encoder = new TextEncoder();
+  const customStream = new TransformStream();
+  const writer = customStream.writable.getWriter();
+  
+  // Hàm helper để gửi updates
+  const sendUpdate = async (message) => {
+    try {
+      await writer.write(encoder.encode(`data: ${JSON.stringify(message)}\n\n`));
+    } catch (e) {
+      console.error('Lỗi khi gửi update:', e);
+    }
+  };
+
   try {
     console.log('\n=== BẮT ĐẦU XỬ LÝ REQUEST PROCESS-AND-REPLACE ===');
     
@@ -1611,7 +1646,25 @@ export async function POST(request) {
     }
   } catch (error) {
     console.error(`❌ Lỗi khi xử lý file: ${error.message}`);
-    return NextResponse.json({ error: `Lỗi khi xử lý file: ${error.message}` }, { status: 500 });
+    
+    // Gửi thông báo lỗi
+    await sendUpdate({
+      type: 'error',
+      error: error.message
+    });
+    
+    // Đóng stream
+    await writer.close();
+    
+    return new Response(
+      JSON.stringify({ error: `Lỗi khi xử lý file: ${error.message}` }), 
+      { 
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      }
+    );
   } finally {
     // Dọn dẹp thư mục tạm nếu tồn tại
     if (fs.existsSync(tempDir)) {
@@ -1622,5 +1675,21 @@ export async function POST(request) {
         console.error(`⚠️ Lỗi khi dọn dẹp thư mục tạm: ${cleanupError.message}`);
       }
     }
+    
+    // Đảm bảo stream được đóng
+    try {
+      await writer.close();
+    } catch (e) {
+      console.error('Lỗi khi đóng stream:', e);
+    }
   }
+  
+  // Trả về stream response
+  return new Response(customStream.readable, {
+    headers: {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+    },
+  });
 }
