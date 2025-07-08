@@ -59,8 +59,42 @@ export async function downloadFromGoogleDrive(fileId, options = {}) {
             responseType: 'stream'
           });
 
-          // Tạo file path
-          const filePath = path.join(outputDir, `${uuidv4()}`);
+          // Xác định đuôi file dựa trên MIME type
+          const mimeType = response.headers['content-type'];
+          let extension = '';
+          
+          if (mimeType) {
+            switch (mimeType.toLowerCase()) {
+              case 'application/pdf':
+                extension = '.pdf';
+                break;
+              case 'image/jpeg':
+                extension = '.jpg';
+                break;
+              case 'image/png':
+                extension = '.png';
+                break;
+              case 'image/gif':
+                extension = '.gif';
+                break;
+              case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+                extension = '.docx';
+                break;
+              case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
+                extension = '.xlsx';
+                break;
+              case 'application/vnd.openxmlformats-officedocument.presentationml.presentation':
+                extension = '.pptx';
+                break;
+              default:
+                console.log('⚠️ MIME type không xác định:', mimeType);
+                break;
+            }
+          }
+
+          // Tạo file path với đuôi mở rộng
+          const filePath = path.join(outputDir, `${uuidv4()}${extension}`);
+          console.log(`Lưu file với đuôi mở rộng: ${extension}`);
           
           // Ghi file
           const writer = fs.createWriteStream(filePath);
