@@ -175,12 +175,12 @@ export async function processPDF(inputPath, outputPath, config = DEFAULT_CONFIG,
             
             // Nếu thành công hoặc lỗi Chrome không khởi động được
             if (result.success || result.chromeStartFailed) {
-              break;
+            break;
             }
           }
           
           // Các trường hợp lỗi khác
-          throw new Error(result?.error || 'Không thể tải PDF bị chặn');
+            throw new Error(result?.error || 'Không thể tải PDF bị chặn');
         } catch (downloadError) {
           lastError = downloadError;
           
@@ -303,7 +303,7 @@ export async function processPDF(inputPath, outputPath, config = DEFAULT_CONFIG,
         shouldRetry: false // Thêm flag để không retry
       };
     }
-
+    
     return result;
   } catch (error) {
     console.error(`❌ Lỗi xử lý PDF: ${error.message}`);
@@ -501,7 +501,7 @@ export async function downloadBlockedPDF(fileId, fileName, tempDir, watermarkCon
     console.warn(`⚠️ Không thể kiểm tra MIME type: ${error.message}`);
     // Tiếp tục xử lý nếu không kiểm tra được MIME type
   }
-
+  
   let browser = null;
   let page = null;
   let downloadedImages = [];
@@ -799,7 +799,7 @@ export async function downloadBlockedPDF(fileId, fileName, tempDir, watermarkCon
     const processingTime = (Date.now() - startTime) / 1000;
     
     console.log(`✅ Đã tạo file PDF thành công: ${outputPath} (${(fileSize / 1024 / 1024).toFixed(2)}MB) trong ${processingTime.toFixed(2)} giây`);
-
+    
     return {
       success: true,
       filePath: outputPath,
