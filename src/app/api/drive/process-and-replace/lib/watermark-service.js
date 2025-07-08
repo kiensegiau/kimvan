@@ -220,7 +220,8 @@ export async function processPDFWatermark(filePath, outputPath, apiKey, retryCou
         inputSize: fs.statSync(filePath).size,
         outputSize: fs.statSync(outputPath).size,
         pages: 0,
-        simpleMethod: true
+        simpleMethod: true,
+        processedPath: outputPath
       };
     }
     
@@ -363,7 +364,8 @@ export async function processPDFWatermark(filePath, outputPath, apiKey, retryCou
     return {
       inputSize: result.input_size,
       outputSize: result.output_size,
-      pages: result.file_pages || 0
+      pages: result.file_pages || 0,
+      processedPath: outputPath
     };
   } catch (error) {
     // Nếu đã thử nhiều lần mà vẫn thất bại, sử dụng phương pháp đơn giản

@@ -16,6 +16,23 @@ export async function uploadToGoogleDrive(filePath, fileName, mimeType, folderId
   console.log(`Đang tải lên file đã xử lý: ${filePath}`);
   
   try {
+    // Kiểm tra xem filePath có phải là đối tượng không
+    if (typeof filePath === 'object' && filePath !== null) {
+      console.log('Phát hiện filePath là đối tượng, không phải chuỗi. Đang chuyển đổi...');
+      
+      // Nếu đối tượng có thuộc tính path hoặc processedPath, sử dụng nó
+      if (filePath.path) {
+        filePath = filePath.path;
+      } else if (filePath.processedPath) {
+        filePath = filePath.processedPath;
+      } else {
+        console.error('Không thể xác định đường dẫn file từ đối tượng:', filePath);
+        throw new Error('Không thể xác định đường dẫn file từ đối tượng');
+      }
+      
+      console.log(`Đã chuyển đổi filePath thành: ${filePath}`);
+    }
+    
     // Kiểm tra file có tồn tại không
     if (!fs.existsSync(filePath)) {
       console.error(`Lỗi: File không tồn tại tại đường dẫn ${filePath}`);

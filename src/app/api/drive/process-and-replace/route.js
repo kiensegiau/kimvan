@@ -42,7 +42,32 @@ async function processAndUploadFile(
     const processResult = await processFile(filePath, mimeType || "application/pdf", apiKey);
     
     // Lấy đường dẫn đến file đã xử lý
-    const processedFilePath = processResult.processedPath;
+    let processedFilePath = processResult.processedPath;
+    
+    // Kiểm tra xem processedPath có phải là đối tượng không
+    if (typeof processedFilePath === 'object' && processedFilePath !== null) {
+      console.log('Phát hiện processedPath là đối tượng, không phải chuỗi. Đang chuyển đổi...');
+      
+      // Nếu đối tượng có thuộc tính path, sử dụng nó
+      if (processedFilePath.path) {
+        processedFilePath = processedFilePath.path;
+      } else {
+        // Nếu không, tạo đường dẫn mới dựa trên filePath gốc
+        const fileDir = path.dirname(filePath);
+        const fileExt = path.extname(filePath);
+        const fileName = path.basename(filePath, fileExt);
+        processedFilePath = path.join(fileDir, `${fileName}_processed${fileExt}`);
+        
+        console.log(`Đã tạo đường dẫn mới: ${processedFilePath}`);
+        
+        // Kiểm tra xem file có tồn tại không
+        if (!fs.existsSync(processedFilePath)) {
+          console.error(`Lỗi: File không tồn tại tại đường dẫn ${processedFilePath}`);
+          throw new Error(`File đã xử lý không tồn tại tại đường dẫn ${processedFilePath}`);
+        }
+      }
+    }
+    
     const processedFileName = path.basename(processedFilePath);
     
     console.log(`✅ Đã xử lý watermark cho file (${sourceType}): ${processedFilePath}`);

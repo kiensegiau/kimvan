@@ -63,7 +63,7 @@ export async function processFile(filePath, mimeType, apiKey) {
       
       return {
         success: true,
-        processedPath: processedPath,
+        processedPath: result.processedPath || processedPath,
         inputSize: result.inputSize || 0,
         outputSize: result.outputSize || 0,
         pages: result.pages || 0
@@ -287,6 +287,30 @@ export async function processFolder(folderId, folderName, targetFolderId, apiKey
               // Xử lý file PDF
               const processResult = await processFile(downloadResult.filePath, mimeType, apiKey);
               processedFilePath = processResult.processedPath;
+              
+              // Kiểm tra xem processedPath có phải là đối tượng không
+              if (typeof processedFilePath === 'object' && processedFilePath !== null) {
+                console.log('Phát hiện processedPath là đối tượng, không phải chuỗi. Đang chuyển đổi...');
+                
+                // Nếu đối tượng có thuộc tính path, sử dụng nó
+                if (processedFilePath.path) {
+                  processedFilePath = processedFilePath.path;
+                } else {
+                  // Nếu không, tạo đường dẫn mới dựa trên filePath gốc
+                  const fileDir = path.dirname(downloadResult.filePath);
+                  const fileExt = path.extname(downloadResult.filePath);
+                  const fileName = path.basename(downloadResult.filePath, fileExt);
+                  processedFilePath = path.join(fileDir, `${fileName}_processed${fileExt}`);
+                  
+                  console.log(`Đã tạo đường dẫn mới: ${processedFilePath}`);
+                  
+                  // Kiểm tra xem file có tồn tại không
+                  if (!fs.existsSync(processedFilePath)) {
+                    console.error(`Lỗi: File không tồn tại tại đường dẫn ${processedFilePath}`);
+                    throw new Error(`File đã xử lý không tồn tại tại đường dẫn ${processedFilePath}`);
+                  }
+                }
+              }
             } else {
               // Các loại file khác - chỉ sao chép
               const fileDir = path.dirname(downloadResult.filePath);
