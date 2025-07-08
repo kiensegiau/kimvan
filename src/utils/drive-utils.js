@@ -155,6 +155,15 @@ export function cleanGoogleUrl(url) {
         let decodedUrl = redirectUrl;
         try {
           decodedUrl = decodeURIComponent(redirectUrl);
+          // Decode một lần nữa nếu URL vẫn chứa các ký tự được mã hóa
+          if (decodedUrl.includes('%')) {
+            try {
+              decodedUrl = decodeURIComponent(decodedUrl);
+            } catch (e) {
+              // Bỏ qua nếu không thể decode thêm
+              console.log('Không thể decode URL thêm lần nữa:', e.message);
+            }
+          }
         } catch (e) {
           console.error('Error decoding URL:', e);
         }
@@ -176,7 +185,15 @@ export function cleanGoogleUrl(url) {
     return urlObj.toString();
   } catch (error) {
     // If there's an error parsing the URL, return the original
-    console.error('Error cleaning URL:', error);
+    console.error('Error cleaning URL:', error, 'Original URL:', url);
+    
+    // Cố gắng trích xuất fileId trực tiếp nếu URL có định dạng không chuẩn
+    const fileId = extractDriveFileId(url);
+    if (fileId) {
+      console.log('Đã trích xuất được fileId từ URL không chuẩn:', fileId);
+      return `https://drive.google.com/file/d/${fileId}/view`;
+    }
+    
     return url;
   }
 }
