@@ -50,12 +50,48 @@ export function extractDriveFileId(url) {
   if (!url) return null;
   
   try {
+    // Xử lý URL redirect từ Google Sheets
+    if (url.startsWith('https://www.google.com/url?q=')) {
+      try {
+        const urlObj = new URL(url);
+        const redirectUrl = urlObj.searchParams.get('q');
+        if (redirectUrl) {
+          // Decode URL (Google thường encode URL hai lần)
+          let decodedUrl = redirectUrl;
+          try {
+            decodedUrl = decodeURIComponent(redirectUrl);
+            // Decode một lần nữa nếu URL vẫn chứa các ký tự được mã hóa
+            if (decodedUrl.includes('%')) {
+              try {
+                decodedUrl = decodeURIComponent(decodedUrl);
+              } catch (e) {
+                console.log('Không thể decode URL thêm lần nữa:', e.message);
+              }
+            }
+          } catch (e) {
+            console.error('Error decoding URL:', e);
+          }
+          
+          // Gọi đệ quy để xử lý URL đã decode
+          console.log(`URL sau khi decode: ${decodedUrl}`);
+          return extractDriveFileId(decodedUrl);
+        }
+      } catch (urlError) {
+        console.error(`Lỗi xử lý URL redirect: ${urlError.message}`);
+      }
+    }
+    
     // Try to extract ID using common patterns
     const patterns = [
       /\/file\/d\/([^/]+)/,        // Standard format: /file/d/ID/
       /id=([^&]+)/,                // id parameter: ?id=ID
       /folders\/([^/]+)/,          // Folders: /folders/ID
-      /drive\.google\.com\/open\?id=([^&]+)/ // Open link format
+      /drive\.google\.com\/open\?id=([^&]+)/, // Open link format
+      /drive\.google\.com\/file\/d\/([^/]+)/, // Another standard format
+      /drive\.google\.com\/drive\/folders\/([^/?&]+)/, // Folders format
+      /docs\.google\.com\/\w+\/d\/([^/]+)/, // Docs, Sheets, etc
+      /drive_copy&id=([^&]+)/, // drive_copy format
+      /1drv\.ms\/\w\/\w!([A-Za-z0-9_-]+)/ // OneDrive format (just in case)
     ];
     
     for (const pattern of patterns) {
@@ -65,10 +101,21 @@ export function extractDriveFileId(url) {
       }
     }
     
+    // Xử lý trường hợp đặc biệt cho URL có dạng drive_copy
+    if (url.includes('drive_copy')) {
+      const driveIdMatch = url.match(/id%3D([A-Za-z0-9_-]+)(%26|$)/);
+      if (driveIdMatch && driveIdMatch[1]) {
+        return driveIdMatch[1];
+      }
+    }
+    
     // Check if URL is just the ID itself (at least 25 chars of alphanumeric and dashes/underscores)
     if (/^[a-zA-Z0-9_-]{25,}$/.test(url)) {
       return url;
     }
+    
+    // Log URL không xử lý được để debug
+    console.error(`Không thể trích xuất ID từ URL: ${url}`);
     
     return null;
   } catch (error) {
