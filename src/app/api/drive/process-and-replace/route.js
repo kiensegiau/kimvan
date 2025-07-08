@@ -621,66 +621,135 @@ export async function POST(request) {
       if (fileInfo.success && fileInfo.fileInfo.mimeType && 
           (fileInfo.fileInfo.mimeType.includes('video/') || 
            skipVideoProcessing)) {
-        console.log(`🎥 Phát hiện file video, bỏ qua xử lý: ${fileInfo.fileInfo.name}`);
+        console.log(`🎥 Phát hiện file video: ${fileInfo.fileInfo.name}`);
         
-        // Nếu có yêu cầu cập nhật sheet, thực hiện cập nhật với link gốc
-        let sheetUpdateResult = null;
-        if (updateSheet) {
-          console.log('File video, cập nhật sheet với link gốc...');
-          if (courseId && sheetIndex !== undefined && rowIndex !== undefined && cellIndex !== undefined) {
-            sheetUpdateResult = await updateSheetCell(
-              courseId,
-              sheetIndex,
-              rowIndex,
-              cellIndex,
-              driveLink,
-              driveLink, // Giữ nguyên link gốc
-              displayText || fileInfo.fileInfo.name,
-              request,
-              {
-                skipProcessing: true,
-                originalLink: driveLink,
-                processedTime: new Date().toISOString(),
-                isVideo: true
-              }
-            );
-          } else if (sheetId && googleSheetName && rowIndex !== undefined && cellIndex !== undefined) {
-            sheetUpdateResult = await updateGoogleSheetCell(
-              sheetId,
-              googleSheetName,
-              rowIndex,
-              cellIndex,
-              displayText || fileInfo.fileInfo.name,
-              driveLink, // Giữ nguyên link gốc
-              driveLink,
-              request,
-              {
-                skipProcessing: true,
-                originalLink: driveLink,
-                processedTime: new Date().toISOString(),
-                isVideo: true
-              }
-            );
-          }
+        // Tạo thư mục tạm nếu chưa có
+        tempDir = path.join(process.cwd(), 'temp');
+        if (!fs.existsSync(tempDir)) {
+          fs.mkdirSync(tempDir, { recursive: true });
         }
-
-        // Trả về kết quả
-        return NextResponse.json({
-          success: true,
-          skipped: true,
-          isVideo: true,
-          reason: 'File video không cần xử lý',
-          originalFile: {
-            id: fileId,
-            link: driveLink,
-            info: fileInfo.fileInfo
-          },
-          sheetUpdate: updateSheet ? {
-            success: sheetUpdateResult?.success || false,
-            message: sheetUpdateResult?.message || sheetUpdateResult?.error || 'Không có thông tin cập nhật',
-            details: sheetUpdateResult?.updatedCell || null
-          } : null
-        });
+        
+        try {
+          // Thử tải file trực tiếp trước
+          console.log(`🔄 Thử tải file video trực tiếp...`);
+          
+          // Sử dụng VideoProcessor để xử lý video
+          const VideoProcessor = require('./lib/video-processor');
+          const videoProcessor = new VideoProcessor(tempDir);
+          
+          console.log(`🎥 Bắt đầu xử lý video với ID: ${fileId}`);
+          console.log(`📂 Target folder ID: ${targetFolderId}`);
+          
+          // Xử lý video
+          const videoResult = await videoProcessor.handlePDFToVideo(
+            fileId,
+            fileInfo.fileInfo.name || `video_${fileId}.mp4`,
+            targetFolderId
+          );
+          
+          console.log(`🎥 Kết quả xử lý video:`, JSON.stringify(videoResult, null, 2));
+          
+          if (!videoResult.success) {
+            throw new Error(`Lỗi xử lý video: ${videoResult.error}`);
+          }
+          
+          // Đảm bảo đóng browser sau khi hoàn thành
+          await videoProcessor.close();
+          
+          // Cập nhật sheet nếu cần
+          let sheetUpdateResult = null;
+          if (updateSheet) {
+            console.log('Cập nhật sheet với link video đã xử lý...');
+            
+            // Xử lý URL gốc để đảm bảo nó là URL hợp lệ
+            let originalUrl = driveLink;
+            
+            // Xử lý URL redirect từ Google Sheets
+            if (originalUrl.startsWith('https://www.google.com/url?q=')) {
+              try {
+                const urlObj = new URL(originalUrl);
+                const redirectUrl = urlObj.searchParams.get('q');
+                if (redirectUrl) {
+                  // Decode URL (Google thường encode URL hai lần)
+                  let decodedUrl = redirectUrl;
+                  try {
+                    decodedUrl = decodeURIComponent(redirectUrl);
+                    // Decode một lần nữa nếu URL vẫn chứa các ký tự được mã hóa
+                    if (decodedUrl.includes('%')) {
+                      try {
+                        decodedUrl = decodeURIComponent(decodedUrl);
+                      } catch (e) {
+                        console.log('Không thể decode URL thêm lần nữa:', e.message);
+                      }
+                    }
+                  } catch (e) {
+                    console.error('Error decoding URL:', e);
+                  }
+                  originalUrl = decodedUrl;
+                }
+              } catch (urlError) {
+                console.error(`❌ Lỗi xử lý URL redirect: ${urlError.message}`);
+              }
+            }
+            
+            console.log(`📝 Cập nhật sheet với URL gốc: ${originalUrl}`);
+            console.log(`📝 URL mới: ${videoResult.uploadResult.webViewLink}`);
+            
+            if (courseId && sheetIndex !== undefined && rowIndex !== undefined && cellIndex !== undefined) {
+              sheetUpdateResult = await updateSheetCell(
+                courseId,
+                sheetIndex,
+                rowIndex,
+                cellIndex,
+                originalUrl, // URL gốc đã được xử lý
+                videoResult.uploadResult.webViewLink, // URL mới
+                displayText || fileInfo.fileInfo.name,
+                request
+              );
+            } else if (sheetId && googleSheetName && rowIndex !== undefined && cellIndex !== undefined) {
+              sheetUpdateResult = await updateGoogleSheetCell(
+                sheetId,
+                googleSheetName,
+                rowIndex,
+                cellIndex,
+                displayText || fileInfo.fileInfo.name,
+                videoResult.uploadResult.webViewLink, // URL mới
+                originalUrl, // URL gốc đã được xử lý
+                request
+              );
+            }
+          }
+          
+          // Trả về kết quả
+          return NextResponse.json({
+            success: true,
+            isVideo: true,
+            originalFile: {
+              id: fileId,
+              link: driveLink,
+              info: fileInfo.fileInfo
+            },
+            processedFile: {
+              id: videoResult.uploadResult.fileId,
+              name: videoResult.uploadResult.fileName,
+              link: videoResult.uploadResult.webViewLink
+            },
+            sheetUpdate: updateSheet ? {
+              success: sheetUpdateResult?.success || false,
+              message: sheetUpdateResult?.message || sheetUpdateResult?.error || 'Đã cập nhật sheet',
+              details: sheetUpdateResult?.updatedCell || null
+            } : null,
+            processingTime: Math.round((Date.now() - startTime) / 1000)
+          });
+          
+        } catch (videoError) {
+          console.error(`❌ Lỗi khi xử lý video: ${videoError.message}`);
+          
+          // Nếu có lỗi, thử xử lý bằng Chrome
+          console.log(`⚠️ Gặp lỗi khi xử lý video trực tiếp, thử xử lý bằng Chrome...`);
+          
+          // Tiếp tục với luồng xử lý thông thường (sẽ phát hiện video trong quá trình xử lý Chrome)
+        }
       }
 
       if (fileInfo.success && fileInfo.fileInfo.owners?.[0]?.emailAddress === 'khoahocshare6.0@gmail.com') {
