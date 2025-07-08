@@ -332,7 +332,7 @@ export async function POST(request, { params }) {
     const urlGroupsArray = Object.values(urlGroups);
     
     // Xử lý theo batch, mỗi batch 5 link
-    const BATCH_SIZE = 5    
+    const BATCH_SIZE = 1    
     // Thay đổi hàm processUrlGroup thành async
     async function processUrlGroup(urlGroup, index) {
       const firstCell = urlGroup.cells[0];

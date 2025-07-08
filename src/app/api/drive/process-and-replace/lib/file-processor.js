@@ -8,6 +8,21 @@ import { downloadFromGoogleDrive } from './download-service';
 import { findOrCreateFolder, uploadToGoogleDrive } from './upload-service';
 import { removeHeaderFooterWatermark, addLogoToPDF } from './pdf-service';
 import { createOAuth2Client } from '@/utils/drive-utils';
+import VideoProcessor from './video-processor';
+
+// Khởi tạo VideoProcessor
+let videoProcessor = null;
+
+/**
+ * Khởi tạo VideoProcessor nếu chưa có
+ */
+async function initVideoProcessor() {
+  if (!videoProcessor) {
+    const oAuth2Client = await createOAuth2Client();
+    videoProcessor = new VideoProcessor(oAuth2Client, 'temp');
+  }
+  return videoProcessor;
+}
 
 /**
  * Xử lý file (ví dụ: loại bỏ watermark)
@@ -32,7 +47,6 @@ export async function processFile(filePath, mimeType, apiKey) {
       console.log('Đang xử lý file PDF với API xóa watermark...');
       
       // Lấy API key từ hệ thống quản lý API key
-      // Nếu apiKey được truyền vào, sử dụng nó, nếu không, lấy key từ hệ thống
       const apiKeyToUse = apiKey || await getNextApiKey();
       
       if (!apiKeyToUse) {
@@ -55,6 +69,27 @@ export async function processFile(filePath, mimeType, apiKey) {
       console.log(`Bắt đầu xử lý PDF lúc: ${new Date(processingStartTime).toLocaleTimeString()}`);
       
       const result = await processPDFWatermark(filePath, processedPath, apiKeyToUse);
+      
+      // Kiểm tra nếu kết quả cho thấy đây là file video
+      if (result && !result.success && result.isVideo && !result.shouldRetry) {
+        console.log(`🎥 Phát hiện file video, chuyển sang xử lý video...`);
+        return {
+          success: false,
+          error: 'FILE_IS_VIDEO',
+          isVideo: true,
+          fileId: result.fileId,
+          fileName: result.fileName,
+          shouldRetry: false
+        };
+      }
+
+      // Nếu không thành công và cần thử lại
+      if (!result.success && result.shouldRetry !== false) {
+        // ... existing code ...
+      } else if (!result.success) {
+        throw new Error(result.error || 'Lỗi không xác định khi xử lý PDF');
+      }
+      
       console.log(`PDF đã được xử lý thành công sau ${Math.round((Date.now() - processingStartTime)/1000)} giây`);
       
       // Xóa watermark dạng text ở header và footer và thêm logo
@@ -68,6 +103,11 @@ export async function processFile(filePath, mimeType, apiKey) {
         outputSize: result.outputSize || 0,
         pages: result.pages || 0
       };
+    } else if (mimeType.includes('video')) {
+      // Xử lý file video
+      console.log('🎥 Đang xử lý file video...');
+      const processor = await initVideoProcessor();
+      return await processor.processVideo(filePath, fileName, targetFolderId);
     } else if (mimeType.includes('image')) {
       // Xử lý file hình ảnh - hiện tại chỉ sao chép
       console.log('Đang xử lý file hình ảnh (chỉ sao chép)...');

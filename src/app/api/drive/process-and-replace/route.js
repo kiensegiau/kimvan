@@ -41,6 +41,21 @@ async function processAndUploadFile(
     // Xử lý file để loại bỏ watermark
     const processResult = await processFile(filePath, mimeType || "application/pdf", apiKey);
     
+    // Kiểm tra nếu file là video
+    if (processResult && !processResult.success && processResult.isVideo) {
+      console.log(`🎥 Phát hiện file video, bỏ qua xử lý watermark...`);
+      return {
+        success: true,
+        isVideo: true,
+        originalFile: {
+          id: fileId,
+          link: driveLink
+        },
+        message: 'File video không cần xử lý watermark',
+        processingTime: Math.round((Date.now() - startTime) / 1000)
+      };
+    }
+    
     // Lấy đường dẫn đến file đã xử lý
     let processedFilePath = processResult.processedPath;
     
@@ -297,6 +312,54 @@ async function processNextInQueue() {
       skipWatermarkRemoval: true,
       debugMode: true
     }, true, task.fileId);
+
+    // Kiểm tra nếu là file video
+    if (!chromeResult.success && chromeResult.isVideo) {
+      console.log(`🎥 Phát hiện file video, chuyển sang xử lý video...`);
+      
+      // Sử dụng token hiện tại thay vì tạo mới
+      const { getStoredToken } = require('@/utils/drive-utils');
+      const VideoProcessor = require('./lib/video-processor');
+      
+      // Lấy token tải xuống (index = 1)
+      const downloadToken = getStoredToken(1);
+      if (!downloadToken) {
+        throw new Error('Không tìm thấy token tải xuống trong cấu hình');
+      }
+      
+      // Khởi tạo VideoProcessor với token hiện có
+      const videoProcessor = new VideoProcessor({
+        credentials: downloadToken
+      }, task.tempDir);
+      
+      // Xử lý video
+      const videoResult = await videoProcessor.handlePDFToVideo(
+        task.fileId,
+        task.fileName || `video_${task.fileId}.mp4`,
+        task.targetFolderId
+      );
+
+      if (!videoResult.success) {
+        throw new Error(`Lỗi xử lý video: ${videoResult.error}`);
+      }
+
+      // Trả về kết quả thành công
+      task.resolve({
+        success: true,
+        isVideo: true,
+        originalFile: {
+          id: task.fileId,
+          link: task.driveLink
+        },
+        processedFile: {
+          id: videoResult.fileId,
+          link: `https://drive.google.com/file/d/${videoResult.fileId}/view`
+        },
+        message: 'Đã xử lý file video thành công',
+        processingTime: Math.round((Date.now() - task.startTime) / 1000)
+      });
+      return;
+    }
 
     if (chromeResult.success) {
       console.log(`✅ Đã tải thành công file bằng Chrome: ${chromeResult.filePath}`);

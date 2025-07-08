@@ -22,7 +22,7 @@ export async function downloadFromGoogleDrive(fileId, options = {}) {
   console.log(`Đã tạo thư mục tạm: ${outputDir}`);
 
   // Thêm cơ chế retry
-  const MAX_RETRIES = 3;
+  const MAX_RETRIES = 1;
   let lastError = null;
   
   for (let retryCount = 0; retryCount <= MAX_RETRIES; retryCount++) {
