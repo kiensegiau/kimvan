@@ -121,6 +121,9 @@ export async function processPDF(inputPath, outputPath, config = DEFAULT_CONFIG,
         // Import hàm getTokenByType từ utils
         const { getTokenByType } = await import('./utils.js');
         
+        // Lấy đối tượng google từ config nếu có, hoặc import nếu không có
+        const googleAPI = config.google || (await import('googleapis')).google;
+        
         // Lấy token tải xuống
         const downloadToken = getTokenByType('download');
         if (!downloadToken) {
@@ -128,7 +131,7 @@ export async function processPDF(inputPath, outputPath, config = DEFAULT_CONFIG,
         }
         
         // Tạo OAuth2 client
-        const oauth2Client = new google.auth.OAuth2(
+        const oauth2Client = new googleAPI.auth.OAuth2(
           process.env.GOOGLE_CLIENT_ID,
           process.env.GOOGLE_CLIENT_SECRET,
           process.env.GOOGLE_REDIRECT_URI
@@ -138,7 +141,7 @@ export async function processPDF(inputPath, outputPath, config = DEFAULT_CONFIG,
         oauth2Client.setCredentials(downloadToken);
         
         // Khởi tạo Google Drive API
-        const drive = google.drive({ version: 'v3', auth: oauth2Client });
+        const drive = googleAPI.drive({ version: 'v3', auth: oauth2Client });
         
         // Lấy thông tin file
         const fileInfo = await drive.files.get({
@@ -491,9 +494,8 @@ setInterval(() => {
 }, 5 * 60 * 1000); // Kiểm tra mỗi 5 phút
 
 /**
- * Tải file PDF từ Google Drive bị chặn tải xuống
- * Sử dụng puppeteer để mở PDF viewer và chụp lại các trang
- * @param {string} fileId - ID của file Google Drive
+ * Tải file PDF bị chặn từ Google Drive
+ * @param {string} fileId - ID của file trên Google Drive
  * @param {string} fileName - Tên file để lưu
  * @param {string} tempDir - Thư mục tạm để lưu các file trung gian
  * @param {Object} watermarkConfig - Cấu hình xử lý watermark (tùy chọn)
@@ -504,10 +506,11 @@ export async function downloadBlockedPDF(fileId, fileName, tempDir, watermarkCon
   
   // Kiểm tra MIME type của file trước khi xử lý
   try {
-    const { google } = require('googleapis');
+    // Lấy đối tượng google từ config nếu có, hoặc import nếu không có
+    const googleAPI = watermarkConfig.google || (await import('googleapis')).google;
     const { createOAuth2Client } = require('@/utils/drive-utils');
     const oAuth2Client = await createOAuth2Client();
-    const drive = google.drive({ version: 'v3', auth: oAuth2Client });
+    const drive = googleAPI.drive({ version: 'v3', auth: oAuth2Client });
 
     const file = await drive.files.get({
       fileId: fileId,
@@ -556,8 +559,12 @@ export async function downloadBlockedPDF(fileId, fileName, tempDir, watermarkCon
   const imagesDir = path.join(tempDir, 'images');
   const processedDir = path.join(tempDir, 'processed');
   try {
+    // Đảm bảo các thư mục con tồn tại
     fs.mkdirSync(imagesDir, { recursive: true });
     fs.mkdirSync(processedDir, { recursive: true });
+    console.log(`✅ Đã tạo thư mục tạm: ${tempDir}`);
+    console.log(`✅ Đã tạo thư mục cho ảnh: ${imagesDir}`);
+    console.log(`✅ Đã tạo thư mục cho ảnh đã xử lý: ${processedDir}`);
   } catch (mkdirError) {
     console.error(`Lỗi tạo thư mục con: ${mkdirError.message}`);
     throw new Error(`Không thể tạo thư mục con: ${mkdirError.message}`);
@@ -752,6 +759,19 @@ export async function downloadBlockedPDF(fileId, fileName, tempDir, watermarkCon
     try {
       console.log(`📥 Tải xuống ${pageRequests.size} trang...`);
       downloadedImages = await downloadAllPageImages(pageRequests, cookies, userAgent, imagesDir);
+      
+      // Kiểm tra nếu không có ảnh nào được tải xuống thành công
+      if (downloadedImages.length === 0) {
+        console.error(`❌ LỖI NGHIÊM TRỌNG: Không có trang nào được tải xuống thành công!`);
+        return {
+          success: false,
+          error: 'NO_IMAGES_DOWNLOADED',
+          message: 'Không có trang nào được tải xuống thành công, không thể tạo file PDF',
+          fileId: fileId,
+          fileName: fileName,
+          shouldRetry: true
+        };
+      }
     } catch (downloadError) {
       console.error(`Lỗi tải ảnh trang: ${downloadError.message}`);
       throw new Error(`Không thể tải ảnh từ các trang PDF: ${downloadError.message}`);
@@ -759,6 +779,19 @@ export async function downloadBlockedPDF(fileId, fileName, tempDir, watermarkCon
     
     // Chuyển đổi định dạng ảnh trước khi xử lý
     const pngImages = await convertAllImagesToPng(downloadedImages, imagesDir);
+    
+    // Kiểm tra nếu không có ảnh nào được chuyển đổi thành công
+    if (pngImages.length === 0) {
+      console.error(`❌ LỖI NGHIÊM TRỌNG: Không có trang nào được chuyển đổi thành công!`);
+      return {
+        success: false,
+        error: 'NO_IMAGES_CONVERTED',
+        message: 'Không có trang nào được chuyển đổi thành công, không thể tạo file PDF',
+        fileId: fileId,
+        fileName: fileName,
+        shouldRetry: true
+      };
+    }
     
     // Xác định có cần xử lý watermark hay không
     if (true) {
@@ -782,6 +815,12 @@ export async function downloadBlockedPDF(fileId, fileName, tempDir, watermarkCon
     // Tạo file PDF từ các ảnh đã xử lý
     try {
       console.log(`📄 Tạo file PDF từ ${processedImages.length} ảnh đã xử lý...`);
+      
+      // Kiểm tra xem có ảnh nào được xử lý hay không
+      if (processedImages.length === 0) {
+        console.error(`❌ LỖI NGHIÊM TRỌNG: Không có ảnh nào để tạo PDF!`);
+        throw new Error('Không có ảnh nào để tạo PDF');
+      }
       
       // Kiểm tra xem có bỏ qua bước xử lý watermark không
       if (config.preserveOriginal || config.skipWatermarkRemoval) {

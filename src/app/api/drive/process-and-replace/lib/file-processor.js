@@ -126,6 +126,13 @@ export async function processFile(filePath, mimeType, apiKey, originalFileId) {
         
         console.log(`Tìm thấy File ID để xử lý với Chrome: ${fileId}`);
         
+        // Tạo đường dẫn đầu ra rõ ràng
+        const outputDir = path.dirname(processedPath);
+        if (!fs.existsSync(outputDir)) {
+          fs.mkdirSync(outputDir, { recursive: true });
+          console.log(`Đã tạo thư mục đầu ra: ${outputDir}`);
+        }
+        
         try {
           // Truyền google object vào hàm processPDF qua config
           const chromeResult = await processPDF(
@@ -133,13 +140,20 @@ export async function processFile(filePath, mimeType, apiKey, originalFileId) {
             processedPath, // outputPath
             { 
               debugMode: true,
-              google: google // Truyền đối tượng Google API
+              google: google, // Truyền đối tượng Google API
+              skipWatermarkRemoval: true // Tạm thời bỏ qua xử lý watermark để tập trung vào việc tải xuống
             }, 
             true, // isBlocked
             fileId // fileId
           );
-          
+        
           if (!chromeResult.success) {
+            console.error(`Lỗi xử lý Chrome: ${chromeResult.error}`);
+            
+            if (chromeResult.error === 'NO_IMAGES_DOWNLOADED' || chromeResult.error === 'NO_IMAGES_CONVERTED') {
+              throw new Error(`Không thể tải các trang PDF: ${chromeResult.message}`);
+            }
+            
             throw new Error(chromeResult.error || 'Không thể xử lý file bằng Chrome');
           }
           
