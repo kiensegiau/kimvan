@@ -1518,6 +1518,132 @@ export default function CoursesPage() {
     }
   };
 
+  // Hàm xử lý tất cả khóa học tuần tự
+  const handleProcessAllCourses = async () => {
+    try {
+      // Lọc ra các khóa học có kimvanId
+      const coursesWithKimvanId = courses.filter(course => course.kimvanId);
+      
+      if (coursesWithKimvanId.length === 0) {
+        alert('Không có khóa học nào có ID Kimvan để xử lý');
+        return;
+      }
+      
+      if (!window.confirm(`Bạn có chắc chắn muốn xử lý tất cả ${coursesWithKimvanId.length} khóa học tuần tự? Quá trình này sẽ mất nhiều thời gian.`)) {
+        return;
+      }
+      
+      setProcessingData(true);
+      // Khởi tạo kết quả xử lý
+      const results = {
+        inProgress: true,
+        success: true,
+        message: `Đang bắt đầu xử lý ${coursesWithKimvanId.length} khóa học...`,
+        details: [],
+        errors: []
+      };
+      setProcessResult(results);
+      
+      // Hàm đệ quy để xử lý từng khóa học một với độ trễ
+      const processNextCourse = async (index) => {
+        if (index >= coursesWithKimvanId.length) {
+          // Đã hoàn thành tất cả
+          setProcessingData(false);
+          setProcessResult({
+            inProgress: false,
+            success: results.errors.length === 0,
+            message: `Đã hoàn thành xử lý ${results.details.length} khóa học, có ${results.errors.length} lỗi`,
+            details: results.details,
+            errors: results.errors
+          });
+          return;
+        }
+        
+        const currentCourse = coursesWithKimvanId[index];
+        
+        // Hiển thị thông báo đang xử lý
+        setProcessResult({
+          inProgress: true,
+          success: true,
+          message: `Đang xử lý khóa học ${index + 1}/${coursesWithKimvanId.length}: ${currentCourse.name}`,
+          details: results.details,
+          errors: results.errors
+        });
+        
+        try {
+          console.log(`🔄 Bắt đầu xử lý khóa học ${index + 1}/${coursesWithKimvanId.length}: ${currentCourse.name}`);
+          
+          // Gọi API để xử lý khóa học
+          const response = await fetch(`/api/courses/${currentCourse._id}/process-all-sheets`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            }
+          });
+          
+          const data = await response.json();
+          
+          if (!response.ok) {
+            throw new Error(data.message || `Không thể xử lý khóa học ${currentCourse.name}`);
+          }
+          
+          console.log(`✅ Xử lý khóa học ${currentCourse.name} thành công`);
+          
+          // Đồng bộ với minicourse sau khi xử lý
+          try {
+            const courseResponse = await fetch(`/api/admin/courses/${currentCourse._id}`);
+            if (courseResponse.ok) {
+              const courseData = await courseResponse.json();
+              await syncToMiniCourse(courseData);
+              console.log(`Đã đồng bộ minicourse cho khóa học ${currentCourse._id} sau khi xử lý`);
+            }
+          } catch (syncError) {
+            console.error(`Lỗi khi đồng bộ minicourse cho khóa học ${currentCourse._id}:`, syncError);
+          }
+          
+          // Thêm kết quả thành công
+          results.details.push({
+            courseId: currentCourse._id, 
+            courseName: currentCourse.name,
+            message: 'Xử lý thành công',
+            timestamp: new Date().toISOString()
+          });
+          
+        } catch (err) {
+          console.error(`❌ Lỗi khi xử lý khóa học ${currentCourse.name}:`, err);
+          
+          // Thêm kết quả lỗi
+          results.errors.push({
+            courseId: currentCourse._id, 
+            courseName: currentCourse.name,
+            message: err.message || 'Đã xảy ra lỗi khi xử lý',
+            timestamp: new Date().toISOString()
+          });
+        } finally {
+          // Đợi 10 giây trước khi xử lý khóa học tiếp theo
+          console.log(`⏱️ Đợi 10 giây trước khi xử lý khóa học tiếp theo...`);
+          setTimeout(() => {
+            processNextCourse(index + 1);
+          }, 10000); // 10000ms = 10 giây
+        }
+      };
+      
+      // Bắt đầu quy trình xử lý với khóa học đầu tiên
+      processNextCourse(0);
+      
+    } catch (err) {
+      console.error('Lỗi khi khởi tạo xử lý tự động:', err);
+      setProcessResult({
+        inProgress: false,
+        success: false,
+        message: err.message || 'Đã xảy ra lỗi khi khởi tạo xử lý tự động',
+        details: [],
+        errors: [{ message: err.message || 'Lỗi không xác định' }]
+      });
+      setProcessingData(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between mb-6">
@@ -1566,6 +1692,15 @@ export default function CoursesPage() {
               Dừng đồng bộ
             </button>
           )}
+          
+          <button
+            onClick={handleProcessAllCourses}
+            disabled={processingData || autoSyncInProgress || syncing || processingPDFs}
+            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 disabled:opacity-50"
+          >
+            <AdjustmentsHorizontalIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
+            {processingData ? 'Đang xử lý...' : 'Xử lý tất cả khóa học'}
+          </button>
           
           <button
             onClick={handleProcessAllPDFs}
