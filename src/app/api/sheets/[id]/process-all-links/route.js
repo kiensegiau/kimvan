@@ -524,6 +524,85 @@ export async function POST(request, { params }) {
           // Log loại file được phát hiện
           if (isVideoFile) {
             console.log(`Phát hiện file video: ${fileType}`);
+            
+            // Bỏ qua xử lý cho file video, trả về URL gốc
+            console.log(`Bỏ qua xử lý cho file video: ${urlGroup.originalUrl}`);
+            
+            // Cập nhật trực tiếp vào Google Sheet cho file video
+            try {
+              // Cập nhật tất cả các ô trong urlGroup
+              for (const cellInfo of urlGroup.cells) {
+                console.log(`Cập nhật ô [${cellInfo.rowIndex + 1}:${cellInfo.colIndex + 1}] trong sheet cho file video...`);
+                
+                // Lấy thời gian hiện tại để ghi chú
+                const currentTime = new Date().toLocaleString('vi-VN');
+                const noteContent = `Link video: ${urlGroup.originalUrl}\nĐã bỏ qua xử lý lúc: ${currentTime}\nLý do: File video không cần xử lý`;
+                
+                // Sử dụng batchUpdate để cập nhật cả giá trị và định dạng
+                await sheets.spreadsheets.batchUpdate({
+                  spreadsheetId: sheet.sheetId,
+                  requestBody: {
+                    requests: [
+                      {
+                        updateCells: {
+                          range: {
+                            sheetId: actualSheetId,
+                            startRowIndex: cellInfo.rowIndex,
+                            endRowIndex: cellInfo.rowIndex + 1,
+                            startColumnIndex: cellInfo.colIndex,
+                            endColumnIndex: cellInfo.colIndex + 1
+                          },
+                          rows: [
+                            {
+                              values: [
+                                {
+                                  userEnteredValue: {
+                                    stringValue: cellInfo.cell || 'Video'
+                                  },
+                                  userEnteredFormat: {
+                                    backgroundColor: {
+                                      red: 0.6,
+                                      green: 0.9,
+                                      blue: 0.6
+                                    },
+                                    textFormat: {
+                                      link: { uri: urlGroup.originalUrl },
+                                      foregroundColor: { 
+                                        red: 0.0,
+                                        green: 0.0,
+                                        blue: 0.7
+                                      },
+                                      bold: true
+                                    }
+                                  },
+                                  note: noteContent
+                                }
+                              ]
+                            }
+                          ],
+                          fields: 'userEnteredValue,userEnteredFormat.backgroundColor,userEnteredFormat.textFormat.link,userEnteredFormat.textFormat.foregroundColor,userEnteredFormat.textFormat.bold,note'
+                        }
+                      }
+                    ]
+                  }
+                });
+                console.log(`✅ Đã cập nhật ô thành công với batchUpdate cho file video`);
+              }
+            } catch (videoUpdateError) {
+              console.error(`❌ Lỗi khi cập nhật ô cho file video: ${videoUpdateError.message}`);
+            }
+            
+            // Trả về kết quả đã bỏ qua xử lý
+            return {
+              success: true,
+              urlGroup,
+              newUrl: urlGroup.originalUrl,
+              processResult: null,
+              fileType: 'video',
+              isVideo: true,
+              skipped: true,
+              message: 'Bỏ qua xử lý cho file video'
+            };
           } else if (isAudioFile) {
             console.log(`Phát hiện file audio: ${fileType}`);
           } else if (isImageFile) {
