@@ -5,6 +5,7 @@ const os = require('os');
 const axios = require('axios');
 const http = require('http');
 const https = require('https');
+const { uploadToGoogleDrive } = require('./upload-service.js');
 
 // Hàm làm sạch tên file để đảm bảo an toàn cho hệ thống file
 function sanitizeFileName(fileName) {
@@ -94,6 +95,21 @@ class VideoProcessor {
       await this.downloadVideo(fileId, tempPath);
       console.log(`✅ Đã tải xong video vào: ${tempPath}`);
 
+      // Upload video lên Google Drive
+      if (targetFolderId) {
+        console.log(`📤 Bắt đầu upload video lên Google Drive vào folder: ${targetFolderId}`);
+        const uploadResult = await this.uploadProcessedVideo(tempPath, fileName, targetFolderId);
+        
+        return {
+          success: true,
+          filePath: tempPath,
+          fileName: fileName,
+          fileId: fileId,
+          targetFolderId: targetFolderId,
+          uploadResult: uploadResult
+        };
+      }
+
       return {
         success: true,
         filePath: tempPath,
@@ -182,6 +198,98 @@ class VideoProcessor {
     } catch (error) {
       console.error(`❌ Lỗi tải video: ${error.message}`);
       throw error;
+    }
+  }
+  
+  async uploadProcessedVideo(filePath, fileName, targetFolderId) {
+    console.log(`📤 Đang upload video lên Google Drive: ${fileName}`);
+    
+    try {
+      // Kiểm tra file tồn tại
+      if (!fs.existsSync(filePath)) {
+        throw new Error(`File không tồn tại: ${filePath}`);
+      }
+      
+      // Kiểm tra kích thước file
+      const stats = fs.statSync(filePath);
+      const fileSizeInBytes = stats.size;
+      const fileSizeInMB = fileSizeInBytes / (1024 * 1024);
+      console.log(`Kích thước file: ${fileSizeInBytes} bytes (${fileSizeInMB.toFixed(2)} MB)`);
+      
+      // Phương pháp 1: Sử dụng uploadToGoogleDrive từ upload-service.js
+      try {
+        console.log(`🔄 Upload video sử dụng uploadToGoogleDrive từ upload-service.js`);
+        
+        // Gọi hàm uploadToGoogleDrive
+        const uploadResult = await uploadToGoogleDrive(
+          filePath,
+          fileName,
+          'video/mp4',
+          targetFolderId
+        );
+        
+        console.log(`✅ Upload thành công: ${uploadResult.fileName} (ID: ${uploadResult.fileId})`);
+        return {
+          success: true,
+          fileId: uploadResult.fileId,
+          fileName: uploadResult.fileName,
+          webViewLink: uploadResult.webViewLink,
+          webContentLink: uploadResult.webContentLink
+        };
+      } catch (uploadError) {
+        console.error(`❌ Lỗi upload qua upload-service: ${uploadError.message}`);
+        
+        // Phương pháp 2: Sao chép file vào thư mục public
+        try {
+          console.log(`🔄 Thử phương pháp 2: Sao chép file vào thư mục public`);
+          
+          // Tạo thư mục videos trong public nếu chưa có
+          const publicDir = path.join(process.cwd(), 'public');
+          const videosDir = path.join(publicDir, 'videos');
+          
+          if (!fs.existsSync(publicDir)) {
+            fs.mkdirSync(publicDir, { recursive: true });
+          }
+          
+          if (!fs.existsSync(videosDir)) {
+            fs.mkdirSync(videosDir, { recursive: true });
+          }
+          
+          // Tạo tên file đích
+          const targetFileName = `video_${Date.now()}_${path.basename(fileName)}`;
+          const targetFilePath = path.join(videosDir, targetFileName);
+          
+          // Sao chép file
+          fs.copyFileSync(filePath, targetFilePath);
+          
+          console.log(`✅ Đã sao chép video thành công vào: ${targetFilePath}`);
+          
+          // Tạo URL tương đối
+          const relativeUrl = `/videos/${targetFileName}`;
+          
+          return {
+            success: true,
+            fileId: `local_${Date.now()}`,
+            fileName: targetFileName,
+            webViewLink: relativeUrl,
+            webContentLink: relativeUrl,
+            isLocal: true
+          };
+        } catch (method2Error) {
+          console.error(`❌ Lỗi phương pháp 2: ${method2Error.message}`);
+          throw method2Error;
+        }
+      }
+    } catch (error) {
+      console.error(`❌ Lỗi upload video: ${error.message}`);
+      
+      // Trả về kết quả không có upload để ít nhất người dùng có thể tải video về
+      console.log(`⚠️ Không thể upload video, trả về đường dẫn local: ${filePath}`);
+      return {
+        success: false,
+        error: error.message,
+        localFilePath: filePath
+      };
     }
   }
   
@@ -472,7 +580,7 @@ class VideoProcessor {
               failedChunksCount++;
 
               if (retries === 0) {
-                console.log(`⚠️ Hết số lần thử lại cho chunk này`);
+                console.log("⚠️ Hết số lần thử lại cho chunk này");
                 break;
               }
 
@@ -608,4 +716,4 @@ class VideoProcessor {
   }
 }
 
-module.exports = VideoProcessor; 
+module.exports = VideoProcessor;
