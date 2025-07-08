@@ -425,12 +425,46 @@ async function processNextInQueue() {
           if (task.updateSheet && task.courseId && task.sheetIndex !== undefined && 
               task.rowIndex !== undefined && task.cellIndex !== undefined) {
             try {
+              // Xử lý URL gốc để đảm bảo nó là URL hợp lệ
+              let originalUrl = task.driveLink || `https://drive.google.com/file/d/${task.fileId}/view`;
+              
+              // Xử lý URL redirect từ Google Sheets
+              if (originalUrl.startsWith('https://www.google.com/url?q=')) {
+                try {
+                  const urlObj = new URL(originalUrl);
+                  const redirectUrl = urlObj.searchParams.get('q');
+                  if (redirectUrl) {
+                    // Decode URL (Google thường encode URL hai lần)
+                    let decodedUrl = redirectUrl;
+                    try {
+                      decodedUrl = decodeURIComponent(redirectUrl);
+                      // Decode một lần nữa nếu URL vẫn chứa các ký tự được mã hóa
+                      if (decodedUrl.includes('%')) {
+                        try {
+                          decodedUrl = decodeURIComponent(decodedUrl);
+                        } catch (e) {
+                          console.log('Không thể decode URL thêm lần nữa:', e.message);
+                        }
+                      }
+                    } catch (e) {
+                      console.error('Error decoding URL:', e);
+                    }
+                    originalUrl = decodedUrl;
+                  }
+                } catch (urlError) {
+                  console.error(`❌ Lỗi xử lý URL redirect: ${urlError.message}`);
+                }
+              }
+              
+              console.log(`📝 Cập nhật sheet với URL gốc: ${originalUrl}`);
+              console.log(`📝 URL mới: ${videoResult.uploadResult.webViewLink}`);
+              
               const sheetUpdateResult = await updateSheetCell(
                 task.courseId,
                 task.sheetIndex,
                 task.rowIndex,
                 task.cellIndex,
-                task.driveLink || `https://drive.google.com/file/d/${task.fileId}/view`, // URL gốc
+                originalUrl, // URL gốc đã được xử lý
                 videoResult.uploadResult.webViewLink, // URL mới
                 task.displayText || videoResult.uploadResult.fileName, // Text hiển thị
                 task.request // Pass the request object
