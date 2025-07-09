@@ -5,7 +5,7 @@ const nextConfig = {
   images: {
     domains: ['lh3.googleusercontent.com', 'i.imgur.com', 'firebasestorage.googleapis.com'],
   },
-  api: {
+  serverRuntimeConfig: {
     bodyParser: {
       sizeLimit: '50mb',
     },

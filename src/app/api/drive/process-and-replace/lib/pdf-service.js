@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import axios from 'axios';
 import FormData from 'form-data';
-import { getNextApiKey, removeApiKey } from '@/utils/watermark-api-keys';
+import { getNextApiKey, removeApiKey } from '../../../../../utils/watermark-api-keys';
 
 /**
  * Xóa watermark dạng text ở header và footer của PDF bằng cách cắt PDF và thêm logo
@@ -132,46 +132,43 @@ const API_ENDPOINT = {
   CHECK_CREDITS: 'https://techhk.aoscdn.com/api/customers/coins'
 };
 
-// Thời gian tối đa chờ xử lý từ API (1800 giây = 30 phút)
-const MAX_POLLING_TIME = 1800000;
+// Thời gian tối đa chờ xử lý từ API (3600 giây = 60 phút)
+const MAX_POLLING_TIME = 3600000;
 // Khoảng thời gian giữa các lần kiểm tra trạng thái (15 giây)
 const POLLING_INTERVAL = 15000;
 
 /**
- * Tạo nhiệm vụ xóa watermark trên API bên ngoài
- * @param {string} filePath - Đường dẫn đến file PDF cần xử lý
- * @param {string} apiKey - API key cho dịch vụ
- * @returns {Promise<string>} - Task ID
+ * Tạo nhiệm vụ xóa watermark
+ * @param {string} filePath - Đường dẫn đến file PDF cần xử lý 
+ * @param {string} apiKey - API key để truy cập dịch vụ
+ * @returns {Promise<string>} - ID của nhiệm vụ đã tạo
  */
 export async function createWatermarkRemovalTask(filePath, apiKey) {
-  const form = new FormData();
-  form.append('format', 'doc-repair');
-  form.append('file', fs.createReadStream(filePath));
-  
   try {
-    // Kiểm tra kích thước file
-    const fileStats = fs.statSync(filePath);
-    const fileSizeMB = fileStats.size / (1024 * 1024);
+    const fileSize = fs.statSync(filePath).size;
+    console.log(`Kích thước file (bytes): ${fileSize}`);
     
     // Tính toán timeout dựa trên kích thước file
-    // - Tối thiểu 180 giây (3 phút)
-    // - Thêm 120 giây (2 phút) cho mỗi 10MB
-    // - Cho file lớn (>50MB), thêm 180 giây (3 phút) cho mỗi 10MB
-    let dynamicTimeout;
-    if (fileSizeMB > 50) {
-      dynamicTimeout = Math.max(180000, 180000 * Math.ceil(fileSizeMB / 10));
-    } else {
-      dynamicTimeout = Math.max(180000, 120000 * Math.ceil(fileSizeMB / 10));
-    }
+    const timeoutMs = Math.max(300000, fileSize / 1024 * 10); // 300s cơ bản + 10ms/KB
+    console.log(`Timeout cho API upload: ${Math.round(timeoutMs/1000)} giây`);
     
-    console.log(`Kích thước file: ${fileSizeMB.toFixed(2)} MB, đặt timeout: ${dynamicTimeout/1000} giây`);
+    // Tạo form data để upload file
+    const form = new FormData();
+    form.append('file', fs.createReadStream(filePath));
+    form.append('format', 'doc-repair');
     
-    const response = await axios.post(API_ENDPOINT.CREATE_TASK, form, {
+    // Gửi yêu cầu tới API
+    const response = await axios({
+      method: 'POST',
+      url: 'https://techhk.aoscdn.com/api/tasks/document/conversion',
       headers: {
-        ...form.getHeaders(),
-        'X-API-KEY': apiKey
+        'X-API-KEY': apiKey,
+        ...form.getHeaders()
       },
-      timeout: dynamicTimeout // Timeout động dựa trên kích thước file
+      data: form,
+      timeout: timeoutMs,
+      maxContentLength: Infinity,
+      maxBodyLength: Infinity
     });
     
     if (response.data?.status === 200 && response.data?.data?.task_id) {
@@ -206,7 +203,7 @@ export async function checkTaskStatus(taskId, apiKey) {
       headers: {
         'X-API-KEY': apiKey
       },
-      timeout: 300000 // 300 giây timeout (5 phút)
+      timeout: 600000 // 600 giây timeout (10 phút)
     });
     
     if (response.data?.status === 200) {

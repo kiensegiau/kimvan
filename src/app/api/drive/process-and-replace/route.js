@@ -13,7 +13,7 @@ import {
   downloadWithCookie
 } from './lib';
 
-export const maxDuration = 1800; // 30 phút timeout
+export const maxDuration = 3600; // 60 phút timeout (thay vì 30 phút)
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
 
@@ -271,7 +271,11 @@ export async function POST(request) {
     }
 
     // Nếu không phải PDF, bỏ qua xử lý watermark
-    if (!mimeTypeResult.isPdf) {
+    // Kiểm tra cả MIME type và đuôi file
+    const isPDF = mimeTypeResult.isPdf || driveLink.toLowerCase().endsWith('.pdf') || 
+                (displayText && displayText.toLowerCase().endsWith('.pdf'));
+                
+    if (!isPDF) {
       console.log(`⚠️ File không phải là PDF (${mimeTypeResult.mimeType}), bỏ qua xử lý watermark`);
       return NextResponse.json({
         success: true,

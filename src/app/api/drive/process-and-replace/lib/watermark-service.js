@@ -14,10 +14,10 @@ import {
   removeHeaderFooterWatermark, 
   addLogoToPDF 
 } from './pdf-service';
-import { getNextApiKey, removeApiKey } from '@/utils/watermark-api-keys';
+import { getNextApiKey, removeApiKey } from '../../../../../utils/watermark-api-keys';
 
-// Thời gian tối đa chờ xử lý từ API (1800 giây = 30 phút)
-const MAX_POLLING_TIME = 1800000;
+// Thời gian tối đa chờ xử lý từ API (3600 giây = 60 phút)
+const MAX_POLLING_TIME = 3600000;
 // Khoảng thời gian giữa các lần kiểm tra trạng thái (15 giây)
 const POLLING_INTERVAL = 15000;
 
@@ -179,14 +179,15 @@ export async function pollTaskStatus(taskId, apiKey, startTime = Date.now(), ret
  * Tải xuống file đã xử lý
  * @param {string} fileUrl - URL của file cần tải xuống
  * @param {string} outputPath - Đường dẫn lưu file
+ * @param {number} retryCount - Số lần đã thử lại (mặc định là 0)
  */
-export async function downloadProcessedFile(fileUrl, outputPath) {
+export async function downloadProcessedFile(fileUrl, outputPath, retryCount = 0) {
   try {
     const response = await axios({
       method: 'GET',
       url: fileUrl,
       responseType: 'stream',
-      timeout: 600000 // 600 giây (10 phút) timeout cho tải xuống
+      timeout: 1200000 // 1200 giây (20 phút) timeout cho tải xuống
     });
     
     const writer = fs.createWriteStream(outputPath);
@@ -197,6 +198,20 @@ export async function downloadProcessedFile(fileUrl, outputPath) {
       writer.on('error', reject);
     });
   } catch (error) {
+    if ((error.message.includes('timeout') || error.code === 'ETIMEDOUT') && retryCount < 5) {
+      console.log(`⏱️ Lỗi timeout khi tải file, thử lại lần ${retryCount + 1}...`);
+      // Chờ một khoảng thời gian trước khi thử lại (tăng theo số lần thử)
+      await new Promise(resolve => setTimeout(resolve, 20000 * (retryCount + 1)));
+      return downloadProcessedFile(fileUrl, outputPath, retryCount + 1);
+    }
+    
+    if (error.message.includes('network') && retryCount < 5) {
+      console.log(`🌐 Lỗi mạng khi tải file, thử lại lần ${retryCount + 1}...`);
+      // Chờ một khoảng thời gian trước khi thử lại
+      await new Promise(resolve => setTimeout(resolve, 15000 * (retryCount + 1)));
+      return downloadProcessedFile(fileUrl, outputPath, retryCount + 1);
+    }
+    
     throw new Error(`Lỗi khi tải file: ${error.message}`);
   }
 }
@@ -227,7 +242,8 @@ export async function processPDFWatermark(filePath, outputPath, apiKey, retryCou
         outputSize: fs.statSync(outputPath).size,
         pages: 0,
         simpleMethod: true,
-        processedPath: outputPath
+        processedPath: outputPath,
+        success: true
       };
     }
     
@@ -358,7 +374,7 @@ export async function processPDFWatermark(filePath, outputPath, apiKey, retryCou
     
     // Tải xuống file đã xử lý
     try {
-      await downloadProcessedFile(result.file, outputPath);
+      await downloadProcessedFile(result.file, outputPath, 0);
       console.log(`📥 Đã tải file đã xử lý về ${outputPath}`);
     } catch (downloadError) {
       // Kiểm tra lỗi timeout
@@ -368,7 +384,7 @@ export async function processPDFWatermark(filePath, outputPath, apiKey, retryCou
         await new Promise(resolve => setTimeout(resolve, 10000 * (retryCount + 1)));
         
         // Thử tải lại file
-        await downloadProcessedFile(result.file, outputPath);
+        await downloadProcessedFile(result.file, outputPath, 0);
         console.log(`📥 Đã tải file đã xử lý về ${outputPath} sau khi thử lại`);
       } else {
         throw downloadError;
@@ -379,7 +395,8 @@ export async function processPDFWatermark(filePath, outputPath, apiKey, retryCou
       inputSize: result.input_size,
       outputSize: result.output_size,
       pages: result.file_pages || 0,
-      processedPath: outputPath
+      processedPath: outputPath,
+      success: true
     };
   } catch (error) {
     // Nếu đã thử nhiều lần mà vẫn thất bại, sử dụng phương pháp đơn giản

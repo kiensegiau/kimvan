@@ -2,12 +2,12 @@ import fs from 'fs';
 import path from 'path';
 import { google } from 'googleapis';
 import { processPDFWatermark } from './watermark-service';
-import { getNextApiKey } from '@/utils/watermark-api-keys';
+import { getNextApiKey } from '../../../../../utils/watermark-api-keys';
 import { listFilesInFolder } from './download-service';
 import { downloadFromGoogleDrive } from './download-service';
 import { findOrCreateFolder, uploadToGoogleDrive } from './upload-service';
 import { removeHeaderFooterWatermark, addLogoToPDF } from './pdf-service';
-import { createOAuth2Client } from '@/utils/drive-utils';
+import { createOAuth2Client } from '../../../../../utils/drive-utils';
 import VideoProcessor from './video-processor';
 
 // Khởi tạo VideoProcessor
@@ -42,8 +42,11 @@ export async function processFile(filePath, mimeType, apiKey, originalFileId) {
   const processedPath = path.join(fileDir, `${fileName}_processed${fileExt}`);
   
   try {
+    // Kiểm tra nếu file có đuôi .pdf, luôn xử lý như file PDF bất kể MIME type
+    const isPdf = mimeType.includes('pdf') || fileExt.toLowerCase() === '.pdf';
+    
     // Xác định loại file và áp dụng xử lý phù hợp
-    if (mimeType.includes('pdf')) {
+    if (isPdf) {
       // Xử lý file PDF - sử dụng API techhk.aoscdn.com để xóa watermark
       console.log('Đang xử lý file PDF với API xóa watermark...');
       
@@ -79,12 +82,30 @@ export async function processFile(filePath, mimeType, apiKey, originalFileId) {
         // Thử xử lý với API watermark trước
         const result = await processPDFWatermark(filePath, processedPath, apiKeyToUse);
         
-        // Kiểm tra kết quả có chỉ ra việc bỏ qua do kích thước không
+        // Kiểm tra kết quả xử lý từ API watermark
+        if (result && result.success !== false && result.processedPath && fs.existsSync(result.processedPath)) {
+          console.log(`PDF đã được xử lý thành công sau ${Math.round((Date.now() - processingStartTime)/1000)} giây`);
+        
+          // Xóa watermark dạng text ở header và footer và thêm logo
+          await removeHeaderFooterWatermark(result.processedPath, result.processedPath);
+          console.log(`Đã xóa watermark dạng text ở header và footer và thêm logo`);
+          
+          return {
+            success: true,
+            processedPath: result.processedPath || processedPath,
+            webViewLink: result.webViewLink,
+            inputSize: result.inputSize || 0,
+            outputSize: result.outputSize || 0,
+            pages: result.pages || 0
+          };
+        }
+        
+        // Kiểm tra nếu kết quả cho thấy đã bỏ qua do kích thước
         if (result && result.skippedDueToSize) {
           console.log(`⚠️ Đã bỏ qua xử lý watermark do file quá lớn (${result.message || 'Unknown reason'})`);
           return {
             success: true,
-            processedPath: result.processedPath,
+            processedPath: result.processedPath || filePath,
             message: result.message || 'Đã bỏ qua xử lý watermark do file quá lớn',
             skipReason: 'FILE_TOO_LARGE',
             fileSizeMB: result.inputSize ? (result.inputSize / (1024 * 1024)).toFixed(2) : 'Unknown'
@@ -105,8 +126,8 @@ export async function processFile(filePath, mimeType, apiKey, originalFileId) {
         }
         
         // Nếu API xử lý watermark thất bại, chuyển sang phương pháp đơn giản
-        if (!result.success) {
-          console.log(`⚠️ Phát hiện lỗi "${result.error || 'Xử lý thất bại'}", phân tích sâu hơn...`);
+        if (!result || !result.success) {
+          console.log(`⚠️ Phát hiện lỗi "${result?.error || 'Xử lý thất bại'}", phân tích sâu hơn...`);
           console.log(`📊 Kích thước file: ${fileSizeMB.toFixed(2)} MB`);
           
           if (result.error && (result.error.includes('Xử lý thất bại') || result.error.includes('Lỗi khi xử lý PDF'))) {
@@ -252,20 +273,6 @@ export async function processFile(filePath, mimeType, apiKey, originalFileId) {
           }
         }
         
-        console.log(`PDF đã được xử lý thành công sau ${Math.round((Date.now() - processingStartTime)/1000)} giây`);
-        
-        // Xóa watermark dạng text ở header và footer và thêm logo
-        await removeHeaderFooterWatermark(processedPath, processedPath);
-        console.log(`Đã xóa watermark dạng text ở header và footer và thêm logo`);
-        
-        return {
-          success: true,
-          processedPath: result.processedPath || processedPath,
-          webViewLink: result.webViewLink, // Thêm link mới vào kết quả
-          inputSize: result.inputSize || 0,
-          outputSize: result.outputSize || 0,
-          pages: result.pages || 0
-        };
       } catch (watermarkError) {
         console.error(`❌ Lỗi khi xử lý watermark: ${watermarkError.message}`);
         

@@ -100,46 +100,7 @@ export async function downloadWithCookie(fileId, outputPath) {
       }
     }
     
-    // Nếu không có extension từ Content-Disposition, thử lấy từ Content-Type
-    if (!fileExtension) {
-      const contentType = response.headers['content-type'];
-      if (contentType) {
-        if (contentType.includes('pdf')) {
-          fileExtension = '.pdf';
-        } else if (contentType.includes('image/jpeg') || contentType.includes('image/jpg')) {
-          fileExtension = '.jpg';
-        } else if (contentType.includes('image/png')) {
-          fileExtension = '.png';
-        } else if (contentType.includes('application/vnd.openxmlformats-officedocument.wordprocessingml.document')) {
-          fileExtension = '.docx';
-        } else if (contentType.includes('application/msword')) {
-          fileExtension = '.doc';
-        } else if (contentType.includes('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')) {
-          fileExtension = '.xlsx';
-        } else if (contentType.includes('application/vnd.ms-excel')) {
-          fileExtension = '.xls';
-        } else if (contentType.includes('application/vnd.openxmlformats-officedocument.presentationml.presentation')) {
-          fileExtension = '.pptx';
-        } else if (contentType.includes('application/vnd.ms-powerpoint')) {
-          fileExtension = '.ppt';
-        } else if (contentType.includes('video/mp4')) {
-          fileExtension = '.mp4';
-        } else if (contentType.includes('audio/mpeg')) {
-          fileExtension = '.mp3';
-        } else if (contentType.includes('text/plain')) {
-          fileExtension = '.txt';
-        } else {
-          // Mặc định là PDF nếu không xác định được
-          fileExtension = '.pdf';
-        }
-        console.log(`📄 Đã xác định extension từ Content-Type: ${fileExtension}`);
-      } else {
-        // Mặc định là PDF nếu không xác định được
-        fileExtension = '.pdf';
-        console.log(`📄 Không có Content-Type, sử dụng extension mặc định: ${fileExtension}`);
-      }
-    }
-    
+    // PHẦN CẦN CHỈNH SỬA: Ưu tiên magic bytes hơn là Content-Type
     // Kiểm tra magic bytes của file để xác định loại file chính xác
     try {
       const buffer = Buffer.alloc(8);
@@ -147,7 +108,7 @@ export async function downloadWithCookie(fileId, outputPath) {
       fs.readSync(fd, buffer, 0, 8, 0);
       fs.closeSync(fd);
       
-      // Kiểm tra magic bytes
+      // Kiểm tra magic bytes trước tiên
       if (buffer[0] === 0x25 && buffer[1] === 0x50 && buffer[2] === 0x44 && buffer[3] === 0x46) {
         // %PDF
         fileExtension = '.pdf';
@@ -162,11 +123,88 @@ export async function downloadWithCookie(fileId, outputPath) {
         console.log('🔍 Xác nhận file là PNG từ magic bytes');
       } else if (buffer[0] === 0x50 && buffer[1] === 0x4B && buffer[2] === 0x03 && buffer[3] === 0x04) {
         // ZIP-based (DOCX, XLSX, PPTX)
-        // Cần kiểm tra thêm để xác định chính xác
         console.log('🔍 File có thể là DOCX/XLSX/PPTX (ZIP-based) từ magic bytes');
+        // Kiểm tra đuôi file từ tên file trả về (nếu có)
+        if (fileName) {
+          const nameExt = path.extname(fileName).toLowerCase();
+          if (['.docx', '.xlsx', '.pptx', '.doc', '.xls', '.ppt'].includes(nameExt)) {
+            fileExtension = nameExt;
+            console.log(`🔍 Xác định file là ${nameExt} từ tên file`);
+          }
+        }
+      }
+      
+      // Nếu không thể xác định từ magic bytes, thử từ Content-Disposition
+      if (!fileExtension && contentDisposition) {
+        // Trích xuất tên file từ Content-Disposition
+        const fileNameMatch = contentDisposition.match(/filename=["']?([^"']+)["']?/);
+        if (fileNameMatch && fileNameMatch[1]) {
+          const extractedFileName = fileNameMatch[1];
+          const extractedExtension = path.extname(extractedFileName);
+          if (extractedExtension) {
+            fileExtension = extractedExtension;
+            console.log(`📄 Đã xác định extension từ Content-Disposition: ${fileExtension}`);
+          }
+        }
+      }
+      
+      // Nếu vẫn chưa có extension, thử từ Content-Type
+      if (!fileExtension) {
+        const contentType = response.headers['content-type'];
+        if (contentType) {
+          if (contentType.includes('pdf')) {
+            fileExtension = '.pdf';
+          } else if (contentType.includes('image/jpeg') || contentType.includes('image/jpg')) {
+            fileExtension = '.jpg';
+          } else if (contentType.includes('image/png')) {
+            fileExtension = '.png';
+          } else if (contentType.includes('application/vnd.openxmlformats-officedocument.wordprocessingml.document')) {
+            fileExtension = '.docx';
+          } else if (contentType.includes('application/msword')) {
+            fileExtension = '.doc';
+          } else if (contentType.includes('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')) {
+            fileExtension = '.xlsx';
+          } else if (contentType.includes('application/vnd.ms-excel')) {
+            fileExtension = '.xls';
+          } else if (contentType.includes('application/vnd.openxmlformats-officedocument.presentationml.presentation')) {
+            fileExtension = '.pptx';
+          } else if (contentType.includes('application/vnd.ms-powerpoint')) {
+            fileExtension = '.ppt';
+          } else if (contentType.includes('video/mp4')) {
+            fileExtension = '.mp4';
+          } else if (contentType.includes('audio/mpeg')) {
+            fileExtension = '.mp3';
+          } else if (contentType.includes('text/plain')) {
+            fileExtension = '.txt';
+          } else if (contentType.includes('text/html')) {
+            // Kiểm tra xem có phải PDF bị trả về không đúng MIME không
+            // Lưu ý: Một số máy chủ trả về PDF với Content-Type là text/html
+            // Đọc một phần nội dung file để kiểm tra xem có phải PDF không
+            try {
+              const fileHeader = fs.readFileSync(tempFilePath, { encoding: 'ascii', length: 5 });
+              if (fileHeader.startsWith('%PDF-')) {
+                fileExtension = '.pdf';
+                console.log('🔍 Phát hiện file PDF bị trả về với MIME type là text/html');
+              } else {
+                fileExtension = '.html';
+              }
+            } catch (e) {
+              fileExtension = '.html';
+            }
+          }
+          console.log(`📄 Đã xác định extension từ Content-Type: ${fileExtension}`);
+        }
+      }
+      
+      // Mặc định là PDF nếu không xác định được
+      if (!fileExtension) {
+        fileExtension = '.pdf';
+        console.log(`📄 Không thể xác định loại file, sử dụng extension mặc định: ${fileExtension}`);
       }
     } catch (magicError) {
       console.error(`⚠️ Lỗi khi kiểm tra magic bytes: ${magicError.message}`);
+      // Mặc định là PDF nếu có lỗi
+      fileExtension = '.pdf';
     }
     
     // Tạo đường dẫn file cuối cùng với extension đúng
