@@ -194,8 +194,8 @@ export async function processAndUploadFile(params) {
       // Trường hợp file quá lớn
       if (processResult.skipReason === 'FILE_TOO_LARGE') {
         return {
-          success: false,
-          skipped: true,
+          success: true, // Thay đổi từ false sang true để tiếp tục quy trình
+          skipped: false, // Thay đổi từ true sang false để không bỏ qua xử lý
           reason: 'FILE_TOO_LARGE',
           message: processResult.message || processResult.error,
           originalFile: {
@@ -422,6 +422,11 @@ export async function processSingleFile(file, options) {
     // Kiểm tra file đã tồn tại trong thư mục đích chưa
     const existingCheck = await checkFileExistsInTarget(file.name, targetFolderId, drive);
     if (existingCheck.exists) {
+      // Bỏ qua kiểm tra file đã tồn tại, luôn tiếp tục xử lý
+      console.log(`File đã tồn tại trong thư mục đích, nhưng vẫn tiếp tục xử lý: ${file.name}`);
+      
+      // Không trả về sớm, tiếp tục thực hiện xử lý file
+      /*
       return {
         success: true,
         skipped: true,
@@ -436,6 +441,7 @@ export async function processSingleFile(file, options) {
           link: existingCheck.file.webViewLink
         }
       };
+      */
     }
 
     // Tạo thư mục tạm
