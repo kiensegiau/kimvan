@@ -1450,7 +1450,7 @@ export default function CourseDetailPage() {
                                   key={headerIndex}
                                   className={`
                                     px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider
-                                    ${headerIndex === 0 ? 'sticky left-0 z-20 bg-indigo-700 min-w-[100px]' : 'min-w-[150px]'}
+                                    ${headerIndex === 0 ? 'bg-indigo-700 min-w-[100px]' : 'min-w-[150px]'}
                                   `}
                                 >
                                   <div className="flex items-center space-x-1">
@@ -1482,7 +1482,7 @@ export default function CourseDetailPage() {
                                       key={colIndex}
                                       className={`
                                         px-6 py-4 whitespace-nowrap text-sm
-                                        ${colIndex === 0 ? 'sticky left-0 bg-white z-10 font-medium text-indigo-600' : 'text-gray-900'}
+                                        ${colIndex === 0 ? 'bg-white font-medium text-indigo-600' : 'text-gray-900'}
                                       `}
                                     >
                                       {colIndex === 0 ? (
@@ -1684,17 +1684,25 @@ export default function CourseDetailPage() {
           border-bottom: 1px solid #e5e7eb;
         }
 
-        th:first-child,
-        td:first-child {
-          position: sticky;
-          left: 0;
-          z-index: 10;
-        }
-
         th:first-child {
+          position: sticky;
+          top: 0;
           z-index: 20;
         }
 
+        th {
+          position: sticky;
+          top: 0;
+          z-index: 20;
+          background-color: #4f46e5; /* Màu nền giống với gradient của header */
+        }
+
+        thead {
+          position: sticky;
+          top: 0;
+          z-index: 20;
+        }
+        
         tr:hover td:first-child {
           background-color: #f9fafb;
         }
