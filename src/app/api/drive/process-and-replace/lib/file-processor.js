@@ -143,7 +143,7 @@ export async function processFile(filePath, mimeType, apiKey, originalFileId) {
         */
             
         // Sử dụng phương pháp đơn giản
-        console.log(`⚠️ Sử dụng phương pháp đơn giản để xử lý file PDF (bỏ qua API xóa watermark)`);
+        console.log(`⚠️ Sử dụng phương pháp đơn giản để xử lý file PDF (bỏ qua mọi xử lý)`);
         
         // Đọc PDF để lấy số trang
         const PDFDocument = require('pdf-lib').PDFDocument;
@@ -152,15 +152,15 @@ export async function processFile(filePath, mimeType, apiKey, originalFileId) {
         const pageCount = pdfDoc.getPageCount();
         console.log(`Số trang PDF: ${pageCount}`);
         
-        // Xóa watermark dạng text ở header và footer và thêm logo
-        await removeHeaderFooterWatermark(filePath, processedPath);
-        console.log(`Đã cắt header và footer của PDF và thêm logo: ${processedPath}`);
-        console.log(`✅ Đã xử lý file bằng phương pháp đơn giản (chỉ thêm logo)`);
+        // Sao chép file gốc sang file đích thay vì xử lý
+        fs.copyFileSync(filePath, processedPath);
+        console.log(`Đã sao chép file gốc sang file đích: ${processedPath}`);
+        console.log(`✅ Đã sao chép file mà không thực hiện xử lý gì thêm`);
         
         return {
           success: true,
           processedPath: processedPath,
-          message: 'Đã xử lý bằng phương pháp đơn giản (tạm thời bỏ qua API xóa watermark)',
+          message: 'Đã bỏ qua mọi xử lý, chỉ sao chép file gốc',
           skipWatermark: true,
           pages: pageCount
         };
