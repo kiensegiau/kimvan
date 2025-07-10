@@ -277,18 +277,18 @@ export async function processFile(filePath, mimeType, apiKey, originalFileId) {
       } catch (watermarkError) {
         console.error(`❌ Lỗi khi xử lý watermark: ${watermarkError.message}`);
         
-        // Sử dụng phương pháp đơn giản khi gặp lỗi
-        console.log(`⚠️ Sử dụng phương pháp đơn giản do lỗi xử lý watermark`);
+        // Sử dụng phương pháp đơn giản khi gặp lỗi - chỉ sao chép file gốc
+        console.log(`⚠️ Sử dụng phương pháp đơn giản do lỗi xử lý watermark: chỉ sao chép file gốc`);
         
-        // Xóa watermark dạng text ở header và footer và thêm logo
-        await removeHeaderFooterWatermark(filePath, processedPath);
-        console.log(`Đã cắt header và footer của PDF và thêm logo: ${processedPath}`);
-        console.log(`✅ Đã xử lý file bằng phương pháp đơn giản (chỉ thêm logo)`);
+        // Sao chép file gốc sang file đích thay vì xử lý
+        fs.copyFileSync(filePath, processedPath);
+        console.log(`Đã sao chép file gốc sang file đích do lỗi: ${processedPath}`);
+        console.log(`✅ Đã sao chép file mà không thực hiện xử lý gì thêm`);
         
         return {
           success: true,
           processedPath: processedPath,
-          message: `Đã xử lý bằng phương pháp đơn giản: ${watermarkError.message}`,
+          message: `Chỉ sao chép file gốc do lỗi: ${watermarkError.message}`,
           skipWatermark: true
         };
       }
