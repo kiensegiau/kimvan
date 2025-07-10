@@ -145,24 +145,30 @@ export async function processFile(filePath, mimeType, apiKey, originalFileId) {
         // Sử dụng phương pháp đơn giản
         console.log(`⚠️ Sử dụng phương pháp đơn giản để xử lý file PDF (bỏ qua mọi xử lý)`);
         
+        // Bỏ đoạn đọc PDF để lấy số trang vì có thể gặp lỗi với file encrypted
+        /*
         // Đọc PDF để lấy số trang
         const PDFDocument = require('pdf-lib').PDFDocument;
         const pdfBytes = fs.readFileSync(filePath);
         const pdfDoc = await PDFDocument.load(pdfBytes);
         const pageCount = pdfDoc.getPageCount();
         console.log(`Số trang PDF: ${pageCount}`);
+        */
         
         // Sao chép file gốc sang file đích thay vì xử lý
         fs.copyFileSync(filePath, processedPath);
         console.log(`Đã sao chép file gốc sang file đích: ${processedPath}`);
         console.log(`✅ Đã sao chép file mà không thực hiện xử lý gì thêm`);
         
+        // Giữ nguyên originalFileName được truyền từ bên ngoài (nếu có)
+        const fileName = originalFileId ? `file_${originalFileId}${fileExt}` : path.basename(filePath);
+        
         return {
           success: true,
           processedPath: processedPath,
           message: 'Đã bỏ qua mọi xử lý, chỉ sao chép file gốc',
           skipWatermark: true,
-          pages: pageCount
+          // originalFileName sẽ được thiết lập ở processAndUploadFile
         };
         
         /* 
@@ -290,6 +296,7 @@ export async function processFile(filePath, mimeType, apiKey, originalFileId) {
           processedPath: processedPath,
           message: `Chỉ sao chép file gốc do lỗi: ${watermarkError.message}`,
           skipWatermark: true
+          // originalFileName sẽ được thiết lập ở processAndUploadFile
         };
       }
     } else if (mimeType.includes('video')) {

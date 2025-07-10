@@ -152,7 +152,7 @@ export async function processAndUploadFile(params) {
     cellIndex,
     sheetId,
     googleSheetName,
-    displayText,
+    displayText, // displayText là tên file gốc
     request,
     startTime,
     tempDir,
@@ -161,6 +161,9 @@ export async function processAndUploadFile(params) {
   
   try {
     console.log(`🔧 Xử lý file...`);
+    
+    // Lưu tên file gốc cho việc sử dụng sau này
+    const originalFileName = displayText || `file_${fileId}.pdf`;
     
     // Xử lý file để loại bỏ watermark
     const processResult = await processFile(filePath, mimeType || "application/pdf", apiKey, fileId)
@@ -181,13 +184,19 @@ export async function processAndUploadFile(params) {
             success: true, // Đánh dấu thành công để tiếp tục quy trình
             processedPath: filePath, // Sử dụng file gốc
             skipWatermark: true,
-            message: `Không thể xử lý watermark: ${error.message}`
+            message: `Không thể xử lý watermark: ${error.message}`,
+            originalFileName: originalFileName // Thêm tên file gốc vào kết quả
           };
         }
         
         // Các lỗi khác, ném lại để xử lý ở cấp cao hơn
         throw error;
       });
+
+    // Thêm tên file gốc vào processResult nếu chưa có
+    if (!processResult.originalFileName) {
+      processResult.originalFileName = originalFileName;
+    }
 
     // Kiểm tra các trường hợp đặc biệt
     if (processResult && !processResult.success) {
@@ -203,7 +212,8 @@ export async function processAndUploadFile(params) {
             link: driveLink,
             size: processResult.fileSizeMB
           },
-          processingTime: Math.round((Date.now() - startTime) / 1000)
+          processingTime: Math.round((Date.now() - startTime) / 1000),
+          originalFileName: originalFileName // Thêm tên file gốc
         };
       }
       
@@ -249,7 +259,7 @@ export async function processAndUploadFile(params) {
     // Upload file đã xử lý
     const uploadResult = await uploadToGoogleDrive(
       processedFilePath,
-      path.basename(processedFilePath),
+      processResult.originalFileName || path.basename(processedFilePath), // Sử dụng tên file gốc nếu có
       mimeType || "application/pdf",
       targetFolderId,
       folderName
