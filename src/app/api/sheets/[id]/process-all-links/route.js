@@ -656,6 +656,17 @@ export async function POST(request, { params }) {
             const processResultJson = await processResponse.json();
             console.log(`📊 Kết quả xử lý PDF:`, JSON.stringify(processResultJson, null, 2));
             
+            // Log chi tiết về processedFile để debug
+            if (processResultJson && processResultJson.processedFile) {
+              console.log(`📄 Chi tiết file đã xử lý:
+- ID: ${processResultJson.processedFile.id || 'không có'}
+- Tên: ${processResultJson.processedFile.name || 'không có'}
+- Link: ${processResultJson.processedFile.link || 'không có'}
+- webViewLink: ${processResultJson.processedFile.webViewLink || 'không có'}
+- webContentLink: ${processResultJson.processedFile.webContentLink || 'không có'}
+`);
+            }
+            
             // Kiểm tra lỗi từ kết quả
             if (!processResultJson || processResultJson.error || !processResultJson.processedFile) {
               const errorMessage = processResultJson?.error || 'Không nhận được kết quả xử lý hợp lệ';
@@ -694,7 +705,9 @@ export async function POST(request, { params }) {
             }
             
             // Kiểm tra nếu không có link mới
-            if (!processResultJson.processedFile.webViewLink && !processResultJson.processedFile.webContentLink) {
+            if (!processResultJson.processedFile.webViewLink && 
+                !processResultJson.processedFile.webContentLink && 
+                !processResultJson.processedFile.link) {
               console.error(`❌ Không nhận được URL mới sau khi xử lý PDF: ${urlGroup.originalUrl}`);
               
               return {
@@ -709,8 +722,10 @@ export async function POST(request, { params }) {
               };
             }
             
-            // Lấy URL mới từ kết quả
-            const newUrl = processResultJson.processedFile.webContentLink || processResultJson.processedFile.webViewLink;
+            // Lấy URL mới từ kết quả - ưu tiên theo thứ tự: link, webContentLink, webViewLink
+            const newUrl = processResultJson.processedFile.link || 
+                          processResultJson.processedFile.webContentLink || 
+                          processResultJson.processedFile.webViewLink;
             console.log(`✅ PDF đã được xử lý thành công: ${newUrl}`);
             
             return {
@@ -822,6 +837,17 @@ export async function POST(request, { params }) {
             
             const processResultJson = await processResponse.json();
             
+            // Log chi tiết về processedFile để debug
+            if (processResultJson && processResultJson.processedFile) {
+              console.log(`📄 Chi tiết file ${specificCategory} đã xử lý:
+- ID: ${processResultJson.processedFile.id || 'không có'}
+- Tên: ${processResultJson.processedFile.name || 'không có'}
+- Link: ${processResultJson.processedFile.link || 'không có'}
+- webViewLink: ${processResultJson.processedFile.webViewLink || 'không có'}
+- webContentLink: ${processResultJson.processedFile.webContentLink || 'không có'}
+`);
+            }
+            
             // Kiểm tra kết quả
             if (!processResultJson || processResultJson.error || !processResultJson.processedFile) {
               const errorMessage = processResultJson?.error || 'Không nhận được kết quả xử lý hợp lệ';
@@ -838,8 +864,26 @@ export async function POST(request, { params }) {
               };
             }
             
-            // Lấy URL mới từ kết quả
-            const newUrl = processResultJson.processedFile.webContentLink || 
+            // Kiểm tra nếu không có link mới
+            if (!processResultJson.processedFile.webViewLink && 
+                !processResultJson.processedFile.webContentLink && 
+                !processResultJson.processedFile.link) {
+              console.error(`❌ Không nhận được URL mới sau khi xử lý file ${specificCategory}: ${urlGroup.originalUrl}`);
+              return {
+                success: true,
+                keepOriginalUrl: true,
+                urlGroup,
+                newUrl: urlGroup.originalUrl,
+                error: "Không nhận được URL mới sau khi xử lý",
+                processResult: processResultJson,
+                fileType: fileType,
+                fileCategory: specificCategory
+              };
+            }
+            
+            // Lấy URL mới từ kết quả - ưu tiên theo thứ tự: link, webContentLink, webViewLink
+            const newUrl = processResultJson.processedFile.link || 
+                          processResultJson.processedFile.webContentLink || 
                           processResultJson.processedFile.webViewLink || 
                           urlGroup.originalUrl;
             
