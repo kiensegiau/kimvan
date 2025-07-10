@@ -45,27 +45,56 @@ function getChromePath() {
           'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
           'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
           'C:\\Users\\Administrator\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe',
-          'C:\\Users\\PC\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe'
+          'C:\\Users\\PC\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe',
+          // Thêm đường dẫn Edge như fallback
+          'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+          'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
+          // Đường dẫn người dùng khác
+          `C:\\Users\\${os.userInfo().username}\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe`,
+          `C:\\Users\\${os.userInfo().username}\\AppData\\Local\\Microsoft\\Edge\\Application\\msedge.exe`
         ];
         
         for (const path of windowsPaths) {
           if (fs.existsSync(path)) {
-            console.log(`✅ Tìm thấy Chrome tại: ${path}`);
+            console.log(`✅ Tìm thấy trình duyệt tại: ${path}`);
             return path;
           }
         }
         
-        // Đường dẫn mặc định nếu không tìm thấy
-        console.log(`⚠️ Không tìm thấy Chrome trong các đường dẫn phổ biến, sử dụng đường dẫn mặc định`);
-        return 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+        // Thử tìm Chrome thông qua PATH
+        console.log(`⚠️ Không tìm thấy Chrome/Edge trong các đường dẫn phổ biến, thử PATH...`);
+        return 'chrome'; // Fallback to PATH
         
       case 'darwin': // macOS
+        const macPaths = [
+          '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+          '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge'
+        ];
+        
+        for (const path of macPaths) {
+          if (fs.existsSync(path)) {
+            return path;
+          }
+        }
         return '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+        
       default: // Linux và các hệ điều hành khác
+        const linuxPaths = [
+          '/usr/bin/google-chrome',
+          '/usr/bin/microsoft-edge',
+          '/usr/bin/chromium',
+          '/usr/bin/chromium-browser'
+        ];
+        
+        for (const path of linuxPaths) {
+          if (fs.existsSync(path)) {
+            return path;
+          }
+        }
         return '/usr/bin/google-chrome';
     }
   } catch (error) {
-    console.error(`Lỗi xác định đường dẫn Chrome: ${error.message}`);
+    console.error(`Lỗi xác định đường dẫn trình duyệt: ${error.message}`);
     return 'chrome'; // Fallback to PATH
   }
 }
@@ -398,51 +427,89 @@ async function getOrCreateBrowser(profilePath, debugMode = false) {
     const chromePath = getChromePath();
     console.log(`🌐 Khởi động Chrome mới: ${chromePath}`);
     
-    const browser = await puppeteer.launch({
-      headless: debugMode ? false : 'new',
-      channel: os.platform() === 'win32' ? 'chrome' : undefined,
-      executablePath: chromePath,
-      args: [
-        "--start-maximized",
-        `--user-data-dir=${profilePath}`,
-        "--enable-extensions",
-        "--remote-debugging-port=0", // Sử dụng cổng ngẫu nhiên để tránh xung đột
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-web-security",
-        "--disable-features=IsolateOrigins,site-per-process",
-        "--disable-site-isolation-trials",
-        "--disable-features=BlockInsecurePrivateNetworkRequests",
-        "--disable-features=SameSiteByDefaultCookies,CookiesWithoutSameSiteMustBeSecure",
-        "--no-first-run",
-        "--no-default-browser-check",
-        "--disable-popup-blocking",
-        "--disable-notifications",
-        "--disable-infobars",
-        "--disable-translate",
-        "--allow-running-insecure-content",
-        "--password-store=basic",
-        "--use-fake-ui-for-media-stream",
-        "--use-fake-device-for-media-stream",
-        "--allow-file-access-from-files",
-        "--allow-insecure-localhost",
-        "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
-        "--disable-blink-features=AutomationControlled"
-      ],
-      defaultViewport: null,
-      ignoreDefaultArgs: ["--enable-automation"],
-      timeout: 180000,
-      slowMo: debugMode ? 100 : 50
-    });
-    
-    // Lưu browser vào map
-    activeBrowsers.set(profileId, {
-      browser,
-      refCount: 1,
-      createdAt: Date.now()
-    });
-    
-    return { browser, isNew: true, profileId };
+    try {
+      const launchOptions = {
+        headless: debugMode ? false : 'new',
+        channel: os.platform() === 'win32' ? 'chrome' : undefined,
+        executablePath: chromePath,
+        args: [
+          "--start-maximized",
+          `--user-data-dir=${profilePath}`,
+          "--enable-extensions",
+          "--remote-debugging-port=0", // Sử dụng cổng ngẫu nhiên để tránh xung đột
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+          "--disable-web-security",
+          "--disable-features=IsolateOrigins,site-per-process",
+          "--disable-site-isolation-trials",
+          "--disable-features=BlockInsecurePrivateNetworkRequests",
+          "--disable-features=SameSiteByDefaultCookies,CookiesWithoutSameSiteMustBeSecure",
+          "--no-first-run",
+          "--no-default-browser-check",
+          "--disable-popup-blocking",
+          "--disable-notifications",
+          "--disable-infobars",
+          "--disable-translate",
+          "--allow-running-insecure-content",
+          "--password-store=basic",
+          "--use-fake-ui-for-media-stream",
+          "--use-fake-device-for-media-stream",
+          "--allow-file-access-from-files",
+          "--allow-insecure-localhost",
+          "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+          "--disable-blink-features=AutomationControlled"
+        ],
+        defaultViewport: null,
+        ignoreDefaultArgs: ["--enable-automation"],
+        timeout: 60000, // Giảm timeout xuống 60 giây
+        slowMo: debugMode ? 100 : 50
+      };
+      
+      // Thử khởi động browser
+      const browser = await puppeteer.launch(launchOptions);
+      
+      // Lưu browser vào map
+      activeBrowsers.set(profileId, {
+        browser,
+        refCount: 1,
+        createdAt: Date.now()
+      });
+      
+      return { browser, isNew: true, profileId };
+    } catch (launchError) {
+      console.error(`❌ Không thể khởi động Chrome với đường dẫn ${chromePath}: ${launchError.message}`);
+      
+      // Thử lại với đường dẫn mặc định của hệ thống
+      if (chromePath !== 'chrome') {
+        console.log(`🔄 Thử lại với Chrome mặc định từ PATH...`);
+        try {
+          const browser = await puppeteer.launch({
+            headless: debugMode ? false : 'new',
+            args: [
+              "--no-sandbox",
+              "--disable-setuid-sandbox",
+              `--user-data-dir=${profilePath}`
+            ],
+            timeout: 30000,
+            ignoreDefaultArgs: ["--enable-automation"]
+          });
+          
+          // Lưu browser vào map
+          activeBrowsers.set(profileId, {
+            browser,
+            refCount: 1,
+            createdAt: Date.now()
+          });
+          
+          return { browser, isNew: true, profileId };
+        } catch (retryError) {
+          console.error(`❌ Vẫn không thể khởi động Chrome với PATH: ${retryError.message}`);
+          throw new Error(`Không thể khởi động Chrome: ${retryError.message}`);
+        }
+      } else {
+        throw new Error(`Không thể khởi động Chrome: ${launchError.message}`);
+      }
+    }
   } catch (error) {
     console.error(`❌ Lỗi khi tạo/lấy phiên Chrome: ${error.message}`);
     throw error;
@@ -629,6 +696,39 @@ export async function downloadBlockedPDF(fileId, fileName, tempDir, watermarkCon
     } catch (browserError) {
       console.error(`Lỗi khởi tạo trình duyệt: ${browserError.message}`);
       chromeStartFailed = true;
+      
+      // Thử thay thế bằng API download trực tiếp
+      console.log(`⚠️ Không thể khởi động Chrome, thử sử dụng phương pháp tải trực tiếp...`);
+      
+      try {
+        // Import và sử dụng hàm trực tiếp download từ Google Drive
+        const { downloadFileFromGoogleDrive } = require('@/utils/drive-utils');
+        const outputFilePath = path.join(tempDir, `${path.basename(fileName, '.pdf')}_direct_download.pdf`);
+        
+        console.log(`🔄 Đang tải file trực tiếp qua API: ${fileId} -> ${outputFilePath}`);
+        
+        // Thử tải file
+        const downloadResult = await downloadFileFromGoogleDrive(fileId, outputFilePath);
+        
+        if (downloadResult && downloadResult.success && fs.existsSync(outputFilePath)) {
+          console.log(`✅ Đã tải file trực tiếp thành công: ${outputFilePath}`);
+          return {
+            success: true,
+            filePath: outputFilePath,
+            fileName: path.basename(outputFilePath),
+            processedSize: fs.statSync(outputFilePath).size,
+            processingTime: ((Date.now() - startTime) / 1000).toFixed(2),
+            directDownload: true,
+            chromeStartFailed: true
+          };
+        } else {
+          console.error(`❌ Tải trực tiếp thất bại: ${downloadResult?.error || 'Lỗi không xác định'}`);
+        }
+      } catch (directDownloadError) {
+        console.error(`❌ Lỗi khi tải trực tiếp: ${directDownloadError.message}`);
+      }
+      
+      // Nếu tải trực tiếp cũng thất bại, báo lỗi gốc
       throw new Error(`Không thể khởi động Chrome: ${browserError.message}`);
     }
     

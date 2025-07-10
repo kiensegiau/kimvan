@@ -6,6 +6,7 @@ const axios = require('axios');
 const http = require('http');
 const https = require('https');
 const { uploadToGoogleDrive } = require('./upload-service.js');
+const { v4: uuidv4 } = require('uuid');
 
 // Hàm làm sạch tên file để đảm bảo an toàn cho hệ thống file
 function sanitizeFileName(fileName) {
@@ -75,132 +76,148 @@ class VideoProcessor {
     }
   }
 
-  async handlePDFToVideo(fileId, fileName, targetFolderId) {
-    const startTime = Date.now();
-    let tempFiles = [];
-
-    try {
-      console.log(`🎥 Bắt đầu xử lý video: ${fileId}, fileName: ${fileName}`);
-      const safeFileName = sanitizeFileName(fileName);
-
-      // Tạo đường dẫn tạm với timestamp
-      const tempPath = path.join(
-        this.TEMP_DIR,
-        `temp_${Date.now()}_${safeFileName}`
-      );
-      tempFiles.push(tempPath);
-
-      // Tải video vào thư mục tạm
-      console.log(`📥 Bắt đầu tải video vào thư mục tạm...`);
-      await this.downloadVideo(fileId, tempPath);
-      console.log(`✅ Đã tải xong video vào: ${tempPath}`);
-
-      // Upload video lên Google Drive
-      if (targetFolderId) {
-        console.log(`📤 Bắt đầu upload video lên Google Drive vào folder: ${targetFolderId}`);
-        const uploadResult = await this.uploadProcessedVideo(tempPath, fileName, targetFolderId);
-        
-        return {
-          success: true,
-          filePath: tempPath,
-          fileName: fileName,
-          fileId: fileId,
-          targetFolderId: targetFolderId,
-          uploadResult: uploadResult
-        };
-      }
-
-      return {
-        success: true,
-        filePath: tempPath,
-        fileName: fileName,
-        fileId: fileId,
-        targetFolderId: targetFolderId
-      };
-
-    } catch (error) {
-      console.error(`❌ Lỗi xử lý video: ${error.message}`);
-      return {
-        success: false,
-        error: error.message,
-        fileName: fileName,
-        fileId: fileId
-      };
-    } finally {
-      // Cleanup temp files nếu có lỗi
-      if (!tempFiles[0] || !fs.existsSync(tempFiles[0])) {
-        for (const tempFile of tempFiles) {
-          try {
-            if (fs.existsSync(tempFile)) {
-              fs.unlinkSync(tempFile);
-              console.log(`🧹 Đã xóa file tạm: ${tempFile}`);
-            }
-          } catch (error) {
-            console.warn(`⚠️ Không thể xóa file tạm: ${tempFile}`);
-          }
-        }
-      }
-    }
-  }
-
-  async downloadVideo(fileId, outputPath) {
-    try {
-      this.currentVideoId = fileId;
-      
-      // Khởi tạo browser nếu chưa có
-      if (!this.browser) {
-        const chromePath = this.getChromePath();
-        console.log(`🌐 Khởi động Chrome: ${chromePath}`);
-        
-        this.browser = await puppeteer.launch({
-          headless: false,
-          executablePath: chromePath,
-          args: [
-            '--start-maximized',
-            '--disable-infobars',
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage',
-            '--disable-accelerated-2d-canvas',
-            '--disable-gpu',
-            '--window-size=1920,1080',
-            '--hide-scrollbars',
-            '--disable-notifications',
-            `--user-data-dir=${this.profilePath}`,
-            '--enable-extensions',
-            '--remote-debugging-port=0',
-            '--disable-web-security',
-            '--disable-features=IsolateOrigins,site-per-process',
-            '--disable-site-isolation-trials',
-            '--disable-features=BlockInsecurePrivateNetworkRequests',
-            '--disable-features=SameSiteByDefaultCookies,CookiesWithoutSameSiteMustBeSecure'
-          ],
-          defaultViewport: null,
-          ignoreDefaultArgs: ['--enable-automation']
-        });
-      }
-
-      // Lấy URL và headers từ phương thức mới
-      const result = await this.getVideoUrlAndHeaders(this.browser, fileId);
-      
-      // Kiểm tra kết quả
-      if (!result || !result.url) {
-        throw new Error('Không lấy được URL video');
-      }
-      
-      console.log(`🔗 Đã lấy được URL video: ${result.url.substring(0, 100)}...`);
-      
-      // Tải video bằng phương thức chunks
-      await this.downloadVideoWithChunks(result.url, outputPath, result.headers || {});
-      
-      console.log(`✅ Đã tải và ghi video thành công: ${outputPath}`);
-      return true;
-    } catch (error) {
-      console.error(`❌ Lỗi tải video: ${error.message}`);
-      throw error;
-    }
+  /**
+   * Xử lý MIME type cho video
+   * @param {string} mimeType - MIME type gốc
+   * @returns {string} MIME type chuẩn hóa
+   */
+  standardizeVideoMimeType(mimeType) {
+    if (!mimeType) return 'video/mp4';
+    
+    const lowerMime = mimeType.toLowerCase();
+    
+    if (lowerMime.includes('mp4')) return 'video/mp4';
+    if (lowerMime.includes('webm')) return 'video/webm';
+    if (lowerMime.includes('avi')) return 'video/x-msvideo';
+    if (lowerMime.includes('mov') || lowerMime.includes('quicktime')) return 'video/quicktime';
+    if (lowerMime.includes('wmv')) return 'video/x-ms-wmv';
+    if (lowerMime.includes('flv')) return 'video/x-flv';
+    if (lowerMime.includes('mkv') || lowerMime.includes('matroska')) return 'video/x-matroska';
+    
+    // Default fallback
+    return 'video/mp4';
   }
   
+  /**
+   * Kiểm tra xem có phải là file video không
+   * @param {string} mimeType - MIME type cần kiểm tra
+   * @returns {boolean} true nếu là video, false nếu không phải
+   */
+  isVideoMimeType(mimeType) {
+    if (!mimeType) return false;
+    
+    const lowerMime = mimeType.toLowerCase();
+    
+    return lowerMime.startsWith('video/') || 
+           lowerMime.includes('mp4') || 
+           lowerMime.includes('webm') || 
+           lowerMime.includes('avi') || 
+           lowerMime.includes('mov') || 
+           lowerMime.includes('quicktime') || 
+           lowerMime.includes('wmv') || 
+           lowerMime.includes('flv') || 
+           lowerMime.includes('mkv') || 
+           lowerMime.includes('matroska');
+  }
+
+  /**
+   * Xử lý file PDF thành video
+   * @param {string} fileId - ID của file Google Drive
+   * @param {string} fileName - Tên file đầu ra
+   * @param {string} targetFolderId - ID folder đích để upload
+   * @returns {Promise<object>} - Kết quả xử lý
+   */
+  async handlePDFToVideo(fileId, fileName, targetFolderId) {
+    console.log(`🎬 VideoProcessor: Bắt đầu xử lý file ID ${fileId} với tên ${fileName}`);
+    
+    if (!fileId) {
+      return { success: false, error: 'Thiếu file ID' };
+    }
+    
+    let downloadedFilePath = null;
+    let processedFilePath = null;
+    
+    try {
+      // 1. Xác định loại file từ Drive API
+      console.log(`🔍 Kiểm tra thông tin file từ Drive API...`);
+      let fileInfo;
+      try {
+        fileInfo = await this.getFileInfo(fileId);
+        console.log(`✅ Đã lấy thông tin file: ${JSON.stringify(fileInfo)}`);
+        
+        // Kiểm tra xem có phải file video không
+        if (!this.isVideoMimeType(fileInfo.mimeType)) {
+          console.warn(`⚠️ File không phải video (${fileInfo.mimeType}), nhưng vẫn xử lý như video`);
+        }
+      } catch (fileInfoError) {
+        console.error(`❌ Không thể lấy thông tin file: ${fileInfoError.message}`);
+        // Tiếp tục mà không có thông tin file
+      }
+      
+      // 2. Tạo đường dẫn tạm cho file tải xuống
+      const fileExtension = fileInfo?.fileExtension || 'mp4';
+      const tempFileName = `${uuidv4()}.${fileExtension}`;
+      downloadedFilePath = path.join(this.tempDir, tempFileName);
+      
+      console.log(`📥 Tải xuống file từ Google Drive...`);
+      
+      // 3. Tải xuống file
+      try {
+        await this.downloadFile(fileId, downloadedFilePath);
+        console.log(`✅ Đã tải xuống file thành công: ${downloadedFilePath}`);
+      } catch (downloadError) {
+        console.error(`❌ Lỗi khi tải xuống file: ${downloadError.message}`);
+        return { 
+          success: false, 
+          error: `Lỗi khi tải xuống file: ${downloadError.message}`,
+          fileInfo
+        };
+      }
+      
+      // 4. Sử dụng đường dẫn tải xuống làm đường dẫn đã xử lý (không cần xử lý video)
+      processedFilePath = downloadedFilePath;
+      console.log(`📤 File video đã sẵn sàng để upload: ${processedFilePath}`);
+      
+      // 5. Upload lại file đã xử lý lên Drive
+      console.log(`📤 Upload file video lên Google Drive...`);
+      let uploadResult;
+      try {
+        const uploadName = fileName || tempFileName;
+        const mimeType = fileInfo?.mimeType || this.standardizeVideoMimeType(null);
+        
+        uploadResult = await this.uploadFile(processedFilePath, uploadName, mimeType, targetFolderId);
+        console.log(`✅ Đã upload file thành công: ${JSON.stringify(uploadResult)}`);
+      } catch (uploadError) {
+        console.error(`❌ Lỗi khi upload file: ${uploadError.message}`);
+        return { 
+          success: true,  // Đánh dấu là thành công một phần vì đã tải xuống được
+          filePath: processedFilePath,
+          error: `Lỗi khi upload file: ${uploadError.message}`,
+          fileInfo
+        };
+      }
+      
+      return {
+        success: true,
+        originalFileId: fileId,
+        filePath: processedFilePath,
+        uploadResult,
+        fileInfo
+      };
+      
+    } catch (error) {
+      console.error(`❌ Lỗi khi xử lý video: ${error.message}`);
+      
+      // Trả về kết quả lỗi chi tiết
+      return {
+        success: false,
+        error: `Lỗi xử lý video: ${error.message}`,
+        filePath: downloadedFilePath || null,
+        originalFileId: fileId
+      };
+    }
+  }
+
   async uploadProcessedVideo(filePath, fileName, targetFolderId) {
     console.log(`📤 Đang upload video lên Google Drive: ${fileName}`);
     
@@ -686,25 +703,170 @@ class VideoProcessor {
             'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
             'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
             'C:\\Users\\Administrator\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe',
-            'C:\\Users\\PC\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe'
+            'C:\\Users\\PC\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe',
+            // Thêm Edge như fallback
+            'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+            'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
+            // Đường dẫn người dùng khác
+            `C:\\Users\\${os.userInfo().username}\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe`,
+            `C:\\Users\\${os.userInfo().username}\\AppData\\Local\\Microsoft\\Edge\\Application\\msedge.exe`
           ];
           
           for (const chromePath of windowsPaths) {
             if (fs.existsSync(chromePath)) {
-              console.log(`✅ Tìm thấy Chrome tại: ${chromePath}`);
+              console.log(`✅ Tìm thấy trình duyệt tại: ${chromePath}`);
               return chromePath;
             }
           }
-          return 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+          
+          // Thử tìm Chrome thông qua PATH
+          console.log(`⚠️ Không tìm thấy Chrome/Edge trong các đường dẫn phổ biến, thử PATH...`);
+          return 'chrome'; // Fallback to PATH
           
         case 'darwin':
+          const macPaths = [
+            '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+            '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge'
+          ];
+          
+          for (const path of macPaths) {
+            if (fs.existsSync(path)) {
+              return path;
+            }
+          }
           return '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+          
         default:
+          const linuxPaths = [
+            '/usr/bin/google-chrome',
+            '/usr/bin/microsoft-edge',
+            '/usr/bin/chromium',
+            '/usr/bin/chromium-browser'
+          ];
+          
+          for (const path of linuxPaths) {
+            if (fs.existsSync(path)) {
+              return path;
+            }
+          }
           return '/usr/bin/google-chrome';
       }
     } catch (error) {
-      console.error(`❌ Lỗi xác định đường dẫn Chrome: ${error.message}`);
+      console.error(`❌ Lỗi xác định đường dẫn trình duyệt: ${error.message}`);
       return 'chrome';
+    }
+  }
+
+  async downloadVideo(fileId, outputPath) {
+    try {
+      this.currentVideoId = fileId;
+      
+      // Khởi tạo browser nếu chưa có
+      if (!this.browser) {
+        const chromePath = this.getChromePath();
+        console.log(`🌐 Khởi động Chrome: ${chromePath}`);
+        
+        try {
+          this.browser = await puppeteer.launch({
+            headless: false,
+            executablePath: chromePath,
+            args: [
+              '--start-maximized',
+              '--disable-infobars',
+              '--no-sandbox',
+              '--disable-setuid-sandbox',
+              '--disable-dev-shm-usage',
+              '--disable-accelerated-2d-canvas',
+              '--disable-gpu',
+              '--window-size=1920,1080',
+              '--hide-scrollbars',
+              '--disable-notifications',
+              `--user-data-dir=${this.profilePath}`,
+              '--enable-extensions',
+              '--remote-debugging-port=0',
+              '--disable-web-security',
+              '--disable-features=IsolateOrigins,site-per-process',
+              '--disable-site-isolation-trials',
+              '--disable-features=BlockInsecurePrivateNetworkRequests',
+              '--disable-features=SameSiteByDefaultCookies,CookiesWithoutSameSiteMustBeSecure'
+            ],
+            defaultViewport: null,
+            ignoreDefaultArgs: ['--enable-automation']
+          });
+        } catch (browserError) {
+          console.error(`❌ Lỗi khởi động Chrome: ${browserError.message}`);
+          
+          // Thử lại với Chrome mặc định từ PATH
+          console.log(`🔄 Thử lại với Chrome mặc định từ PATH...`);
+          try {
+            this.browser = await puppeteer.launch({
+              headless: false,
+              args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                `--user-data-dir=${this.profilePath}`
+              ],
+              defaultViewport: null
+            });
+          } catch (retryError) {
+            console.error(`❌ Vẫn không thể khởi động Chrome: ${retryError.message}`);
+            
+            // Fallback to direct API download
+            console.log(`⚠️ Không thể khởi động Chrome, thử sử dụng API tải trực tiếp...`);
+            return await this.downloadVideoDirectly(fileId, outputPath);
+          }
+        }
+      }
+
+      // Lấy URL và headers từ phương thức mới
+      const result = await this.getVideoUrlAndHeaders(this.browser, fileId);
+      
+      // Kiểm tra kết quả
+      if (!result || !result.url) {
+        throw new Error('Không lấy được URL video');
+      }
+      
+      console.log(`🔗 Đã lấy được URL video: ${result.url.substring(0, 100)}...`);
+      
+      // Tải video bằng phương thức chunks
+      await this.downloadVideoWithChunks(result.url, outputPath, result.headers || {});
+      
+      console.log(`✅ Đã tải và ghi video thành công: ${outputPath}`);
+      return true;
+    } catch (error) {
+      console.error(`❌ Lỗi tải video: ${error.message}`);
+      
+      // Thử sử dụng API tải trực tiếp nếu Chrome gặp lỗi
+      try {
+        console.log(`🔄 Chrome gặp lỗi, thử sử dụng API tải trực tiếp...`);
+        return await this.downloadVideoDirectly(fileId, outputPath);
+      } catch (directError) {
+        console.error(`❌ Lỗi tải trực tiếp: ${directError.message}`);
+        throw error; // Giữ lại lỗi gốc
+      }
+    }
+  }
+  
+  // Thêm phương thức tải xuống trực tiếp qua API
+  async downloadVideoDirectly(fileId, outputPath) {
+    console.log(`📥 Tải xuống video trực tiếp qua API: ${fileId}`);
+    
+    try {
+      // Import và sử dụng hàm trực tiếp download từ Google Drive
+      const { downloadFileFromGoogleDrive } = require('@/utils/drive-utils');
+      
+      // Tải video
+      const downloadResult = await downloadFileFromGoogleDrive(fileId, outputPath);
+      
+      if (downloadResult && downloadResult.success) {
+        console.log(`✅ Tải video trực tiếp thành công: ${outputPath}`);
+        return true;
+      } else {
+        throw new Error(downloadResult?.error || 'Lỗi không xác định khi tải video trực tiếp');
+      }
+    } catch (error) {
+      console.error(`❌ Lỗi tải video trực tiếp: ${error.message}`);
+      throw error;
     }
   }
 

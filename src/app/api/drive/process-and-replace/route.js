@@ -54,6 +54,7 @@ export async function POST(request) {
     // Trích xuất các thông số từ request
     const {
       fileId,
+      url,
       driveLink,
       targetFolderId,
       folderId,
@@ -68,7 +69,8 @@ export async function POST(request) {
       cellIndex,
       sheetId,
       googleSheetName,
-      displayText
+      displayText,
+      skipProcessing = false
     } = requestBody;
 
     // Chuẩn hóa các tham số
@@ -76,8 +78,8 @@ export async function POST(request) {
     const finalFolderName = folderName || courseName || sheetName || 'Unknown';
 
     // Validation các tham số bắt buộc
-    if (!fileId && !driveLink) {
-      throw new Error('Thiếu fileId hoặc driveLink');
+    if (!fileId && !url && !driveLink) {
+      throw new Error('Thiếu fileId, url hoặc driveLink');
     }
 
     if (!finalTargetFolderId) {
@@ -99,10 +101,46 @@ export async function POST(request) {
       }
     }
 
-    // Lấy ID file từ driveLink nếu không có fileId
-    const finalFileId = fileId || extractDriveFileId(driveLink);
+    // Ưu tiên sử dụng fileId trực tiếp nếu có
+    let finalFileId = fileId;
+    
+    // Nếu không có fileId trực tiếp, trích xuất từ URL
     if (!finalFileId) {
-      throw new Error('Không thể lấy được file ID');
+      const urlToExtract = url || driveLink;
+      if (urlToExtract) {
+        try {
+          // Xử lý URL từ Google Sheets (có dạng https://www.google.com/url?q=...)
+          if (urlToExtract.includes('google.com/url?q=')) {
+            // Trích xuất phần URL được mã hóa
+            const match = urlToExtract.match(/[?&]q=([^&]+)/);
+            if (match && match[1]) {
+              // Giải mã URL
+              const decodedUrl = decodeURIComponent(match[1]);
+              console.log(`URL sau khi decode: ${decodedUrl}`);
+              
+              // Trích xuất ID từ URL đã giải mã
+              const extracted = extractDriveFileId(decodedUrl);
+              if (extracted && extracted.fileId) {
+                finalFileId = extracted.fileId;
+                console.log(`Đã trích xuất file ID từ URL đã giải mã: ${finalFileId}`);
+              }
+            }
+          } else {
+            // Xử lý URL thông thường
+            const extracted = extractDriveFileId(urlToExtract);
+            if (extracted && extracted.fileId) {
+              finalFileId = extracted.fileId;
+              console.log(`Đã trích xuất file ID từ URL: ${finalFileId}`);
+            }
+          }
+        } catch (error) {
+          console.error(`Lỗi khi trích xuất file ID từ URL: ${error.message}`);
+        }
+      }
+    }
+    
+    if (!finalFileId) {
+      throw new Error('Không thể lấy được file ID từ URL');
     }
 
     // Kiểm tra loại file

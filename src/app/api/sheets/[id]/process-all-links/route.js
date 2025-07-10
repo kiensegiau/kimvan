@@ -689,9 +689,10 @@ export async function POST(request, { params }) {
               console.log(`⚠️ PDF đã được bỏ qua xử lý: ${processResultJson.message || 'Không rõ lý do'}`);
               
               // Nếu có URL mới, sử dụng URL mới
-              const newUrl = processResultJson.processedFile?.webContentLink || 
-                            processResultJson.processedFile?.webViewLink || 
-                            urlGroup.originalUrl;
+              const newUrl = processResultJson.processedFile?.link ||
+                    processResultJson.processedFile?.webContentLink || 
+                    processResultJson.processedFile?.webViewLink || 
+                    urlGroup.originalUrl;
               
               return {
                 success: true,
@@ -705,9 +706,9 @@ export async function POST(request, { params }) {
             }
             
             // Kiểm tra nếu không có link mới
-            if (!processResultJson.processedFile.webViewLink && 
-                !processResultJson.processedFile.webContentLink && 
-                !processResultJson.processedFile.link) {
+            if (!processResultJson.processedFile.link &&
+                !processResultJson.processedFile.webViewLink && 
+                !processResultJson.processedFile.webContentLink) {
               console.error(`❌ Không nhận được URL mới sau khi xử lý PDF: ${urlGroup.originalUrl}`);
               
               return {
@@ -865,9 +866,9 @@ export async function POST(request, { params }) {
             }
             
             // Kiểm tra nếu không có link mới
-            if (!processResultJson.processedFile.webViewLink && 
-                !processResultJson.processedFile.webContentLink && 
-                !processResultJson.processedFile.link) {
+            if (!processResultJson.processedFile.link &&
+                !processResultJson.processedFile.webViewLink && 
+                !processResultJson.processedFile.webContentLink) {
               console.error(`❌ Không nhận được URL mới sau khi xử lý file ${specificCategory}: ${urlGroup.originalUrl}`);
               return {
                 success: true,
