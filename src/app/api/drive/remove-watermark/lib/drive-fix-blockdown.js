@@ -153,17 +153,8 @@ export async function processPDF(inputPath, outputPath, config = DEFAULT_CONFIG,
         // Tính kích thước MB
         const fileSizeMB = parseInt(fileInfo.data.size) / (1024 * 1024);
         
-        // Nếu file lớn hơn 100MB, bỏ qua xử lý
-        if (fileSizeMB > 100) {
-          console.log(`⚠️ File quá lớn (${fileSizeMB.toFixed(2)} MB), bỏ qua xử lý tự động`);
-          return {
-            success: false,
-            error: `File quá lớn (${fileSizeMB.toFixed(2)} MB). Vui lòng xử lý thủ công file này.`,
-            fileSizeMB: fileSizeMB,
-            skipReason: 'FILE_TOO_LARGE'
-          };
-        }
-        
+        // Không giới hạn kích thước file nữa
+        // Chỉ hiển thị thông tin kích thước
         console.log(`📊 Kích thước file: ${fileSizeMB.toFixed(2)} MB`);
       } catch (error) {
         console.error(`❌ Lỗi khi kiểm tra kích thước file: ${error.message}`);

@@ -10,7 +10,7 @@ import {
   processFolder,
   processAndUploadFile,
   addToProcessingQueue,
-  downloadWithCookie
+  checkFileInfo
 } from './lib';
 
 export const maxDuration = 3600; // 60 phút timeout (thay vì 30 phút)
@@ -109,95 +109,39 @@ export async function POST(request) {
     console.log('🔍 Kiểm tra loại file...');
     const mimeTypeResult = await checkMimeType(finalFileId);
 
+    // Lấy thêm thông tin file chi tiết để lấy tên file chính xác
+    let originalFileName = null;
+    try {
+      const fileInfoResult = await checkFileInfo(finalFileId);
+      if (fileInfoResult.success) {
+        originalFileName = fileInfoResult.fileName || fileInfoResult.fileInfo?.name;
+        console.log(`Tên file gốc từ Drive API (chi tiết): ${originalFileName || 'Không có'}`);
+      }
+    } catch (fileInfoError) {
+      console.error('Lỗi khi lấy thông tin file chi tiết:', fileInfoError);
+    }
+    
+    // Nếu chưa có tên file từ thông tin chi tiết, sử dụng kết quả từ checkMimeType
+    if (!originalFileName && mimeTypeResult.success) {
+      originalFileName = mimeTypeResult.fileName;
+      console.log(`Tên file gốc từ Drive API (MIME): ${originalFileName || 'Không có'}`);
+    }
+
     // Xử lý kết quả kiểm tra MIME type
     if (!mimeTypeResult.success) {
       console.log(`⚠️ Lỗi khi kiểm tra MIME type: ${mimeTypeResult.error}`);
       
-      // Kiểm tra nếu là lỗi 403, có thể bỏ qua phương pháp cookie
-      let is403Error = mimeTypeResult.error && (
-        mimeTypeResult.error.includes('403') || 
-        mimeTypeResult.statusCode === 403
-      );
-      
-      // Nếu không phải lỗi 403, thử tải file bằng cookie trước
-      if (!is403Error) {
-        console.log('🍪 Thử tải file bằng cookie...');
-        
-        // Tạo thư mục tạm cho file tải về
-        if (!fs.existsSync(tempDir)) {
-          fs.mkdirSync(tempDir, { recursive: true });
-        }
-        
-        // Tạo đường dẫn file tạm với đuôi .pdf
-        const tempFilePath = path.join(tempDir, `file_${finalFileId}`);
-        
-        try {
-          // Thử tải bằng cookie
-          const cookieResult = await downloadWithCookie(finalFileId, tempFilePath);
-          
-          if (cookieResult.success) {
-            console.log(`✅ Đã tải file thành công bằng cookie!`);
-            
-            // Xử lý file đã tải thành công
-            const fileResult = await processAndUploadFile({
-              filePath: cookieResult.filePath, // Sử dụng đường dẫn từ kết quả cookie
-              mimeType: cookieResult.mimeType || 'application/pdf', // Sử dụng MIME type từ kết quả cookie
-              fileId: finalFileId,
-              driveLink,
-              targetFolderId: finalTargetFolderId,
-              folderName: finalFolderName,
-              apiKey,
-              updateSheet,
-              courseId: null,
-              sheetIndex,
-              rowIndex,
-              cellIndex,
-              sheetId,
-              googleSheetName,
-              displayText: cookieResult.fileName || displayText || `file_${finalFileId}`,
-              request,
-              startTime,
-              tempDir,
-              sourceType: 'cookie'
-            });
-            
-            return NextResponse.json({
-              ...fileResult,
-              processingMode: 'cookie',
-              fileInfo: {
-                name: cookieResult.fileName,
-                extension: cookieResult.fileExtension,
-                mimeType: cookieResult.mimeType,
-                size: cookieResult.fileSizeMB
-              }
-            });
-          }
-          
-          console.log(`⚠️ Tải bằng cookie thất bại: ${cookieResult.error || 'Lỗi không xác định'}`);
-          
-          // Nếu là lỗi 403 với cookie, đánh dấu để bỏ qua phương pháp này
-          if (cookieResult.error === 'HTTP_ERROR_403' || cookieResult.skipCookieMethod) {
-            is403Error = true;
-            console.log(`⚠️ Phát hiện lỗi 403 với cookie, chuyển thẳng sang Chrome...`);
-          }
-        } catch (cookieError) {
-          console.error(`❌ Lỗi khi tải file bằng cookie: ${cookieError.message}`);
-        }
-      } else {
-        console.log(`⚠️ Phát hiện lỗi 403, bỏ qua phương pháp tải bằng cookie...`);
-      }
-      
-      // Nếu cookie thất bại hoặc bị bỏ qua do lỗi 403, chuyển sang Chrome
+      // Chuyển thẳng sang xử lý bằng Chrome
       console.log('🌐 Chuyển sang sử dụng Chrome để tải và xử lý file...');
       
       // Xác định loại lỗi để ghi log
-      const errorType = is403Error ? '403' : (mimeTypeResult.statusCode || 'unknown');
+      const errorType = mimeTypeResult.statusCode === 403 ? '403' : (mimeTypeResult.statusCode || 'unknown');
       console.log(`⚠️ Loại lỗi: ${errorType}`);
       
       // Thêm vào hàng đợi xử lý Chrome
       const chromeResult = await addToProcessingQueue({
         fileId: finalFileId,
-        fileName: `file_${finalFileId}`,
+        fileName: originalFileName || displayText || `file_${finalFileId}`,
         driveLink,
         targetFolderId: finalTargetFolderId,
         targetFolderName: finalFolderName,
@@ -209,7 +153,7 @@ export async function POST(request) {
         cellIndex,
         sheetId,
         googleSheetName,
-        displayText,
+        displayText: originalFileName || displayText,
         request,
         tempDir
       });
@@ -308,7 +252,7 @@ export async function POST(request) {
       cellIndex,
       sheetId,
       googleSheetName,
-      displayText,
+      displayText: originalFileName || displayText, // Ưu tiên sử dụng tên file gốc
       request
     };
     
@@ -319,7 +263,7 @@ export async function POST(request) {
       const fileResult = await processSingleFile(
         {
           id: finalFileId,
-          name: displayText || `file_${finalFileId}`,
+          name: originalFileName || displayText || `file_${finalFileId}`, // Ưu tiên sử dụng tên file gốc
           mimeType: mimeTypeResult.mimeType
         },
         fileOptions
@@ -364,7 +308,7 @@ export async function POST(request) {
         // Thêm vào hàng đợi xử lý Chrome
         const chromeResult = await addToProcessingQueue({
           fileId: finalFileId,
-          fileName: displayText || `file_${finalFileId}`,
+          fileName: originalFileName || displayText || `file_${finalFileId}`, // Ưu tiên sử dụng tên file gốc
           driveLink,
           targetFolderId: finalTargetFolderId,
           targetFolderName: finalFolderName,
@@ -376,7 +320,7 @@ export async function POST(request) {
             cellIndex,
             sheetId,
             googleSheetName,
-          displayText,
+          displayText: originalFileName || displayText, // Ưu tiên sử dụng tên file gốc
           request,
           tempDir
         });
@@ -413,7 +357,7 @@ export async function POST(request) {
         // Thêm vào hàng đợi xử lý Chrome
         const chromeResult = await addToProcessingQueue({
           fileId: finalFileId,
-          fileName: displayText || `file_${finalFileId}`,
+          fileName: originalFileName || displayText || `file_${finalFileId}`, // Ưu tiên sử dụng tên file gốc
           driveLink,
           targetFolderId: finalTargetFolderId,
           targetFolderName: finalFolderName,
@@ -425,7 +369,7 @@ export async function POST(request) {
           cellIndex,
           sheetId,
           googleSheetName,
-          displayText,
+          displayText: originalFileName || displayText, // Ưu tiên sử dụng tên file gốc
           request,
           tempDir
         });

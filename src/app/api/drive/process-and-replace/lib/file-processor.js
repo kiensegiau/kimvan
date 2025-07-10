@@ -33,20 +33,27 @@ async function initVideoProcessor() {
  * @returns {Promise<Object>} - Kết quả xử lý file
  */
 export async function processFile(filePath, mimeType, apiKey, originalFileId) {
-  console.log(`Đang xử lý file: ${filePath}`);
-  
-  // Tạo đường dẫn cho file đã xử lý
-  const fileDir = path.dirname(filePath);
-  const fileExt = path.extname(filePath);
-  const fileName = path.basename(filePath, fileExt);
-  const processedPath = path.join(fileDir, `${fileName}_processed${fileExt}`);
-  
   try {
-    // Kiểm tra nếu file có đuôi .pdf, luôn xử lý như file PDF bất kể MIME type
-    const isPdf = mimeType.includes('pdf') || fileExt.toLowerCase() === '.pdf';
+    console.log(`Đang xử lý file: ${filePath}`);
     
-    // Xác định loại file và áp dụng xử lý phù hợp
-    if (isPdf) {
+    // Kiểm tra xem file có tồn tại không
+    if (!fs.existsSync(filePath)) {
+      console.error(`❌ Lỗi: File không tồn tại tại đường dẫn: ${filePath}`);
+      throw new Error(`File không tồn tại: ${filePath}`);
+    }
+    
+    // Xác định đuôi file
+    const fileExt = path.extname(filePath).toLowerCase();
+    
+    // Tạo đường dẫn đầu ra cho file được xử lý
+    const processedFileName = originalFileId ? `file_${originalFileId}_processed${fileExt}` : `processed_${path.basename(filePath)}`;
+    const processedPath = path.join(path.dirname(filePath), processedFileName);
+    
+    // Kiểm tra loại file để xử lý phù hợp
+    const mimeTypeLower = mimeType ? mimeType.toLowerCase() : '';
+
+    // Xử lý các loại file PDF
+    if (mimeTypeLower.includes('pdf') || fileExt === '.pdf') {
       // Xử lý file PDF - sử dụng API techhk.aoscdn.com để xóa watermark
       console.log('Đang xử lý file PDF với API xóa watermark...');
       
@@ -61,11 +68,18 @@ export async function processFile(filePath, mimeType, apiKey, originalFileId) {
       console.log(`Sử dụng API key: ${apiKeyToUse.substring(0, 5)}... để xóa watermark`);
       
       // Kiểm tra kích thước file để cảnh báo nếu quá lớn
-      const fileStats = fs.statSync(filePath);
-      const fileSizeMB = fileStats.size / (1024 * 1024);
-      if (fileSizeMB > 50) {
-        console.log(`⚠️ Cảnh báo: File có kích thước lớn (${fileSizeMB.toFixed(2)} MB), quá trình xử lý có thể mất nhiều thời gian`);
-        console.log(`Thời gian xử lý ước tính: ${Math.ceil(fileSizeMB * 15 / 60)} phút`);
+      try {
+        const fileStats = fs.statSync(filePath);
+        const fileSizeMB = fileStats.size / (1024 * 1024);
+        console.log(`Kích thước file: ${fileSizeMB.toFixed(2)} MB`);
+        
+        if (fileSizeMB > 50) {
+          console.log(`⚠️ Cảnh báo: File có kích thước lớn (${fileSizeMB.toFixed(2)} MB), quá trình xử lý có thể mất nhiều thời gian`);
+          console.log(`Thời gian xử lý ước tính: ${Math.ceil(fileSizeMB * 15 / 60)} phút`);
+        }
+      } catch (statError) {
+        console.error(`❌ Lỗi khi kiểm tra kích thước file: ${statError.message}`);
+        throw new Error(`Không thể đọc thông tin file: ${statError.message}`);
       }
       
       // Gọi API xóa watermark
@@ -299,28 +313,28 @@ export async function processFile(filePath, mimeType, apiKey, originalFileId) {
           // originalFileName sẽ được thiết lập ở processAndUploadFile
         };
       }
-    } else if (mimeType.includes('video')) {
+    } else if (mimeTypeLower.includes('video')) {
       // Xử lý file video
       console.log('🎥 Đang xử lý file video...');
       const processor = await initVideoProcessor();
       return await processor.processVideo(filePath, fileName, targetFolderId);
-    } else if (mimeType.includes('image')) {
+    } else if (mimeTypeLower.includes('image')) {
       // Xử lý file hình ảnh - hiện tại chỉ sao chép
       console.log('Đang xử lý file hình ảnh (chỉ sao chép)...');
       fs.copyFileSync(filePath, processedPath);
-    } else if (mimeType.includes('spreadsheet') || mimeType.includes('excel')) {
+    } else if (mimeTypeLower.includes('spreadsheet') || mimeTypeLower.includes('excel')) {
       // Xử lý file bảng tính - hiện tại chỉ sao chép
       console.log('Đang xử lý file bảng tính (chỉ sao chép)...');
       fs.copyFileSync(filePath, processedPath);
-    } else if (mimeType.includes('document') || mimeType.includes('word')) {
+    } else if (mimeTypeLower.includes('document') || mimeTypeLower.includes('word')) {
       // Xử lý file văn bản - hiện tại chỉ sao chép
       console.log('Đang xử lý file văn bản (chỉ sao chép)...');
       fs.copyFileSync(filePath, processedPath);
-    } else if (mimeType.includes('presentation') || mimeType.includes('powerpoint')) {
+    } else if (mimeTypeLower.includes('presentation') || mimeTypeLower.includes('powerpoint')) {
       // Xử lý file trình chiếu - hiện tại chỉ sao chép
       console.log('Đang xử lý file trình chiếu (chỉ sao chép)...');
       fs.copyFileSync(filePath, processedPath);
-    } else if (mimeType.includes('video') || mimeType.includes('audio')) {
+    } else if (mimeTypeLower.includes('video') || mimeTypeLower.includes('audio')) {
       // Xử lý file media - hiện tại chỉ sao chép
       console.log('Đang xử lý file media (chỉ sao chép)...');
       fs.copyFileSync(filePath, processedPath);
@@ -508,11 +522,10 @@ export async function processFolder(folderId, folderName, targetFolderId, apiKey
             continue;
           }
           
-          // Kiểm tra kích thước file quá lớn
+          // Hiển thị thông tin kích thước file
           const fileSizeMB = downloadResult.fileSize ? downloadResult.fileSize / (1024 * 1024) : 0;
-          if (fileSizeMB > 100) {
-            console.warn(`File quá lớn (${fileSizeMB.toFixed(2)} MB), có thể gặp vấn đề khi xử lý: ${file.name}`);
-          }
+          console.log(`📊 Kích thước file: ${fileSizeMB.toFixed(2)} MB - ${file.name}`);
+          // Không còn giới hạn kích thước file
           
           // Xử lý file theo loại MIME
           let processedFilePath;

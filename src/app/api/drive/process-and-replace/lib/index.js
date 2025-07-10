@@ -1,4 +1,4 @@
-import { downloadFromGoogleDrive, checkFileInfo, listFilesInFolder } from './download-service';
+import { downloadFromGoogleDrive, checkFileInfo as downloadCheckFileInfo, listFilesInFolder } from './download-service';
 import { processFile, processFolder as processFileFolder } from './file-processor';
 import { uploadToGoogleDrive, findOrCreateFolder } from './upload-service';
 import { 
@@ -15,7 +15,7 @@ import {
 import { updateSheetCell, updateGoogleSheetCell } from './sheet-service';
 import { 
   checkMimeType, 
-  checkFileInfo as checkFileMimeInfo,
+  checkFileInfo as mimeCheckFileInfo,
   classifyFileType
 } from './mime-service';
 import {
@@ -26,12 +26,11 @@ import {
   processSingleFile,
   processFolder
 } from './process-manager';
-import { downloadWithCookie } from './cookie-service';
 
 export {
   // Download services
   downloadFromGoogleDrive,
-  checkFileInfo,
+  downloadCheckFileInfo as downloadFileInfo,
   listFilesInFolder,
   
   // File processing
@@ -59,7 +58,7 @@ export {
   
   // MIME services
   checkMimeType,
-  checkFileMimeInfo,
+  mimeCheckFileInfo as checkFileInfo,
   classifyFileType,
   
   // Process manager
@@ -68,8 +67,5 @@ export {
   processNextInQueue,
   checkFileExistsInTarget,
   processSingleFile,
-  processFolder,
-  
-  // Cookie service
-  downloadWithCookie
+  processFolder
 }; 

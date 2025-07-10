@@ -252,11 +252,9 @@ export async function processPDFWatermark(filePath, outputPath, apiKey, retryCou
     const fileSizeMB = fileStats.size / (1024 * 1024);
     console.log(`Xử lý file PDF có kích thước: ${fileSizeMB.toFixed(2)} MB`);
     
-    // Nếu file quá lớn, hiển thị cảnh báo
-    if (fileSizeMB > 100) {
-      console.log(`⚠️ Cảnh báo: File rất lớn (${fileSizeMB.toFixed(2)} MB), quá trình xử lý có thể mất rất nhiều thời gian`);
-      console.log(`Thời gian xử lý ước tính: ${Math.ceil(fileSizeMB * 15 / 60)} phút hoặc lâu hơn`);
-    }
+    // Hiển thị thông tin về thời gian xử lý dự kiến
+    console.log(`ℹ️ Ước tính thời gian xử lý: ${Math.ceil(fileSizeMB * 15 / 60)} phút hoặc lâu hơn cho file ${fileSizeMB.toFixed(2)} MB`);
+    // Không còn giới hạn kích thước file
     
     // Tạo nhiệm vụ xử lý
     let taskId;

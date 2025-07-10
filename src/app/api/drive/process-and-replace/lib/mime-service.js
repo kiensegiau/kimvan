@@ -30,6 +30,7 @@ export async function checkMimeType(fileId) {
 
     return {
       success: true,
+      fileName: data.fileName, // Thêm tên file vào kết quả
       mimeType: data.mimeType,
       isFolder: data.isFolder,
       isPdf: data.isPdf,
@@ -88,9 +89,14 @@ export async function checkFileInfo(fileId) {
       includeItemsFromAllDrives: true
     });
     
+    // Đảm bảo tên file trả về là tên file gốc từ Drive
+    const originalFileName = fileMetadata.data.name;
+    console.log(`Tên file gốc từ Drive API: ${originalFileName}`);
+    
     return {
       success: true,
-      fileInfo: fileMetadata.data
+      fileInfo: fileMetadata.data,
+      fileName: originalFileName
     };
   } catch (error) {
     console.error(`Lỗi khi kiểm tra thông tin file: ${error.message}`);

@@ -9,17 +9,32 @@ import os from 'os';
 /**
  * Tải xuống file từ Google Drive
  * @param {string} fileId - ID của file trên Google Drive
- * @param {Object} options - Tùy chọn tải xuống
- * @param {boolean} options.forceCookie - Bắt buộc dùng cookie thay vì API
+ * @param {string} outputPath - Đường dẫn đầu ra để lưu file
  * @returns {Promise<Object>} - Kết quả tải xuống
  */
-export async function downloadFromGoogleDrive(fileId, options = {}) {
+export async function downloadFromGoogleDrive(fileId, outputPath) {
   console.log(`Bắt đầu tải xuống file với ID: ${fileId}`);
+  console.log(`Đường dẫn đầu ra: ${outputPath}`);
   
-  // Tạo thư mục tạm để lưu file
-  const outputDir = path.join(os.tmpdir(), uuidv4());
-  fs.mkdirSync(outputDir, { recursive: true });
-  console.log(`Đã tạo thư mục tạm: ${outputDir}`);
+  // Đảm bảo thư mục chứa file tồn tại
+  const outputDir = path.dirname(outputPath);
+  if (!fs.existsSync(outputDir)) {
+    fs.mkdirSync(outputDir, { recursive: true });
+    console.log(`Đã tạo thư mục: ${outputDir}`);
+  } else {
+    console.log(`Thư mục đã tồn tại: ${outputDir}`);
+  }
+
+  // Xóa file cũ nếu đã tồn tại
+  if (fs.existsSync(outputPath)) {
+    console.log(`File đã tồn tại, đang xóa: ${outputPath}`);
+    try {
+      fs.unlinkSync(outputPath);
+      console.log(`Đã xóa file cũ tại: ${outputPath}`);
+    } catch (unlinkError) {
+      console.error(`Không thể xóa file cũ: ${unlinkError.message}`);
+    }
+  }
 
   // Thêm cơ chế retry
   const MAX_RETRIES = 1;
@@ -34,221 +49,141 @@ export async function downloadFromGoogleDrive(fileId, options = {}) {
         await new Promise(resolve => setTimeout(resolve, delayTime));
       }
 
-      let response;
+      console.log('🔄 Đang thử tải file thông qua Google Drive API...');
       
-      // Ưu tiên sử dụng Google Drive API nếu không bị bắt buộc dùng cookie
-      if (!options.forceCookie) {
-        try {
-          console.log('🔄 Đang thử tải file thông qua Google Drive API...');
-          
-          // Lấy access token từ auth-utils
-          const accessToken = await getAccessToken();
-          console.log('Đã lấy access token từ auth-utils');
+      // Lấy access token từ auth-utils
+      const accessToken = await getAccessToken();
+      console.log('Đã lấy access token từ auth-utils');
 
-          // Tạo URL tải xuống
-          const downloadUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`;
-          console.log('URL tải xuống:', downloadUrl);
+      // Tạo URL tải xuống
+      const downloadUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`;
+      console.log('URL tải xuống:', downloadUrl);
 
-          // Thực hiện request tải xuống
-          const response = await axios({
-            method: 'get',
-            url: downloadUrl,
-            headers: {
-              'Authorization': `Bearer ${accessToken}`,
-            },
-            responseType: 'stream'
-          });
+      // Thực hiện request tải xuống
+      console.log(`Bắt đầu gửi request tải xuống...`);
+      const response = await axios({
+        method: 'get',
+        url: downloadUrl,
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+        },
+        responseType: 'stream',
+        timeout: 30000 // 30 giây timeout
+      });
+      console.log(`Đã nhận phản hồi từ server, bắt đầu ghi file...`);
 
-          // Xác định đuôi file dựa trên MIME type
-          const mimeType = response.headers['content-type'];
-          let extension = '';
-          
-          if (mimeType) {
-            switch (mimeType.toLowerCase()) {
-              case 'application/pdf':
-                extension = '.pdf';
-                break;
-              case 'image/jpeg':
-                extension = '.jpg';
-                break;
-              case 'image/png':
-                extension = '.png';
-                break;
-              case 'image/gif':
-                extension = '.gif';
-                break;
-              case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
-                extension = '.docx';
-                break;
-              case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
-                extension = '.xlsx';
-                break;
-              case 'application/vnd.openxmlformats-officedocument.presentationml.presentation':
-                extension = '.pptx';
-                break;
-              default:
-                console.log('⚠️ MIME type không xác định:', mimeType);
-                break;
-            }
-          }
-
-          // Tạo file path với đuôi mở rộng
-          const filePath = path.join(outputDir, `${uuidv4()}${extension}`);
-          console.log(`Lưu file với đuôi mở rộng: ${extension}`);
-          
-          // Ghi file
-          const writer = fs.createWriteStream(filePath);
-          response.data.pipe(writer);
-
-          // Đợi ghi file hoàn tất
-          await new Promise((resolve, reject) => {
-            writer.on('finish', resolve);
-            writer.on('error', reject);
-          });
-
-          return {
-            success: true,
-            filePath,
-            mimeType: response.headers['content-type']
-          };
-
-        } catch (apiError) {
-          let errorText = '';
-          try {
-            // Chỉ lấy thông tin lỗi cần thiết
-            if (apiError.response?.data) {
-              errorText = JSON.stringify(apiError.response.data, null, 2);
-            } else {
-              errorText = apiError.message;
-            }
-          } catch (jsonError) {
-            errorText = apiError.message || 'Unknown error';
-          }
-          
-          console.error(`❌ Lỗi khi tải qua API: ${apiError.message}`);
-          
-          // Kiểm tra loại lỗi để xử lý phù hợp
-          if (apiError.response?.status === 403 || 
-              apiError.message.includes('HTTP 403') || 
-              apiError.message.includes('cannotDownloadFile') ||
-              apiError.message.includes('cannot be downloaded')) {
-            console.log('⚠️ Phát hiện lỗi 403 - File bị chặn download');
-            console.log('🌐 Chuyển sang sử dụng Chrome để tải file...');
-            throw new Error(`HTTP 403: File bị chặn download - ${errorText}`);
-          }
-          
-          // Nếu lỗi khác, throw error
-          throw apiError;
-        }
-      } else {
-        // Dùng cookie để tải
-        console.log('Đang tải file bằng cookie...');
-        // The original code had this line commented out, so I'm keeping it commented.
-        // return await downloadWithBrowserCookie(fileId, outputDir); 
-        // Assuming downloadWithBrowserCookie is no longer available or needs to be re-imported.
-        // For now, I'll just log a placeholder message.
-        console.warn('downloadWithBrowserCookie is not available. Skipping direct cookie download.');
-        throw new Error('Direct cookie download is not supported in this version.');
-      }
-
-      // Xác định đuôi file
+      // Xác định đuôi file dựa trên MIME type
       const mimeType = response.headers['content-type'];
-      let extension = '';
+      console.log(`MIME type: ${mimeType}`);
       
-      if (mimeType) {
-        switch (mimeType.toLowerCase()) {
-          case 'application/pdf':
-            extension = '.pdf';
-            break;
-          case 'image/jpeg':
-            extension = '.jpg';
-            break;
-          case 'image/png':
-            extension = '.png';
-            break;
-          case 'image/gif':
-            extension = '.gif';
-            break;
-          case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
-            extension = '.docx';
-            break;
-          case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
-            extension = '.xlsx';
-            break;
-          case 'application/vnd.openxmlformats-officedocument.presentationml.presentation':
-            extension = '.pptx';
-            break;
-          default:
-            console.log('⚠️ MIME type không xác định:', mimeType);
-            break;
+      // Ghi file vào outputPath
+      const writer = fs.createWriteStream(outputPath);
+      console.log(`Đã tạo stream ghi file tại: ${outputPath}`);
+      
+      // Bắt sự kiện lỗi của writer
+      writer.on('error', (err) => {
+        console.error(`Lỗi khi ghi file: ${err.message}`);
+      });
+      
+      // Bắt sự kiện pipe data
+      response.data.on('data', (chunk) => {
+        // Log khi đã nhận dữ liệu đầu tiên
+        if (!writer.bytesWritten || writer.bytesWritten === 0) {
+          console.log(`Đang nhận dữ liệu...`);
         }
-      }
-
-      // Tạo tên file với prefix mặc định nếu không có tên
-      const defaultPrefix = 'Tài liệu';
-      const timestamp = new Date().getTime();
-      const outputFile = `${defaultPrefix}_${timestamp}${extension}`;
-      const outputPath = path.join(outputDir, outputFile);
-
-      // Log thông tin file
-      console.log('📝 Tên file:', outputFile);
-      console.log('📂 Đường dẫn:', outputPath);
-
-      const dest = fs.createWriteStream(outputPath);
-      const reader = response.body.getReader();
+      });
       
-      while (true) {
-        const { done, value } = await reader.read();
-        
-        if (done) {
-          console.log('Hoàn tất tải xuống');
-          break;
-        }
-        
-        dest.write(Buffer.from(value));
-      }
-      
+      // Pipe dữ liệu
+      response.data.pipe(writer);
+
+      // Đợi ghi file hoàn tất
       await new Promise((resolve, reject) => {
-        dest.end();
-        dest.on('finish', resolve);
-        dest.on('error', reject);
+        writer.on('finish', () => {
+          console.log(`Stream ghi file đã kết thúc`);
+          resolve();
+        });
+        writer.on('error', (err) => {
+          console.error(`Lỗi stream ghi file: ${err.message}`);
+          reject(err);
+        });
       });
 
-      const result = {
-        success: true,
-        filePath: outputPath,
-        outputDir,
-        mimeType: mimeType,
-        fileName: outputFile
-      };
-
-      // Log chi tiết về file
-      console.log('✅ Tải file thành công:', result.filePath);
-      console.log('📄 MIME type:', result.mimeType);
-      console.log('📦 Kích thước:', Math.round(fs.statSync(result.filePath).size / 1024 / 1024 * 100) / 100, 'MB');
-      console.log('⏰ Thời gian:', new Date().toLocaleString());
-      console.log('🆔 File ID:', fileId);
-
-      return result;
+      // Kiểm tra file đã được tạo thành công
+      if (fs.existsSync(outputPath)) {
+        try {
+          const fileStats = fs.statSync(outputPath);
+          const fileSizeMB = fileStats.size / (1024 * 1024);
+          
+          console.log(`✅ Tải file thành công qua API`);
+          console.log(`📄 Đường dẫn: ${outputPath}`);
+          console.log(`📦 Kích thước: ${fileSizeMB.toFixed(2)} MB`);
+          
+          if (fileSizeMB < 0.001) {
+            console.warn(`⚠️ Cảnh báo: File có kích thước quá nhỏ (${fileStats.size} bytes)`);
+          }
+          
+          return {
+            success: true,
+            filePath: outputPath,
+            mimeType: mimeType
+          };
+        } catch (statError) {
+          console.error(`Lỗi khi kiểm tra file: ${statError.message}`);
+          throw new Error(`File đã tạo nhưng không thể đọc thông tin: ${statError.message}`);
+        }
+      } else {
+        console.error(`❌ Lỗi: File không được tạo tại đường dẫn: ${outputPath}`);
+        throw new Error(`File không được tạo tại đường dẫn: ${outputPath}`);
+      }
 
     } catch (error) {
-      console.error(`Lỗi khi tải xuống file (lần thử ${retryCount + 1}/${MAX_RETRIES + 1}):`, error);
-      lastError = error;
-      
-      if (retryCount === MAX_RETRIES) {
-        throw new Error(`Không thể tải xuống file sau ${MAX_RETRIES + 1} lần thử: ${error.message}`);
-      }
+      let errorMessage = 'Unknown error';
       
       try {
-        if (fs.existsSync(outputDir)) {
-          fs.rmSync(outputDir, { recursive: true });
-          console.log(`Đã xóa thư mục tạm ${outputDir} do lỗi`);
+        if (error.response?.data) {
+          // Xử lý an toàn để tránh lỗi circular structure
+          errorMessage = typeof error.response.data === 'string' ? 
+            error.response.data : 
+            'Error response data (cannot stringify)';
+        } else {
+          errorMessage = error.message || 'Unknown error';
         }
-      } catch (cleanupError) {
-        console.error('Lỗi khi dọn dẹp thư mục tạm:', cleanupError);
+      } catch (jsonError) {
+        errorMessage = `Error parsing response data: ${error.message || 'Unknown error'}`;
+      }
+        
+      console.error(`Lỗi khi tải xuống file (lần thử ${retryCount + 1}/${MAX_RETRIES + 1}):`, errorMessage);
+      console.error(`Loại lỗi: ${error.name}, Code: ${error.code}, Response status: ${error.response?.status}`);
+      
+      lastError = error;
+      
+      // Kiểm tra lỗi 403 (Không có quyền truy cập)
+      if (error.response?.status === 403 || 
+          error.message?.includes('403') || 
+          error.message?.includes('cannotDownloadFile')) {
+        console.log('⚠️ Phát hiện lỗi 403 - File bị chặn download');
+        throw new Error(`HTTP 403: File bị chặn download - ${errorMessage}`);
+      }
+      
+      // Nếu đã thử hết số lần, ném lỗi
+      if (retryCount === MAX_RETRIES) {
+        throw new Error(`Không thể tải xuống file sau ${MAX_RETRIES + 1} lần thử: ${errorMessage}`);
+      }
+      
+      // Xóa file tạm nếu có lỗi và tồn tại
+      if (fs.existsSync(outputPath)) {
+        try {
+          fs.unlinkSync(outputPath);
+          console.log(`Đã xóa file tạm ${outputPath} do lỗi`);
+        } catch (cleanupError) {
+          console.error('Lỗi khi xóa file tạm:', cleanupError.message);
+        }
       }
     }
   }
+  
+  // Nếu code chạy đến đây, có lỗi không xử lý được
+  throw lastError || new Error('Không thể tải xuống file vì lỗi không xác định');
 }
 
 /**

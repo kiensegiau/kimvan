@@ -14,7 +14,6 @@ import { processFile } from './file-processor';
 import { uploadToGoogleDrive, findOrCreateFolder } from './upload-service';
 import { updateSheetCell, updateGoogleSheetCell } from './sheet-service';
 import { processPDF } from '../../remove-watermark/lib/drive-fix-blockdown';
-import { downloadWithCookie } from './cookie-service';
 
 // Quản lý hàng đợi xử lý Chrome
 let isProcessing = false;
@@ -120,7 +119,18 @@ export async function processNextInQueue() {
       
       task.resolve(result);
     } else {
-      throw new Error(`Không thể tải file bằng Chrome: ${chromeResult.error}`);
+      console.log(`⚠️ Cảnh báo: ${chromeResult.error}`);
+      // Tiếp tục xử lý mà không ném lỗi, trả về kết quả với thông tin lỗi
+      task.resolve({
+        success: true,
+        skipWatermark: true,
+        message: `Cảnh báo: ${chromeResult.error}`,
+        filePath: chromeResult.filePath || null,
+        originalFile: {
+          id: task.fileId,
+          link: task.driveLink
+        }
+      });
     }
   } catch (error) {
     console.error(`❌ Lỗi khi xử lý file trong hàng đợi: ${error.message}`);
@@ -405,85 +415,84 @@ export async function processSingleFile(file, options) {
     cellIndex,
     sheetId,
     googleSheetName,
+    displayText,
     request
   } = options;
-
+  
   try {
-    console.log(`\n🔄 Bắt đầu xử lý file: ${file.name} (${file.id})`);
-
-    // Import hàm getTokenByType từ utils
-    const { getTokenByType } = await import('../../remove-watermark/lib/utils.js');
+    console.log(`\n🔄 Bắt đầu xử lý file: ${displayText || file.name} (${file.id})`);
     
-    // Khởi tạo Drive client
-    const downloadToken = getTokenByType('download');
-    if (!downloadToken) {
-      throw new Error('Không tìm thấy token Google Drive tải xuống');
-    }
-    
-    const oauth2Client = new google.auth.OAuth2(
-      process.env.GOOGLE_CLIENT_ID,
-      process.env.GOOGLE_CLIENT_SECRET,
-      process.env.GOOGLE_REDIRECT_URI
-    );
-    
-    oauth2Client.setCredentials(downloadToken);
-    const drive = google.drive({ version: 'v3', auth: oauth2Client });
-
-    // Kiểm tra file đã tồn tại trong thư mục đích chưa
-    const existingCheck = await checkFileExistsInTarget(file.name, targetFolderId, drive);
-    if (existingCheck.exists) {
-      // Bỏ qua kiểm tra file đã tồn tại, luôn tiếp tục xử lý
-      console.log(`File đã tồn tại trong thư mục đích, nhưng vẫn tiếp tục xử lý: ${file.name}`);
-      
-      // Không trả về sớm, tiếp tục thực hiện xử lý file
-      /*
-      return {
-        success: true,
-        skipped: true,
-        reason: 'File already exists in target folder',
-        originalFile: {
-          id: file.id,
-          link: `https://drive.google.com/file/d/${file.id}/view`
-        },
-        existingFile: {
-          id: existingCheck.file.id,
-          name: existingCheck.file.name,
-          link: existingCheck.file.webViewLink
-        }
-      };
-      */
-    }
-
     // Tạo thư mục tạm
     const tempDir = path.join(os.tmpdir(), uuidv4());
     if (!fs.existsSync(tempDir)) {
       fs.mkdirSync(tempDir, { recursive: true });
     }
-    const tempFilePath = path.join(tempDir, `${uuidv4()}.${file.name.split('.').pop()}`);
-
-    // Thử tải file qua API
+    
+    // Xác định loại file từ mimeType và tên file
+    let fileExtension = '.pdf'; // Mặc định là .pdf
+    
+    if (file.mimeType) {
+      if (file.mimeType.includes('pdf')) {
+        fileExtension = '.pdf';
+      } else if (file.mimeType.includes('image/jpeg') || file.mimeType.includes('image/jpg')) {
+        fileExtension = '.jpg';
+      } else if (file.mimeType.includes('image/png')) {
+        fileExtension = '.png';
+      } else if (file.mimeType.includes('video/mp4')) {
+        fileExtension = '.mp4';
+      } else if (file.mimeType.includes('audio/mpeg')) {
+        fileExtension = '.mp3';
+      }
+    }
+    
+    // Nếu có tên file, sử dụng extension từ tên file
+    if (file.name) {
+      const nameExt = path.extname(file.name).toLowerCase();
+      if (nameExt) {
+        fileExtension = nameExt;
+      }
+    }
+    
+    // Đặt tên file tạm thời
+    const safeFileId = file.id.replace(/[^a-zA-Z0-9]/g, '_');
+    const tempFileName = `${safeFileId}_temp${fileExtension}`;
+    const tempFilePath = path.join(tempDir, tempFileName);
+    
+    // Trước tiên thử tải file từ Drive API
     try {
-      // Tải file qua API
-      const response = await drive.files.get(
-        {
-          fileId: file.id,
-          alt: 'media'
-        },
-        { responseType: 'stream' }
-      );
-
-      const dest = fs.createWriteStream(tempFilePath);
-      response.data.pipe(dest);
-
-      await new Promise((resolve, reject) => {
-        dest.on('finish', resolve);
-        dest.on('error', reject);
-      });
-
+      console.log(`📥 Tải file từ Drive API...`);
+      console.log(`📁 Đường dẫn file tạm: ${tempFilePath}`);
+      
+      // Tải file từ Google Drive
+      const downloadResult = await downloadFromGoogleDrive(file.id, tempFilePath);
+      console.log(`✅ Tải file thành công qua API`);
+      
+      // Kiểm tra xem file có tồn tại không
+      if (!fs.existsSync(tempFilePath)) {
+        console.error(`❌ File không tìm thấy sau khi tải xuống: ${tempFilePath}`);
+        throw new Error(`File không tìm thấy sau khi tải xuống: ${tempFilePath}`);
+      }
+      
+      // Kiểm tra kích thước file
+      try {
+        const fileStats = fs.statSync(tempFilePath);
+        const fileSizeMB = fileStats.size / (1024 * 1024);
+        console.log(`File tải xuống có kích thước: ${fileSizeMB.toFixed(2)} MB`);
+        
+        // Nếu file rỗng hoặc quá nhỏ, báo lỗi
+        if (fileStats.size === 0) {
+          console.error(`❌ File tải xuống có kích thước 0 byte`);
+          throw new Error(`File tải xuống có kích thước 0 byte: ${tempFilePath}`);
+        }
+      } catch (statsError) {
+        console.error(`❌ Không thể đọc thông tin file: ${statsError.message}`);
+        throw new Error(`Không thể đọc thông tin file sau khi tải xuống: ${statsError.message}`);
+      }
+      
       // Xử lý file đã tải xuống
       return await processAndUploadFile({
         filePath: tempFilePath,
-        mimeType: file.mimeType,
+        mimeType: file.mimeType || downloadResult.mimeType || 'application/pdf',
         fileId: file.id,
         driveLink: `https://drive.google.com/file/d/${file.id}/view`,
         targetFolderId,
@@ -504,83 +513,11 @@ export async function processSingleFile(file, options) {
       });
 
     } catch (apiError) {
-      // Nếu lỗi 403 hoặc 404, thử dùng cookie trước
+      // Nếu có lỗi 403/404 hoặc không thể tải, chuyển sang Chrome
       if (apiError.message.includes('HTTP 403') || apiError.message.includes('cannotDownloadFile') || 
           apiError.message.includes('HTTP 404')) {
         
         console.log(`⚠️ Lỗi khi tải qua API: ${apiError.message}`);
-        console.log(`🍪 Thử tải file bằng cookie...`);
-        
-        try {
-          // Đảm bảo tempFilePath có đuôi .pdf
-          let cookieTempFilePath = tempFilePath;
-          if (path.extname(cookieTempFilePath)) {
-            // Nếu đã có extension, loại bỏ để cho phép cookie-service xác định đúng
-            cookieTempFilePath = cookieTempFilePath.substring(0, cookieTempFilePath.lastIndexOf('.'));
-          }
-          
-          // Thử tải bằng cookie
-          const cookieDownloadResult = await downloadWithCookie(file.id, cookieTempFilePath);
-          
-          if (cookieDownloadResult.success) {
-            console.log(`✅ Tải file bằng cookie thành công!`);
-            
-            // Xử lý file đã tải xuống bằng cookie
-            return await processAndUploadFile({
-              filePath: cookieDownloadResult.filePath, // Sử dụng đường dẫn từ kết quả cookie
-              mimeType: cookieDownloadResult.mimeType || file.mimeType || 'application/pdf', // Sử dụng MIME type từ kết quả cookie
-              fileId: file.id,
-              driveLink: `https://drive.google.com/file/d/${file.id}/view`,
-              targetFolderId,
-              folderName: path.basename(cookieDownloadResult.fileName || file.name, path.extname(cookieDownloadResult.fileName || file.name)),
-              apiKey,
-              updateSheet,
-              courseId,
-              sheetIndex,
-              rowIndex,
-              cellIndex,
-              sheetId,
-              googleSheetName,
-              displayText: cookieDownloadResult.fileName || file.name,
-              request,
-              startTime: Date.now(),
-              tempDir,
-              sourceType: 'cookie'
-            });
-          }
-          
-          console.log(`⚠️ Tải bằng cookie thất bại: ${cookieDownloadResult.error}`);
-          
-          // Nếu là lỗi 403 và cần bỏ qua phương pháp cookie
-          if (cookieDownloadResult.error === 'HTTP_ERROR_403' || cookieDownloadResult.skipCookieMethod) {
-            console.log(`⚠️ Phát hiện lỗi 403 với cookie, chuyển thẳng sang Chrome...`);
-            
-            // Chuyển thẳng sang Chrome
-            const errorType = '403';
-            
-            // Thêm vào hàng đợi xử lý Chrome
-            return await addToProcessingQueue({
-              fileId: file.id,
-              fileName: file.name,
-              targetFolderId,
-              targetFolderName: path.dirname(file.name),
-              errorType,
-              updateSheet,
-              courseId,
-              sheetIndex,
-              rowIndex,
-              cellIndex,
-              sheetId,
-              googleSheetName,
-              displayText: file.name,
-              request
-            });
-          }
-        } catch (cookieError) {
-          console.error(`❌ Lỗi khi tải bằng cookie: ${cookieError.message}`);
-        }
-        
-        // Nếu cookie thất bại, thử dùng Chrome như phương án cuối cùng
         console.log(`🌐 Chuyển sang sử dụng Chrome để tải và xử lý file...`);
         
         const errorType = apiError.message.includes('HTTP 403') ? '403' : '404';
