@@ -275,6 +275,9 @@ export async function POST(request) {
     const isPDF = mimeTypeResult.isPdf || driveLink.toLowerCase().endsWith('.pdf') || 
                 (displayText && displayText.toLowerCase().endsWith('.pdf'));
                 
+    // Xử lý mọi loại file, không chỉ PDF
+    // Bỏ qua kiểm tra isPDF
+    /*
     if (!isPDF) {
       console.log(`⚠️ File không phải là PDF (${mimeTypeResult.mimeType}), bỏ qua xử lý watermark`);
       return NextResponse.json({
@@ -287,6 +290,7 @@ export async function POST(request) {
         }
       });
     }
+    */
 
     // Tạo thư mục tạm nếu chưa có
     if (!fs.existsSync(tempDir)) {
