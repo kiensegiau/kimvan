@@ -42,84 +42,177 @@ export function updateStoredToken(accountIndex, token) {
 }
 
 /**
- * Extract the file ID from a Google Drive URL
- * @param {string} url - The Google Drive URL
- * @returns {string|null} The file ID or null if not found
+ * Trích xuất Google Drive file ID từ URL
+ * @param {string} url - URL Google Drive
+ * @returns {Object|null} - Đối tượng chứa fileId và các thông tin khác, hoặc null nếu không trích xuất được
  */
 export function extractDriveFileId(url) {
   if (!url) return null;
   
   try {
-    // Xử lý URL redirect từ Google Sheets
-    if (url.startsWith('https://www.google.com/url?q=')) {
+    // Kiểm tra xem URL có phải từ Google Sheets không (có dạng https://www.google.com/url?q=...)
+    if (url.includes('google.com/url?q=')) {
+      // Trích xuất phần URL được mã hóa
+      const match = url.match(/[?&]q=([^&]+)/);
+      if (match && match[1]) {
+        // Giải mã URL
+        try {
+          const decodedUrl = decodeURIComponent(match[1]);
+          console.log(`URL sau khi decode: ${decodedUrl}`);
+          
+          // Tiếp tục xử lý với URL đã giải mã
+          return extractDriveFileId(decodedUrl);
+        } catch (decodeError) {
+          console.error(`Lỗi giải mã URL: ${decodeError.message}`);
+          // Thử xử lý URL gốc nếu không giải mã được
+        }
+      }
+    }
+    
+    // Xử lý trường hợp URL là ID trực tiếp (25+ ký tự, không có dấu /)
+    if (/^[a-zA-Z0-9_-]{25,}$/.test(url.trim())) {
+      return {
+        fileId: url.trim(),
+        isFolder: false,
+        originalUrl: url
+      };
+    }
+    
+    // Xử lý URL thông thường
+    let fileId = null;
+    let isFolder = false;
+    
+    // Định dạng 1: drive.google.com/file/d/{fileId}/view
+    if (url.includes('/file/d/')) {
+      const match = url.match(/\/file\/d\/([^/?&]+)/);
+      if (match && match[1]) {
+        fileId = match[1];
+      }
+    } 
+    // Định dạng 2: drive.google.com/open?id={fileId}
+    else if (url.includes('drive.google.com/open')) {
       try {
         const urlObj = new URL(url);
-        const redirectUrl = urlObj.searchParams.get('q');
-        if (redirectUrl) {
-          // Decode URL (Google thường encode URL hai lần)
-          let decodedUrl = redirectUrl;
-          try {
-            decodedUrl = decodeURIComponent(redirectUrl);
-            // Decode một lần nữa nếu URL vẫn chứa các ký tự được mã hóa
-            if (decodedUrl.includes('%')) {
-              try {
-                decodedUrl = decodeURIComponent(decodedUrl);
-              } catch (e) {
-                console.log('Không thể decode URL thêm lần nữa:', e.message);
-              }
-            }
-          } catch (e) {
-            console.error('Error decoding URL:', e);
-          }
-          
-          // Gọi đệ quy để xử lý URL đã decode
-          console.log(`URL sau khi decode: ${decodedUrl}`);
-          return extractDriveFileId(decodedUrl);
+        fileId = urlObj.searchParams.get('id');
+      } catch (e) {
+        // Nếu URL không hợp lệ, thử trích xuất id bằng regex
+        const match = url.match(/[?&]id=([^&]+)/);
+        if (match && match[1]) {
+          fileId = match[1];
         }
-      } catch (urlError) {
-        console.error(`Lỗi xử lý URL redirect: ${urlError.message}`);
       }
     }
-    
-    // Try to extract ID using common patterns
-    const patterns = [
-      /\/file\/d\/([^/]+)/,        // Standard format: /file/d/ID/
-      /id=([^&]+)/,                // id parameter: ?id=ID
-      /folders\/([^/]+)/,          // Folders: /folders/ID
-      /drive\.google\.com\/open\?id=([^&]+)/, // Open link format
-      /drive\.google\.com\/file\/d\/([^/]+)/, // Another standard format
-      /drive\.google\.com\/drive\/folders\/([^/?&]+)/, // Folders format
-      /docs\.google\.com\/\w+\/d\/([^/]+)/, // Docs, Sheets, etc
-      /drive_copy&id=([^&]+)/, // drive_copy format
-      /1drv\.ms\/\w\/\w!([A-Za-z0-9_-]+)/ // OneDrive format (just in case)
-    ];
-    
-    for (const pattern of patterns) {
-      const match = url.match(pattern);
+    // Định dạng 3: drive.google.com/drive/folders/{fileId}
+    else if (url.includes('/drive/folders/') || url.includes('/drive/u/0/folders/')) {
+      const match = url.match(/\/folders\/([^/?&]+)/);
       if (match && match[1]) {
-        return match[1];
+        fileId = match[1];
+        isFolder = true;
+      }
+    }
+    // Định dạng 4: docs.google.com/document/d/{fileId}/edit
+    else if (url.includes('docs.google.com/document/d/')) {
+      const match = url.match(/\/document\/d\/([^/?&]+)/);
+      if (match && match[1]) {
+        fileId = match[1];
+      }
+    }
+    // Định dạng 5: docs.google.com/spreadsheets/d/{fileId}/edit
+    else if (url.includes('docs.google.com/spreadsheets/d/')) {
+      const match = url.match(/\/spreadsheets\/d\/([^/?&]+)/);
+      if (match && match[1]) {
+        fileId = match[1];
+      }
+    }
+    // Định dạng 6: docs.google.com/presentation/d/{fileId}/edit
+    else if (url.includes('docs.google.com/presentation/d/')) {
+      const match = url.match(/\/presentation\/d\/([^/?&]+)/);
+      if (match && match[1]) {
+        fileId = match[1];
+      }
+    }
+    // Định dạng 7: drive.google.com/uc?id={fileId}
+    else if (url.includes('drive.google.com/uc')) {
+      try {
+        const urlObj = new URL(url);
+        fileId = urlObj.searchParams.get('id');
+      } catch (e) {
+        // Nếu URL không hợp lệ, thử trích xuất id bằng regex
+        const match = url.match(/[?&]id=([^&]+)/);
+        if (match && match[1]) {
+          fileId = match[1];
+        }
+      }
+    }
+    // Định dạng 8: drive.google.com/drive/u/0/my-drive (không có file ID cụ thể)
+    else if (url.includes('/drive/u/0/my-drive') || url.includes('/drive/my-drive')) {
+      return null; // Không có file ID cụ thể
+    }
+    
+    // Trả về kết quả nếu tìm thấy fileId
+    if (fileId) {
+      // Xử lý trường hợp fileId có thể chứa các ký tự không mong muốn
+      fileId = fileId.split('&')[0]; // Loại bỏ các tham số phía sau nếu có
+      fileId = fileId.split('#')[0]; // Loại bỏ fragment identifier nếu có
+      
+      return {
+        fileId,
+        isFolder,
+        originalUrl: url
+      };
+    }
+    
+    // Kiểm tra xem có ID trong URL không (trường hợp đặc biệt)
+    try {
+      const urlObj = new URL(url);
+      const idParam = urlObj.searchParams.get('id');
+      if (idParam) {
+        return {
+          fileId: idParam.split('&')[0], // Loại bỏ các tham số phía sau nếu có
+          isFolder: false,
+          originalUrl: url
+        };
+      }
+    } catch (e) {
+      // Nếu URL không hợp lệ, thử trích xuất id bằng regex
+      const match = url.match(/[?&]id=([^&]+)/);
+      if (match && match[1]) {
+        return {
+          fileId: match[1].split('&')[0], // Loại bỏ các tham số phía sau nếu có
+          isFolder: false,
+          originalUrl: url
+        };
       }
     }
     
-    // Xử lý trường hợp đặc biệt cho URL có dạng drive_copy
-    if (url.includes('drive_copy')) {
-      const driveIdMatch = url.match(/id%3D([A-Za-z0-9_-]+)(%26|$)/);
-      if (driveIdMatch && driveIdMatch[1]) {
-        return driveIdMatch[1];
-      }
+    // Tìm ID Drive trực tiếp trong URL (25+ ký tự, không có dấu /)
+    const driveIdMatch = url.match(/([a-zA-Z0-9_-]{25,})/);
+    if (driveIdMatch && driveIdMatch[1]) {
+      return {
+        fileId: driveIdMatch[1],
+        isFolder: false,
+        originalUrl: url
+      };
     }
-    
-    // Check if URL is just the ID itself (at least 25 chars of alphanumeric and dashes/underscores)
-    if (/^[a-zA-Z0-9_-]{25,}$/.test(url)) {
-      return url;
-    }
-    
-    // Log URL không xử lý được để debug
-    console.error(`Không thể trích xuất ID từ URL: ${url}`);
     
     return null;
   } catch (error) {
-    console.error('Error extracting Drive file ID:', error);
+    console.error(`Lỗi khi trích xuất Drive file ID: ${error.message}`);
+    
+    // Nếu có lỗi, thử tìm ID Drive trực tiếp trong URL
+    try {
+      const driveIdMatch = url.match(/([a-zA-Z0-9_-]{25,})/);
+      if (driveIdMatch && driveIdMatch[1]) {
+        return {
+          fileId: driveIdMatch[1],
+          isFolder: false,
+          originalUrl: url
+        };
+      }
+    } catch (e) {
+      // Bỏ qua
+    }
+    
     return null;
   }
 }
