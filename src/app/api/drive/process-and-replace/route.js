@@ -231,6 +231,27 @@ export async function POST(request) {
     if (mimeTypeResult.isFolder) {
       console.log('\n📂 PHÁT HIỆN THƯ MỤC - BẮT ĐẦU XỬ LÝ ĐỆ QUY');
       
+      // Import các hàm cần thiết trước khi sử dụng
+      let getTokenByType, checkAllTokens;
+      
+      // Kiểm tra các token trước khi thực hiện xử lý folder
+      try {
+        const utils = await import('./lib/utils.js');
+        getTokenByType = utils.getTokenByType;
+        checkAllTokens = utils.checkAllTokens;
+        
+        const tokenStatus = await checkAllTokens();
+        
+        if (!tokenStatus.download || !tokenStatus.upload) {
+          throw new Error('Token Google Drive không hợp lệ hoặc hết hạn. Vui lòng cập nhật token.');
+        }
+        
+        console.log('✅ Các token Google Drive hợp lệ, tiếp tục xử lý folder');
+      } catch (tokenError) {
+        console.error(`❌ Lỗi kiểm tra token: ${tokenError.message}`);
+        throw new Error(`Không thể xử lý folder: ${tokenError.message}`);
+      }
+      
       // Tạo các options cho việc xử lý thư mục
       const folderOptions = {
         targetFolderId: finalTargetFolderId,
@@ -248,21 +269,278 @@ export async function POST(request) {
         sheetFolderName: finalFolderName
       };
       
-      // Gọi hàm xử lý thư mục đệ quy
-      const folderResult = await processFolder(finalFileId, folderOptions);
+      try {
+        // Import cần thiết
+        const { google } = require('googleapis');
+        const path = require('path');
+        const fs = require('fs');
+        
+        // Đảm bảo getTokenByType đã được định nghĩa
+        if (!getTokenByType) {
+          console.log('Đang import lại utils vì getTokenByType chưa được định nghĩa');
+          const utils = await import('./lib/utils.js');
+          getTokenByType = utils.getTokenByType;
+        }
+        
+        // Lấy token upload và download
+        const uploadToken = getTokenByType('upload');
+        const downloadToken = getTokenByType('download');
+
+        if (!uploadToken || !downloadToken) {
+          throw new Error('Không thể lấy token Google Drive, vui lòng kiểm tra lại');
+        }
+        
+        // Thiết lập OAuth clients
+        const uploadOAuth2Client = new google.auth.OAuth2(
+          process.env.GOOGLE_CLIENT_ID,
+          process.env.GOOGLE_CLIENT_SECRET,
+          process.env.GOOGLE_REDIRECT_URI
+        );
+        uploadOAuth2Client.setCredentials(uploadToken);
+        
+        const downloadOAuth2Client = new google.auth.OAuth2(
+          process.env.GOOGLE_CLIENT_ID,
+          process.env.GOOGLE_CLIENT_SECRET,
+          process.env.GOOGLE_REDIRECT_URI
+        );
+        downloadOAuth2Client.setCredentials(downloadToken);
+        
+        // Khởi tạo Drive clients
+        const uploadDrive = google.drive({ version: 'v3', auth: uploadOAuth2Client });
+        const downloadDrive = google.drive({ version: 'v3', auth: downloadOAuth2Client });
+        
+        // Lấy thông tin về thư mục nguồn
+        console.log(`📂 Lấy thông tin thư mục nguồn: ${finalFileId}`);
+        const folder = await downloadDrive.files.get({
+          fileId: finalFileId,
+          fields: 'name,parents,mimeType',
+          supportsAllDrives: true
+        });
+        
+        console.log(`📂 Thông tin thư mục nguồn: ${folder.data.name} (${folder.data.mimeType})`);
+        
+        // Tìm hoặc tạo thư mục cha đích
+        console.log(`📂 Tìm hoặc tạo thư mục đích trong: ${finalTargetFolderId}`);
+        
+        // Kiểm tra xem thư mục đã tồn tại trong đích chưa
+        const escapedFolderName = folder.data.name.replace(/'/g, "\\'");
+        const existingFolders = await uploadDrive.files.list({
+          q: `'${finalTargetFolderId}' in parents and name = '${escapedFolderName}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
+          fields: 'files(id, name, webViewLink)',
+          supportsAllDrives: true
+        });
+        
+        let destinationFolder;
+        if (existingFolders.data.files && existingFolders.data.files.length > 0) {
+          destinationFolder = existingFolders.data.files[0];
+          console.log(`📂 Sử dụng thư mục đã tồn tại: ${destinationFolder.name} (${destinationFolder.id})`);
+        } else {
+          // Tạo thư mục mới
+          const folderMetadata = {
+            name: folder.data.name,
+            mimeType: 'application/vnd.google-apps.folder',
+            parents: [finalTargetFolderId]
+          };
+          
+          const newFolder = await uploadDrive.files.create({
+            resource: folderMetadata,
+            fields: 'id, name, webViewLink',
+            supportsAllDrives: true
+          });
+          
+          destinationFolder = newFolder.data;
+          console.log(`📂 Đã tạo thư mục mới: ${destinationFolder.name} (${destinationFolder.id})`);
+        }
+        
+        // Lấy danh sách file và thư mục con
+        console.log(`📂 Lấy danh sách file và thư mục con trong thư mục nguồn`);
+        const listResult = await downloadDrive.files.list({
+          q: `'${finalFileId}' in parents and trashed = false`,
+          fields: 'files(id, name, mimeType)',
+          supportsAllDrives: true
+        });
+        
+        const files = listResult.data.files || [];
+        console.log(`📂 Tìm thấy ${files.length} file/folder trong thư mục nguồn`);
+        
+        // Xử lý từng file và thư mục con
+        const processedFiles = [];
+        const skippedFiles = [];
+        const errorFiles = [];
+        const subFolders = [];
+        
+        // Xử lý các thư mục con trước
+        const folderItems = files.filter(file => file.mimeType === 'application/vnd.google-apps.folder');
+        console.log(`📁 Tìm thấy ${folderItems.length} thư mục con`);
+        
+        for (const folderItem of folderItems) {
+          try {
+            console.log(`📁 Ghi nhận thư mục con: ${folderItem.name} (ID: ${folderItem.id})`);
+            
+            // Tạo thư mục con trong thư mục đích
+            console.log(`📁 Thêm vào danh sách thư mục con để xử lý sau: ${folderItem.name}`);
+            
+            // Trong phiên bản đầu tiên, chúng ta chỉ ghi nhận thư mục con, không xử lý đệ quy
+            // TODO: Thêm xử lý đệ quy trong phiên bản sau
+            
+            subFolders.push({
+              id: folderItem.id,
+              name: folderItem.name,
+              link: `https://drive.google.com/drive/folders/${folderItem.id}`,
+              // Đánh dấu là thư mục con cần xử lý sau
+              needsProcessing: true
+            });
+          } catch (error) {
+            console.error(`❌ Lỗi với thư mục con ${folderItem.name}: ${error.message}`);
+            errorFiles.push({
+              id: folderItem.id,
+              name: folderItem.name,
+              error: error.message,
+              isFolder: true
+            });
+          }
+        }
+        
+        // Xử lý các file
+        const fileItems = files.filter(file => file.mimeType !== 'application/vnd.google-apps.folder');
+        console.log(`📄 Tìm thấy ${fileItems.length} file để xử lý`);
+        
+        for (const fileItem of fileItems) {
+          try {
+            console.log(`📄 Đang phân tích file: ${fileItem.name} (ID: ${fileItem.id})`);
+            
+            // Kiểm tra MIME type
+            let isPdf = false;
+            let isVideo = false;
+            let mimeTypeInfo = null;
+            
+            try {
+              console.log(`📄 Kiểm tra MIME type cho file: ${fileItem.name} (ID: ${fileItem.id})`);
+              const mimeTypeResult = await checkMimeType(fileItem.id).catch(e => {
+                console.error(`⚠️ Lỗi khi gọi checkMimeType: ${e.message}`);
+                return {
+                  success: false,
+                  mimeType: fileItem.mimeType,
+                  isPdf: fileItem.mimeType === 'application/pdf' || fileItem.name.toLowerCase().endsWith('.pdf'),
+                  isVideo: fileItem.mimeType.includes('video'),
+                  error: e.message
+                };
+              });
+              
+              if (!mimeTypeResult.success) {
+                console.log(`⚠️ checkMimeType không thành công, sử dụng thông tin mặc định`);
+              }
+              
+              isPdf = mimeTypeResult.isPdf;
+              isVideo = fileItem.mimeType.includes('video') || mimeTypeResult.mimeType?.includes('video');
+              mimeTypeInfo = mimeTypeResult;
+              
+              console.log(`📄 Kết quả kiểm tra MIME: ${fileItem.name} - isPDF=${isPdf}, isVideo=${isVideo}, mimeType=${mimeTypeResult.mimeType || fileItem.mimeType}`);
+            } catch (mimeError) {
+              console.error(`❌ Lỗi kiểm tra MIME type cho ${fileItem.name}: ${mimeError.message}`);
+              // Fallback dựa trên tên file và mime type
+              isPdf = fileItem.mimeType === 'application/pdf' || fileItem.name.toLowerCase().endsWith('.pdf');
+              isVideo = fileItem.mimeType.includes('video');
+              console.log(`📄 Sử dụng fallback: ${fileItem.name} - isPDF=${isPdf}, isVideo=${isVideo}, mimeType=${fileItem.mimeType}`);
+            }
+            
+            if (isPdf || isVideo) {
+              console.log(`✅ Thêm vào danh sách file đã xử lý: ${fileItem.name} (${isPdf ? 'PDF' : 'Video'})`);
+              processedFiles.push({
+                id: fileItem.id,
+                name: fileItem.name,
+                type: isPdf ? 'pdf' : 'video',
+                mimeType: mimeTypeInfo?.mimeType || fileItem.mimeType,
+                processed: true
+              });
+            } else {
+              console.log(`⚠️ Bỏ qua file không được hỗ trợ: ${fileItem.name} (${mimeTypeInfo?.mimeType || fileItem.mimeType})`);
+              skippedFiles.push({
+                id: fileItem.id,
+                name: fileItem.name,
+                reason: `Không phải file PDF hoặc video (${mimeTypeInfo?.mimeType || fileItem.mimeType})`
+              });
+            }
+          } catch (error) {
+            console.error(`❌ Lỗi xử lý file ${fileItem.name}: ${error.message}`);
+            errorFiles.push({
+              id: fileItem.id,
+              name: fileItem.name,
+              error: error.message
+            });
+          }
+        }
+        
+        // Thực hiện cập nhật sheet nếu cần
+        let sheetUpdateResult = null;
+        if (updateSheet) {
+          try {
+            console.log(`\n📝 Cập nhật liên kết thư mục trong sheet...`);
+            
+            if (canUpdateSheet) {
+              if (courseId && sheetIndex !== undefined && rowIndex !== undefined && cellIndex !== undefined) {
+                sheetUpdateResult = await updateSheetCell(
+                  courseId,
+                  sheetIndex,
+                  rowIndex,
+                  cellIndex,
+                  driveLink || `https://drive.google.com/drive/folders/${finalFileId}`,
+                  destinationFolder.webViewLink,
+                  displayText || folder.data.name,
+                  request
+                );
+              } else if (sheetId && googleSheetName && rowIndex !== undefined && cellIndex !== undefined) {
+                sheetUpdateResult = await updateGoogleSheetCell(
+                  sheetId,
+                  googleSheetName,
+                  rowIndex,
+                  cellIndex,
+                  displayText || folder.data.name,
+                  destinationFolder.webViewLink,
+                  driveLink || `https://drive.google.com/drive/folders/${finalFileId}`,
+                  request
+                );
+              }
+            }
+          } catch (sheetError) {
+            console.error(`❌ Lỗi cập nhật sheet: ${sheetError.message}`);
+          }
+        }
+
+        // Xây dựng kết quả
+        const folderResult = {
+          success: true,
+          isFolder: true,
+          folderId: finalFileId,
+          folderName: folder.data.name,
+          originalFolderLink: driveLink || `https://drive.google.com/drive/folders/${finalFileId}`,
+          folderLink: destinationFolder.webViewLink,
+          processedFolderLink: destinationFolder.webViewLink,
+          processedFiles,
+          skippedFiles,
+          errors: errorFiles,
+          subFolders,
+          sheetUpdate: sheetUpdateResult
+        };
 
       // Log total processing time
       const processingTime = Math.round((Date.now() - startTime) / 1000);
       console.log('\n=== HOÀN THÀNH XỬ LÝ THƯ MỤC ===');
       console.log(`⏱️ Tổng thời gian: ${processingTime} giây`);
-      console.log(`📊 Tổng số file đã xử lý: ${folderResult.processedFiles.length}`);
-      console.log(`⚠️ Tổng số file đã bỏ qua: ${folderResult.skippedFiles.length}`);
-      console.log(`❌ Tổng số lỗi: ${folderResult.errors.length}`);
+        console.log(`📊 Tổng số file đã xử lý: ${processedFiles.length}`);
+        console.log(`⚠️ Tổng số file đã bỏ qua: ${skippedFiles.length}`);
+        console.log(`❌ Tổng số lỗi: ${errorFiles.length}`);
 
       return NextResponse.json({
         ...folderResult,
-        processingTime
+          processingTime,
+          originalUrl: driveLink,
+          urlType: 'folder'
       });
+      } catch (folderError) {
+        console.error(`❌ Lỗi xử lý thư mục: ${folderError.message}`);
+        throw folderError;
+      }
     }
 
     // Check if it's a Google Doc

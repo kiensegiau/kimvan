@@ -1207,11 +1207,16 @@ async function handleDriveFolder(driveFolderLink, backgroundImage, backgroundOpa
       
       console.log(`✅ Đã xử lý đệ quy thành công: ${recursiveResult.nestedFilesProcessed} file và ${recursiveResult.nestedFoldersProcessed} thư mục con`);
       
+      // Đảm bảo processedFolderLink tồn tại
+      const processedFolderLink = recursiveResult.processedFolderLink || 
+        (recursiveResult.folderStructure && recursiveResult.folderStructure.processedFolderLink) || 
+        driveFolderLink;
+
       // Trả về kết quả xử lý đệ quy
       return NextResponse.json({
         success: true,
         message: `Đã xử lý đệ quy folder thành công`,
-        folderLink: recursiveResult.processedFolderLink,
+        folderLink: processedFolderLink,
         folderName: recursiveResult.folderName,
         nestedFilesProcessed: recursiveResult.nestedFilesProcessed,
         nestedFoldersProcessed: recursiveResult.nestedFoldersProcessed,

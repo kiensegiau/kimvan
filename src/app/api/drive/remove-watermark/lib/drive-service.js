@@ -757,29 +757,33 @@ export async function uploadImageToDriveFolder(filePath, fileName, destinationFo
 export async function downloadFileFromDrive(fileIdOrLink, allowedMimeTypes = []) {
   let fileId, resourceKey;
   
+  // Tạo đường dẫn output
+  const tempDirName = uuidv4();
+  const outputDir = path.join(os.tmpdir(), tempDirName);
+  fs.mkdirSync(outputDir, { recursive: true });
+  
   try {
-    // Tạo thư mục tạm
-    const tempDirName = uuidv4();
-    const outputDir = path.join(os.tmpdir(), tempDirName);
-    fs.mkdirSync(outputDir, { recursive: true });
-    
     // Trích xuất file ID từ link nếu cần
     if (typeof fileIdOrLink === 'string' && fileIdOrLink.includes('drive.google.com')) {
       try {
+        console.log(`📥 DEBUG: Đang trích xuất ID từ link download: ${fileIdOrLink}`);
         const result = extractGoogleDriveFileId(fileIdOrLink);
         fileId = result.fileId;
         resourceKey = result.resourceKey;
+        console.log(`📥 DEBUG: Đã trích xuất ID download: ${fileId}, resourceKey: ${resourceKey || 'không có'}`);
       } catch (error) {
-        throw new Error(`Không thể trích xuất ID từ link Google Drive: ${error.message}`);
+        console.error(`❌ Lỗi trích xuất ID download: ${error.message}`);
+        throw new Error(`Không thể trích xuất ID file từ link Google Drive: ${error.message}`);
       }
     } else {
       fileId = fileIdOrLink;
+      console.log(`📥 DEBUG: Sử dụng ID download trực tiếp: ${fileId}`);
     }
     
     // Lấy token download
     const downloadToken = getTokenByType('download');
     if (!downloadToken) {
-      throw new Error('Không tìm thấy token Google Drive.');
+      throw new Error('Không tìm thấy token Google Drive. Vui lòng cấu hình API trong cài đặt.');
     }
     
     // Tạo OAuth2 client
@@ -795,62 +799,103 @@ export async function downloadFileFromDrive(fileIdOrLink, allowedMimeTypes = [])
     // Khởi tạo Google Drive API
     const drive = google.drive({ version: 'v3', auth: oauth2Client });
     
-    // Lấy metadata của file
-    const fileMetadata = await drive.files.get({
+    // Lấy thông tin file
+    console.log(`📥 DEBUG: Đang lấy thông tin file ID: ${fileId}`);
+    const getParams = {
       fileId: fileId,
       supportsAllDrives: true,
-      includeItemsFromAllDrives: true,
       fields: 'name,mimeType,size'
-    });
-    
-    const mimeType = fileMetadata.data.mimeType;
-    
-    // Kiểm tra loại file nếu có danh sách cho phép
-    if (allowedMimeTypes.length > 0 && !allowedMimeTypes.includes(mimeType)) {
-      throw new Error(`Loại file không được hỗ trợ: ${mimeType}`);
-    }
-    
-    // Tải nội dung file
-    const response = await drive.files.get(
-      {
-        fileId: fileId,
-        alt: 'media',
-        supportsAllDrives: true,
-        includeItemsFromAllDrives: true,
-        ...(resourceKey ? { resourceKey } : {})
-      },
-      { responseType: 'arraybuffer' }
-    );
-    
-    // Chuyển response thành buffer
-    const fileBuffer = Buffer.from(response.data);
-    
-    if (fileBuffer.length === 0) {
-      throw new Error('File tải xuống rỗng (0 byte)');
-    }
-    
-    const fileName = fileMetadata.data.name;
-    const contentType = mimeType;
-    
-    // Tạo tên file duy nhất
-    const fileExtension = path.extname(fileName) || getExtensionFromMimeType(contentType);
-    const uniqueFileName = `${uuidv4()}${fileExtension}`;
-    const filePath = path.join(outputDir, uniqueFileName);
-    
-    // Lưu file vào thư mục tạm
-    fs.writeFileSync(filePath, fileBuffer);
-    
-    return {
-      success: true,
-      filePath: filePath,
-      fileName: fileName,
-      contentType: contentType,
-      outputDir: outputDir,
-      size: fileBuffer.length,
-      isImage: contentType.startsWith('image/'),
-      isPdf: contentType === 'application/pdf'
     };
+    
+    // Thêm resourceKey vào request nếu có
+    if (resourceKey) {
+      getParams.resourceKey = resourceKey;
+    }
+    
+    const fileMetadata = await drive.files.get(getParams);
+    console.log(`📥 DEBUG: Thông tin file: Name=${fileMetadata.data.name}, Type=${fileMetadata.data.mimeType}, Size=${fileMetadata.data.size || 'unknown'}`);
+    
+    // Kiểm tra file type nếu có quy định các loại được phép
+    if (allowedMimeTypes.length > 0) {
+      if (!allowedMimeTypes.includes(fileMetadata.data.mimeType)) {
+        throw new Error(`Loại file không được hỗ trợ. Chỉ hỗ trợ: ${allowedMimeTypes.join(', ')}`);
+      }
+    }
+    
+    // Tạo tên file an toàn
+    const safeFileName = fileMetadata.data.name.replace(/[\\/:*?"<>|]/g, '_');
+    const outputPath = path.join(outputDir, safeFileName);
+    
+    // Tải file từ Drive
+    console.log(`📥 DEBUG: Đang tải file: ${safeFileName} (ID: ${fileId})`);
+    const destStream = fs.createWriteStream(outputPath);
+    
+    const downloadParams = {
+      fileId: fileId,
+      alt: 'media',
+      supportsAllDrives: true
+    };
+    
+    // Thêm resourceKey vào request nếu có
+    if (resourceKey) {
+      downloadParams.resourceKey = resourceKey;
+    }
+    
+    // Kiểm tra file có thể tải được không
+    try {
+      const response = await drive.files.get(downloadParams, { responseType: 'stream' });
+      
+      // Lưu file
+      await new Promise((resolve, reject) => {
+        response.data
+          .on('end', () => {
+            resolve();
+          })
+          .on('error', err => {
+            console.error(`❌ Lỗi khi tải file: ${err.message}`);
+            reject(err);
+          })
+          .pipe(destStream);
+      });
+      
+      // Lấy kích thước file đã tải
+      const stats = fs.statSync(outputPath);
+      console.log(`📥 DEBUG: Đã tải xong, kích thước thực tế: ${stats.size} bytes`);
+      
+      // Kiểm tra file type để xác định là ảnh hay PDF
+      const isImage = fileMetadata.data.mimeType.startsWith('image/');
+      const isPdf = fileMetadata.data.mimeType === 'application/pdf' || safeFileName.toLowerCase().endsWith('.pdf');
+      
+      return {
+        success: true,
+        filePath: outputPath,
+        fileName: safeFileName,
+        contentType: fileMetadata.data.mimeType,
+        outputDir: outputDir,
+        size: stats.size,
+        isImage,
+        isPdf
+      };
+    } catch (downloadError) {
+      console.error(`❌ Lỗi tải file: ${downloadError.message}`);
+      
+      // Kiểm tra lỗi 403 để xử lý riêng
+      if (downloadError.response && downloadError.response.status === 403) {
+        throw new Error(`cannot be downloaded`);
+      }
+      
+      // Các lỗi khác
+      throw new Error(`Không thể tải file: ${downloadError.message}`);
+    }
   } catch (error) {
+    // Dọn dẹp thư mục tạm nếu có lỗi
+    try {
+      fs.rmSync(outputDir, { recursive: true, force: true });
+    } catch (cleanupError) {
+      console.error(`Lỗi khi dọn dẹp thư mục tạm: ${cleanupError.message}`);
+    }
+    
+    // Ném lại lỗi
     throw error;
   }
 }
@@ -977,36 +1022,53 @@ export async function processRecursiveFolder(folderIdOrLink, maxDepth = 5, curre
     // Trích xuất folder ID từ link nếu cần
     if (typeof folderIdOrLink === 'string' && folderIdOrLink.includes('drive.google.com')) {
       try {
+        console.log(`📋 DEBUG: Đang trích xuất ID từ link: ${folderIdOrLink}`);
         const result = extractGoogleDriveFileId(folderIdOrLink);
         folderId = result.fileId;
         resourceKey = result.resourceKey;
+        console.log(`📋 DEBUG: Đã trích xuất ID: ${folderId}, resourceKey: ${resourceKey || 'không có'}`);
       } catch (error) {
+        console.error(`❌ Lỗi trích xuất ID: ${error.message}`);
         throw new Error(`Không thể trích xuất ID folder từ link Google Drive: ${error.message}`);
       }
     } else {
       folderId = folderIdOrLink;
+      console.log(`📋 DEBUG: Sử dụng ID trực tiếp: ${folderId}`);
     }
     
     // Lấy thông tin folder và danh sách files
+    console.log(`📋 DEBUG: Đang lấy thông tin folder ID: ${folderId}`);
     const folderInfo = await processDriveFolder(folderId);
+    console.log(`📋 DEBUG: Kết quả lấy thông tin folder:`, JSON.stringify(folderInfo, null, 2));
     
     if (!folderInfo.files || folderInfo.files.length === 0) {
+      console.log(`⚠️ Folder trống hoặc không thể truy cập: ${folderIdOrLink}`);
       return {
         success: true,
         message: 'Folder trống, không có file để xử lý',
-        folderName: folderInfo.folderName,
+        folderName: folderInfo.folderName || 'Unknown Folder',
         nestedFilesProcessed: 0,
-        nestedFoldersProcessed: 0
+        nestedFoldersProcessed: 0,
+        folderStructure: {
+          name: folderInfo.folderName || 'Unknown Folder',
+          id: folderId,
+          processedFolderId: null,
+          processedFolderLink: folderIdOrLink.toString().includes('drive.google.com') ? folderIdOrLink : null,
+          files: [],
+          subfolders: []
+        }
       };
     }
     
     console.log(`[Đệ quy ${currentDepth}] Đã tìm thấy ${folderInfo.files.length} file/folder trong "${folderInfo.folderName}"`);
     
     // Tạo một thư mục trên Drive để lưu các file đã xử lý
+    console.log(`📋 DEBUG: Đang tạo thư mục đích cho: ${folderInfo.folderName}, trong: ${courseName || 'thư mục gốc'}`);
     const destinationFolder = await createDriveFolder(folderInfo.folderName, courseName);
     const destinationFolderId = destinationFolder.folderId;
     
     console.log(`[Đệ quy ${currentDepth}] Đã tạo folder đích: ${destinationFolder.folderName} (ID: ${destinationFolderId})`);
+    console.log(`📋 DEBUG: Link thư mục đích: ${destinationFolder.webViewLink || 'không có'}`);
     
     folderResults.folderStructure = {
       name: folderInfo.folderName,
@@ -1401,11 +1463,18 @@ export async function processRecursiveFolder(folderIdOrLink, maxDepth = 5, curre
       }
     }
     
+    // Đảm bảo trả về đối tượng có processedFolderLink để tránh lỗi null reference
     return {
       success: false,
       error: error.message,
       nestedFilesProcessed: folderResults.nestedFilesProcessed,
-      nestedFoldersProcessed: folderResults.nestedFoldersProcessed
+      nestedFoldersProcessed: folderResults.nestedFoldersProcessed,
+      folderStructure: {
+        name: folderIdOrLink.toString().includes('drive.google.com') ? 'Unknown Folder' : folderIdOrLink,
+        id: folderId || folderIdOrLink,
+        processedFolderLink: null // Thêm trường này với giá trị null để tránh lỗi undefined
+      },
+      processedFolderLink: null // Thêm trường này cả ở cấp cao nhất
     };
   }
 } 

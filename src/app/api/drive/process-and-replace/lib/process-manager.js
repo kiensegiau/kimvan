@@ -611,28 +611,41 @@ export async function processSingleFile(file, options) {
 }
 
 /**
- * Xử lý đệ quy thư mục
- * @param {string} folderId - ID của thư mục cần xử lý 
- * @param {Object} options - Tùy chọn xử lý
- * @param {Object} parentFolderInfo - Thông tin thư mục cha
- * @param {number} depth - Độ sâu đệ quy
- * @returns {Promise<Object>} - Kết quả xử lý thư mục
+ * Xử lý folder theo kiểu đệ quy
+ * @param {string} folderId - ID của folder
+ * @param {Object} options - Các tùy chọn cho việc xử lý
+ * @param {Object} parentFolderInfo - Thông tin về folder cha (cho đệ quy)
+ * @param {number} depth - Độ sâu hiện tại (cho đệ quy)
+ * @returns {Promise<Object>} - Kết quả xử lý
  */
 export async function processFolder(folderId, options, parentFolderInfo = null, depth = 0) {
   const indent = '  '.repeat(depth);
   
   try {
     console.log(`\n${indent}📂 Bắt đầu xử lý thư mục: ${folderId}`);
+    console.log(`${indent}📂 DEBUG: Options = ${JSON.stringify({
+      ...options,
+      request: '[REQUEST OBJECT]' // Không in request object
+    }, null, 2)}`);
+    
+    // Kiểm tra input
+    if (!folderId) {
+      throw new Error('Thiếu folderId để xử lý');
+    }
+    
+    if (!options.targetFolderId) {
+      throw new Error('Thiếu targetFolderId để lưu kết quả');
+    }
     
     // Import hàm getTokenByType từ utils
-    const { getTokenByType } = await import('../../remove-watermark/lib/utils.js');
+    const { getTokenByType } = await import('../utils.js');
     
     // Khởi tạo Drive client cho tải lên và tải xuống
     const uploadToken = getTokenByType('upload');
     const downloadToken = getTokenByType('download');
     
     if (!uploadToken || !downloadToken) {
-      throw new Error('Không tìm thấy token Google Drive');
+      throw new Error('Không tìm thấy token Google Drive hoặc token hết hạn');
     }
     
     const uploadOAuth2Client = new google.auth.OAuth2(
@@ -653,50 +666,78 @@ export async function processFolder(folderId, options, parentFolderInfo = null, 
     const downloadDrive = google.drive({ version: 'v3', auth: downloadOAuth2Client });
     
     // Lấy thông tin về thư mục nguồn
+    console.log(`${indent}📂 DEBUG: Đang lấy thông tin thư mục nguồn: ${folderId}`);
     const folder = await downloadDrive.files.get({
       fileId: folderId,
       fields: 'name,parents,driveId',
       supportsAllDrives: true
+    }).catch(error => {
+      console.error(`${indent}❌ Lỗi lấy thông tin thư mục: ${error.message}`);
+      throw new Error(`Không thể lấy thông tin thư mục: ${error.message}`);
     });
+    
+    console.log(`${indent}📂 DEBUG: Thông tin thư mục nguồn: Name=${folder.data.name}, Parents=${folder.data.parents}`);
     
     // Xác định thư mục cha mới
     const newParentId = parentFolderInfo ? parentFolderInfo.id : options.targetFolderId;
+    console.log(`${indent}📂 DEBUG: Thư mục cha mới: ${newParentId}`);
     
     // Tìm hoặc tạo thư mục mới trong thư mục đích
-    const existingFolders = await downloadDrive.files.list({
-      q: `'${newParentId}' in parents and name = '${folder.data.name}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
+    const escapedFolderName = folder.data.name.replace(/'/g, "\\'");
+    const searchQuery = `'${newParentId}' in parents and name = '${escapedFolderName}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
+    
+    console.log(`${indent}📂 DEBUG: Tìm thư mục trong đích với query: ${searchQuery}`);
+    const existingFolders = await uploadDrive.files.list({
+      q: searchQuery,
       fields: 'files(id, name, webViewLink)',
       supportsAllDrives: true
+    }).catch(error => {
+      console.error(`${indent}❌ Lỗi tìm thư mục trong đích: ${error.message}`);
+      throw new Error(`Không thể tìm kiếm thư mục trong đích: ${error.message}`);
     });
     
     let newFolder;
-    if (existingFolders.data.files.length > 0) {
+    if (existingFolders.data.files && existingFolders.data.files.length > 0) {
       newFolder = { data: existingFolders.data.files[0] };
       console.log(`${indent}📂 Sử dụng thư mục tồn tại: ${newFolder.data.name} (${newFolder.data.id})`);
+      console.log(`${indent}📂 DEBUG: Link thư mục tồn tại: ${newFolder.data.webViewLink}`);
     } else {
+      console.log(`${indent}📂 Cần tạo thư mục mới với tên: ${folder.data.name}`);
+      
       const folderMetadata = {
         name: folder.data.name,
         mimeType: 'application/vnd.google-apps.folder',
         parents: [newParentId]
       };
       
-      newFolder = await uploadDrive.files.create({
-        resource: folderMetadata,
-        fields: 'id,name,webViewLink',
-        supportsAllDrives: true
-      });
-      
-      console.log(`${indent}📂 Đã tạo thư mục mới: ${newFolder.data.name} (${newFolder.data.id})`);
+      try {
+        newFolder = await uploadDrive.files.create({
+          resource: folderMetadata,
+          fields: 'id,name,webViewLink',
+          supportsAllDrives: true
+        });
+        
+        console.log(`${indent}📂 Đã tạo thư mục mới: ${newFolder.data.name} (${newFolder.data.id})`);
+        console.log(`${indent}📂 DEBUG: Link thư mục mới: ${newFolder.data.webViewLink}`);
+      } catch (createError) {
+        console.error(`${indent}❌ Lỗi tạo thư mục: ${createError.message}`);
+        throw new Error(`Không thể tạo thư mục mới: ${createError.message}`);
+      }
     }
     
     // Lấy danh sách file và thư mục con
+    console.log(`${indent}📂 DEBUG: Lấy danh sách file và thư mục con trong: ${folderId}`);
     const listResult = await downloadDrive.files.list({
       q: `'${folderId}' in parents and trashed = false`,
       fields: 'files(id, name, mimeType)',
       supportsAllDrives: true
+    }).catch(error => {
+      console.error(`${indent}❌ Lỗi lấy danh sách file: ${error.message}`);
+      throw new Error(`Không thể lấy danh sách file trong thư mục: ${error.message}`);
     });
     
     const files = listResult.data.files || [];
+    console.log(`${indent}📂 Tìm thấy ${files.length} file/folder trong thư mục nguồn`);
     
     // Kết quả xử lý
     const results = {
@@ -706,6 +747,7 @@ export async function processFolder(folderId, options, parentFolderInfo = null, 
       folderName: folder.data.name,
       originalFolderLink: options.originalFolderLink || `https://drive.google.com/drive/folders/${folderId}`,
       folderLink: newFolder.data.webViewLink,
+      processedFolderLink: newFolder.data.webViewLink,
       processedFiles: [],
       skippedFiles: [],
       errors: [],
@@ -730,16 +772,21 @@ export async function processFolder(folderId, options, parentFolderInfo = null, 
         results.subFolders.push({
           id: subFolder.id,
           name: subFolder.name,
-          processedFiles: subFolderResult.processedFiles.length,
-          skippedFiles: subFolderResult.skippedFiles.length,
-          errors: subFolderResult.errors.length
+          processedFiles: subFolderResult.processedFiles ? subFolderResult.processedFiles.length : 0,
+          skippedFiles: subFolderResult.skippedFiles ? subFolderResult.skippedFiles.length : 0,
+          errors: subFolderResult.errors ? subFolderResult.errors.length : 0
         });
         
         // Cập nhật kết quả tổng
-        results.processedFiles = results.processedFiles.concat(subFolderResult.processedFiles);
-        results.skippedFiles = results.skippedFiles.concat(subFolderResult.skippedFiles);
-        results.errors = results.errors.concat(subFolderResult.errors);
-        
+        if (subFolderResult.processedFiles) {
+          results.processedFiles = results.processedFiles.concat(subFolderResult.processedFiles);
+        }
+        if (subFolderResult.skippedFiles) {
+          results.skippedFiles = results.skippedFiles.concat(subFolderResult.skippedFiles);
+        }
+        if (subFolderResult.errors) {
+          results.errors = results.errors.concat(subFolderResult.errors);
+        }
       } catch (folderError) {
         console.error(`${indent}❌ Lỗi xử lý thư mục con ${subFolder.name}:`, folderError);
         results.errors.push({
@@ -813,48 +860,58 @@ export async function processFolder(folderId, options, parentFolderInfo = null, 
       try {
         console.log(`\n${indent}📝 Cập nhật liên kết thư mục trong sheet...`);
         
-        let sheetUpdateResult;
-        if (options.courseId && options.sheetIndex !== undefined && 
-            options.rowIndex !== undefined && options.cellIndex !== undefined) {
-            
-          sheetUpdateResult = await updateSheetCell(
-            options.courseId,
-            options.sheetIndex,
-            options.rowIndex,
-            options.cellIndex,
-            results.originalFolderLink,
-            results.folderLink,
-            options.displayText || results.folderName,
-            options.request
-          );
-          
-        } else if (options.sheetId && options.googleSheetName && 
-                  options.rowIndex !== undefined && options.cellIndex !== undefined) {
-                  
-          sheetUpdateResult = await updateGoogleSheetCell(
-            options.sheetId,
-            options.googleSheetName,
-            options.rowIndex,
-            options.cellIndex,
-            options.displayText || results.folderName,
-            results.folderLink,
-            results.originalFolderLink,
-            options.request
-          );
-        }
-        
-        if (!sheetUpdateResult || !sheetUpdateResult.success) {
+        // Đảm bảo có folderLink để cập nhật
+        const linkToUpdate = results.folderLink || results.originalFolderLink;
+        if (!linkToUpdate) {
+          console.warn(`${indent}⚠️ Không có liên kết thư mục để cập nhật trong sheet`);
           results.sheetUpdate = {
             success: false,
-            message: `Lỗi cập nhật sheet: ${sheetUpdateResult?.error || 'Không rõ lỗi'}`,
-            details: sheetUpdateResult
+            message: 'Không có liên kết thư mục để cập nhật'
           };
         } else {
-          results.sheetUpdate = {
-            success: true,
-            message: 'Sheet đã được cập nhật thành công',
-            details: sheetUpdateResult
-          };
+          let sheetUpdateResult;
+          if (options.courseId && options.sheetIndex !== undefined && 
+              options.rowIndex !== undefined && options.cellIndex !== undefined) {
+              
+            sheetUpdateResult = await updateSheetCell(
+              options.courseId,
+              options.sheetIndex,
+              options.rowIndex,
+              options.cellIndex,
+              results.originalFolderLink,
+              linkToUpdate,
+              options.displayText || results.folderName,
+              options.request
+            );
+            
+          } else if (options.sheetId && options.googleSheetName && 
+                    options.rowIndex !== undefined && options.cellIndex !== undefined) {
+                    
+            sheetUpdateResult = await updateGoogleSheetCell(
+              options.sheetId,
+              options.googleSheetName,
+              options.rowIndex,
+              options.cellIndex,
+              options.displayText || results.folderName,
+              linkToUpdate,
+              results.originalFolderLink,
+              options.request
+            );
+          }
+          
+          if (!sheetUpdateResult || !sheetUpdateResult.success) {
+            results.sheetUpdate = {
+              success: false,
+              message: `Lỗi cập nhật sheet: ${sheetUpdateResult?.error || 'Không rõ lỗi'}`,
+              details: sheetUpdateResult
+            };
+          } else {
+            results.sheetUpdate = {
+              success: true,
+              message: 'Sheet đã được cập nhật thành công',
+              details: sheetUpdateResult
+            };
+          }
         }
       } catch (sheetError) {
         results.sheetUpdate = {
@@ -868,6 +925,21 @@ export async function processFolder(folderId, options, parentFolderInfo = null, 
     return results;
   } catch (error) {
     console.error(`${indent}❌ Lỗi xử lý thư mục ${folderId}:`, error);
-    throw error;
+    
+    // Trả về một đối tượng kết quả với thông tin lỗi
+    return {
+      success: false,
+      isFolder: true,
+      folderId: folderId,
+      folderName: folder?.data?.name || 'Unknown Folder',
+      originalFolderLink: options.originalFolderLink || `https://drive.google.com/drive/folders/${folderId}`,
+      folderLink: null, // Không có link đã xử lý vì xử lý thất bại
+      processedFolderLink: null, // Thêm trường này để tránh lỗi undefined
+      error: error.message,
+      processedFiles: [],
+      skippedFiles: [],
+      errors: [{ message: error.message }],
+      subFolders: []
+    };
   }
 } 

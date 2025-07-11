@@ -30,7 +30,13 @@ export async function updateSheetCell(courseId, sheetIndex, rowIndex, cellIndex,
     console.log(`- cellIndex: ${cellIndex}`);
     console.log(`- displayText: ${displayText}`);
     console.log(`- originalUrl: ${originalUrl}`);
-    console.log(`- newUrl: ${newUrl}`);
+    console.log(`- newUrl: ${newUrl || '(undefined)'}`);
+    
+    // Kiểm tra URL mới có tồn tại không
+    if (!newUrl) {
+      console.warn('⚠️ URL mới không được cung cấp, sử dụng URL gốc thay thế');
+      newUrl = originalUrl || '#';
+    }
 
     // Trước tiên lấy thông tin sheet từ database
     await dbMiddleware(request);
@@ -258,7 +264,13 @@ export async function updateGoogleSheetCell(sheetId, sheetName, rowIndex, cellIn
     console.log(`- cellIndex: ${cellIndex}`);
     console.log(`- displayText: ${displayText}`);
     console.log(`- originalUrl: ${originalUrl}`);
-    console.log(`- newUrl: ${newUrl}`);
+    console.log(`- newUrl: ${newUrl || '(undefined)'}`);
+
+    // Kiểm tra URL mới có tồn tại không
+    if (!newUrl) {
+      console.warn('⚠️ URL mới không được cung cấp, sử dụng URL gốc thay thế');
+      newUrl = originalUrl || '#';
+    }
 
     // Thiết lập Google Sheets API
     let auth;

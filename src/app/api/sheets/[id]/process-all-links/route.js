@@ -505,51 +505,110 @@ export async function POST(request, { params }) {
           console.log(`📂 Tiến hành xử lý đệ quy folder: ${urlGroup.originalUrl}`);
           console.log(`📂 Sẽ lưu vào thư mục cha có tên: ${firstSheetName}`);
           
-          return processRecursiveFolder(urlGroup.originalUrl, 3, 0, null, 0.15, firstSheetName)
-            .then(folderResult => {
-              console.log(`✅ Đã xử lý folder đệ quy thành công: ${urlGroup.originalUrl}`);
-              console.log(`📊 Số file đã xử lý: ${folderResult.nestedFilesProcessed}, số folder đã xử lý: ${folderResult.nestedFoldersProcessed}`);
+          // Sử dụng API process-and-replace trực tiếp thay vì gọi hàm processRecursiveFolder
+          try {
+            // Chuẩn bị payload cho API xử lý folder
+            const payload = {
+              fileId: fileId,
+              url: urlGroup.originalUrl,
+              driveLink: urlGroup.originalUrl,
+              targetFolderId: "1Lt10aHyWp9VtPaImzInE0DmIcbrjJgpN", // Folder mặc định
+              folderName: firstSheetName,
+              updateSheet: false, // Không cần cập nhật sheet ở đây vì sẽ tự cập nhật sau
+              displayText: firstCell.cell || "Folder tài liệu" // Truyền text hiển thị từ cell đầu tiên trong nhóm
+            };
+
+            console.log(`📤 Gửi yêu cầu xử lý FOLDER với payload:`, JSON.stringify(payload, null, 2));
+
+            // Gọi API xử lý folder
+            const startTime = Date.now();
+            console.log(`⏱️ Bắt đầu gọi API process-and-replace cho FOLDER lúc: ${new Date(startTime).toLocaleTimeString()}`);
+            
+            const processResponse = await fetch(`${baseUrl}/api/drive/process-and-replace`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Cookie': cookie
+              },
+              body: JSON.stringify(payload),
+              // Tăng timeout lên 10 phút cho folder lớn
+              signal: AbortSignal.timeout(600000)
+            });
+            
+            // Kiểm tra phản hồi từ API
+            if (!processResponse.ok) {
+              let errorText = await processResponse.text();
+              try {
+                const errorJson = JSON.parse(errorText);
+                errorText = errorJson.error || errorJson.message || errorText;
+              } catch (e) { /* Không phải JSON */ }
               
-              // Lấy link folder đã xử lý
-              const processedFolderLink = folderResult.folderStructure.processedFolderLink || urlGroup.originalUrl;
-              console.log(`🔗 Link folder đã xử lý: ${processedFolderLink}`);
-              
-              return {
-                success: true,
-                urlGroup,
-                newUrl: processedFolderLink,
-                processResult: {
-                  success: true,
-                  originalLink: urlGroup.originalUrl,
-                  processedLink: processedFolderLink,
-                  isFolder: true,
-                  folderInfo: folderResult.folderStructure,
-                  nestedFilesProcessed: folderResult.nestedFilesProcessed,
-                  nestedFoldersProcessed: folderResult.nestedFoldersProcessed
-                },
-                fileType: 'folder',
-                isFolder: true
-              };
-            })
-            .catch(folderError => {
-              console.error(`❌ Lỗi khi xử lý folder đệ quy: ${folderError.message}`);
+              console.error(`❌ Lỗi từ API process-and-replace (xử lý folder): ${errorText}`);
               return {
                 success: true,
                 keepOriginalUrl: true,
                 urlGroup,
                 newUrl: urlGroup.originalUrl,
-                error: `Lỗi xử lý folder: ${folderError.message}`,
+                error: errorText,
                 processResult: {
                   success: false,
                   originalLink: urlGroup.originalUrl,
                   processedLink: urlGroup.originalUrl,
                   isFolder: true,
-                  error: folderError.message
+                  error: errorText
                 },
                 fileType: 'folder',
                 isFolder: true
               };
-            });
+            }
+            
+            // Đọc kết quả từ API
+            const folderResult = await processResponse.json();
+            const endTime = Date.now();
+            const processDuration = (endTime - startTime) / 1000;
+            
+            console.log(`⏱️ API process-and-replace cho FOLDER hoàn thành sau: ${processDuration.toFixed(2)} giây`);
+            console.log(`📊 Kết quả xử lý FOLDER:`, JSON.stringify(folderResult, null, 2));
+            
+            // Lấy link folder đã xử lý - thêm kiểm tra an toàn
+            const processedFolderLink = folderResult.folderLink || folderResult.processedFolderLink || urlGroup.originalUrl;
+            console.log(`🔗 Link folder đã xử lý: ${processedFolderLink}`);
+              
+            return {
+              success: true,
+              urlGroup,
+              newUrl: processedFolderLink,
+              processResult: {
+                success: true,
+                originalLink: urlGroup.originalUrl,
+                processedLink: processedFolderLink,
+                isFolder: true,
+                folderInfo: folderResult.folderStructure || { name: firstSheetName },
+                nestedFilesProcessed: folderResult.processedFiles?.length || 0,
+                nestedFoldersProcessed: folderResult.subFolders?.length || 0
+              },
+              fileType: 'folder',
+              isFolder: true
+            };
+          } catch (folderError) {
+            console.error(`❌ Lỗi khi xử lý folder đệ quy: ${folderError.message}`);
+            return {
+              success: true,
+              keepOriginalUrl: true,
+              urlGroup,
+              newUrl: urlGroup.originalUrl,
+              error: `Lỗi xử lý folder: ${folderError.message}`,
+              processResult: {
+                success: false,
+                originalLink: urlGroup.originalUrl,
+                processedLink: urlGroup.originalUrl,
+                isFolder: true,
+                error: folderError.message
+              },
+              fileType: 'folder',
+              isFolder: true
+            };
+          }
         }
         
         // 3.2 XỬ LÝ VIDEO FILE
@@ -659,17 +718,21 @@ export async function POST(request, { params }) {
               displayText: firstCell.cell // Truyền text hiển thị từ cell đầu tiên trong nhóm
             };
 
-            console.log(`📤 Gửi yêu cầu xử lý PDF với payload:`);
-            console.log(JSON.stringify(payload, null, 2));
+            console.log(`📤 Gửi yêu cầu xử lý PDF với payload:`, JSON.stringify(payload, null, 2));
 
             // Gọi API xử lý file
+            const startTime = Date.now();
+            console.log(`⏱️ Bắt đầu gọi API process-and-replace lúc: ${new Date(startTime).toLocaleTimeString()}`);
+            
             const processResponse = await fetch(`${baseUrl}/api/drive/process-and-replace`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
                 'Cookie': cookie
               },
-              body: JSON.stringify(payload)
+              body: JSON.stringify(payload),
+              // Tăng timeout lên 5 phút
+              signal: AbortSignal.timeout(300000)
             });
               
             // Kiểm tra phản hồi từ API
@@ -695,6 +758,10 @@ export async function POST(request, { params }) {
               
             // Đọc kết quả từ API
             const processResultJson = await processResponse.json();
+            const endTime = Date.now();
+            const processDuration = (endTime - startTime) / 1000;
+            
+            console.log(`⏱️ API process-and-replace hoàn thành sau: ${processDuration.toFixed(2)} giây`);
             console.log(`📊 Kết quả xử lý PDF:`, JSON.stringify(processResultJson, null, 2));
               
             // Log chi tiết về processedFile để debug
