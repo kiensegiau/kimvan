@@ -638,7 +638,7 @@ export async function processFolder(folderId, options, parentFolderInfo = null, 
     }
     
     // Import hàm getTokenByType từ utils
-    const { getTokenByType } = await import('../utils.js');
+    const { getTokenByType } = await import('./utils.js');
     
     // Khởi tạo Drive client cho tải lên và tải xuống
     const uploadToken = getTokenByType('upload');
@@ -727,17 +727,130 @@ export async function processFolder(folderId, options, parentFolderInfo = null, 
     
     // Lấy danh sách file và thư mục con
     console.log(`${indent}📂 DEBUG: Lấy danh sách file và thư mục con trong: ${folderId}`);
-    const listResult = await downloadDrive.files.list({
+    
+    // Chuẩn bị tham số cho việc liệt kê file
+    const listParams = {
       q: `'${folderId}' in parents and trashed = false`,
-      fields: 'files(id, name, mimeType)',
-      supportsAllDrives: true
-    }).catch(error => {
+      fields: 'files(id, name, mimeType), nextPageToken',
+      pageSize: 100,
+      supportsAllDrives: true,
+      includeItemsFromAllDrives: true
+    };
+    
+    // Thêm driveId nếu có
+    if (folder.data.driveId) {
+      console.log(`${indent}📂 DEBUG: Sử dụng driveId: ${folder.data.driveId}`);
+      listParams.driveId = folder.data.driveId;
+      listParams.corpora = 'drive';
+    }
+    
+    // Thực hiện API call
+    console.log(`${indent}📂 DEBUG: Gọi API với tham số: ${JSON.stringify(listParams)}`);
+    const listResult = await downloadDrive.files.list(listParams).catch(error => {
       console.error(`${indent}❌ Lỗi lấy danh sách file: ${error.message}`);
       throw new Error(`Không thể lấy danh sách file trong thư mục: ${error.message}`);
     });
     
-    const files = listResult.data.files || [];
+    let files = listResult.data.files || [];
     console.log(`${indent}📂 Tìm thấy ${files.length} file/folder trong thư mục nguồn`);
+    
+    // Nếu không tìm thấy file nào, thử phương pháp thay thế
+    if (files.length === 0) {
+      console.log(`${indent}⚠️ Không tìm thấy file, thử phương pháp thay thế...`);
+      
+      try {
+        // Phương pháp 1: Sử dụng corpora='allDrives'
+        console.log(`${indent}📂 Phương pháp 1: Sử dụng corpora='allDrives'...`);
+        const altParams = {
+          q: `'${folderId}' in parents and trashed = false`,
+          fields: 'files(id, name, mimeType)',
+          pageSize: 100,
+          supportsAllDrives: true,
+          includeItemsFromAllDrives: true,
+          corpora: 'allDrives'
+        };
+        
+        console.log(`${indent}📂 DEBUG: Gọi API thay thế với tham số: ${JSON.stringify(altParams)}`);
+        const alternativeListResult = await downloadDrive.files.list(altParams);
+        const alternativeFiles = alternativeListResult.data.files || [];
+        
+        if (alternativeFiles.length > 0) {
+          console.log(`${indent}✅ Phương pháp thay thế thành công: Tìm thấy ${alternativeFiles.length} file/folder`);
+          files = alternativeFiles;
+        } else {
+          // Phương pháp 2: Sử dụng corpora='user'
+          console.log(`${indent}📂 Phương pháp 2: Thử với corpora='user'...`);
+          const altParams2 = {
+            q: `'${folderId}' in parents and trashed = false`,
+            fields: 'files(id, name, mimeType)',
+            pageSize: 100,
+            corpora: 'user'
+          };
+          
+          const alternativeListResult2 = await downloadDrive.files.list(altParams2);
+          const alternativeFiles2 = alternativeListResult2.data.files || [];
+          
+          if (alternativeFiles2.length > 0) {
+            console.log(`${indent}✅ Phương pháp 2 thành công: Tìm thấy ${alternativeFiles2.length} file/folder`);
+            files = alternativeFiles2;
+          } else {
+            // Phương pháp 3: Kiểm tra chi tiết về thư mục được chia sẻ và thử truy cập với token khác
+            console.log(`${indent}📂 Phương pháp 3: Kiểm tra chi tiết thư mục được chia sẻ...`);
+            
+            try {
+              // Import hàm checkSharedFolderDetails từ utils
+              const { checkSharedFolderDetails } = await import('./utils.js');
+              const sharedDetails = await checkSharedFolderDetails(folderId);
+              
+              if (sharedDetails.success && sharedDetails.fileCount > 0) {
+                console.log(`${indent}📂 Phát hiện ${sharedDetails.fileCount} file trong kiểm tra chi tiết`);
+                
+                if (sharedDetails.driveId) {
+                  console.log(`${indent}📂 Thử liệt kê với driveId: ${sharedDetails.driveId}`);
+                  
+                  const tokenType = sharedDetails.tokenType || 'download';
+                  const token = getTokenByType(tokenType);
+                  
+                  if (token) {
+                    const oauth2Client = new google.auth.OAuth2(
+                      process.env.GOOGLE_CLIENT_ID,
+                      process.env.GOOGLE_CLIENT_SECRET,
+                      process.env.GOOGLE_REDIRECT_URI
+                    );
+                    oauth2Client.setCredentials(token);
+                    const detailDrive = google.drive({ version: 'v3', auth: oauth2Client });
+                    
+                    const detailListResult = await detailDrive.files.list({
+                      q: `'${folderId}' in parents and trashed = false`,
+                      fields: 'files(id, name, mimeType)',
+                      pageSize: 100,
+                      supportsAllDrives: true,
+                      includeItemsFromAllDrives: true,
+                      driveId: sharedDetails.driveId,
+                      corpora: 'drive'
+                    });
+                    
+                    const detailFiles = detailListResult.data.files || [];
+                    console.log(`${indent}📂 Liệt kê với phương pháp 3: Tìm thấy ${detailFiles.length} file/folder`);
+                    
+                    if (detailFiles.length > 0) {
+                      files = detailFiles;
+                    }
+                  }
+                }
+              }
+            } catch (error) {
+              console.error(`${indent}❌ Lỗi với phương pháp 3: ${error.message}`);
+            }
+          }
+        }
+      } catch (altError) {
+        console.error(`${indent}❌ Lỗi khi thử phương pháp thay thế: ${altError.message}`);
+        // Không throw error, tiếp tục với files rỗng
+      }
+      
+      console.log(`${indent}📂 Sau khi thử các phương pháp: Tìm thấy ${files.length} file/folder`);
+    }
     
     // Kết quả xử lý
     const results = {
@@ -927,12 +1040,29 @@ export async function processFolder(folderId, options, parentFolderInfo = null, 
     console.error(`${indent}❌ Lỗi xử lý thư mục ${folderId}:`, error);
     
     // Trả về một đối tượng kết quả với thông tin lỗi
+    let folderName = 'Unknown Folder';
+    let originalFolderLink = `https://drive.google.com/drive/folders/${folderId}`;
+    
+    // Đảm bảo biến folder tồn tại trước khi sử dụng
+    if (options && options.originalFolderLink) {
+      originalFolderLink = options.originalFolderLink;
+    }
+    
+    // Nếu folder đã được định nghĩa, sử dụng tên của nó
+    try {
+      if (typeof folder !== 'undefined' && folder && folder.data && folder.data.name) {
+        folderName = folder.data.name;
+      }
+    } catch (nameError) {
+      console.error(`${indent}❌ Không thể lấy tên thư mục:`, nameError);
+    }
+    
     return {
       success: false,
       isFolder: true,
       folderId: folderId,
-      folderName: folder?.data?.name || 'Unknown Folder',
-      originalFolderLink: options.originalFolderLink || `https://drive.google.com/drive/folders/${folderId}`,
+      folderName: folderName,
+      originalFolderLink: originalFolderLink,
       folderLink: null, // Không có link đã xử lý vì xử lý thất bại
       processedFolderLink: null, // Thêm trường này để tránh lỗi undefined
       error: error.message,
