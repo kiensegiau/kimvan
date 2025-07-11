@@ -319,6 +319,22 @@ export async function POST(request) {
         
         console.log(`📂 Thông tin thư mục nguồn: ${folder.data.name} (${folder.data.mimeType})`);
         
+        // Kiểm tra quyền truy cập vào thư mục
+        console.log(`📂 Kiểm tra quyền truy cập vào thư mục nguồn...`);
+        const { checkFolderAccess } = await import('./lib/utils.js');
+        const accessCheck = await checkFolderAccess(finalFileId, 'download');
+        
+        if (!accessCheck.success) {
+          console.error(`❌ Không có quyền truy cập vào thư mục: ${accessCheck.error}`);
+          throw new Error(`Không có quyền truy cập vào thư mục: ${accessCheck.error}`);
+        }
+        
+        console.log(`✅ Kiểm tra quyền truy cập thành công: ${JSON.stringify({
+          canListFiles: accessCheck.canListFiles,
+          fileCount: accessCheck.fileCount,
+          capabilities: accessCheck.capabilities
+        })}`);
+        
         // Tìm hoặc tạo thư mục cha đích
         console.log(`📂 Tìm hoặc tạo thư mục đích trong: ${finalTargetFolderId}`);
         
@@ -354,14 +370,187 @@ export async function POST(request) {
         
         // Lấy danh sách file và thư mục con
         console.log(`📂 Lấy danh sách file và thư mục con trong thư mục nguồn`);
+        console.log(`📂 DEBUG: Đang liệt kê file trong thư mục ID: ${finalFileId}`);
         const listResult = await downloadDrive.files.list({
           q: `'${finalFileId}' in parents and trashed = false`,
-          fields: 'files(id, name, mimeType)',
-          supportsAllDrives: true
+          fields: 'files(id, name, mimeType, owners, shared, permissions), nextPageToken',
+          pageSize: 100,
+          supportsAllDrives: true,
+          includeItemsFromAllDrives: true
         });
         
         const files = listResult.data.files || [];
         console.log(`📂 Tìm thấy ${files.length} file/folder trong thư mục nguồn`);
+        console.log(`📂 DEBUG: Thông tin API response: ${JSON.stringify({
+          files: files.length,
+          nextPageToken: listResult.data.nextPageToken ? 'Có' : 'Không',
+          hasFiles: files.length > 0
+        })}`);
+        
+        if (files.length === 0) {
+          console.log(`⚠️ CẢNH BÁO: Không tìm thấy file nào trong thư mục. Kiểm tra quyền truy cập.`);
+          console.log(`⚠️ Thông tin thêm: Thư mục có thể rỗng hoặc token không có quyền truy cập.`);
+          
+          // Kiểm tra chi tiết về thư mục được chia sẻ
+          console.log(`🔍 Kiểm tra chi tiết về thư mục được chia sẻ...`);
+          const { checkSharedFolderDetails } = await import('./lib/utils.js');
+          const sharedDetails = await checkSharedFolderDetails(finalFileId);
+          
+          if (sharedDetails.success) {
+            console.log(`🔍 Kết quả kiểm tra thư mục được chia sẻ: ${JSON.stringify({
+              isShared: sharedDetails.isShared,
+              canListFiles: sharedDetails.canListFiles,
+              fileCount: sharedDetails.fileCount,
+              driveId: sharedDetails.driveId,
+              tokenType: sharedDetails.tokenType
+            })}`);
+            
+            if (sharedDetails.fileCount > 0) {
+              console.log(`✅ Phát hiện ${sharedDetails.fileCount} file trong thư mục từ kiểm tra chi tiết`);
+              
+              // Thử liệt kê lại với các thông tin mới
+              if (sharedDetails.driveId) {
+                console.log(`📂 Thử liệt kê lại với driveId: ${sharedDetails.driveId}`);
+                try {
+                  const token = getTokenByType(sharedDetails.tokenType);
+                  const oauth2Client = new google.auth.OAuth2(
+                    process.env.GOOGLE_CLIENT_ID,
+                    process.env.GOOGLE_CLIENT_SECRET,
+                    process.env.GOOGLE_REDIRECT_URI
+                  );
+                  oauth2Client.setCredentials(token);
+                  const detailDrive = google.drive({ version: 'v3', auth: oauth2Client });
+                  
+                  const detailListResult = await detailDrive.files.list({
+                    q: `'${finalFileId}' in parents and trashed = false`,
+                    fields: 'files(id, name, mimeType)',
+                    pageSize: 100,
+                    supportsAllDrives: true,
+                    includeItemsFromAllDrives: true,
+                    driveId: sharedDetails.driveId,
+                    corpora: 'drive'
+                  });
+                  
+                  const detailFiles = detailListResult.data.files || [];
+                  console.log(`📂 Liệt kê lại: Tìm thấy ${detailFiles.length} file/folder`);
+                  
+                  if (detailFiles.length > 0) {
+                    console.log(`✅ Liệt kê lại thành công, sử dụng kết quả này`);
+                    files.push(...detailFiles);
+                  }
+                } catch (detailError) {
+                  console.error(`❌ Lỗi khi liệt kê lại: ${detailError.message}`);
+                }
+              }
+            }
+          } else {
+            console.error(`❌ Lỗi kiểm tra thư mục được chia sẻ: ${sharedDetails.error}`);
+          }
+          
+          // Thử phương pháp thay thế để liệt kê file
+          console.log(`📂 Thử phương pháp thay thế để liệt kê file...`);
+          try {
+            // Phương pháp 1: Sử dụng corpora='allDrives' để liệt kê tất cả các file
+            console.log(`📂 Phương pháp 1: Sử dụng corpora='allDrives'...`);
+            const alternativeListResult = await downloadDrive.files.list({
+              q: `'${finalFileId}' in parents and trashed = false`,
+              fields: 'files(id, name, mimeType)',
+              pageSize: 100,
+              supportsAllDrives: true,
+              includeItemsFromAllDrives: true,
+              corpora: 'allDrives'
+            });
+            
+            const alternativeFiles = alternativeListResult.data.files || [];
+            console.log(`📂 Phương pháp 1: Tìm thấy ${alternativeFiles.length} file/folder`);
+            
+            if (alternativeFiles.length > 0) {
+              console.log(`✅ Phương pháp thay thế thành công, sử dụng kết quả này`);
+              files.push(...alternativeFiles);
+            } else {
+              // Phương pháp 2: Thử liệt kê trực tiếp với driveId
+              console.log(`📂 Phương pháp 2: Thử liệt kê với driveId...`);
+              try {
+                // Lấy driveId từ thông tin thư mục
+                const folderInfo = await downloadDrive.files.get({
+                  fileId: finalFileId,
+                  fields: 'driveId',
+                  supportsAllDrives: true
+                });
+                
+                const driveId = folderInfo.data.driveId;
+                if (driveId) {
+                  console.log(`📂 Tìm thấy driveId: ${driveId}`);
+                  
+                  const driveListResult = await downloadDrive.files.list({
+                    q: `'${finalFileId}' in parents and trashed = false`,
+                    fields: 'files(id, name, mimeType)',
+                    pageSize: 100,
+                    supportsAllDrives: true,
+                    includeItemsFromAllDrives: true,
+                    driveId: driveId
+                  });
+                  
+                  const driveFiles = driveListResult.data.files || [];
+                  console.log(`📂 Phương pháp 2: Tìm thấy ${driveFiles.length} file/folder`);
+                  
+                  if (driveFiles.length > 0) {
+                    console.log(`✅ Phương pháp 2 thành công, sử dụng kết quả này`);
+                    files.push(...driveFiles);
+                  }
+                } else {
+                  console.log(`⚠️ Không tìm thấy driveId cho thư mục`);
+                }
+              } catch (driveIdError) {
+                console.error(`❌ Lỗi khi thử phương pháp 2: ${driveIdError.message}`);
+              }
+            }
+            
+            // Phương pháp 3: Thử sử dụng token upload thay vì token download
+            if (files.length === 0) {
+              console.log(`📂 Phương pháp 3: Thử sử dụng token upload...`);
+              try {
+                const uploadToken = getTokenByType('upload');
+                if (uploadToken) {
+                  // Tạo OAuth2 client mới với token upload
+                  const uploadOAuth2Client = new google.auth.OAuth2(
+                    process.env.GOOGLE_CLIENT_ID,
+                    process.env.GOOGLE_CLIENT_SECRET,
+                    process.env.GOOGLE_REDIRECT_URI
+                  );
+                  uploadOAuth2Client.setCredentials(uploadToken);
+                  
+                  // Khởi tạo Drive client mới
+                  const altUploadDrive = google.drive({ version: 'v3', auth: uploadOAuth2Client });
+                  
+                  // Thử liệt kê file với token upload
+                  const uploadListResult = await altUploadDrive.files.list({
+                    q: `'${finalFileId}' in parents and trashed = false`,
+                    fields: 'files(id, name, mimeType)',
+                    pageSize: 100,
+                    supportsAllDrives: true,
+                    includeItemsFromAllDrives: true,
+                    corpora: 'allDrives'
+                  });
+                  
+                  const uploadFiles = uploadListResult.data.files || [];
+                  console.log(`📂 Phương pháp 3: Tìm thấy ${uploadFiles.length} file/folder`);
+                  
+                  if (uploadFiles.length > 0) {
+                    console.log(`✅ Phương pháp 3 thành công, sử dụng kết quả này`);
+                    files.push(...uploadFiles);
+                  }
+                } else {
+                  console.log(`⚠️ Không tìm thấy token upload hợp lệ`);
+                }
+              } catch (uploadError) {
+                console.error(`❌ Lỗi khi thử phương pháp 3: ${uploadError.message}`);
+              }
+            }
+          } catch (alternativeError) {
+            console.error(`❌ Lỗi khi thử phương pháp thay thế: ${alternativeError.message}`);
+          }
+        }
         
         // Xử lý từng file và thư mục con
         const processedFiles = [];
