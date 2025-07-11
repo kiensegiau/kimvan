@@ -1364,12 +1364,12 @@ export default function CourseDetailPage({ params }) {
                                             : isLink
                                               ? (
                                                   <a 
-                                                    href={url}
+                                                    href={originalUrl}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     data-type={linkType}
                                                     className="inline-flex items-center text-indigo-600 font-medium hover:text-indigo-800 transition-colors duration-150 group cursor-pointer hover:underline"
-                                                    title={url || (linkType === 'youtube' ? 'Video' : linkType === 'pdf' ? 'PDF' : 'Tài liệu')}
+                                                    title={originalUrl || (linkType === 'youtube' ? 'Video' : linkType === 'pdf' ? 'PDF' : 'Tài liệu')}
                                                   >
                                                     <span className="icon-container mr-1 flex-shrink-0">
                                                       {linkType === 'youtube' ? (
