@@ -101,7 +101,7 @@ export async function processNextInQueue() {
         fileId: task.fileId,
         driveLink: task.driveLink,
         targetFolderId: task.targetFolderId,
-        folderName: task.targetFolderName || task.courseName || 'Unknown',
+        folderName: null, // Không tạo thư mục mới, sử dụng trực tiếp targetFolderId
         apiKey: task.apiKey,
         updateSheet: task.updateSheet,
         courseId: task.courseId,
@@ -551,13 +551,15 @@ export async function processSingleFile(file, options) {
       }
       
       // Xử lý file đã tải xuống
+      // Không sử dụng path.basename từ tên file để đặt làm folderName
+      // vì điều này tạo ra thư mục mới thay vì sử dụng thư mục đích
       return await processAndUploadFile({
         filePath: tempFilePath,
         mimeType: file.mimeType || downloadResult.mimeType || 'application/pdf',
         fileId: file.id,
         driveLink: `https://drive.google.com/file/d/${file.id}/view`,
-        targetFolderId,
-        folderName: path.basename(file.name, path.extname(file.name)),
+        targetFolderId, // Đây là ID thư mục đích
+        folderName: null, // Không tạo thư mục mới, sử dụng trực tiếp targetFolderId
         apiKey,
         updateSheet,
         courseId,
@@ -588,7 +590,7 @@ export async function processSingleFile(file, options) {
           fileId: file.id,
           fileName: file.name,
           targetFolderId,
-          targetFolderName: path.dirname(file.name),
+          targetFolderName: null, // Không sử dụng dirname từ tên file vì sẽ tạo thư mục mới
           errorType,
           updateSheet,
           courseId,

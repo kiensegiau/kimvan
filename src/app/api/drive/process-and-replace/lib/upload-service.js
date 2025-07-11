@@ -77,9 +77,34 @@ export async function uploadToGoogleDrive(filePath, fileName, mimeType, folderId
     let targetFolderId = process.env.GOOGLE_DRIVE_FOLDER_ID || '1Lt10aHyWp9VtPaImzInE0DmIcbrjJgpN';
     let folderName = 'Mặc định';
     
-    // Nếu có courseName, tìm hoặc tạo thư mục cha có tên là courseName
-    if (courseName) {
-      console.log(`Tìm hoặc tạo thư mục cha có tên: ${courseName}`);
+    // Ưu tiên dùng folderId được chỉ định (targetFolderId)
+    if (folderId) {
+      try {
+        console.log(`Ưu tiên sử dụng folder ID được chỉ định: ${folderId}`);
+        const folderResponse = await drive.files.get({
+          fileId: folderId,
+          fields: 'id,name,mimeType',
+          supportsAllDrives: true
+        });
+        
+        // Kiểm tra xem đây có phải là folder không
+        if (folderResponse.data.mimeType === 'application/vnd.google-apps.folder') {
+          targetFolderId = folderId;
+          folderName = folderResponse.data.name;
+          console.log(`Folder tồn tại, sẽ sử dụng folder ID: ${targetFolderId} (${folderName})`);
+        } else {
+          console.warn(`ID ${folderId} không phải là folder, đó là: ${folderResponse.data.mimeType}`);
+        }
+      } catch (folderError) {
+        console.error(`Lỗi khi kiểm tra folder ${folderId}:`, folderError.message);
+        console.log(`Sẽ thử phương pháp thay thế...`);
+      }
+    }
+    
+    // Nếu folderId không hợp lệ và có courseName, tìm hoặc tạo thư mục dựa trên courseName
+    // CHỈ khi không có folderId hợp lệ
+    if (courseName && (!folderId || targetFolderId === process.env.GOOGLE_DRIVE_FOLDER_ID)) {
+      console.log(`Tìm hoặc tạo thư mục dựa trên tên: ${courseName}`);
       
       try {
         // Tìm folder có tên là courseName
@@ -120,28 +145,6 @@ export async function uploadToGoogleDrive(filePath, fileName, mimeType, folderId
       } catch (folderError) {
         console.error(`Lỗi khi tìm hoặc tạo thư mục "${courseName}":`, folderError.message);
         console.log(`Sử dụng thư mục mặc định thay thế.`);
-      }
-    }
-    
-    // Kiểm tra xem có folderId được chỉ định không
-    if (folderId && !courseName) {
-      try {
-        console.log(`Kiểm tra folder ID được chỉ định: ${folderId}`);
-        const folderResponse = await drive.files.get({
-          fileId: folderId,
-          fields: 'id,name,mimeType'
-        });
-        
-        // Kiểm tra xem đây có phải là folder không
-        if (folderResponse.data.mimeType === 'application/vnd.google-apps.folder') {
-          targetFolderId = folderId;
-          folderName = folderResponse.data.name;
-          console.log(`Folder tồn tại, sẽ sử dụng folder ID: ${targetFolderId} (${folderName})`);
-        } else {
-          console.warn(`ID ${folderId} không phải là folder, đó là: ${folderResponse.data.mimeType}`);
-        }
-      } catch (folderError) {
-        console.error(`Lỗi khi kiểm tra folder ${folderId}:`, folderError.message);
       }
     }
     
