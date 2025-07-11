@@ -793,7 +793,7 @@ export default function CoursesPage() {
                 <div className="mt-2 text-sm text-red-700">
                   <p>{error}</p>
                 </div>
-                <div className="mt-3">
+                <div className="mt-3 flex gap-2">
                   <button
                     onClick={handleRetry}
                     className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
@@ -803,6 +803,15 @@ export default function CoursesPage() {
                     </svg>
                     Thử lại
                   </button>
+                  <a
+                    href="/login"
+                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="-ml-0.5 mr-1.5 h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                    </svg>
+                    Đăng nhập
+                  </a>
                 </div>
               </div>
             </div>

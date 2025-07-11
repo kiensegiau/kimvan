@@ -1208,8 +1208,19 @@ export default function CourseDetailPage() {
                 <div className="ml-4">
                   <h3 className="text-lg font-medium text-yellow-800">Truy cập bị hạn chế</h3>
                   <p className="mt-2 text-yellow-700">
-                    Bạn cần đăng ký khóa học này để xem nội dung chi tiết. Vui lòng liên hệ quản trị viên để được đăng ký.
+                    Vui lòng đăng nhập để truy cập khóa học.
                   </p>
+                  <div className="mt-3">
+                    <a
+                      href="/login"
+                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="-ml-0.5 mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                      </svg>
+                      Đăng nhập
+                    </a>
+                  </div>
                 </div>
               </div>
             </div>

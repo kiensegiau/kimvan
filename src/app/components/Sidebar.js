@@ -164,45 +164,64 @@ const Sidebar = ({ closeSidebar }) => {
               </div>
             ) : (
               <>
-                {userData?.displayName ? (
-                  <p className="font-medium truncate text-white">{userData.displayName}</p>
-                ) : null}
-                <p className="text-xs text-indigo-200 truncate">{userData?.email || 'Chưa đăng nhập'}</p>
-                {userData?.role && (
-                  <div className="mt-1">
-                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-600 text-indigo-100">
-                      {getRoleDisplay(userData.role)}
-                    </span>
-                  </div>
+                {userData ? (
+                  <>
+                    {userData.displayName && (
+                      <p className="font-medium truncate text-white">{userData.displayName}</p>
+                    )}
+                    <p className="text-xs text-indigo-200 truncate">{userData.email}</p>
+                    {userData.role && (
+                      <div className="mt-1">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-600 text-indigo-100">
+                          {getRoleDisplay(userData.role)}
+                        </span>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <Link href="/login" className="bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-1 rounded-md text-sm font-medium transition-colors flex items-center justify-center">
+                    <span>Đăng nhập</span>
+                  </Link>
                 )}
               </>
             )}
           </div>
         </div>
         <div className="space-y-2">
-          <Link 
-            href="/ca-nhan" 
-            className={`w-full flex items-center p-2 rounded-lg transition-colors ${
-              pathname === '/ca-nhan' 
-                ? 'bg-indigo-700 text-white' 
-                : 'hover:bg-indigo-800 text-indigo-100'
-            }`}
-            onClick={handleMenuItemClick}
-          >
-            <UserCircleIcon className={`w-5 h-5 mr-3 ${pathname === '/ca-nhan' ? 'text-white' : 'text-indigo-300'}`} />
-            <span className="text-sm">Trang cá nhân</span>
-            {pathname === '/ca-nhan' && (
-              <ChevronRightIcon className="ml-auto w-4 h-4" />
-            )}
-          </Link>
-          <button 
-            onClick={handleLogout}
-            disabled={isLoggingOut}
-            className="w-full flex items-center p-2 rounded-lg hover:bg-indigo-800 transition-colors text-indigo-100 disabled:opacity-50"
-          >
-            <ArrowRightOnRectangleIcon className="mr-3 h-5 w-5 text-indigo-300" />
-            <span className="text-sm">{isLoggingOut ? 'Đang đăng xuất...' : 'Đăng xuất'}</span>
-          </button>
+          {userData ? (
+            <>
+              <Link 
+                href="/ca-nhan" 
+                className={`w-full flex items-center p-2 rounded-lg transition-colors ${
+                  pathname === '/ca-nhan' 
+                    ? 'bg-indigo-700 text-white' 
+                    : 'hover:bg-indigo-800 text-indigo-100'
+                }`}
+                onClick={handleMenuItemClick}
+              >
+                <UserCircleIcon className={`w-5 h-5 mr-3 ${pathname === '/ca-nhan' ? 'text-white' : 'text-indigo-300'}`} />
+                <span className="text-sm">Trang cá nhân</span>
+                {pathname === '/ca-nhan' && (
+                  <ChevronRightIcon className="ml-auto w-4 h-4" />
+                )}
+              </Link>
+              <button 
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                className="w-full flex items-center p-2 rounded-lg hover:bg-indigo-800 transition-colors text-indigo-100 disabled:opacity-50"
+              >
+                <ArrowRightOnRectangleIcon className="mr-3 h-5 w-5 text-indigo-300" />
+                <span className="text-sm">{isLoggingOut ? 'Đang đăng xuất...' : 'Đăng xuất'}</span>
+              </button>
+            </>
+          ) : (
+            <Link 
+              href="/login" 
+              className="w-full flex items-center justify-center p-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 transition-colors text-white"
+            >
+              <span className="text-sm font-medium">Đăng nhập</span>
+            </Link>
+          )}
         </div>
       </div>
     </div>
