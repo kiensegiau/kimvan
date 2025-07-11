@@ -278,29 +278,90 @@ export async function processAndUploadFile(params) {
     // Xử lý cập nhật sheet nếu cần
     let sheetUpdateResult = null;
     if (updateSheet) {
-      if (courseId && sheetIndex !== undefined && rowIndex !== undefined && cellIndex !== undefined) {
-        sheetUpdateResult = await updateSheetCell(
-          courseId,
-          sheetIndex,
-          rowIndex,
-          cellIndex,
-          driveLink,
-          uploadResult.webViewLink || processResult.webViewLink,
-          displayText,
-          request
-        );
-      } else if (sheetId && googleSheetName && rowIndex !== undefined && cellIndex !== undefined) {
-        const cellDisplayText = displayText || 'Tài liệu đã xử lý';
-        sheetUpdateResult = await updateGoogleSheetCell(
-          sheetId,
-          googleSheetName,
-          rowIndex,
-          cellIndex,
-          cellDisplayText,
-          uploadResult.webViewLink || processResult.webViewLink,
-          driveLink,
-          request
-        );
+      console.log(`\n📝 Đang xử lý cập nhật sheet...`);
+      console.log(`- courseId: ${courseId || 'không có'}`);
+      console.log(`- sheetIndex: ${sheetIndex !== undefined ? sheetIndex : 'không có'}`);
+      console.log(`- sheetId: ${sheetId || 'không có'}`);
+      console.log(`- googleSheetName: ${googleSheetName || 'không có'}`);
+      console.log(`- rowIndex: ${rowIndex !== undefined ? rowIndex : 'không có'}`);
+      console.log(`- cellIndex: ${cellIndex !== undefined ? cellIndex : 'không có'}`);
+      
+      try {
+        if (courseId && sheetIndex !== undefined && rowIndex !== undefined && cellIndex !== undefined) {
+          console.log(`🔄 Cập nhật sheet cho khóa học: courseId=${courseId}, sheetIndex=${sheetIndex}, rowIndex=${rowIndex}, cellIndex=${cellIndex}`);
+          
+          const originalUrl = driveLink || `https://drive.google.com/file/d/${fileId}/view`;
+          const newUrl = uploadResult.webViewLink || processResult.webViewLink || `https://drive.google.com/file/d/${uploadResult.fileId}/view?usp=drivesdk`;
+          const cellText = displayText || path.basename(processedFilePath);
+          
+          console.log(`🔗 URL gốc: ${originalUrl}`);
+          console.log(`🔗 URL mới: ${newUrl}`);
+          console.log(`📄 Text hiển thị: ${cellText}`);
+          
+          sheetUpdateResult = await updateSheetCell(
+            courseId,
+            sheetIndex,
+            rowIndex,
+            cellIndex,
+            originalUrl,
+            newUrl,
+            cellText,
+            request,
+            {
+              skipProcessing: processResult && processResult.skipWatermark,
+              originalLink: originalUrl
+            }
+          );
+          
+          if (sheetUpdateResult?.success) {
+            console.log(`✅ Đã cập nhật sheet thành công!`);
+          } else {
+            console.error(`❌ Lỗi khi cập nhật sheet: ${sheetUpdateResult?.error || 'Không rõ lỗi'}`);
+          }
+        } else if (sheetId && googleSheetName && rowIndex !== undefined && cellIndex !== undefined) {
+          console.log(`🔄 Cập nhật Google Sheet: sheetId=${sheetId}, sheetName=${googleSheetName}, rowIndex=${rowIndex}, cellIndex=${cellIndex}`);
+          
+          const cellDisplayText = displayText || 'Tài liệu đã xử lý';
+          const originalUrl = driveLink || `https://drive.google.com/file/d/${fileId}/view`;
+          const newUrl = uploadResult.webViewLink || processResult.webViewLink || `https://drive.google.com/file/d/${uploadResult.fileId}/view?usp=drivesdk`;
+          
+          console.log(`🔗 URL gốc: ${originalUrl}`);
+          console.log(`🔗 URL mới: ${newUrl}`);
+          console.log(`📄 Text hiển thị: ${cellDisplayText}`);
+          
+          sheetUpdateResult = await updateGoogleSheetCell(
+            sheetId,
+            googleSheetName,
+            rowIndex,
+            cellIndex,
+            cellDisplayText,
+            newUrl,
+            originalUrl,
+            request,
+            {
+              skipProcessing: processResult && processResult.skipWatermark,
+              originalLink: originalUrl
+            }
+          );
+          
+          if (sheetUpdateResult?.success) {
+            console.log(`✅ Đã cập nhật Google Sheet thành công!`);
+          } else {
+            console.error(`❌ Lỗi khi cập nhật Google Sheet: ${sheetUpdateResult?.error || 'Không rõ lỗi'}`);
+          }
+        } else {
+          console.warn(`⚠️ Thiếu thông tin cần thiết để cập nhật sheet`);
+          sheetUpdateResult = {
+            success: false,
+            error: 'Thiếu thông tin cần thiết để cập nhật sheet'
+          };
+        }
+      } catch (updateError) {
+        console.error(`❌ Lỗi ngoại lệ khi cập nhật sheet: ${updateError.message}`);
+        sheetUpdateResult = {
+          success: false,
+          error: `Lỗi khi cập nhật sheet: ${updateError.message}`
+        };
       }
     }
     

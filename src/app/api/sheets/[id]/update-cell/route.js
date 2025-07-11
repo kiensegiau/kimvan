@@ -9,7 +9,24 @@ export async function PUT(request, { params }) {
   try {
     await dbMiddleware(request);
     const { id } = await params;
-    const { rowIndex, columnIndex, value, url, originalUrl } = await request.json();
+    const { 
+      rowIndex, 
+      columnIndex, 
+      value, 
+      url, 
+      originalUrl,
+      backgroundColor,
+      textColor,
+      bold,
+      note
+    } = await request.json();
+
+    console.log(`📝 Nhận yêu cầu cập nhật ô cho sheet ${id}:`);
+    console.log(`- Vị trí: [${rowIndex + 1},${columnIndex + 1}]`);
+    console.log(`- Giá trị: ${value}`);
+    console.log(`- URL: ${url}`);
+    console.log(`- URL gốc: ${originalUrl || 'không có'}`);
+    console.log(`- Có ghi chú: ${note ? 'có' : 'không'}`);
 
     // Find the sheet in the database
     let sheet;
@@ -83,78 +100,78 @@ export async function PUT(request, { params }) {
 
       console.log(`Cập nhật ô ${cellRange} với giá trị: ${value}`);
 
-      // Prepare the update request
-      let updateRequest = {
+      // Sử dụng phương pháp batchUpdate để cập nhật tất cả thuộc tính cùng lúc
+      // Lấy thời gian hiện tại để ghi chú nếu chưa được cung cấp
+      const currentTime = new Date().toLocaleString('vi-VN');
+      
+      // Sử dụng note được cung cấp hoặc tạo mới nếu không có
+      const noteText = note || (originalUrl 
+        ? `Link gốc: ${originalUrl}\nĐã xử lý lúc: ${currentTime}` 
+        : `Đã cập nhật lúc: ${currentTime}`);
+      
+      // Sử dụng màu sắc được cung cấp hoặc mặc định
+      const bgColor = backgroundColor || { red: 0.9, green: 0.6, blue: 1.0 };
+      const fgColor = textColor || { red: 0, green: 0, blue: 0.7 };
+      const isBold = bold === undefined ? true : bold;
+
+      const updateCellRequest = {
         spreadsheetId: sheet.sheetId,
-        range: cellRange,
-        valueInputOption: 'USER_ENTERED',
         resource: {
-          values: [[value]]
+          requests: [
+            {
+              updateCells: {
+                range: {
+                  sheetId: actualSheetId,
+                  startRowIndex: rowIndex,
+                  endRowIndex: rowIndex + 1,
+                  startColumnIndex: columnIndex,
+                  endColumnIndex: columnIndex + 1
+                },
+                rows: [
+                  {
+                    values: [
+                      {
+                        userEnteredValue: { stringValue: value },
+                        userEnteredFormat: {
+                          backgroundColor: bgColor,
+                          textFormat: {
+                            link: url ? { uri: url } : null,
+                            foregroundColor: fgColor,
+                            bold: isBold
+                          }
+                        },
+                        note: noteText
+                      }
+                    ]
+                  }
+                ],
+                fields: 'userEnteredValue,userEnteredFormat.backgroundColor,userEnteredFormat.textFormat.link,userEnteredFormat.textFormat.foregroundColor,userEnteredFormat.textFormat.bold,note'
+              }
+            }
+          ]
         }
       };
-
-      // Update the cell value
-      await sheets.spreadsheets.values.update(updateRequest);
-
-      // If URL is provided, update the cell hyperlink
-      if (url) {
-        console.log(`Thêm hyperlink: ${url}`);
+      
+      try {
+        await sheets.spreadsheets.batchUpdate(updateCellRequest);
+        console.log(`✅ Cập nhật ô ${cellRange} thành công với định dạng đầy đủ`);
+      } catch (batchError) {
+        console.error(`❌ Lỗi khi cập nhật với batchUpdate: ${batchError.message}`);
         
-        // Lấy thời gian hiện tại để ghi chú
-        const currentTime = new Date().toLocaleString('vi-VN');
+        // Fallback: Chỉ cập nhật giá trị văn bản nếu batchUpdate thất bại
+        console.log(`⚠️ Thử phương pháp thay thế chỉ cập nhật giá trị...`);
         
-        // Tạo ghi chú với URL gốc nếu có hoặc ghi chú đơn giản nếu không có
-        const noteText = originalUrl 
-          ? `Link gốc: ${originalUrl}\nĐã xử lý lúc: ${currentTime}` 
-          : `Đã cập nhật lúc: ${currentTime}`;
-        
-        const updateCellRequest = {
+        const updateRequest = {
           spreadsheetId: sheet.sheetId,
+          range: cellRange,
+          valueInputOption: 'USER_ENTERED',
           resource: {
-            requests: [
-              {
-                updateCells: {
-                  range: {
-                    sheetId: actualSheetId, // Sử dụng sheet ID thực tế thay vì mặc định 0
-                    startRowIndex: rowIndex,
-                    endRowIndex: rowIndex + 1,
-                    startColumnIndex: columnIndex,
-                    endColumnIndex: columnIndex + 1
-                  },
-                  rows: [
-                    {
-                      values: [
-                        {
-                          userEnteredValue: { stringValue: value },
-                          userEnteredFormat: {
-                            backgroundColor: {
-                              red: 0.9,
-                              green: 0.6,  // Màu xanh dương nổi bật
-                              blue: 1.0
-                            },
-                            textFormat: {
-                              link: { uri: url },
-                              foregroundColor: { 
-                                red: 0.0,
-                                green: 0.0,
-                                blue: 0.7  // Chữ màu xanh đậm
-                              },
-                              bold: true  // In đậm text
-                            }
-                          },
-                          note: noteText
-                        }
-                      ]
-                    }
-                  ],
-                  fields: 'userEnteredValue,userEnteredFormat.backgroundColor,userEnteredFormat.textFormat.link,userEnteredFormat.textFormat.foregroundColor,userEnteredFormat.textFormat.bold,note'
-                }
-              }
-            ]
+            values: [[value]]
           }
         };
-
-        await sheets.spreadsheets.batchUpdate(updateCellRequest);
+        
+        await sheets.spreadsheets.values.update(updateRequest);
+        console.log(`✅ Cập nhật giá trị cơ bản thành công`);
       }
 
       return NextResponse.json({ 
@@ -162,14 +179,14 @@ export async function PUT(request, { params }) {
         message: 'Đã cập nhật ô thành công'
       });
     } catch (error) {
-      console.error('Lỗi khi cập nhật dữ liệu Google Sheets:', error);
+      console.error('❌ Lỗi khi cập nhật dữ liệu Google Sheets:', error);
       return NextResponse.json(
         { success: false, error: `Lỗi khi cập nhật Google Sheets: ${error.message}` }, 
         { status: 500 }
       );
     }
   } catch (error) {
-    console.error('Lỗi khi cập nhật ô:', error);
+    console.error('❌ Lỗi khi cập nhật ô:', error);
     return NextResponse.json(
       { success: false, error: `Không thể cập nhật ô: ${error.message}` }, 
       { status: 500 }

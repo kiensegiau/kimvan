@@ -64,7 +64,8 @@ export function extractDriveFileId(url) {
           return extractDriveFileId(decodedUrl);
         } catch (decodeError) {
           console.error(`Lỗi giải mã URL: ${decodeError.message}`);
-          // Thử xử lý URL gốc nếu không giải mã được
+          // Trả về null nếu không giải mã được thay vì xử lý URL gốc
+          return null;
         }
       }
     }
@@ -84,7 +85,7 @@ export function extractDriveFileId(url) {
     
     // Định dạng 1: drive.google.com/file/d/{fileId}/view
     if (url.includes('/file/d/')) {
-      const match = url.match(/\/file\/d\/([^/?&]+)/);
+      const match = url.match(/\/file\/d\/([^/?&#]+)/);
       if (match && match[1]) {
         fileId = match[1];
       }
@@ -96,7 +97,7 @@ export function extractDriveFileId(url) {
         fileId = urlObj.searchParams.get('id');
       } catch (e) {
         // Nếu URL không hợp lệ, thử trích xuất id bằng regex
-        const match = url.match(/[?&]id=([^&]+)/);
+        const match = url.match(/[?&]id=([^&#]+)/);
         if (match && match[1]) {
           fileId = match[1];
         }
@@ -104,7 +105,7 @@ export function extractDriveFileId(url) {
     }
     // Định dạng 3: drive.google.com/drive/folders/{fileId}
     else if (url.includes('/drive/folders/') || url.includes('/drive/u/0/folders/')) {
-      const match = url.match(/\/folders\/([^/?&]+)/);
+      const match = url.match(/\/folders\/([^/?&#]+)/);
       if (match && match[1]) {
         fileId = match[1];
         isFolder = true;
@@ -112,21 +113,21 @@ export function extractDriveFileId(url) {
     }
     // Định dạng 4: docs.google.com/document/d/{fileId}/edit
     else if (url.includes('docs.google.com/document/d/')) {
-      const match = url.match(/\/document\/d\/([^/?&]+)/);
+      const match = url.match(/\/document\/d\/([^/?&#]+)/);
       if (match && match[1]) {
         fileId = match[1];
       }
     }
     // Định dạng 5: docs.google.com/spreadsheets/d/{fileId}/edit
     else if (url.includes('docs.google.com/spreadsheets/d/')) {
-      const match = url.match(/\/spreadsheets\/d\/([^/?&]+)/);
+      const match = url.match(/\/spreadsheets\/d\/([^/?&#]+)/);
       if (match && match[1]) {
         fileId = match[1];
       }
     }
     // Định dạng 6: docs.google.com/presentation/d/{fileId}/edit
     else if (url.includes('docs.google.com/presentation/d/')) {
-      const match = url.match(/\/presentation\/d\/([^/?&]+)/);
+      const match = url.match(/\/presentation\/d\/([^/?&#]+)/);
       if (match && match[1]) {
         fileId = match[1];
       }
@@ -138,7 +139,7 @@ export function extractDriveFileId(url) {
         fileId = urlObj.searchParams.get('id');
       } catch (e) {
         // Nếu URL không hợp lệ, thử trích xuất id bằng regex
-        const match = url.match(/[?&]id=([^&]+)/);
+        const match = url.match(/[?&]id=([^&#]+)/);
         if (match && match[1]) {
           fileId = match[1];
         }
@@ -155,6 +156,12 @@ export function extractDriveFileId(url) {
       fileId = fileId.split('&')[0]; // Loại bỏ các tham số phía sau nếu có
       fileId = fileId.split('#')[0]; // Loại bỏ fragment identifier nếu có
       
+      // Kiểm tra fileId có đúng định dạng không (thường là 25+ ký tự)
+      if (fileId.length < 25 || fileId.includes('/')) {
+        console.warn(`FileId có vẻ không hợp lệ: ${fileId}`);
+        return null; // Trả về null nếu ID không đáng tin cậy
+      }
+      
       return {
         fileId,
         isFolder,
@@ -167,27 +174,37 @@ export function extractDriveFileId(url) {
       const urlObj = new URL(url);
       const idParam = urlObj.searchParams.get('id');
       if (idParam) {
-        return {
-          fileId: idParam.split('&')[0], // Loại bỏ các tham số phía sau nếu có
-          isFolder: false,
-          originalUrl: url
-        };
+        const cleanId = idParam.split('&')[0]; // Loại bỏ các tham số phía sau nếu có
+        
+        // Kiểm tra ID có hợp lệ không
+        if (cleanId.length >= 25 && !cleanId.includes('/')) {
+          return {
+            fileId: cleanId,
+            isFolder: false,
+            originalUrl: url
+          };
+        }
       }
     } catch (e) {
       // Nếu URL không hợp lệ, thử trích xuất id bằng regex
-      const match = url.match(/[?&]id=([^&]+)/);
+      const match = url.match(/[?&]id=([^&#]+)/);
       if (match && match[1]) {
-        return {
-          fileId: match[1].split('&')[0], // Loại bỏ các tham số phía sau nếu có
-          isFolder: false,
-          originalUrl: url
-        };
+        const cleanId = match[1].split('&')[0]; // Loại bỏ các tham số phía sau nếu có
+        
+        // Kiểm tra ID có hợp lệ không
+        if (cleanId.length >= 25 && !cleanId.includes('/')) {
+          return {
+            fileId: cleanId,
+            isFolder: false,
+            originalUrl: url
+          };
+        }
       }
     }
     
     // Tìm ID Drive trực tiếp trong URL (25+ ký tự, không có dấu /)
     const driveIdMatch = url.match(/([a-zA-Z0-9_-]{25,})/);
-    if (driveIdMatch && driveIdMatch[1]) {
+    if (driveIdMatch && driveIdMatch[1] && !driveIdMatch[1].includes('/')) {
       return {
         fileId: driveIdMatch[1],
         isFolder: false,
@@ -195,24 +212,10 @@ export function extractDriveFileId(url) {
       };
     }
     
+    // Nếu không tìm thấy ID hợp lệ, trả về null
     return null;
   } catch (error) {
     console.error(`Lỗi khi trích xuất Drive file ID: ${error.message}`);
-    
-    // Nếu có lỗi, thử tìm ID Drive trực tiếp trong URL
-    try {
-      const driveIdMatch = url.match(/([a-zA-Z0-9_-]{25,})/);
-      if (driveIdMatch && driveIdMatch[1]) {
-        return {
-          fileId: driveIdMatch[1],
-          isFolder: false,
-          originalUrl: url
-        };
-      }
-    } catch (e) {
-      // Bỏ qua
-    }
-    
     return null;
   }
 }

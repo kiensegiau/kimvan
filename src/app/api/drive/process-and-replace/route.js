@@ -87,20 +87,38 @@ export async function POST(request) {
     }
 
     // Validation tham số cập nhật sheet
+    let canUpdateSheet = false;
     if (updateSheet) {
+      console.log(`\n📋 Thông tin cập nhật sheet được yêu cầu:`);
+      console.log(`- courseId: ${courseId || 'không có'}`);
+      console.log(`- sheetIndex: ${sheetIndex !== undefined ? sheetIndex : 'không có'}`);
+      console.log(`- sheetId: ${sheetId || 'không có'}`);
+      console.log(`- googleSheetName: ${googleSheetName || 'không có'}`);
+      console.log(`- rowIndex: ${rowIndex !== undefined ? rowIndex : 'không có'}`);
+      console.log(`- cellIndex: ${cellIndex !== undefined ? cellIndex : 'không có'}`);
+      
       if (courseId) {
         if (sheetIndex === undefined || rowIndex === undefined || cellIndex === undefined) {
-          throw new Error('Thiếu thông tin cập nhật sheet (sheetIndex, rowIndex, cellIndex)');
+          console.warn(`⚠️ Thiếu thông tin cập nhật sheet (sheetIndex, rowIndex, cellIndex)`);
+          canUpdateSheet = false;
+        } else {
+          console.log(`✅ Đủ thông tin để cập nhật sheet cho khóa học`);
+          canUpdateSheet = true;
         }
       } else if (sheetId && googleSheetName) {
         if (rowIndex === undefined || cellIndex === undefined) {
-          throw new Error('Thiếu thông tin cập nhật Google Sheet (rowIndex, cellIndex)');
+          console.warn(`⚠️ Thiếu thông tin cập nhật Google Sheet (rowIndex, cellIndex)`);
+          canUpdateSheet = false;
+        } else {
+          console.log(`✅ Đủ thông tin để cập nhật Google Sheet trực tiếp`);
+          canUpdateSheet = true;
         }
       } else {
-        throw new Error('Thiếu thông tin sheet (courseId hoặc sheetId + googleSheetName)');
+        console.warn(`⚠️ Thiếu thông tin sheet (courseId hoặc sheetId + googleSheetName)`);
+        canUpdateSheet = false;
       }
     }
-
+    
     // Ưu tiên sử dụng fileId trực tiếp nếu có
     let finalFileId = fileId;
     
@@ -283,7 +301,7 @@ export async function POST(request) {
     const fileOptions = {
       targetFolderId: finalTargetFolderId,
       apiKey,
-      updateSheet,
+      updateSheet: canUpdateSheet, // Sử dụng biến canUpdateSheet thay vì updateSheet trực tiếp
       courseId,
       sheetIndex,
       rowIndex,

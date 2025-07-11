@@ -32,9 +32,9 @@ function determineFileTypeFromExtension(url) {
 }
 
 export async function POST(request, { params }) {
-  console.log('============== BẮT ĐẦU XỬ LÝ TẤT CẢ LINK TRONG SHEET ==============');
-  
   try {
+    console.log('============== BẮT ĐẦU XỬ LÝ TẤT CẢ LINK TRONG SHEET ==============');
+    
     await dbMiddleware(request);
     const { id } = await params;
     // Xử lý trường hợp request không có body hoặc body không hợp lệ
@@ -301,11 +301,13 @@ export async function POST(request, { params }) {
     // Nhóm các ô có cùng URL để tránh xử lý lặp lại
     const urlGroups = {};
     cellsToProcess.forEach(cellInfo => {
-      // Chuẩn hóa URL để so sánh
-      const normalizedUrl = extractDriveFileId(cellInfo.url);
+      // Sử dụng URL gốc làm khóa thay vì fileId được trích xuất
+      const normalizedUrl = cellInfo.url;
       if (!urlGroups[normalizedUrl]) {
+        // Vẫn trích xuất fileId để sử dụng sau này
+        const extracted = extractDriveFileId(cellInfo.url);
         urlGroups[normalizedUrl] = {
-          fileId: normalizedUrl,
+          fileId: extracted ? extracted.fileId : null,
           originalUrl: cellInfo.url,
           cells: []
         };
@@ -314,6 +316,31 @@ export async function POST(request, { params }) {
     });
     
     console.log(`Đã nhóm ${cellsToProcess.length} ô thành ${Object.keys(urlGroups).length} nhóm URL duy nhất`);
+    
+    // Log chi tiết hơn về các nhóm URL
+    if (Object.keys(urlGroups).length <= 10) {
+      // Nếu số lượng nhóm ít, hiển thị chi tiết
+      Object.entries(urlGroups).forEach(([url, group]) => {
+        console.log(`- Nhóm URL: ${url} (${group.cells.length} ô)`);
+      });
+    } else {
+      // Nếu quá nhiều nhóm, hiển thị thông tin tổng quan
+      const groupSizes = Object.values(urlGroups).map(group => group.cells.length);
+      const maxSize = Math.max(...groupSizes);
+      const minSize = Math.min(...groupSizes);
+      const avgSize = groupSizes.reduce((sum, size) => sum + size, 0) / groupSizes.length;
+      console.log(`- Thông tin nhóm: Nhỏ nhất ${minSize} ô, Lớn nhất ${maxSize} ô, Trung bình ${avgSize.toFixed(1)} ô`);
+      
+      // Hiển thị một vài nhóm có số lượng ô lớn nhất
+      const topGroups = Object.entries(urlGroups)
+        .sort((a, b) => b[1].cells.length - a[1].cells.length)
+        .slice(0, 5);
+      
+      console.log('- Top 5 nhóm lớn nhất:');
+      topGroups.forEach(([url, group]) => {
+        console.log(`  + ${url.substring(0, 50)}... (${group.cells.length} ô)`);
+      });
+    }
     
     // Xử lý từng link
     const processedCells = [];
@@ -332,7 +359,8 @@ export async function POST(request, { params }) {
     const urlGroupsArray = Object.values(urlGroups);
     
     // Xử lý theo batch, mỗi batch 5 link
-    const BATCH_SIZE = 1    
+    const BATCH_SIZE = 1;
+    
     // Thay đổi hàm processUrlGroup thành async
     async function processUrlGroup(urlGroup, index) {
       const firstCell = urlGroup.cells[0];
@@ -341,21 +369,25 @@ export async function POST(request, { params }) {
         
         // ----- 1. XÁC ĐỊNH LOẠI FILE & ID -----
         let fileType = null; // MIME type
-        let fileId = null;  // Google Drive file ID
+        let fileId = urlGroup.fileId;  // Sử dụng fileId đã được trích xuất trước đó
         let isFolder = false; // Flag để đánh dấu nếu là folder
         let fileName = null; // Tên file nếu có thể xác định
         
-        // Trích xuất file ID từ URL - sử dụng hàm mới để xử lý URL phức tạp
-        try {
-          const extracted = extractDriveFileId(urlGroup.originalUrl);
-          if (extracted && extracted.fileId) {
-            fileId = extracted.fileId;
-            console.log(`✅ Đã trích xuất file ID: ${fileId}`);
-          } else {
-            console.log(`⚠️ Không thể trích xuất ID từ URL: ${urlGroup.originalUrl}`);
+        // Trích xuất file ID từ URL nếu chưa có
+        if (!fileId) {
+          try {
+            const extracted = extractDriveFileId(urlGroup.originalUrl);
+            if (extracted && extracted.fileId) {
+              fileId = extracted.fileId;
+              isFolder = extracted.isFolder || false;
+              console.log(`✅ Đã trích xuất file ID: ${fileId}`);
+            } else {
+              console.log(`⚠️ Không thể trích xuất ID từ URL: ${urlGroup.originalUrl}`);
+              console.log(`⚠️ Sẽ xử lý dựa trên URL gốc thay vì fileId`);
+            }
+          } catch (extractError) {
+            console.warn(`⚠️ Lỗi khi trích xuất ID file: ${extractError.message}`);
           }
-        } catch (extractError) {
-          console.warn(`⚠️ Lỗi khi trích xuất ID file: ${extractError.message}`);
         }
         
         // Thử xác định loại file từ URL (nếu không có fileId)
@@ -608,29 +640,38 @@ export async function POST(request, { params }) {
           
           try {
             if (!fileId) {
-              throw new Error('Không có file ID hợp lệ để xử lý PDF');
+              console.log(`⚠️ Không có file ID hợp lệ, không thể xử lý PDF`);
+              return {
+                success: false,
+                urlGroup,
+                error: 'Không có file ID hợp lệ',
+                keepOriginalUrl: true
+              };
             }
-            
-            console.log(`📤 Gọi API process-and-replace cho PDF với fileId: ${fileId}`);
-            
-            // Tạo URL đơn giản từ fileId thay vì sử dụng URL phức tạp
-            const simpleUrl = `https://drive.google.com/file/d/${fileId}/view`;
-            
+
+            // Chuẩn bị payload cho API xử lý PDF
+            const payload = {
+              fileId: fileId,
+              driveLink: urlGroup.originalUrl,
+              targetFolderId: "1Lt10aHyWp9VtPaImzInE0DmIcbrjJgpN", // Folder mặc định
+              folderName: firstSheetName,
+              updateSheet: false, // Không cần cập nhật sheet ở đây vì sẽ tự cập nhật sau
+              displayText: firstCell.cell // Truyền text hiển thị từ cell đầu tiên trong nhóm
+            };
+
+            console.log(`📤 Gửi yêu cầu xử lý PDF với payload:`);
+            console.log(JSON.stringify(payload, null, 2));
+
+            // Gọi API xử lý file
             const processResponse = await fetch(`${baseUrl}/api/drive/process-and-replace`, {
               method: 'POST',
-              headers: { 
+              headers: {
                 'Content-Type': 'application/json',
-                'Cookie': cookie // Chuyển tiếp cookie để duy trì phiên đăng nhập
+                'Cookie': cookie
               },
-              body: JSON.stringify({
-                fileId: fileId, // Ưu tiên sử dụng fileId trực tiếp
-                url: simpleUrl, // Cung cấp URL đơn giản như backup
-                targetFolderId: "1Lt10aHyWp9VtPaImzInE0DmIcbrjJgpN", // Folder mặc định
-                watermarkApiKey: requestBody.apiKey || null,
-                courseName: firstSheetName
-              })
+              body: JSON.stringify(payload)
             });
-            
+              
             // Kiểm tra phản hồi từ API
             if (!processResponse.ok) {
               let errorText = await processResponse.text();
@@ -651,11 +692,11 @@ export async function POST(request, { params }) {
                 fileCategory: 'pdf'
               };
             }
-            
+              
             // Đọc kết quả từ API
             const processResultJson = await processResponse.json();
             console.log(`📊 Kết quả xử lý PDF:`, JSON.stringify(processResultJson, null, 2));
-            
+              
             // Log chi tiết về processedFile để debug
             if (processResultJson && processResultJson.processedFile) {
               console.log(`📄 Chi tiết file đã xử lý:
@@ -666,7 +707,7 @@ export async function POST(request, { params }) {
 - webContentLink: ${processResultJson.processedFile.webContentLink || 'không có'}
 `);
             }
-            
+              
             // Kiểm tra lỗi từ kết quả
             if (!processResultJson || processResultJson.error || !processResultJson.processedFile) {
               const errorMessage = processResultJson?.error || 'Không nhận được kết quả xử lý hợp lệ';
@@ -683,7 +724,7 @@ export async function POST(request, { params }) {
                 fileCategory: 'pdf'
               };
             }
-            
+              
             // Kiểm tra nếu file bị bỏ qua xử lý
             if (processResultJson.skipped) {
               console.log(`⚠️ PDF đã được bỏ qua xử lý: ${processResultJson.message || 'Không rõ lý do'}`);
@@ -704,7 +745,7 @@ export async function POST(request, { params }) {
                 skipped: true
               };
             }
-            
+              
             // Kiểm tra nếu không có link mới
             if (!processResultJson.processedFile.link &&
                 !processResultJson.processedFile.webViewLink && 
@@ -722,13 +763,13 @@ export async function POST(request, { params }) {
                 fileCategory: 'pdf'
               };
             }
-            
+              
             // Lấy URL mới từ kết quả - ưu tiên theo thứ tự: link, webContentLink, webViewLink
             const newUrl = processResultJson.processedFile.link || 
                           processResultJson.processedFile.webContentLink || 
                           processResultJson.processedFile.webViewLink;
             console.log(`✅ PDF đã được xử lý thành công: ${newUrl}`);
-            
+              
             return {
               success: true,
               urlGroup,
@@ -756,39 +797,109 @@ export async function POST(request, { params }) {
         
         // 3.4 XỬ LÝ IMAGE FILE
         async function processImageFile() {
-          console.log(`🖼️ Xử lý FILE HÌNH ẢNH: ${urlGroup.originalUrl}`);
-          return await processGenericFile('image');
+          try {
+            console.log(`🖼️ Xử lý FILE HÌNH ẢNH: ${urlGroup.originalUrl}`);
+            return await processGenericFile('image');
+          } catch (error) {
+            console.error(`❌ Lỗi khi xử lý file hình ảnh: ${error.message}`);
+            return {
+              success: true,
+              keepOriginalUrl: true,
+              urlGroup,
+              newUrl: urlGroup.originalUrl,
+              error: `Lỗi xử lý hình ảnh: ${error.message}`,
+              processResult: null,
+              fileType: fileType,
+              fileCategory: 'image'
+            };
+          }
         }
         
         // 3.5 XỬ LÝ DOCUMENT FILE
         async function processDocumentFile() {
-          console.log(`📝 Xử lý FILE VĂN BẢN: ${urlGroup.originalUrl}`);
-          return await processGenericFile('document');
+          try {
+            console.log(`📝 Xử lý FILE VĂN BẢN: ${urlGroup.originalUrl}`);
+            return await processGenericFile('document');
+          } catch (error) {
+            console.error(`❌ Lỗi khi xử lý file văn bản: ${error.message}`);
+            return {
+              success: true,
+              keepOriginalUrl: true,
+              urlGroup,
+              newUrl: urlGroup.originalUrl,
+              error: `Lỗi xử lý văn bản: ${error.message}`,
+              processResult: null,
+              fileType: fileType,
+              fileCategory: 'document'
+            };
+          }
         }
         
         // 3.6 XỬ LÝ SPREADSHEET FILE
         async function processSpreadsheetFile() {
-          console.log(`📊 Xử lý FILE BẢNG TÍNH: ${urlGroup.originalUrl}`);
-          return await processGenericFile('spreadsheet');
+          try {
+            console.log(`📊 Xử lý FILE BẢNG TÍNH: ${urlGroup.originalUrl}`);
+            return await processGenericFile('spreadsheet');
+          } catch (error) {
+            console.error(`❌ Lỗi khi xử lý file bảng tính: ${error.message}`);
+            return {
+              success: true,
+              keepOriginalUrl: true,
+              urlGroup,
+              newUrl: urlGroup.originalUrl,
+              error: `Lỗi xử lý bảng tính: ${error.message}`,
+              processResult: null,
+              fileType: fileType,
+              fileCategory: 'spreadsheet'
+            };
+          }
         }
         
         // 3.7 XỬ LÝ PRESENTATION FILE
         async function processPresentationFile() {
-          console.log(`🎞️ Xử lý FILE TRÌNH CHIẾU: ${urlGroup.originalUrl}`);
-          return await processGenericFile('presentation');
+          try {
+            console.log(`🎞️ Xử lý FILE TRÌNH CHIẾU: ${urlGroup.originalUrl}`);
+            return await processGenericFile('presentation');
+          } catch (error) {
+            console.error(`❌ Lỗi khi xử lý file trình chiếu: ${error.message}`);
+            return {
+              success: true,
+              keepOriginalUrl: true,
+              urlGroup,
+              newUrl: urlGroup.originalUrl,
+              error: `Lỗi xử lý trình chiếu: ${error.message}`,
+              processResult: null,
+              fileType: fileType,
+              fileCategory: 'presentation'
+            };
+          }
         }
         
         // 3.8 XỬ LÝ AUDIO FILE
         async function processAudioFile() {
-          console.log(`🎵 Xử lý FILE ÂM THANH: ${urlGroup.originalUrl}`);
-          return await processGenericFile('audio');
+          try {
+            console.log(`🎵 Xử lý FILE ÂM THANH: ${urlGroup.originalUrl}`);
+            return await processGenericFile('audio');
+          } catch (error) {
+            console.error(`❌ Lỗi khi xử lý file âm thanh: ${error.message}`);
+            return {
+              success: true,
+              keepOriginalUrl: true,
+              urlGroup,
+              newUrl: urlGroup.originalUrl,
+              error: `Lỗi xử lý âm thanh: ${error.message}`,
+              processResult: null,
+              fileType: fileType,
+              fileCategory: 'audio'
+            };
+          }
         }
         
         // 3.9 XỬ LÝ CÁC LOẠI FILE KHÁC
         async function processGenericFile(specificCategory = 'other') {
-          console.log(`📦 Xử lý FILE KHÁC (${specificCategory}): ${urlGroup.originalUrl}`);
-          
           try {
+            console.log(`📦 Xử lý FILE KHÁC (${specificCategory}): ${urlGroup.originalUrl}`);
+          
             if (!fileId) {
               throw new Error(`Không có file ID hợp lệ để xử lý file ${specificCategory}`);
             }
@@ -932,73 +1043,78 @@ export async function POST(request, { params }) {
      * @returns {{type: string, description: string}} - Loại file và mô tả
      */
     function categorizeFile(mimeType, url) {
-      // Xác định từ URL nếu không có MIME type
-      if (!mimeType || mimeType === 'application/octet-stream') {
-        const lowerUrl = url.toLowerCase();
+      try {
+        // Xác định từ URL nếu không có MIME type
+        if (!mimeType || mimeType === 'application/octet-stream') {
+          const lowerUrl = url.toLowerCase();
+          
+          // Xác định loại từ phần mở rộng trong URL
+          if (lowerUrl.match(/\.(mp4|avi|mov|wmv|flv|mkv|webm)($|\?)/)) {
+            return { type: 'video', description: 'Video file (từ URL)' };
+          } else if (lowerUrl.match(/\.(pdf)($|\?)/)) {
+            return { type: 'pdf', description: 'PDF file (từ URL)' };
+          } else if (lowerUrl.match(/\.(jpg|jpeg|png|gif|bmp|svg|webp|tiff)($|\?)/)) {
+            return { type: 'image', description: 'Image file (từ URL)' };
+          } else if (lowerUrl.match(/\.(doc|docx|odt|rtf|txt)($|\?)/)) {
+            return { type: 'document', description: 'Document file (từ URL)' };
+          } else if (lowerUrl.match(/\.(xls|xlsx|ods|csv)($|\?)/)) {
+            return { type: 'spreadsheet', description: 'Spreadsheet file (từ URL)' };
+          } else if (lowerUrl.match(/\.(ppt|pptx|odp)($|\?)/)) {
+            return { type: 'presentation', description: 'Presentation file (từ URL)' };
+          } else if (lowerUrl.match(/\.(mp3|wav|ogg|flac|aac|m4a)($|\?)/)) {
+            return { type: 'audio', description: 'Audio file (từ URL)' };
+          } else if (lowerUrl.match(/\.(zip|rar|7z|tar|gz)($|\?)/)) {
+            return { type: 'archive', description: 'Archive file (từ URL)' };
+          }
+          
+          // Mặc định
+          return { type: 'other', description: 'Không xác định được loại (từ URL)' };
+        }
         
-        // Xác định loại từ phần mở rộng trong URL
-        if (lowerUrl.match(/\.(mp4|avi|mov|wmv|flv|mkv|webm)($|\?)/)) {
-          return { type: 'video', description: 'Video file (từ URL)' };
-        } else if (lowerUrl.match(/\.(pdf)($|\?)/)) {
-          return { type: 'pdf', description: 'PDF file (từ URL)' };
-        } else if (lowerUrl.match(/\.(jpg|jpeg|png|gif|bmp|svg|webp|tiff)($|\?)/)) {
-          return { type: 'image', description: 'Image file (từ URL)' };
-        } else if (lowerUrl.match(/\.(doc|docx|odt|rtf|txt)($|\?)/)) {
-          return { type: 'document', description: 'Document file (từ URL)' };
-        } else if (lowerUrl.match(/\.(xls|xlsx|ods|csv)($|\?)/)) {
-          return { type: 'spreadsheet', description: 'Spreadsheet file (từ URL)' };
-        } else if (lowerUrl.match(/\.(ppt|pptx|odp)($|\?)/)) {
-          return { type: 'presentation', description: 'Presentation file (từ URL)' };
-        } else if (lowerUrl.match(/\.(mp3|wav|ogg|flac|aac|m4a)($|\?)/)) {
-          return { type: 'audio', description: 'Audio file (từ URL)' };
-        } else if (lowerUrl.match(/\.(zip|rar|7z|tar|gz)($|\?)/)) {
-          return { type: 'archive', description: 'Archive file (từ URL)' };
+        // Xác định từ MIME type
+        const lowerMime = mimeType.toLowerCase();
+        
+        // Phân loại theo MIME
+        if (lowerMime === 'application/vnd.google-apps.folder') {
+          return { type: 'folder', description: 'Google Drive Folder' };
+        } else if (lowerMime.includes('pdf')) {
+          return { type: 'pdf', description: 'PDF document' };
+        } else if (lowerMime.startsWith('video/') || lowerMime.includes('video')) {
+          return { type: 'video', description: 'Video file' };
+        } else if (lowerMime.startsWith('image/') || lowerMime.includes('image')) {
+          return { type: 'image', description: 'Image file' };
+        } else if (lowerMime.startsWith('audio/') || lowerMime.includes('audio')) {
+          return { type: 'audio', description: 'Audio file' };
+        } else if (
+          lowerMime.includes('spreadsheet') || 
+          lowerMime.includes('excel') || 
+          lowerMime.includes('csv') ||
+          lowerMime === 'application/vnd.google-apps.spreadsheet'
+        ) {
+          return { type: 'spreadsheet', description: 'Spreadsheet file' };
+        } else if (
+          lowerMime.includes('presentation') || 
+          lowerMime.includes('powerpoint') ||
+          lowerMime === 'application/vnd.google-apps.presentation'
+        ) {
+          return { type: 'presentation', description: 'Presentation file' };
+        } else if (
+          lowerMime.includes('document') || 
+          lowerMime.includes('word') || 
+          lowerMime.includes('text/') ||
+          lowerMime === 'application/vnd.google-apps.document'
+        ) {
+          return { type: 'document', description: 'Document file' };
+        } else if (lowerMime.includes('zip') || lowerMime.includes('compressed')) {
+          return { type: 'archive', description: 'Archive file' };
         }
         
         // Mặc định
-        return { type: 'other', description: 'Không xác định được loại (từ URL)' };
+        return { type: 'other', description: `Loại khác: ${mimeType}` };
+      } catch (error) {
+        console.error(`❌ Lỗi khi phân loại file: ${error.message}`);
+        return { type: 'other', description: 'Lỗi phân loại file' };
       }
-      
-      // Xác định từ MIME type
-      const lowerMime = mimeType.toLowerCase();
-      
-      // Phân loại theo MIME
-      if (lowerMime === 'application/vnd.google-apps.folder') {
-        return { type: 'folder', description: 'Google Drive Folder' };
-      } else if (lowerMime.includes('pdf')) {
-        return { type: 'pdf', description: 'PDF document' };
-      } else if (lowerMime.startsWith('video/') || lowerMime.includes('video')) {
-        return { type: 'video', description: 'Video file' };
-      } else if (lowerMime.startsWith('image/') || lowerMime.includes('image')) {
-        return { type: 'image', description: 'Image file' };
-      } else if (lowerMime.startsWith('audio/') || lowerMime.includes('audio')) {
-        return { type: 'audio', description: 'Audio file' };
-      } else if (
-        lowerMime.includes('spreadsheet') || 
-        lowerMime.includes('excel') || 
-        lowerMime.includes('csv') ||
-        lowerMime === 'application/vnd.google-apps.spreadsheet'
-      ) {
-        return { type: 'spreadsheet', description: 'Spreadsheet file' };
-      } else if (
-        lowerMime.includes('presentation') || 
-        lowerMime.includes('powerpoint') ||
-        lowerMime === 'application/vnd.google-apps.presentation'
-      ) {
-        return { type: 'presentation', description: 'Presentation file' };
-      } else if (
-        lowerMime.includes('document') || 
-        lowerMime.includes('word') || 
-        lowerMime.includes('text/') ||
-        lowerMime === 'application/vnd.google-apps.document'
-      ) {
-        return { type: 'document', description: 'Document file' };
-      } else if (lowerMime.includes('zip') || lowerMime.includes('compressed')) {
-        return { type: 'archive', description: 'Archive file' };
-      }
-      
-      // Mặc định
-      return { type: 'other', description: `Loại khác: ${mimeType}` };
     }
     
     // Thay đổi cách gọi hàm processUrlGroup
@@ -1014,7 +1130,7 @@ export async function POST(request, { params }) {
       // Xử lý kết quả của batch
       for (const result of batchResults) {
         // Kiểm tra xem kết quả có tồn tại và thành công không
-        if (!result || !result.success || result.error) {
+        if (!result || !result.success) {
           // Xử lý lỗi cho tất cả các ô trong nhóm
           if (result && result.urlGroup && result.urlGroup.cells) {
             const urlGroup = result.urlGroup;
@@ -1045,24 +1161,22 @@ export async function POST(request, { params }) {
         
         console.log(`Xử lý kết quả cho URL: ${urlGroup.originalUrl}, loại file: ${fileType}`);
         
-        // Kiểm tra thêm các điều kiện lỗi khác
-        if (result.keepOriginalUrl || 
-            (processResult && !processResult.success) || 
-            (!newUrl || newUrl === urlGroup.originalUrl)) {
-          
-          console.log(`Giữ nguyên URL gốc do gặp lỗi: ${result.error || 'Không xác định'}`);
-          console.log(`Không thay đổi bất kỳ điều gì trong sheet khi gặp lỗi`);
+        // Kiểm tra nếu cần giữ nguyên URL gốc hoặc không có URL mới
+        if (result.keepOriginalUrl || !newUrl) {
+          const errorMessage = result.error || 'Không có URL mới sau khi xử lý';
+          console.log(`Giữ nguyên URL gốc do: ${errorMessage}`);
+          console.log(`Không thay đổi bất kỳ điều gì trong sheet khi gặp lỗi này`);
           
           // Chỉ ghi log lỗi, không cập nhật sheet
           for (const cellInfo of urlGroup.cells) {
-            console.log(`Bỏ qua cập nhật ô [${cellInfo.rowIndex + 1}:${cellInfo.colIndex + 1}] do lỗi: ${result.error || 'Không xác định'}`);
+            console.log(`Bỏ qua cập nhật ô [${cellInfo.rowIndex + 1}:${cellInfo.colIndex + 1}] do: ${errorMessage}`);
             
             // Thêm vào mảng errors để báo cáo
             errors.push({
               rowIndex: cellInfo.rowIndex,
               colIndex: cellInfo.colIndex,
               url: cellInfo.url,
-              error: `Lỗi xử lý: ${result.error || 'Không xác định'}`,
+              error: `Không thể cập nhật: ${errorMessage}`,
               timestamp: new Date().toISOString(),
               sharedWithCells: urlGroup.cells.length - 1,
               noChangeMade: true // Đánh dấu là không thay đổi gì trong sheet
@@ -1083,103 +1197,135 @@ export async function POST(request, { params }) {
             // Lấy thời gian hiện tại để ghi chú
             const currentTime = new Date().toLocaleString('vi-VN');
             
-            // Sử dụng batchUpdate để cập nhật cả giá trị và định dạng hyperlink với màu nổi bật
-            await sheets.spreadsheets.batchUpdate({
-              spreadsheetId: sheet.sheetId,
-              requestBody: {
-                requests: [
-                  {
-                    updateCells: {
-                      range: {
-                        sheetId: actualSheetId, // Sử dụng sheetId thực tế
-                        startRowIndex: cellInfo.rowIndex,
-                        endRowIndex: cellInfo.rowIndex + 1,
-                        startColumnIndex: cellInfo.colIndex,
-                        endColumnIndex: cellInfo.colIndex + 1
-                      },
-                      rows: [
-                        {
-                          values: [
-                            {
-                              userEnteredValue: {
-                                stringValue: cellInfo.cell // Giữ nguyên text hiển thị
-                              },
-                              userEnteredFormat: {
-                                backgroundColor: {
-                                  red: 0.9,
-                                  green: 0.6,  // Màu xanh dương nổi bật
-                                  blue: 1.0
-                                },
-                                textFormat: {
-                                  link: { uri: newUrl },
-                                  foregroundColor: { 
-                                    red: 0.0,
-                                    green: 0.0,
-                                    blue: 0.7  // Chữ màu xanh đậm
-                                  },
-                                  bold: true  // In đậm text
-                                }
-                              },
-                              note: `Link gốc: ${urlGroup.originalUrl}\nĐã xử lý lúc: ${currentTime}`
-                            }
-                          ]
-                        }
-                      ],
-                      fields: 'userEnteredValue,userEnteredFormat.backgroundColor,userEnteredFormat.textFormat.link,userEnteredFormat.textFormat.foregroundColor,userEnteredFormat.textFormat.bold,note'
-                    }
-                  }
-                ]
-              }
-            });
-            console.log(`Đã cập nhật ô thành công với batchUpdate`);
-          } catch (batchUpdateError) {
-            console.error('Lỗi khi sử dụng batchUpdate, thử phương pháp thay thế:', batchUpdateError);
-            
-            // Phương pháp thay thế sử dụng values.update
-            const newCellValue = createHyperlinkFormula(cellInfo.cell, newUrl);
-            console.log(`Thử phương pháp thay thế với values.update, giá trị mới: ${newCellValue}`);
-            
-            // Cập nhật giá trị ô
-            await sheets.spreadsheets.values.update({
-              spreadsheetId: sheet.sheetId,
-              range: `${apiSheetName}!${String.fromCharCode(65 + cellInfo.colIndex)}${cellInfo.rowIndex + 1}`,
-              valueInputOption: 'USER_ENTERED',
-              requestBody: {
-                values: [[newCellValue]]
-              }
-            });
-            
-            // Thêm ghi chú sau khi cập nhật giá trị
             try {
-              const currentTime = new Date().toLocaleString('vi-VN');
+              // Sử dụng batchUpdate để cập nhật cả giá trị và định dạng hyperlink với màu nổi bật
               await sheets.spreadsheets.batchUpdate({
                 spreadsheetId: sheet.sheetId,
                 requestBody: {
-                  requests: [{
-                    updateCells: {
-                      range: {
-                        sheetId: actualSheetId,
-                        startRowIndex: cellInfo.rowIndex,
-                        endRowIndex: cellInfo.rowIndex + 1,
-                        startColumnIndex: cellInfo.colIndex,
-                        endColumnIndex: cellInfo.colIndex + 1
-                      },
-                      rows: [{
-                        values: [{
-                          note: `Link gốc: ${urlGroup.originalUrl}\nĐã xử lý lúc: ${currentTime}`
-                        }]
-                      }],
-                      fields: 'note'
+                  requests: [
+                    {
+                      updateCells: {
+                        range: {
+                          sheetId: actualSheetId, // Sử dụng sheetId thực tế
+                          startRowIndex: cellInfo.rowIndex,
+                          endRowIndex: cellInfo.rowIndex + 1,
+                          startColumnIndex: cellInfo.colIndex,
+                          endColumnIndex: cellInfo.colIndex + 1
+                        },
+                        rows: [
+                          {
+                            values: [
+                              {
+                                userEnteredValue: {
+                                  stringValue: cellInfo.cell // Giữ nguyên text hiển thị
+                                },
+                                userEnteredFormat: {
+                                  backgroundColor: {
+                                    red: 0.9,
+                                    green: 0.6,  // Màu xanh dương nổi bật
+                                    blue: 1.0
+                                  },
+                                  textFormat: {
+                                    link: { uri: newUrl },
+                                    foregroundColor: { 
+                                      red: 0.0,
+                                      green: 0.0,
+                                      blue: 0.7  // Chữ màu xanh đậm
+                                    },
+                                    bold: true  // In đậm text
+                                  }
+                                },
+                                note: `Link gốc: ${urlGroup.originalUrl}\nĐã xử lý lúc: ${currentTime}`
+                              }
+                            ]
+                          }
+                        ],
+                        fields: 'userEnteredValue,userEnteredFormat.backgroundColor,userEnteredFormat.textFormat.link,userEnteredFormat.textFormat.foregroundColor,userEnteredFormat.textFormat.bold,note'
+                      }
                     }
-                  }]
+                  ]
                 }
               });
-              console.log(`Đã thêm ghi chú cho ô`);
-            } catch (noteError) {
-              console.error(`Không thể thêm ghi chú:`, noteError);
+              console.log(`✅ Đã cập nhật ô thành công với batchUpdate`);
+            } catch (batchUpdateError) {
+              console.error('❌ Lỗi khi sử dụng batchUpdate:', batchUpdateError);
+              
+              // Phương pháp thay thế: Tạo công thức hyperlink
+              console.log(`⚠️ Thử phương pháp thay thế với values.update`);
+              
+              // Tạo công thức hyperlink
+              const formula = `=HYPERLINK("${newUrl}","${cellInfo.cell.replace(/"/g, '""')}")`;
+              
+              try {
+                // Cập nhật giá trị ô bằng công thức
+                await sheets.spreadsheets.values.update({
+                  spreadsheetId: sheet.sheetId,
+                  range: `${apiSheetName}!${String.fromCharCode(65 + cellInfo.colIndex)}${cellInfo.rowIndex + 1}`,
+                  valueInputOption: 'USER_ENTERED',
+                  requestBody: {
+                    values: [[formula]]
+                  }
+                });
+                
+                // Cập nhật định dạng và ghi chú
+                await sheets.spreadsheets.batchUpdate({
+                  spreadsheetId: sheet.sheetId,
+                  requestBody: {
+                    requests: [{
+                      updateCells: {
+                        range: {
+                          sheetId: actualSheetId,
+                          startRowIndex: cellInfo.rowIndex,
+                          endRowIndex: cellInfo.rowIndex + 1,
+                          startColumnIndex: cellInfo.colIndex,
+                          endColumnIndex: cellInfo.colIndex + 1
+                        },
+                        rows: [{
+                          values: [{
+                            userEnteredFormat: {
+                              backgroundColor: { red: 0.9, green: 0.6, blue: 1.0 },
+                              textFormat: { bold: true }
+                            },
+                            note: `Link gốc: ${urlGroup.originalUrl}\nĐã xử lý lúc: ${currentTime}`
+                          }]
+                        }],
+                        fields: 'userEnteredFormat.backgroundColor,userEnteredFormat.textFormat.bold,note'
+                      }
+                    }]
+                  }
+                });
+                console.log(`✅ Đã cập nhật ô thành công với phương pháp thay thế`);
+              } catch (formulaError) {
+                console.error(`❌ Lỗi khi sử dụng phương pháp thay thế:`, formulaError);
+                
+                // Phương pháp cuối cùng: chỉ cập nhật giá trị đơn thuần
+                try {
+                  await sheets.spreadsheets.values.update({
+                    spreadsheetId: sheet.sheetId,
+                    range: `${apiSheetName}!${String.fromCharCode(65 + cellInfo.colIndex)}${cellInfo.rowIndex + 1}`,
+                    valueInputOption: 'RAW',
+                    requestBody: {
+                      values: [[newUrl]]
+                    }
+                  });
+                  console.log(`⚠️ Đã cập nhật giá trị đơn thuần (không có định dạng)`);
+                } catch (finalError) {
+                  console.error(`❌ Tất cả phương pháp cập nhật đều thất bại:`, finalError);
+                  throw new Error(`Không thể cập nhật ô [${cellInfo.rowIndex + 1}:${cellInfo.colIndex + 1}]`);
+                }
+              }
             }
-            
-            console.log(`Đã cập nhật ô thành công với values.update`);
+          } catch (batchUpdateError) {
+            console.error(`❌ Lỗi khi cập nhật ô [${cellInfo.rowIndex + 1}:${cellInfo.colIndex + 1}]:`, batchUpdateError);
+            errors.push({
+              rowIndex: cellInfo.rowIndex,
+              colIndex: cellInfo.colIndex,
+              originalUrl: cellInfo.url,
+              error: `Lỗi cập nhật sheet: ${batchUpdateError.message}`,
+              timestamp: new Date().toISOString(),
+              sharedWithCells: urlGroup.cells.length - 1
+            });
+            continue; // Bỏ qua ô này và tiếp tục với ô tiếp theo
           }
           
           // Thêm vào mảng kết quả
@@ -1231,4 +1377,4 @@ export async function POST(request, { params }) {
       { status: 500 }
     );
   }
-} 
+}
