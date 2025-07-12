@@ -367,7 +367,7 @@ export async function POST(request) {
     // Tải lên Google Drive nếu yêu cầu
     if (uploadToDrive) {
       // Lấy token upload
-      const uploadToken = getTokenByType('upload');
+      const uploadToken = await getTokenByType('upload');
       if (uploadToken) {
         // Tạo OAuth2 client
         const oauth2Client = new google.auth.OAuth2(

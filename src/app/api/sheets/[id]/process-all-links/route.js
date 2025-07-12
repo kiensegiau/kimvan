@@ -414,11 +414,14 @@ export async function POST(request, { params }) {
           // Import hàm getTokenByType từ utils
           const { getTokenByType } = await import('@/app/api/drive/remove-watermark/lib/utils.js');
           
-          // Lấy token tải xuống
-          const downloadToken = getTokenByType('download');
+          // Lấy token Google Drive
+          const downloadToken = await getTokenByType('download');
           if (!downloadToken) {
-            console.error('❌ Không tìm thấy token Google Drive tải xuống');
-            throw new Error('Không tìm thấy token Google Drive tải xuống');
+            console.error('❌ Không tìm thấy token Google Drive');
+            return NextResponse.json(
+              { error: 'Không tìm thấy token Google Drive.' },
+              { status: 500 }
+            );
           }
           
           // Tạo OAuth2 client

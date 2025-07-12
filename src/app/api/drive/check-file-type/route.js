@@ -117,7 +117,7 @@ export async function POST(request) {
     }
 
     // Lấy token Google Drive
-    const downloadToken = getTokenByType('download');
+    const downloadToken = await getTokenByType('download');
     if (!downloadToken) {
       console.error('❌ Không tìm thấy token Google Drive');
       return NextResponse.json(

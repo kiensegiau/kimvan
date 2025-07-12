@@ -153,9 +153,10 @@ export async function processPDF(inputPath, outputPath, config = DEFAULT_CONFIG,
         // Lấy đối tượng google từ config nếu có, hoặc import nếu không có
         const googleAPI = config.google || (await import('googleapis')).google;
         
-        // Lấy token tải xuống
-        const downloadToken = getTokenByType('download');
+        // Lấy token Google Drive
+        const downloadToken = await getTokenByType('download');
         if (!downloadToken) {
+          console.error('❌ Không tìm thấy token Google Drive');
           throw new Error('Không tìm thấy token Google Drive');
         }
         

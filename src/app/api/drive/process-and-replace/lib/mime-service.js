@@ -61,11 +61,10 @@ export async function checkFileInfo(fileId) {
     const { getTokenByType } = await import('../../remove-watermark/lib/utils.js');
     const { google } = await import('googleapis');
     
-    // Lấy token tải xuống
-    const downloadToken = getTokenByType('download');
+    // Lấy token download
+    const downloadToken = await getTokenByType('download');
     if (!downloadToken) {
-      console.error('Không tìm thấy token Google Drive tải xuống');
-      throw new Error('Không tìm thấy token Google Drive tải xuống');
+      throw new Error('Không tìm thấy token Google Drive');
     }
     
     // Tạo OAuth2 client

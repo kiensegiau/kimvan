@@ -5,9 +5,9 @@ import { google } from 'googleapis';
 /**
  * Lấy token theo loại
  * @param {string} type - 'download' hoặc 'upload'
- * @returns {object|null} - Token hoặc null nếu không tìm thấy
+ * @returns {Promise<object|null>} - Token hoặc null nếu không tìm thấy
  */
-export function getTokenByType(type = 'download') {
+export async function getTokenByType(type = 'download') {
   try {
     // Đường dẫn tới các file token
     const tokenFiles = {
@@ -46,8 +46,16 @@ export function getTokenByType(type = 'download') {
     if (expiryDate) {
       const now = Date.now();
       if (expiryDate < now) {
-        console.error(`❌ Token ${type} đã hết hạn từ ${new Date(expiryDate).toLocaleString()}`);
-        return null;
+        console.log(`🔄 Token ${type} đã hết hạn từ ${new Date(expiryDate).toLocaleString()}, đang làm mới...`);
+        // Thử làm mới token
+        const refreshedToken = await refreshToken(token, type, tokenFile);
+        if (refreshedToken) {
+          console.log(`✅ Đã làm mới thành công token ${type}`);
+          return refreshedToken;
+        } else {
+          console.error(`❌ Không thể làm mới token ${type}`);
+          return null;
+        }
       }
       
       // Hiển thị thời hạn còn lại
@@ -63,14 +71,73 @@ export function getTokenByType(type = 'download') {
 }
 
 /**
- * Kiểm tra tất cả token
- * @returns {object} - Trạng thái của các token
+ * Làm mới token sử dụng refresh_token
+ * @param {object} token - Token cũ đã hết hạn
+ * @param {string} type - Loại token ('download' hoặc 'upload')
+ * @param {string} tokenFile - Đường dẫn đến file token
+ * @returns {Promise<object|null>} - Token mới hoặc null nếu thất bại
  */
-export function checkAllTokens() {
+async function refreshToken(token, type, tokenFile) {
+  try {
+    if (!token.refresh_token) {
+      console.error(`❌ Không thể làm mới token ${type}: thiếu refresh_token`);
+      return null;
+    }
+
+    console.log(`🔄 Đang làm mới token ${type} sử dụng refresh_token...`);
+
+    // Tạo OAuth2 client
+    const oauth2Client = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET,
+      process.env.GOOGLE_REDIRECT_URI
+    );
+
+    // Thiết lập refresh token
+    oauth2Client.setCredentials({
+      refresh_token: token.refresh_token
+    });
+
+    try {
+      // Làm mới token
+      const { credentials } = await oauth2Client.refreshAccessToken();
+      
+      if (!credentials || !credentials.access_token) {
+        console.error('❌ Làm mới token thất bại: Không nhận được credentials hợp lệ');
+        return null;
+      }
+      
+      // Đảm bảo giữ lại refresh_token nếu không có trong credentials mới
+      if (!credentials.refresh_token && token.refresh_token) {
+        credentials.refresh_token = token.refresh_token;
+      }
+      
+      // Lưu token mới
+      fs.writeFileSync(tokenFile, JSON.stringify(credentials, null, 2));
+      
+      return credentials;
+    } catch (refreshError) {
+      console.error(`❌ Lỗi khi làm mới token: ${refreshError.message}`);
+      if (refreshError.response && refreshError.response.data) {
+        console.error('Chi tiết lỗi:', JSON.stringify(refreshError.response.data, null, 2));
+      }
+      return null;
+    }
+  } catch (error) {
+    console.error(`❌ Lỗi khi làm mới token ${type}: ${error.message}`);
+    return null;
+  }
+}
+
+/**
+ * Kiểm tra tất cả token
+ * @returns {Promise<object>} - Trạng thái của các token
+ */
+export async function checkAllTokens() {
   console.log('🔍 Đang kiểm tra tất cả token...');
   
-  const downloadToken = getTokenByType('download');
-  const uploadToken = getTokenByType('upload');
+  const downloadToken = await getTokenByType('download');
+  const uploadToken = await getTokenByType('upload');
   
   const results = {
     download: downloadToken ? true : false,
@@ -97,7 +164,7 @@ export async function checkFolderAccess(folderId, tokenType = 'download') {
     console.log(`🔒 Kiểm tra quyền truy cập vào thư mục ${folderId} với token ${tokenType}`);
     
     // Lấy token
-    const token = getTokenByType(tokenType);
+    const token = await getTokenByType(tokenType);
     if (!token) {
       return {
         success: false,
@@ -164,8 +231,8 @@ export async function checkSharedFolderDetails(folderId) {
     console.log(`🔍 Kiểm tra chi tiết thư mục được chia sẻ: ${folderId}`);
     
     // Lấy token download và upload để kiểm tra
-    const downloadToken = getTokenByType('download');
-    const uploadToken = getTokenByType('upload');
+    const downloadToken = await getTokenByType('download');
+    const uploadToken = await getTokenByType('upload');
     
     if (!downloadToken && !uploadToken) {
       return {

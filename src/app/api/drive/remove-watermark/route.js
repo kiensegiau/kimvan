@@ -192,7 +192,7 @@ export async function POST(request) {
         const fileId = result.fileId;
         
         // Lấy token để truy cập Drive API
-        const downloadToken = getTokenByType('download');
+        const downloadToken = await getTokenByType('download');
         if (downloadToken) {
           // Tạo OAuth2 client
           const oauth2Client = new google.auth.OAuth2(
@@ -301,7 +301,7 @@ async function handleDriveFile(driveLink, backgroundImage, backgroundOpacity, co
     }
     
     // Lấy thông tin cơ bản về file trước khi tải
-    const downloadToken = getTokenByType('download');
+    const downloadToken = await getTokenByType('download');
     if (!downloadToken) {
       console.error('Token Google Drive không tìm thấy');
       throw new Error('Không tìm thấy token Google Drive.');
@@ -339,7 +339,7 @@ async function handleDriveFile(driveLink, backgroundImage, backgroundOpacity, co
     
     try {
       // Lấy token upload
-      const uploadToken = getTokenByType('upload');
+      const uploadToken = await getTokenByType('upload');
       if (!uploadToken) {
         console.error('Token upload không tìm thấy');
         throw new Error('Không tìm thấy token tải lên Google Drive.');
@@ -464,7 +464,7 @@ async function handleDriveFile(driveLink, backgroundImage, backgroundOpacity, co
             fileId = driveLink;
           }
           
-          const downloadToken = getTokenByType('download');
+          const downloadToken = await getTokenByType('download');
           if (!downloadToken) {
             throw new Error('Không tìm thấy token Google Drive.');
           }
@@ -542,7 +542,7 @@ async function handleDriveFile(driveLink, backgroundImage, backgroundOpacity, co
         
         // Lấy thông tin file để biết tên
         try {
-          const downloadToken = getTokenByType('download');
+          const downloadToken = await getTokenByType('download');
           if (!downloadToken) {
             throw new Error('Không tìm thấy token Google Drive.');
           }
@@ -1261,7 +1261,7 @@ async function handleDriveFolder(driveFolderLink, backgroundImage, backgroundOpa
         console.log(`Kiểm tra trước xem file "${file.name}" đã tồn tại trong thư mục đích chưa...`);
         
         // Lấy token upload
-        const uploadToken = getTokenByType('upload');
+        const uploadToken = await getTokenByType('upload');
         if (!uploadToken) {
           throw new Error('Không tìm thấy token tải lên Google Drive.');
         }
@@ -1417,7 +1417,7 @@ async function handleDriveFolder(driveFolderLink, backgroundImage, backgroundOpa
               
               try {
                 // Lấy token download
-                const downloadToken = getTokenByType('download');
+                const downloadToken = await getTokenByType('download');
                 if (!downloadToken) {
                   throw new Error('Không tìm thấy token Google Drive.');
                 }
@@ -1870,8 +1870,8 @@ async function handleDriveFolder(driveFolderLink, backgroundImage, backgroundOpa
 export async function GET() {
   try {
     // Kiểm tra Google Drive token
-    const uploadToken = getTokenByType('upload');
-    const downloadToken = getTokenByType('download');
+    const uploadToken = await getTokenByType('upload');
+    const downloadToken = await getTokenByType('download');
     
     const tokenStatus = {
       upload: uploadToken ? true : false,

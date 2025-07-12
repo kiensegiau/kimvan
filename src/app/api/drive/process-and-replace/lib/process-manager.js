@@ -642,14 +642,15 @@ export async function processFolder(folderId, options, parentFolderInfo = null, 
     // Import hàm getTokenByType từ utils
     const { getTokenByType } = await import('./utils.js');
     
-    // Khởi tạo Drive client cho tải lên và tải xuống
-    const uploadToken = getTokenByType('upload');
-    const downloadToken = getTokenByType('download');
+    // Lấy token upload và download
+    const uploadToken = await getTokenByType('upload');
+    const downloadToken = await getTokenByType('download');
     
+    // Kiểm tra token
     if (!uploadToken || !downloadToken) {
-      throw new Error('Không tìm thấy token Google Drive hoặc token hết hạn');
+      throw new Error('Không tìm thấy token Google Drive hợp lệ');
     }
-    
+
     const uploadOAuth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID,
       process.env.GOOGLE_CLIENT_SECRET,
@@ -811,7 +812,7 @@ export async function processFolder(folderId, options, parentFolderInfo = null, 
                   console.log(`${indent}📂 Thử liệt kê với driveId: ${sharedDetails.driveId}`);
                   
                   const tokenType = sharedDetails.tokenType || 'download';
-                  const token = getTokenByType(tokenType);
+                  const token = await getTokenByType(tokenType);
                   
                   if (token) {
                     const oauth2Client = new google.auth.OAuth2(

@@ -943,15 +943,15 @@ export default function CoursesPage() {
   // Hàm xử lý tất cả khóa học tuần tự
   const handleProcessAllCourses = async () => {
     try {
-      // Lọc ra các khóa học có kimvanId
-      const coursesWithKimvanId = courses.filter(course => course.kimvanId);
+      // Sử dụng tất cả khóa học thay vì chỉ những khóa học có kimvanId
+      const coursesToProcess = courses;
       
-      if (coursesWithKimvanId.length === 0) {
-        alert('Không có khóa học nào có ID Kimvan để xử lý');
+      if (coursesToProcess.length === 0) {
+        alert('Không có khóa học nào để xử lý');
         return;
       }
       
-      if (!window.confirm(`Bạn có chắc chắn muốn xử lý tất cả ${coursesWithKimvanId.length} khóa học tuần tự? Quá trình này sẽ mất nhiều thời gian.`)) {
+      if (!window.confirm(`Bạn có chắc chắn muốn xử lý tất cả ${coursesToProcess.length} khóa học tuần tự? Quá trình này sẽ mất nhiều thời gian.`)) {
         return;
       }
       
@@ -959,7 +959,7 @@ export default function CoursesPage() {
       const results = {
         inProgress: true,
         success: true,
-        message: `Đang bắt đầu xử lý ${coursesWithKimvanId.length} khóa học...`,
+        message: `Đang bắt đầu xử lý ${coursesToProcess.length} khóa học...`,
         details: [],
         errors: []
       };
@@ -967,7 +967,7 @@ export default function CoursesPage() {
       
       // Hàm đệ quy để xử lý từng khóa học một với độ trễ
       const processNextCourse = async (index) => {
-        if (index >= coursesWithKimvanId.length) {
+        if (index >= coursesToProcess.length) {
           // Đã hoàn thành tất cả
           setProcessResult({
             inProgress: false,
@@ -979,19 +979,19 @@ export default function CoursesPage() {
           return;
         }
         
-        const currentCourse = coursesWithKimvanId[index];
+        const currentCourse = coursesToProcess[index];
         
         // Hiển thị thông báo đang xử lý
         setProcessResult({
           inProgress: true,
           success: true,
-          message: `Đang xử lý khóa học ${index + 1}/${coursesWithKimvanId.length}: ${currentCourse.name}`,
+          message: `Đang xử lý khóa học ${index + 1}/${coursesToProcess.length}: ${currentCourse.name}`,
           details: results.details,
           errors: results.errors
         });
         
         try {
-          console.log(`🔄 Bắt đầu xử lý khóa học ${index + 1}/${coursesWithKimvanId.length}: ${currentCourse.name}`);
+          console.log(`🔄 Bắt đầu xử lý khóa học ${index + 1}/${coursesToProcess.length}: ${currentCourse.name}`);
           
           // Gọi API để xử lý khóa học - sử dụng URL tuyệt đối
           const baseUrl = window.location.origin;
