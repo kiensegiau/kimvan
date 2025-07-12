@@ -1,9 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { PlusIcon, PencilIcon, TrashIcon, CloudArrowDownIcon, ExclamationCircleIcon, XMarkIcon, ArrowPathIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
-import { ServerIcon as DatabaseIcon } from '@heroicons/react/24/outline';
-import { AdjustmentsHorizontalIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, PencilIcon, TrashIcon, CloudArrowDownIcon, ExclamationCircleIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
+import { AdjustmentsHorizontalIcon, CheckCircleIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
 
 export default function CoursesPage() {
@@ -14,13 +13,8 @@ export default function CoursesPage() {
   const [showModal, setShowModal] = useState(false);
   const [currentCourse, setCurrentCourse] = useState(null);
   const [error, setError] = useState(null);
-  const [syncing, setSyncing] = useState(false);
-  const [syncResults, setSyncResults] = useState(null);
-  const [showSyncModal, setShowSyncModal] = useState(false);
-  const [initializing, setInitializing] = useState(false);
-  const [initResult, setInitResult] = useState(null);
+  // Removed unused state variables related to sync/initialization
   const [hasMongoConnection, setHasMongoConnection] = useState(true);
-  const [kimvanCourses, setKimvanCourses] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [showOriginalDataModal, setShowOriginalDataModal] = useState(false);
   const [showOriginalData, setShowOriginalData] = useState(false);
@@ -36,18 +30,9 @@ export default function CoursesPage() {
   const [processResult, setProcessResult] = useState(null);
   const [selectedCourses, setSelectedCourses] = useState([]);
   const [processValue, setProcessValue] = useState('');
-  const [showSyncConfirmModal, setShowSyncConfirmModal] = useState(false);
-  const [syncAnalysisData, setSyncAnalysisData] = useState(null);
-  const [analyzingData, setAnalyzingData] = useState(false);
-  const [pendingSyncData, setPendingSyncData] = useState(null);
   const [processingPDFs, setProcessingPDFs] = useState(false);
-  const [syncingCourses, setSyncingCourses] = useState({});
   const [analyzingCourses, setAnalyzingCourses] = useState({});
   const [processingPDFCourses, setProcessingPDFCourses] = useState({});
-  const [autoSyncInProgress, setAutoSyncInProgress] = useState(false);
-  const [currentAutoSyncIndex, setCurrentAutoSyncIndex] = useState(0);
-  const [autoSyncTotal, setAutoSyncTotal] = useState(0);
-  const [autoSyncResults, setAutoSyncResults] = useState([]);
   
   // Hàm tiện ích để đồng bộ dữ liệu với bảng minicourse
   const syncToMiniCourse = async (courseData) => {
@@ -249,9 +234,7 @@ export default function CoursesPage() {
     }
   };
 
-  const handleCreateFromSheets = () => {
-    router.push('/admin/courses/create');
-  };
+  // Handler removed: handleCreateFromSheets
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -317,77 +300,7 @@ export default function CoursesPage() {
     }
   };
 
-  // Hàm mở modal xác nhận đồng bộ
-  const handleShowSyncModal = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      // Lấy danh sách khóa học từ API spreadsheets
-      const response = await fetch('/api/spreadsheets/create/fullcombokhoa2k8');
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.message || 'Không thể lấy danh sách khóa học từ Khoá học 6.0');
-      }
-      
-      // Lưu danh sách khóa học gốc từ Kimvan vào state
-      const kimvanCoursesOriginal = data.map((item) => ({
-        kimvanId: item.id,
-        name: item.name,
-        description: `Khóa học ${item.name}`,
-        price: 500000,
-        status: 'active',
-        originalData: item
-      }));
-      
-      // Đồng thời tạo danh sách minicourses không chứa originalData
-      const miniCourses = data.map((item) => ({
-        kimvanId: item.id,
-        name: item.name,
-        description: `Khóa học ${item.name}`,
-        price: 500000,
-        status: 'active',
-        // Không bao gồm originalData và processedDriveFiles để giảm kích thước
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }));
-      
-      setKimvanCourses(kimvanCoursesOriginal || []);
-      setShowSyncModal(true);
-      
-      // Tự động đồng bộ minicourses song song
-      try {
-        console.log('🔄 Đang đồng bộ minicourses song song...');
-        // Sử dụng API sync vì cần xử lý nhiều minicourses cùng lúc
-        const miniCourseResponse = await fetch('/api/minicourses/sync', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ 
-            courses: miniCourses 
-          }),
-        });
-        
-        const miniCourseData = await miniCourseResponse.json();
-        
-        if (miniCourseResponse.ok) {
-          console.log('✅ Đồng bộ minicourses thành công:', miniCourseData);
-        } else {
-          console.warn('⚠️ Đồng bộ minicourses không thành công:', miniCourseData);
-        }
-      } catch (miniErr) {
-        console.error('❌ Lỗi khi đồng bộ minicourses:', miniErr);
-        // Không hiển thị lỗi này cho người dùng vì đây là quá trình chạy ngầm
-      }
-    } catch (err) {
-      console.error('Lỗi khi lấy danh sách khóa học từ Khoá học 6.0:', err);
-      setError(err.message || 'Đã xảy ra lỗi khi lấy danh sách khóa học từ Kimvan');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Handler removed: handleShowSyncModal
 
   // Hàm trích xuất ID YouTube từ URL
   const extractYoutubeId = (url) => {
@@ -679,262 +592,20 @@ export default function CoursesPage() {
     }
   };
 
-  // Hàm xác nhận đồng bộ sau khi phân tích
-  const handleConfirmSync = async () => {
-    try {
-      console.log('🚀 Bắt đầu quá trình đồng bộ sau khi xác nhận');
-      setShowSyncConfirmModal(false);
-      setSyncing(true);
-      
-      // Lấy dữ liệu đang chờ đồng bộ
-      const { existingCourse, kimvanData } = pendingSyncData;
-      console.log('📦 Dữ liệu đang chờ đồng bộ:', existingCourse.name);
-      
-      // Định dạng dữ liệu
-      const courseToSync = {
-        _id: existingCourse._id,
-        kimvanId: existingCourse.kimvanId,
-        name: existingCourse.name,
-        description: existingCourse.description,
-        price: existingCourse.price,
-        status: existingCourse.status,
-        originalData: kimvanData
-      };
-      
-      // Gọi API để đồng bộ với MongoDB
-      console.log('📡 Gửi dữ liệu đến API...');
-      const syncResponse = await fetch(`/api/admin/courses/${existingCourse._id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          ...courseToSync,
-          updatedAt: new Date()
-        }),
-      });
-      
-      const syncData = await syncResponse.json();
-      
-      if (!syncResponse.ok) {
-        throw new Error(syncData.message || 'Không thể đồng bộ dữ liệu');
-      }
-      
-      console.log('✅ Đồng bộ thành công');
-      
-      // Đồng bộ với minicourse
-      await syncToMiniCourse(courseToSync);
-      
-      // Hiển thị kết quả đồng bộ
-      setSyncResults({
-        inProgress: false,
-        success: true,
-        message: 'Đồng bộ khóa học thành công',
-        summary: {
-          total: 1,
-          created: 0,
-          updated: 1,
-          errors: 0
-        }
-      });
-      
-      // Tải lại danh sách khóa học
-      // await fetchCourses();
-      
-    } catch (err) {
-      console.error('❌ Lỗi khi đồng bộ khóa học:', err);
-      setError(err.message || 'Đã xảy ra lỗi khi đồng bộ khóa học từ Kimvan');
-      
-      // Hiển thị kết quả lỗi
-      setSyncResults({
-        inProgress: false,
-        success: false,
-        message: `Lỗi: ${err.message}`,
-        summary: {
-          total: 1,
-          created: 0,
-          updated: 0,
-          errors: 1
-        }
-      });
-    } finally {
-      setSyncing(false);
-      setPendingSyncData(null);
-    }
-  };
+  // Handler removed: handleConfirmSync
 
-  // Hàm đồng bộ dữ liệu cho một khóa học cụ thể
-  const handleSyncSingleCourse = async (courseId) => {
-    try {
-      setAnalyzingCourses(prev => ({ ...prev, [courseId]: true }));
-      setError(null);
-      
-      console.log('🔍 Bắt đầu phân tích dữ liệu khóa học:', courseId);
-      
-      // Hiển thị thông báo
-      setSyncResults({
-        inProgress: true,
-        success: true,
-        message: 'Đang phân tích dữ liệu khóa học...',
-        summary: {
-          total: 1,
-          created: 0,
-          updated: 0,
-          errors: 0
-        }
-      });
-      
-      // Bước 1: Tìm khóa học hiện có trong danh sách
-      const existingCourse = courses.find(course => course.kimvanId === courseId);
-      
-      if (!existingCourse) {
-        throw new Error('Không tìm thấy khóa học trong hệ thống');
-      }
-      
-      console.log('📋 Tìm thấy khóa học trong hệ thống:', existingCourse.name);
-      
-      // Bước 2: Gọi API để lấy dữ liệu chi tiết từ Kimvan
-      console.log('🌐 Đang lấy dữ liệu từ Kimvan...');
-      const response = await fetch(`/api/spreadsheets/${courseId}`);
-      if (!response.ok) {
-        throw new Error(`Lỗi khi lấy dữ liệu từ Kimvan: ${response.status}`);
-      }
-      
-      const kimvanData = await response.json();
-      console.log('✅ Đã nhận dữ liệu từ Kimvan');
-      
-      // Bước 3: Phân tích dữ liệu từ Kimvan
-      console.log('🔎 Đang phân tích dữ liệu...');
-      const analysis = analyzeKimvanData(kimvanData);
-      console.log('📊 Kết quả phân tích:', analysis);
-      
-      // Lưu dữ liệu phân tích và dữ liệu đang chờ đồng bộ
-      setSyncAnalysisData(analysis);
-      setPendingSyncData({ existingCourse, kimvanData });
-      
-      // Đảm bảo state được cập nhật trước khi hiển thị modal
-      setTimeout(() => {
-        // Bước 4: Hiển thị modal xác nhận với dữ liệu phân tích
-        console.log('🖼️ Hiển thị modal xác nhận đồng bộ');
-        setShowSyncConfirmModal(true);
-        setAnalyzingData(false);
-        
-        // Xóa thông báo đang phân tích
-        setSyncResults(null);
-      }, 300);
-      
-    } catch (err) {
-      console.error('❌ Lỗi khi phân tích khóa học:', err);
-      setError(err.message || 'Đã xảy ra lỗi khi phân tích khóa học từ Kimvan');
-      // Hiển thị kết quả lỗi
-      setSyncResults({
-        inProgress: false,
-        success: false,
-        message: `Lỗi: ${err.message}`,
-        summary: {
-          total: 1,
-          created: 0,
-          updated: 0,
-          errors: 1
-        }
-      });
-    } finally {
-      setAnalyzingCourses(prev => ({ ...prev, [courseId]: false }));
-    }
-  };
+  // Handler removed: handleSyncSingleCourse
 
-  // Hàm đồng bộ dữ liệu từ Kimvan
-  const handleSync = async () => {
-    try {
-      // Đóng modal đồng bộ trước tiên để loại bỏ overlay
-      setShowSyncModal(false);
-      
-      // Đợi một chút để đảm bảo DOM đã được cập nhật
-      setTimeout(() => {
-        const startSync = async () => {
-          try {
-            setSyncing(true);
-            setSyncResults(null);
-            setError(null);
-            
-            const response = await fetch('/api/kimvan-sync', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ 
-                sync: true,
-                courses: kimvanCourses
-              }),
-            });
-            
-            const data = await response.json();
-            
-            if (!response.ok) {
-              throw new Error(data.message || 'Không thể đồng bộ dữ liệu');
-            }
-            
-            // Hiển thị kết quả đồng bộ
-            setSyncResults(data);
-            
-            // Tải lại danh sách khóa học
-            await fetchCourses();
-          } catch (err) {
-            console.error('Lỗi khi đồng bộ dữ liệu:', err);
-            setError(err.message || 'Đã xảy ra lỗi khi đồng bộ dữ liệu. Vui lòng kiểm tra kết nối MongoDB.');
-          } finally {
-            setSyncing(false);
-          }
-        };
-        
-        startSync();
-      }, 300); // Tăng thời gian delay để đảm bảo overlay đã biến mất
-    } catch (err) {
-      console.error('Lỗi khi xử lý đồng bộ:', err);
-      setError(err.message || 'Đã xảy ra lỗi khi xử lý yêu cầu đồng bộ.');
-      setSyncing(false);
-    }
-  };
+  // Handler removed: handleSync
 
-  // Hàm khởi tạo cơ sở dữ liệu
-  const handleInitDatabase = async () => {
-    try {
-      setInitializing(true);
-      setInitResult(null);
-      setError(null);
-      
-      const response = await fetch('/api/db-initialize');
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.message || 'Không thể khởi tạo cơ sở dữ liệu');
-      }
-      
-      // Hiển thị kết quả khởi tạo
-      setInitResult(data);
-      
-      // Nếu đã tạo dữ liệu mới, tải lại danh sách khóa học
-      if (data.created) {
-        await fetchCourses();
-      }
-    } catch (err) {
-      console.error('Lỗi khi khởi tạo cơ sở dữ liệu:', err);
-      setError(err.message || 'Đã xảy ra lỗi khi khởi tạo cơ sở dữ liệu. Vui lòng kiểm tra kết nối MongoDB.');
-    } finally {
-      setInitializing(false);
-    }
-  };
+  // Handler removed: handleInitDatabase
 
   // Thêm hàm xử lý khi đóng modal
   const handleCloseModal = () => {
     setShowModal(false);
   };
 
-  // Thêm hàm xử lý khi đóng modal đồng bộ
-  const handleCloseSyncModal = () => {
-    setShowSyncModal(false);
-  };
+  // Handler removed: handleCloseSyncModal
 
   // Hàm hiển thị dữ liệu gốc trong modal
   const handleViewOriginalData = async (courseId) => {
@@ -1336,187 +1007,9 @@ export default function CoursesPage() {
     }
   };
 
-  // Hàm đồng bộ tất cả khóa học tự động với độ trễ
-  const handleAutoSyncAllCourses = async () => {
-    try {
-      // Lọc ra các khóa học có kimvanId
-      const coursesWithKimvanId = courses.filter(course => course.kimvanId);
-      
-      if (coursesWithKimvanId.length === 0) {
-        alert('Không có khóa học nào có ID Kimvan để đồng bộ');
-        return;
-      }
-      
-      setAutoSyncInProgress(true);
-      setCurrentAutoSyncIndex(0);
-      setAutoSyncTotal(coursesWithKimvanId.length);
-      setAutoSyncResults([]);
-      setError(null);
-      
-      // Hàm đệ quy để đồng bộ từng khóa học một với độ trễ
-      const syncNextCourse = async (index) => {
-        if (index >= coursesWithKimvanId.length) {
-          // Đã hoàn thành tất cả
-          setAutoSyncInProgress(false);
-          setSyncResults({
-            inProgress: false,
-            success: true,
-            message: `Đã hoàn thành đồng bộ ${autoSyncResults.filter(r => r.success).length}/${coursesWithKimvanId.length} khóa học`,
-            summary: {
-              total: coursesWithKimvanId.length,
-              created: 0,
-              updated: autoSyncResults.filter(r => r.success).length,
-              errors: autoSyncResults.filter(r => !r.success).length
-            }
-          });
-          return;
-        }
-        
-        const currentCourse = coursesWithKimvanId[index];
-        setCurrentAutoSyncIndex(index);
-        
-        // Hiển thị thông báo đang đồng bộ
-        setSyncResults({
-          inProgress: true,
-          success: true,
-          message: `Đang đồng bộ khóa học ${index + 1}/${coursesWithKimvanId.length}: ${currentCourse.name}`,
-          summary: {
-            total: coursesWithKimvanId.length,
-            created: 0,
-            updated: autoSyncResults.filter(r => r.success).length,
-            errors: autoSyncResults.filter(r => !r.success).length
-          }
-        });
-        
-        try {
-          console.log(`🔄 Bắt đầu đồng bộ khóa học ${index + 1}/${coursesWithKimvanId.length}: ${currentCourse.name}`);
-          
-          // Đánh dấu đang phân tích
-          setAnalyzingCourses(prev => ({ ...prev, [currentCourse.kimvanId]: true }));
-          
-          // Gọi API để lấy dữ liệu chi tiết từ Kimvan
-          const response = await fetch(`/api/spreadsheets/${currentCourse.kimvanId}`);
-          if (!response.ok) {
-            throw new Error(`Lỗi khi lấy dữ liệu từ Kimvan: ${response.status}`);
-          }
-          
-          const kimvanData = await response.json();
-          console.log('✅ Đã nhận dữ liệu từ Kimvan');
-          
-          // Phân tích dữ liệu
-          const analysis = analyzeKimvanData(kimvanData);
-          
-          // Kiểm tra xem khóa học có link YouTube không
-          if (!analysis || analysis.youtubeLinks === 0) {
-            console.log(`⚠️ Khóa học ${currentCourse.name} không có link YouTube, bỏ qua đồng bộ`);
-            
-            // Thêm kết quả bỏ qua
-            setAutoSyncResults(prev => [...prev, { 
-              courseId: currentCourse._id, 
-              courseName: currentCourse.name,
-              success: false,
-              message: 'Bỏ qua đồng bộ: Không có link YouTube',
-              analysis: analysis
-            }]);
-            
-            // Chuyển sang khóa học tiếp theo sau 1 phút
-            setTimeout(() => {
-              syncNextCourse(index + 1);
-            }, 60000); // 60000ms = 1 phút
-            
-            return;
-          }
-          
-          // Định dạng dữ liệu để đồng bộ
-          const courseToSync = {
-            _id: currentCourse._id,
-            kimvanId: currentCourse.kimvanId,
-            name: currentCourse.name,
-            description: currentCourse.description,
-            price: currentCourse.price,
-            status: currentCourse.status,
-            originalData: kimvanData,
-            updatedAt: new Date()
-          };
-          
-          // Gọi API để đồng bộ với MongoDB
-          const syncResponse = await fetch(`/api/admin/courses/${currentCourse._id}`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(courseToSync),
-          });
-          
-          const syncData = await syncResponse.json();
-          
-          if (!syncResponse.ok) {
-            throw new Error(syncData.message || 'Không thể đồng bộ dữ liệu');
-          }
-          
-          console.log(`✅ Đồng bộ khóa học ${currentCourse.name} thành công`);
-          
-          // Đồng bộ với minicourse
-          await syncToMiniCourse(courseToSync);
-          
-          // Thêm kết quả thành công
-          setAutoSyncResults(prev => [...prev, { 
-            courseId: currentCourse._id, 
-            courseName: currentCourse.name,
-            success: true,
-            message: 'Đồng bộ thành công',
-            analysis: analysis
-          }]);
-          
-        } catch (err) {
-          console.error(`❌ Lỗi khi đồng bộ khóa học ${currentCourse.name}:`, err);
-          
-          // Thêm kết quả lỗi
-          setAutoSyncResults(prev => [...prev, { 
-            courseId: currentCourse._id, 
-            courseName: currentCourse.name,
-            success: false,
-            message: err.message || 'Đã xảy ra lỗi khi đồng bộ',
-          }]);
-        } finally {
-          // Đánh dấu đã xong phân tích
-          setAnalyzingCourses(prev => ({ ...prev, [currentCourse.kimvanId]: false }));
-          
-          // Đợi 1 phút trước khi xử lý khóa học tiếp theo
-          console.log(`⏱️ Đợi 1 phút trước khi xử lý khóa học tiếp theo...`);
-          setTimeout(() => {
-            syncNextCourse(index + 1);
-          }, 60000); // 60000ms = 1 phút
-        }
-      };
-      
-      // Bắt đầu quy trình đồng bộ với khóa học đầu tiên
-      syncNextCourse(0);
-      
-    } catch (err) {
-      console.error('Lỗi khi khởi tạo đồng bộ tự động:', err);
-      setError(err.message || 'Đã xảy ra lỗi khi khởi tạo đồng bộ tự động');
-      setAutoSyncInProgress(false);
-    }
-  };
+  // Handler removed: handleAutoSyncAllCourses
 
-  // Hàm dừng quá trình đồng bộ tự động
-  const handleStopAutoSync = () => {
-    if (window.confirm('Bạn có chắc chắn muốn dừng quá trình đồng bộ tự động?')) {
-      setAutoSyncInProgress(false);
-      setSyncResults({
-        inProgress: false,
-        success: true,
-        message: `Đã dừng quá trình đồng bộ tự động sau ${autoSyncResults.length}/${autoSyncTotal} khóa học`,
-        summary: {
-          total: autoSyncTotal,
-          created: 0,
-          updated: autoSyncResults.filter(r => r.success).length,
-          errors: autoSyncResults.filter(r => !r.success).length
-        }
-      });
-    }
-  };
+  // Handler removed: handleStopAutoSync
 
   // Hàm xử lý tất cả khóa học tuần tự
   const handleProcessAllCourses = async () => {
@@ -1673,53 +1166,10 @@ export default function CoursesPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-semibold text-gray-900">Quản lý khóa học</h1>
         <div className="flex space-x-4">
-          <button
-            onClick={handleCreateFromSheets}
-            className="bg-green-600 text-white px-4 py-2 rounded-md flex items-center"
-          >
-            <PlusIcon className="h-5 w-5 mr-2" />
-            Tạo từ Sheets
-          </button>
-          <button
-            onClick={handleInitDatabase}
-            disabled={initializing}
-            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50"
-          >
-            <DatabaseIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
-            {initializing ? 'Đang khởi tạo...' : 'Khởi tạo DB'}
-          </button>
-          
-          <button
-            onClick={handleShowSyncModal}
-            disabled={syncing || autoSyncInProgress}
-            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
-          >
-            <CloudArrowDownIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
-            {syncing ? 'Đang đồng bộ...' : 'Đồng bộ từ Kimvan'}
-          </button>
-          
-          <button
-            onClick={handleAutoSyncAllCourses}
-            disabled={autoSyncInProgress || syncing}
-            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-          >
-            <ArrowPathIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
-            Đồng bộ tự động tất cả
-          </button>
-          
-          {autoSyncInProgress && (
-            <button
-              onClick={handleStopAutoSync}
-              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-            >
-              <XMarkIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
-              Dừng đồng bộ
-            </button>
-          )}
           
           <button
             onClick={handleProcessAllCourses}
-            disabled={processingData || autoSyncInProgress || syncing || processingPDFs}
+            disabled={processingData || processingPDFs}
             className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 disabled:opacity-50"
           >
             <AdjustmentsHorizontalIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
@@ -1734,13 +1184,7 @@ export default function CoursesPage() {
             <ArrowDownTrayIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
             {processingPDFs ? 'Đang xử lý PDF...' : 'Xử lý tất cả PDF'}
           </button>
-          <button
-            onClick={() => setShowProcessModal(true)}
-            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
-          >
-            <AdjustmentsHorizontalIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
-            Xử lý dữ liệu
-          </button>
+          {/* Nút xử lý dữ liệu đã được xóa */}
           <button
             onClick={() => {
               setCurrentCourse({
@@ -1760,114 +1204,9 @@ export default function CoursesPage() {
         </div>
       </div>
 
-      {initResult && (
-        <div className={`bg-${initResult.success ? 'purple' : 'red'}-50 p-4 rounded-md mb-4`}>
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <DatabaseIcon className={`h-5 w-5 text-${initResult.success ? 'purple' : 'red'}-400`} aria-hidden="true" />
-            </div>
-            <div className="ml-3">
-              <h3 className={`text-sm font-medium text-${initResult.success ? 'purple' : 'red'}-800`}>
-                {initResult.success ? 'Khởi tạo cơ sở dữ liệu thành công' : 'Lỗi khởi tạo cơ sở dữ liệu'}
-              </h3>
-              <div className={`mt-2 text-sm text-${initResult.success ? 'purple' : 'red'}-700`}>
-                <p>{initResult.message}</p>
-              </div>
-              <div className="mt-4">
-                <div className="-mx-2 -my-1.5 flex">
-                  <button
-                    type="button"
-                    onClick={() => setInitResult(null)}
-                    className={`bg-${initResult.success ? 'purple' : 'red'}-50 px-2 py-1.5 rounded-md text-sm font-medium text-${initResult.success ? 'purple' : 'red'}-800 hover:bg-${initResult.success ? 'purple' : 'red'}-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-${initResult.success ? 'purple' : 'red'}-500`}
-                  >
-                    Đóng
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Notification area for initialization removed */}
 
-      {syncResults && (
-        <div className={`bg-${syncResults.success ? 'green' : 'orange'}-50 p-4 rounded-md mb-4`}>
-          <div className="flex">
-            <div className="flex-shrink-0">
-              {syncResults.inProgress ? (
-                <ArrowPathIcon className="h-5 w-5 text-blue-500 animate-spin" aria-hidden="true" />
-              ) : (
-                <CloudArrowDownIcon className={`h-5 w-5 text-${syncResults.success ? 'green' : 'orange'}-400`} aria-hidden="true" />
-              )}
-            </div>
-            <div className="ml-3">
-              <h3 className={`text-sm font-medium text-${syncResults.success ? 'green' : 'orange'}-800`}>
-                {syncResults.inProgress ? 'Đang đồng bộ...' : (syncResults.success ? 'Đồng bộ thành công' : 'Đồng bộ không thành công')}
-              </h3>
-              <div className="mt-2 text-sm text-gray-700">
-                <p>{syncResults.message}</p>
-                {!syncResults.inProgress && (
-                  <>
-                    <p>Tổng số khóa học: {syncResults.summary.total}</p>
-                    <p>Khóa học mới: {syncResults.summary.created}</p>
-                    <p>Khóa học cập nhật: {syncResults.summary.updated}</p>
-                    <p>Tổng số lỗi: {syncResults.summary.errors}</p>
-                  </>
-                )}
-                
-                {autoSyncInProgress && (
-                  <div className="mt-2">
-                    <div className="w-full bg-gray-200 rounded-full h-2.5">
-                      <div 
-                        className="bg-blue-600 h-2.5 rounded-full" 
-                        style={{ width: `${(currentAutoSyncIndex + 1) / autoSyncTotal * 100}%` }}
-                      ></div>
-                    </div>
-                    <p className="mt-1 text-xs text-gray-500">
-                      Tiến trình: {currentAutoSyncIndex + 1}/{autoSyncTotal} khóa học ({Math.round((currentAutoSyncIndex + 1) / autoSyncTotal * 100)}%)
-                    </p>
-                  </div>
-                )}
-                
-                {autoSyncResults.length > 0 && (
-                  <div className="mt-4">
-                    <p className="font-medium mb-2">Chi tiết đồng bộ:</p>
-                    <div className="max-h-60 overflow-y-auto">
-                      {autoSyncResults.map((result, index) => (
-                        <div 
-                          key={index} 
-                          className={`p-2 mb-1 rounded text-sm ${result.success ? 'bg-green-100' : 'bg-red-100'}`}
-                        >
-                          <p className="font-medium">{result.courseName}</p>
-                          <p>{result.message}</p>
-                          {result.analysis && (
-                            <p className="text-xs text-gray-600">
-                              Links: YouTube ({result.analysis.youtubeLinks}), 
-                              Drive ({result.analysis.driveLinks}), 
-                              PDF ({result.analysis.pdfLinks || 0})
-                            </p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-              <div className="mt-4">
-                <div className="-mx-2 -my-1.5 flex">
-                  <button
-                    type="button"
-                    onClick={() => setSyncResults(null)}
-                    className={`bg-${syncResults.success ? 'green' : 'orange'}-50 px-2 py-1.5 rounded-md text-sm font-medium text-${syncResults.success ? 'green' : 'orange'}-800 hover:bg-${syncResults.success ? 'green' : 'orange'}-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-${syncResults.success ? 'green' : 'orange'}-500`}
-                    disabled={syncResults.inProgress}
-                  >
-                    {syncResults.inProgress ? 'Đang xử lý...' : 'Đóng'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Notification area for sync results removed */}
 
       {processResult && (
         <div className={`bg-${processResult.success ? 'blue' : 'red'}-50 p-4 rounded-md mb-4`}>
@@ -1949,15 +1288,8 @@ export default function CoursesPage() {
               <ExclamationCircleIcon className="h-12 w-12 text-red-400 mx-auto mb-4" aria-hidden="true" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">Không thể kết nối cơ sở dữ liệu</h3>
               <p className="text-sm text-gray-500 mb-4">
-                Không thể kết nối với cơ sở dữ liệu MongoDB. Vui lòng kiểm tra kết nối hoặc khởi tạo cơ sở dữ liệu.
+                Không thể kết nối với cơ sở dữ liệu MongoDB. Vui lòng kiểm tra kết nối với cơ sở dữ liệu.
               </p>
-              <button
-                onClick={handleInitDatabase}
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-              >
-                <DatabaseIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
-                Khởi tạo cơ sở dữ liệu
-              </button>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -2019,17 +1351,7 @@ export default function CoursesPage() {
                               >
                                 <CloudArrowDownIcon className="h-5 w-5" />
                               </button>
-                              <button
-                                onClick={() => {
-                                  console.log('🔄 Nút đồng bộ được nhấn cho khóa học:', course.name, 'ID:', course.kimvanId);
-                                  handleSyncSingleCourse(course.kimvanId);
-                                }}
-                                disabled={analyzingCourses[course.kimvanId]}
-                                className={`text-green-600 hover:text-green-900 mr-2 ${analyzingCourses[course.kimvanId] ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                title="Đồng bộ khóa học này"
-                              >
-                                <ArrowPathIcon className={`h-5 w-5 ${analyzingCourses[course.kimvanId] ? 'animate-spin' : ''}`} />
-                              </button>
+                              {/* Sync button removed */}
                             </>
                           )}
                           <button
@@ -2147,83 +1469,7 @@ export default function CoursesPage() {
         </>
       )}
 
-      {/* Modal Xác nhận đồng bộ */}
-      {showSyncModal && (
-        <div>
-          {/* Lớp phủ */}
-          <div 
-            className="fixed inset-0 bg-gray-500 bg-opacity-75 z-40 cursor-pointer" 
-            onClick={handleCloseSyncModal}
-          ></div>
-          
-          {/* Nội dung modal */}
-          <div className="fixed z-50 inset-0 overflow-y-auto">
-            <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-              <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-              <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
-                <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                  <div className="sm:flex sm:items-start">
-                    <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 sm:mx-0 sm:h-10 sm:w-10">
-                      <CloudArrowDownIcon className="h-6 w-6 text-yellow-600" aria-hidden="true" />
-                    </div>
-                    <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
-                      <h3 className="text-lg leading-6 font-medium text-gray-900">
-                        Đồng bộ dữ liệu từ Kimvan
-                      </h3>
-                      <div className="mt-2">
-                        <p className="text-sm text-gray-500 mb-4">
-                          Danh sách khóa học sẽ được đồng bộ từ Kimvan. Vui lòng kiểm tra và xác nhận để tiếp tục.
-                        </p>
-                        
-                        {kimvanCourses.length > 0 ? (
-                          <div className="mt-4 max-h-96 overflow-y-auto">
-                            <table className="min-w-full divide-y divide-gray-200">
-                              <thead className="bg-gray-50">
-                                <tr>
-                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID Khóa học</th>
-                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên khóa học</th>
-                                </tr>
-                              </thead>
-                              <tbody className="bg-white divide-y divide-gray-200">
-                                {kimvanCourses.map((course, index) => (
-                                  <tr key={index}>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-500">{course.kimvanId.substring(0, 20)}...</td>
-                                    <td className="px-6 py-4 text-sm text-gray-900">{course.name}</td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        ) : (
-                          <div className="text-center py-4">
-                            <p className="text-gray-500">Không có khóa học nào từ Kimvan</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                  <button
-                    type="button"
-                    onClick={handleSync}
-                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:ml-3 sm:w-auto sm:text-sm"
-                  >
-                    Đồng bộ ngay
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleCloseSyncModal}
-                    className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-                  >
-                    Hủy
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Modal for sync removed */}
 
       {/* Modal hiển thị dữ liệu gốc */}
       {showOriginalDataModal && (
@@ -2290,266 +1536,9 @@ export default function CoursesPage() {
         </div>
       )}
 
-      {/* Modal Xử lý dữ liệu khóa học */}
-      {showProcessModal && (
-        <div>
-          {/* Lớp phủ */}
-          <div 
-            className="fixed inset-0 bg-gray-500 bg-opacity-75 z-40 cursor-pointer" 
-            onClick={() => setShowProcessModal(false)}
-          ></div>
-          
-          {/* Nội dung modal */}
-          <div className="fixed z-50 inset-0 overflow-y-auto">
-            <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-              <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-              <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full" onClick={(e) => e.stopPropagation()}>
-                <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                  <div className="sm:flex sm:items-start">
-                    <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-orange-100 sm:mx-0 sm:h-10 sm:w-10">
-                      <AdjustmentsHorizontalIcon className="h-6 w-6 text-orange-600" aria-hidden="true" />
-                    </div>
-                    <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
-                      <h3 className="text-lg leading-6 font-medium text-gray-900">
-                        Xử lý dữ liệu khóa học
-                      </h3>
-                      <div className="mt-4">
-                        <p className="text-sm text-gray-500 mb-4">
-                          Chọn phương thức xử lý và giá trị tương ứng để áp dụng cho các khóa học đã chọn.
-                        </p>
-                        
-                        <div className="space-y-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Phương thức xử lý</label>
-                            <select
-                              value={processMethod}
-                              onChange={(e) => setProcessMethod(e.target.value)}
-                              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                            >
-                              <option value="update_prices">Cập nhật giá</option>
-                              <option value="update_status">Thay đổi trạng thái</option>
-                              <option value="add_tag">Thêm thẻ</option>
-                              <option value="remove_tag">Xóa thẻ</option>
-                              <option value="add_category">Thêm danh mục</option>
-                            </select>
-                          </div>
-                          
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Giá trị</label>
-                            {processMethod === 'update_status' ? (
-                              <select
-                                value={processValue}
-                                onChange={(e) => setProcessValue(e.target.value)}
-                                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                              >
-                                <option value="active">Hoạt động</option>
-                                <option value="inactive">Không hoạt động</option>
-                                <option value="draft">Nháp</option>
-                              </select>
-                            ) : (
-                              <input
-                                type={processMethod === 'update_prices' ? 'number' : 'text'}
-                                value={processValue}
-                                onChange={(e) => setProcessValue(e.target.value)}
-                                placeholder={processMethod === 'update_prices' ? 'Nhập giá mới' : 'Nhập giá trị'}
-                                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                              />
-                            )}
-                          </div>
-                          
-                          <div className="bg-yellow-50 px-4 py-3 rounded-md">
-                            <p className="text-sm text-yellow-700">
-                              Đã chọn {selectedCourses.length} khóa học để xử lý. 
-                              {selectedCourses.length === 0 && ' Vui lòng chọn ít nhất một khóa học để tiếp tục.'}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                  <button
-                    type="button"
-                    onClick={handleProcessData}
-                    disabled={processingData || selectedCourses.length === 0 || !processValue}
-                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-orange-600 text-base font-medium text-white hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50"
-                  >
-                    {processingData ? 'Đang xử lý...' : 'Xử lý dữ liệu'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowProcessModal(false)}
-                    className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-                  >
-                    Hủy
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Modal Xử lý dữ liệu khóa học đã được xóa */}
 
-      {/* Modal Xác nhận đồng bộ với phân tích dữ liệu */}
-      {showSyncConfirmModal && (
-        <div>
-          {/* Lớp phủ */}
-          <div 
-            className="fixed inset-0 bg-gray-500 bg-opacity-75 z-40 cursor-pointer" 
-            onClick={() => setShowSyncConfirmModal(false)}
-          ></div>
-          
-          {/* Nội dung modal */}
-          <div className="fixed z-50 inset-0 overflow-y-auto">
-            <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-              <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-              <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
-                <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                  <div className="sm:flex sm:items-start">
-                    <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
-                      <CloudArrowDownIcon className="h-6 w-6 text-blue-600" aria-hidden="true" />
-                    </div>
-                    <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
-                      <h3 className="text-lg leading-6 font-medium text-gray-900">
-                        Xác nhận đồng bộ dữ liệu khóa học
-                      </h3>
-                      
-                      {pendingSyncData && (
-                        <div className="mt-2">
-                          <p className="text-sm text-gray-500 mb-1">
-                            Bạn đang chuẩn bị đồng bộ dữ liệu cho khóa học sau:
-                          </p>
-                          <p className="text-base font-medium text-gray-900 mb-4">
-                            {pendingSyncData.existingCourse.name}
-                          </p>
-                          
-                          {/* Thẻ thống kê */}
-                          {syncAnalysisData && (
-                            <div className="grid grid-cols-3 gap-4 mb-6">
-                              <div className="border rounded p-3 bg-red-50 shadow-sm hover:shadow-md transition-shadow">
-                                <p className="text-sm text-gray-600 font-medium">Links YouTube</p>
-                                <div className="flex items-center">
-                                  <p className="text-2xl font-semibold text-red-600">{syncAnalysisData.youtubeLinks}</p>
-                                  {syncAnalysisData.youtubeLinks > 0 && syncAnalysisData.totalLinks > 0 && (
-                                    <span className="ml-2 px-2 py-1 text-xs rounded-full bg-red-100 text-red-800">
-                                      {Math.round((syncAnalysisData.youtubeLinks / syncAnalysisData.totalLinks) * 100)}%
-                                    </span>
-                                  )}
-                                </div>
-                                <p className="text-xs text-gray-500 mt-1">Video trực tuyến từ YouTube</p>
-                              </div>
-                              <div className="border rounded p-3 bg-blue-50 shadow-sm hover:shadow-md transition-shadow">
-                                <p className="text-sm text-gray-600 font-medium">Links Google Drive</p>
-                                <div className="flex items-center">
-                                  <p className="text-2xl font-semibold text-blue-600">{syncAnalysisData.driveLinks}</p>
-                                  {syncAnalysisData.driveLinks > 0 && syncAnalysisData.totalLinks > 0 && (
-                                    <span className="ml-2 px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
-                                      {Math.round((syncAnalysisData.driveLinks / syncAnalysisData.totalLinks) * 100)}%
-                                    </span>
-                                  )}
-                                </div>
-                                <p className="text-xs text-gray-500 mt-1">Tài liệu từ Google Drive</p>
-                              </div>
-                              <div className="border rounded p-3 bg-green-50 shadow-sm hover:shadow-md transition-shadow">
-                                <p className="text-sm text-gray-600 font-medium">Links PDF</p>
-                                <div className="flex items-center">
-                                  <p className="text-2xl font-semibold text-green-600">{syncAnalysisData.pdfLinks || 0}</p>
-                                  {syncAnalysisData.pdfLinks > 0 && syncAnalysisData.totalLinks > 0 && (
-                                    <span className="ml-2 px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">
-                                      {Math.round((syncAnalysisData.pdfLinks / syncAnalysisData.totalLinks) * 100)}%
-                                    </span>
-                                  )}
-                                </div>
-                                <p className="text-xs text-gray-500 mt-1">Tài liệu định dạng PDF</p>
-                              </div>
-                            </div>
-                          )}
-                          
-                          <div className="border rounded p-4 bg-gray-50 shadow-sm mb-4 hover:shadow-md transition-shadow">
-                            <div className="flex items-center justify-between mb-2">
-                              <p className="text-sm font-medium text-gray-700">Tổng cộng tất cả liên kết</p>
-                              <p className="text-xl font-bold text-gray-800">{syncAnalysisData.totalLinks}</p>
-                            </div>
-                            
-                            <div className="flex flex-wrap gap-2 mb-3">
-                              {syncAnalysisData.youtubeLinks > 0 && (
-                                <span className="px-3 py-1 text-xs rounded-full bg-red-100 text-red-800 flex items-center">
-                                  <span className="w-2 h-2 rounded-full bg-red-500 mr-1"></span>
-                                  YouTube: {syncAnalysisData.youtubeLinks}
-                                </span>
-                              )}
-                              {syncAnalysisData.driveLinks > 0 && (
-                                <span className="px-3 py-1 text-xs rounded-full bg-blue-100 text-blue-800 flex items-center">
-                                  <span className="w-2 h-2 rounded-full bg-blue-500 mr-1"></span>
-                                  Drive: {syncAnalysisData.driveLinks}
-                                </span>
-                              )}
-                              {(syncAnalysisData.pdfLinks > 0) && (
-                                <span className="px-3 py-1 text-xs rounded-full bg-green-100 text-green-800 flex items-center">
-                                  <span className="w-2 h-2 rounded-full bg-green-500 mr-1"></span>
-                                  PDF: {syncAnalysisData.pdfLinks}
-                                </span>
-                              )}
-                            </div>
-                            
-                            {/* Thanh tiến trình */}
-                            <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
-                              {syncAnalysisData.totalLinks > 0 && (
-                                <div className="flex h-full">
-                                  {syncAnalysisData.youtubeLinks > 0 && (
-                                    <div 
-                                      className="h-full bg-red-500" 
-                                      style={{width: `${(syncAnalysisData.youtubeLinks / syncAnalysisData.totalLinks) * 100}%`}}
-                                    ></div>
-                                  )}
-                                  {syncAnalysisData.driveLinks > 0 && (
-                                    <div 
-                                      className="h-full bg-blue-500" 
-                                      style={{width: `${(syncAnalysisData.driveLinks / syncAnalysisData.totalLinks) * 100}%`}}
-                                    ></div>
-                                  )}
-                                  {syncAnalysisData.pdfLinks > 0 && (
-                                    <div 
-                                      className="h-full bg-green-500" 
-                                      style={{width: `${(syncAnalysisData.pdfLinks / syncAnalysisData.totalLinks) * 100}%`}}
-                                    ></div>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                            <p className="text-xs text-gray-500 mt-2">Phân tích các liên kết trong dữ liệu khóa học</p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                  <button
-                    type="button"
-                    onClick={handleConfirmSync}
-                    disabled={syncing}
-                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
-                  >
-                    {syncing ? 'Đang đồng bộ...' : 'Xác nhận đồng bộ'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowSyncConfirmModal(false);
-                      setPendingSyncData(null);
-                    }}
-                    className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-                  >
-                    Hủy
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Modal for sync confirmation with data analysis removed */}
     </div>
   );
 } 
