@@ -24,12 +24,8 @@ export default function CoursesPage() {
   const [originalDataError, setOriginalDataError] = useState(null);
   const [downloadingData, setDownloadingData] = useState(false);
   const [downloadError, setDownloadError] = useState(null);
-  const [showProcessModal, setShowProcessModal] = useState(false);
-  const [processingData, setProcessingData] = useState(false);
-  const [processMethod, setProcessMethod] = useState('update_prices');
   const [processResult, setProcessResult] = useState(null);
   const [selectedCourses, setSelectedCourses] = useState([]);
-  const [processValue, setProcessValue] = useState('');
   const [processingPDFs, setProcessingPDFs] = useState(false);
   const [analyzingCourses, setAnalyzingCourses] = useState({});
   const [processingPDFCourses, setProcessingPDFCourses] = useState({});
@@ -671,73 +667,7 @@ export default function CoursesPage() {
     }
   };
 
-  // Thêm hàm xử lý dữ liệu khóa học
-  const handleProcessData = async () => {
-    if (selectedCourses.length === 0) {
-      alert('Vui lòng chọn ít nhất một khóa học để xử lý');
-      return;
-    }
-
-    try {
-      setProcessingData(true);
-      setError(null);
-      setProcessResult(null);
-      
-      const response = await fetch('/api/admin/courses/process', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          courseIds: selectedCourses,
-          method: processMethod,
-          value: processValue
-        }),
-      });
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.message || 'Không thể xử lý dữ liệu khóa học');
-      }
-      
-      setProcessResult(data);
-      
-      // Nếu xử lý thành công, tải lại danh sách khóa học
-      if (data.success) {
-        await fetchCourses();
-        
-        // Đồng bộ với minicourse cho từng khóa học đã xử lý
-        if (data.updatedCourses && Array.isArray(data.updatedCourses)) {
-          console.log('Đồng bộ dữ liệu với minicourse cho các khóa học đã xử lý');
-          for (const course of data.updatedCourses) {
-            await syncToMiniCourse(course);
-          }
-        } else {
-          // Nếu API không trả về danh sách khóa học đã cập nhật, tải lại từng khóa học và đồng bộ
-          for (const courseId of selectedCourses) {
-            try {
-              const courseResponse = await fetch(`/api/admin/courses/${courseId}`);
-              if (courseResponse.ok) {
-                const courseData = await courseResponse.json();
-                await syncToMiniCourse(courseData);
-              }
-            } catch (err) {
-              console.error(`Lỗi khi đồng bộ minicourse cho khóa học ${courseId}:`, err);
-            }
-          }
-        }
-        
-        // Reset lựa chọn sau khi xử lý thành công
-        setSelectedCourses([]);
-      }
-    } catch (err) {
-      console.error('Lỗi khi xử lý dữ liệu khóa học:', err);
-      setError(err.message || 'Đã xảy ra lỗi khi xử lý dữ liệu khóa học');
-    } finally {
-      setProcessingData(false);
-    }
-  };
+  // Hàm xử lý dữ liệu khóa học đã được xóa
 
   // Xử lý chọn tất cả khóa học
   const handleSelectAllCourses = (e) => {
@@ -1026,7 +956,6 @@ export default function CoursesPage() {
         return;
       }
       
-      setProcessingData(true);
       // Khởi tạo kết quả xử lý
       const results = {
         inProgress: true,
@@ -1041,7 +970,6 @@ export default function CoursesPage() {
       const processNextCourse = async (index) => {
         if (index >= coursesWithKimvanId.length) {
           // Đã hoàn thành tất cả
-          setProcessingData(false);
           setProcessResult({
             inProgress: false,
             success: results.errors.length === 0,
@@ -1157,7 +1085,6 @@ export default function CoursesPage() {
         details: [],
         errors: [{ message: err.message || 'Lỗi không xác định' }]
       });
-      setProcessingData(false);
     }
   };
 
@@ -1169,11 +1096,11 @@ export default function CoursesPage() {
           
           <button
             onClick={handleProcessAllCourses}
-            disabled={processingData || processingPDFs}
+            disabled={processingPDFs}
             className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 disabled:opacity-50"
           >
             <AdjustmentsHorizontalIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
-            {processingData ? 'Đang xử lý...' : 'Xử lý tất cả khóa học'}
+            Xử lý tất cả khóa học
           </button>
           
           <button
