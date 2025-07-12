@@ -32,6 +32,8 @@ export default function UsersPage() {
   const [checkingExpired, setCheckingExpired] = useState(false);
   const [addToGoogleGroup, setAddToGoogleGroup] = useState(false);
   const [googleGroupEmail, setGoogleGroupEmail] = useState('');
+  const [showEmailExportModal, setShowEmailExportModal] = useState(false);
+  const [exportedEmails, setExportedEmails] = useState('');
 
   // Hàm lấy danh sách người dùng
   const fetchUsers = async () => {
@@ -145,6 +147,48 @@ export default function UsersPage() {
         toast.error(`Lỗi khi xóa người dùng: ${err.message}`);
       }
     }
+  };
+
+  // Hàm xuất danh sách email
+  const handleExportEmails = () => {
+    // Lấy tất cả email từ danh sách người dùng được lọc
+    const emails = filteredUsers
+      .map(user => user.email)
+      .filter(email => email); // Lọc bỏ các giá trị null/undefined
+    
+    // Chia thành các nhóm, mỗi nhóm 10 email
+    const emailGroups = [];
+    for (let i = 0; i < emails.length; i += 10) {
+      emailGroups.push(emails.slice(i, i + 10).join(', '));
+    }
+    
+    setExportedEmails(emailGroups);
+    setShowEmailExportModal(true);
+  };
+
+  // Hàm copy email vào clipboard
+  const handleCopyEmails = (emailBatch) => {
+    navigator.clipboard.writeText(emailBatch)
+      .then(() => {
+        toast.success('Đã sao chép danh sách email vào clipboard');
+      })
+      .catch(err => {
+        console.error('Lỗi khi sao chép vào clipboard:', err);
+        toast.error('Không thể sao chép vào clipboard');
+      });
+  };
+
+  // Hàm copy tất cả email
+  const handleCopyAllEmails = () => {
+    const allEmails = exportedEmails.join(', ');
+    navigator.clipboard.writeText(allEmails)
+      .then(() => {
+        toast.success('Đã sao chép tất cả email vào clipboard');
+      })
+      .catch(err => {
+        console.error('Lỗi khi sao chép vào clipboard:', err);
+        toast.error('Không thể sao chép vào clipboard');
+      });
   };
 
   // Hàm lưu thông tin người dùng
@@ -742,6 +786,13 @@ export default function UsersPage() {
           >
             <ArrowPathIcon className="-ml-1 mr-1 h-5 w-5 text-gray-500" />
             Làm mới
+          </button>
+          <button
+            onClick={handleExportEmails}
+            className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            <EnvelopeIcon className="-ml-1 mr-1 h-5 w-5 text-gray-500" />
+            Xuất Email
           </button>
           <button
             onClick={handleCheckExpiredAccounts}
@@ -1487,42 +1538,24 @@ export default function UsersPage() {
                   </>
                 )}
 
-                              {currentUser.accountType === 'trial' && (
-                <div className="mt-4">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Thời gian dùng thử (giờ)
-                  </label>
-                  <div className="mt-1">
-                    <input
-                      type="number"
-                      value={trialHours}
-                      onChange={(e) => setTrialHours(parseInt(e.target.value) || 1)}
-                      min="1"
-                      className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                    />
-                  </div>
-                </div>
-              )}
-              
-              {/* Thêm vào Google Group */}
-              {!currentUser.id && (
-                <div className="mt-4">
-                  <div className="flex items-center">
-                    <input
-                      id="addToGoogleGroup"
-                      name="addToGoogleGroup"
-                      type="checkbox"
-                      checked={addToGoogleGroup}
-                      onChange={(e) => setAddToGoogleGroup(e.target.checked)}
-                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                    />
-                    <label htmlFor="addToGoogleGroup" className="ml-2 block text-sm text-gray-900">
-                      Tự động thêm vào Google Group (kha-hc-60@googlegroups.com)
+                {currentUser.accountType === 'trial' && (
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Thời gian dùng thử (giờ)
                     </label>
+                    <div className="mt-1">
+                      <input
+                        type="number"
+                        value={trialHours}
+                        onChange={(e) => setTrialHours(parseInt(e.target.value) || 1)}
+                        min="1"
+                        className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                      />
+                    </div>
                   </div>
-                </div>
-              )}
-
+                )}
+                
+                {/* Thêm vào Google Group */}
                 {!currentUser.id && (
                   <div className="mt-4">
                     <div className="flex items-start">
@@ -1831,6 +1864,76 @@ export default function UsersPage() {
               <button
                 onClick={() => setShowCoursesModal(false)}
                 className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal xuất email */}
+      {showEmailExportModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+              <h3 className="text-lg font-medium text-gray-900">
+                Danh sách email ({filteredUsers.length} người dùng)
+              </h3>
+              <button
+                onClick={() => setShowEmailExportModal(false)}
+                className="text-gray-400 hover:text-gray-500"
+              >
+                <XMarkIcon className="h-6 w-6" />
+              </button>
+            </div>
+            
+            <div className="px-6 py-4 max-h-[60vh] overflow-y-auto">
+              <p className="text-sm text-gray-600 mb-4">
+                Mỗi ô chứa tối đa 10 email được tách bởi dấu phẩy. Nhấn nút "Sao chép" để sao chép nhóm email vào clipboard.
+              </p>
+              
+              {exportedEmails && exportedEmails.length > 0 ? (
+                <div className="space-y-4">
+                  {exportedEmails.map((emailBatch, index) => (
+                    <div key={index} className="relative border border-gray-300 rounded-md p-1">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-xs font-medium text-gray-500 px-2">
+                          Nhóm {index + 1} ({emailBatch.split(',').length} email)
+                        </span>
+                        <button
+                          onClick={() => handleCopyEmails(emailBatch)}
+                          className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 py-1 px-2 rounded"
+                        >
+                          Sao chép nhóm
+                        </button>
+                      </div>
+                      <textarea
+                        value={emailBatch}
+                        readOnly
+                        rows={2}
+                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm text-gray-900"
+                      />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-4">
+                  <p className="text-gray-500">Không có email nào để hiển thị</p>
+                </div>
+              )}
+            </div>
+            
+            <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+              <button
+                onClick={handleCopyAllEmails}
+                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                Sao chép tất cả
+              </button>
+              <button
+                onClick={() => setShowEmailExportModal(false)}
+                className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
               >
                 Đóng
               </button>

@@ -283,10 +283,7 @@ export default function CoursesPage() {
         setCourses([...courses, data.course]);
         savedCourse = data.course;
       }
-      
-      // Đồng bộ với bảng minicourse
-      await syncToMiniCourse(savedCourse);
-      
+     
       // Đóng modal và đặt lại trạng thái
       setShowModal(false);
       setCurrentCourse(null);
@@ -755,16 +752,17 @@ export default function CoursesPage() {
             // Đánh dấu đã xử lý xong cho khóa học này
             setProcessingPDFCourses(prev => ({ ...prev, [course._id]: false }));
             
-            // Đồng bộ với minicourse sau khi xử lý PDF
+            // Không cần đồng bộ minicourse ở đây vì API process-all-drive đã thực hiện việc này
+            console.log(`API đã tự động đồng bộ minicourse cho khóa học ${course._id} sau khi xử lý PDF`);
+            
+            // Nếu cần kiểm tra minicourse, chỉ lấy thông tin mà không đồng bộ lại
             try {
               const courseResponse = await fetch(`/api/admin/courses/${course._id}`);
               if (courseResponse.ok) {
-                const courseData = await courseResponse.json();
-                await syncToMiniCourse(courseData);
-                console.log(`Đã đồng bộ minicourse cho khóa học ${course._id} sau khi xử lý PDF`);
+                console.log(`Đã kiểm tra khóa học ${course._id} sau khi xử lý PDF`);
               }
-            } catch (syncError) {
-              console.error(`Lỗi khi đồng bộ minicourse cho khóa học ${course._id}:`, syncError);
+            } catch (checkError) {
+              console.error(`Lỗi khi kiểm tra khóa học ${course._id} sau khi xử lý PDF:`, checkError);
             }
           
             return {
@@ -903,16 +901,17 @@ export default function CoursesPage() {
         // Tải lại danh sách khóa học
         await fetchCourses();
         
-        // Đồng bộ với minicourse sau khi xử lý PDF
+        // Không cần đồng bộ minicourse ở đây vì API process-all-drive đã thực hiện việc này
+        console.log(`API đã tự động đồng bộ minicourse cho khóa học ${courseId} sau khi xử lý PDF`);
+        
+        // Nếu cần kiểm tra minicourse, chỉ lấy thông tin mà không đồng bộ lại
         try {
           const courseResponse = await fetch(`/api/admin/courses/${courseId}`);
           if (courseResponse.ok) {
-            const courseData = await courseResponse.json();
-            await syncToMiniCourse(courseData);
-            console.log(`Đã đồng bộ minicourse cho khóa học ${courseId} sau khi xử lý PDF`);
+            console.log(`Đã kiểm tra khóa học ${courseId} sau khi xử lý PDF`);
           }
-        } catch (syncError) {
-          console.error(`Lỗi khi đồng bộ minicourse cho khóa học ${courseId}:`, syncError);
+        } catch (checkError) {
+          console.error(`Lỗi khi kiểm tra khóa học ${courseId} sau khi xử lý PDF:`, checkError);
         }
       } catch (fetchError) {
         throw fetchError;
@@ -1017,16 +1016,17 @@ export default function CoursesPage() {
             
             console.log(`✅ Xử lý khóa học ${currentCourse.name} thành công`);
             
-            // Đồng bộ với minicourse sau khi xử lý
+            // Không cần đồng bộ minicourse ở đây vì API process-all-sheets đã thực hiện việc này
+            console.log(`API đã tự động đồng bộ minicourse cho khóa học ${currentCourse._id}`);
+            
+            // Nếu cần kiểm tra minicourse, chỉ lấy thông tin mà không đồng bộ lại
             try {
               const courseResponse = await fetch(`${baseUrl}/api/admin/courses/${currentCourse._id}`);
               if (courseResponse.ok) {
-                const courseData = await courseResponse.json();
-                await syncToMiniCourse(courseData);
-                console.log(`Đã đồng bộ minicourse cho khóa học ${currentCourse._id} sau khi xử lý`);
+                console.log(`Đã kiểm tra khóa học ${currentCourse._id} sau khi xử lý`);
               }
-            } catch (syncError) {
-              console.error(`Lỗi khi đồng bộ minicourse cho khóa học ${currentCourse._id}:`, syncError);
+            } catch (checkError) {
+              console.error(`Lỗi khi kiểm tra khóa học ${currentCourse._id}:`, checkError);
             }
             
             // Thêm kết quả thành công
