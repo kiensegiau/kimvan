@@ -201,6 +201,7 @@ export async function POST(request) {
         driveLink,
         targetFolderId: finalTargetFolderId,
         targetFolderName: finalFolderName,
+        folderName: finalFolderName, // Thêm tham số folderName
         errorType: errorType.toString(),
         updateSheet,
         courseId: null,
@@ -344,7 +345,8 @@ export async function POST(request) {
       sheetId,
       googleSheetName,
       displayText: originalFileName || displayText, // Ưu tiên sử dụng tên file gốc
-      request
+      request,
+      folderName: finalFolderName // Thêm tham số tên folder (tên sheet)
     };
     
     try {
@@ -403,6 +405,7 @@ export async function POST(request) {
           driveLink,
           targetFolderId: finalTargetFolderId,
           targetFolderName: finalFolderName,
+          folderName: finalFolderName, // Thêm tham số folderName
           errorType: '403',
           updateSheet,
             courseId,
@@ -452,6 +455,7 @@ export async function POST(request) {
           driveLink,
           targetFolderId: finalTargetFolderId,
           targetFolderName: finalFolderName,
+          folderName: finalFolderName, // Thêm tham số folderName
           errorType: '403',
           updateSheet,
           courseId,

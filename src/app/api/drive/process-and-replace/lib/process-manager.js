@@ -101,7 +101,7 @@ export async function processNextInQueue() {
         fileId: task.fileId,
         driveLink: task.driveLink,
         targetFolderId: task.targetFolderId,
-        folderName: null, // Không tạo thư mục mới, sử dụng trực tiếp targetFolderId
+        folderName: task.folderName || task.targetFolderName, // Sử dụng folderName hoặc targetFolderName
         apiKey: task.apiKey,
         updateSheet: task.updateSheet,
         courseId: task.courseId,
@@ -559,7 +559,7 @@ export async function processSingleFile(file, options) {
         fileId: file.id,
         driveLink: `https://drive.google.com/file/d/${file.id}/view`,
         targetFolderId, // Đây là ID thư mục đích
-        folderName: null, // Không tạo thư mục mới, sử dụng trực tiếp targetFolderId
+        folderName: options.folderName || options.sheetFolderName || displayText, // Sử dụng tên sheet làm folder cha
         apiKey,
         updateSheet,
         courseId,
