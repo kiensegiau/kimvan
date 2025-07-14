@@ -311,17 +311,16 @@ export default function CoursesPage() {
   
   // Thêm danh mục khối lớp
   const gradeLevels = [
-    { id: 'all', name: 'Tất cả khối lớp', color: 'bg-gray-600', icon: AcademicCapIcon },
-    { id: '2k7', name: 'Khối 2K7', color: 'bg-yellow-500', icon: AcademicCapIcon, 
-      description: 'Khóa học dành cho học sinh lớp 10 (sinh năm 2007)' },
-    { id: '2k8', name: 'Khối 2K8', color: 'bg-green-500', icon: AcademicCapIcon,
-      description: 'Khóa học dành cho học sinh lớp 9 (sinh năm 2008)' },
-    { id: '2k9', name: 'Khối 2K9', color: 'bg-blue-500', icon: AcademicCapIcon,
-      description: 'Khóa học dành cho học sinh lớp 8 (sinh năm 2009)' },
-    { id: '2k10', name: 'Khối 2K10', color: 'bg-purple-500', icon: AcademicCapIcon,
-      description: 'Khóa học dành cho học sinh lớp 7 (sinh năm 2010)' },
-    { id: 'other', name: 'Khối khác', color: 'bg-gray-500', icon: AcademicCapIcon,
-      description: 'Các khóa học không dành riêng cho khối lớp cụ thể' }
+    { id: 'all', name: 'Tất cả khối lớp', color: 'bg-indigo-600', icon: AcademicCapIcon },
+    { id: '2k7', name: 'Khối 2K7', color: 'bg-indigo-500', icon: AcademicCapIcon, 
+      description: 'Khóa 12 cũ' },
+    { id: '2k8', name: 'Khối 2K8', color: 'bg-indigo-400', icon: AcademicCapIcon,
+      description: 'Khóa 12 mới' },
+    { id: '2k9', name: 'Khối 2K9', color: 'bg-indigo-300', icon: AcademicCapIcon,
+      description: 'Lớp 11' },
+    { id: '2k10', name: 'Khối 2K10', color: 'bg-indigo-200', icon: AcademicCapIcon,
+      description: 'Lớp 10' },
+    { id: 'other', name: 'Khối khác', color: 'bg-gray-400', icon: AcademicCapIcon }
   ];
   
   // Các lựa chọn sắp xếp
@@ -346,13 +345,13 @@ export default function CoursesPage() {
     courses.forEach(course => {
       const courseName = course.name?.toLowerCase() || '';
       
-      if (courseName.includes('2k7') || courseName.includes('2007') || courseName.includes('lớp 10')) {
+      if (courseName.includes('2k7') || courseName.includes('2007') || courseName.includes('khóa 12 cũ')) {
         grouped['2k7'].push(course);
-      } else if (courseName.includes('2k8') || courseName.includes('2008') || courseName.includes('lớp 9')) {
+      } else if (courseName.includes('2k8') || courseName.includes('2008') || courseName.includes('khóa 12 mới')) {
         grouped['2k8'].push(course);
-      } else if (courseName.includes('2k9') || courseName.includes('2009') || courseName.includes('lớp 8')) {
+      } else if (courseName.includes('2k9') || courseName.includes('2009') || courseName.includes('lớp 11')) {
         grouped['2k9'].push(course);
-      } else if (courseName.includes('2k10') || courseName.includes('2010') || courseName.includes('lớp 7')) {
+      } else if (courseName.includes('2k10') || courseName.includes('2010') || courseName.includes('lớp 10')) {
         grouped['2k10'].push(course);
       } else {
         grouped['other'].push(course);
@@ -366,13 +365,13 @@ export default function CoursesPage() {
   const getCourseGradeLevel = (course) => {
     const courseName = course.name?.toLowerCase() || '';
     
-    if (courseName.includes('2k7') || courseName.includes('2007') || courseName.includes('lớp 10')) {
+    if (courseName.includes('2k7') || courseName.includes('2007') || courseName.includes('khóa 12 cũ')) {
       return '2k7';
-    } else if (courseName.includes('2k8') || courseName.includes('2008') || courseName.includes('lớp 9')) {
+    } else if (courseName.includes('2k8') || courseName.includes('2008') || courseName.includes('khóa 12 mới')) {
       return '2k8';
-    } else if (courseName.includes('2k9') || courseName.includes('2009') || courseName.includes('lớp 8')) {
+    } else if (courseName.includes('2k9') || courseName.includes('2009') || courseName.includes('lớp 11')) {
       return '2k9';
-    } else if (courseName.includes('2k10') || courseName.includes('2010') || courseName.includes('lớp 7')) {
+    } else if (courseName.includes('2k10') || courseName.includes('2010') || courseName.includes('lớp 10')) {
       return '2k10';
     } else {
       return 'other';
@@ -433,20 +432,20 @@ export default function CoursesPage() {
         const courseName = course.name?.toLowerCase() || '';
         // Lọc các khóa học có chứa khối lớp trong tên
         if (selectedGradeLevel === '2k7') {
-          return courseName.includes('2k7') || courseName.includes('2007') || courseName.includes('lớp 10');
+          return courseName.includes('2k7') || courseName.includes('2007') || courseName.includes('khóa 12 cũ');
         } else if (selectedGradeLevel === '2k8') {
-          return courseName.includes('2k8') || courseName.includes('2008') || courseName.includes('lớp 9');
+          return courseName.includes('2k8') || courseName.includes('2008') || courseName.includes('khóa 12 mới');
         } else if (selectedGradeLevel === '2k9') {
-          return courseName.includes('2k9') || courseName.includes('2009') || courseName.includes('lớp 8');
+          return courseName.includes('2k9') || courseName.includes('2009') || courseName.includes('lớp 11');
         } else if (selectedGradeLevel === '2k10') {
-          return courseName.includes('2k10') || courseName.includes('2010') || courseName.includes('lớp 7');
+          return courseName.includes('2k10') || courseName.includes('2010') || courseName.includes('lớp 10');
         } else if (selectedGradeLevel === 'other') {
           return !courseName.includes('2k7') && !courseName.includes('2k8') && 
                  !courseName.includes('2k9') && !courseName.includes('2k10') &&
                  !courseName.includes('2007') && !courseName.includes('2008') &&
                  !courseName.includes('2009') && !courseName.includes('2010') &&
-                 !courseName.includes('lớp 7') && !courseName.includes('lớp 8') &&
-                 !courseName.includes('lớp 9') && !courseName.includes('lớp 10');
+                 !courseName.includes('khóa 12 cũ') && !courseName.includes('khóa 12 mới') &&
+                 !courseName.includes('lớp 11') && !courseName.includes('lớp 10');
         }
         return true;
       });
@@ -590,406 +589,63 @@ export default function CoursesPage() {
   };
 
   return (
-    <main className="relative bg-gradient-to-b from-gray-50 to-white min-h-screen w-full overflow-hidden">
+    <main className="relative bg-gradient-to-b from-indigo-600 to-indigo-700 min-h-screen w-full overflow-hidden">
       
-      {/* Hero Header */}
-      <div className="bg-gradient-to-r from-indigo-600 to-purple-700 relative overflow-hidden">
-        <div className="absolute inset-0 bg-grid-white/10 bg-[size:20px_20px] opacity-10"></div>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20 relative z-10">
-          <div className="text-center md:text-left md:flex md:items-center md:justify-between">
-            <div className="mb-8 md:mb-0 md:max-w-2xl">
-              <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-white mb-4 tracking-tight">
-                <span className="text-yellow-300">
-                  {enrolledOnly ? "Khóa học" : "Tất cả khóa học"}
-                </span>
-                {enrolledOnly ? " đã đăng ký" : " có sẵn"}
-              </h1>
-              <p className="text-indigo-100 text-lg md:text-xl max-w-2xl mx-auto md:mx-0">
-                {enrolledOnly 
-                  ? "Danh sách các khóa học bạn đã đăng ký. Tiếp tục học tập và nâng cao kỹ năng của bạn!"
-                  : "Khám phá và đăng ký các khóa học chất lượng cao để nâng cao kiến thức và kỹ năng của bạn."
-                }
-              </p>
-            </div>
-            <div className="hidden lg:block relative w-64 h-64">
-              <div className="absolute inset-0 bg-white bg-opacity-20 rounded-full animate-pulse"></div>
-              <div className="absolute inset-4 bg-white bg-opacity-30 rounded-full flex items-center justify-center">
-                <AcademicCapIcon className="h-24 w-24 text-white" />
-              </div>
-            </div>
-          </div>
-
-          {/* Thanh tìm kiếm */}
-          <div className="mt-8 md:mt-12 relative max-w-3xl mx-auto">
-            <div className="bg-white shadow-lg rounded-xl overflow-hidden p-1 flex flex-col sm:flex-row">
-              <div className="flex-grow flex items-center px-4 py-3">
+      {/* Hero Header - Simplified */}
+      <div className="relative overflow-hidden py-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          {/* Search bar only */}
+          <div className="mt-2 relative max-w-3xl mx-auto">
+            <div className="bg-white shadow-lg rounded-xl overflow-hidden p-1 flex">
+              <div className="flex-grow flex items-center px-4 py-2.5">
                 <MagnifyingGlassIcon className="h-5 w-5 text-gray-400 mr-3" />
                 <input
                   type="text"
                   placeholder="Tìm kiếm khóa học..."
-                  className="flex-grow focus:outline-none text-gray-600"
+                  className="flex-grow focus:outline-none text-gray-600 text-sm"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyPress={handleKeyPress}
                 />
               </div>
               
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center px-4 py-3 text-indigo-700 hover:bg-indigo-50 rounded-lg sm:border-l sm:border-gray-200 transition-colors duration-150"
-              >
-                <FunnelIcon className="h-5 w-5 mr-2" />
-                <span className="text-sm font-medium">Bộ lọc</span>
-                <ChevronDownIcon className={`h-4 w-4 ml-1 transition-transform duration-200 ${showFilters ? 'rotate-180' : ''}`} />
-              </button>
-              
               <button 
                 onClick={handleSearch}
-                className="bg-gradient-to-r from-indigo-600 to-indigo-700 text-white px-6 py-3 rounded-lg font-medium hover:from-indigo-700 hover:to-indigo-800 transition-all duration-200 shadow-md"
+                className="bg-indigo-600 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-indigo-700 transition-all duration-200 text-sm"
               >
                 Tìm kiếm
               </button>
-            </div>
-            
-            {/* Bộ lọc mở rộng */}
-            {showFilters && (
-              <div className="absolute z-30 mt-2 w-full bg-white rounded-xl shadow-xl border border-gray-100 p-5 grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Danh mục</label>
-                  <select 
-                    className="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                    value={selectedCategory}
-                    onChange={(e) => setSelectedCategory(e.target.value)}
-                  >
-                    <option value="all">Tất cả danh mục</option>
-                    <option value="programming">Tin học</option>
-                    <option value="language">Ngoại ngữ</option>
-                    <option value="softskill">Kỹ năng mềm</option>
-                    <option value="science">Khoa học tự nhiên</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Cấp độ</label>
-                  <select 
-                    className="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                    value={selectedLevel}
-                    onChange={(e) => setSelectedLevel(e.target.value)}
-                  >
-                    <option value="all">Tất cả cấp độ</option>
-                    <option value="Cơ bản">Cơ bản</option>
-                    <option value="Trung cấp">Trung cấp</option>
-                    <option value="Nâng cao">Nâng cao</option>
-                    <option value="Chuyên sâu">Chuyên sâu</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-                    <AcademicCapIcon className="h-4 w-4 mr-1 text-indigo-600" />
-                    Khối lớp
-                  </label>
-                  <select 
-                    className="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                    value={selectedGradeLevel}
-                    onChange={(e) => setSelectedGradeLevel(e.target.value)}
-                  >
-                    {gradeLevels.map(grade => (
-                      <option 
-                        key={grade.id} 
-                        value={grade.id}
-                        className={grade.id !== 'all' ? 'font-medium' : ''}
-                      >
-                        {grade.name} {grade.description ? `- ${grade.description}` : ''}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Sắp xếp theo</label>
-                  <select 
-                    className="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                  >
-                    {sortOptions.map(option => (
-                      <option key={option.id} value={option.id}>{option.label}</option>
-                    ))}
-                  </select>
-                </div>
-                
-                <div className="md:col-span-3">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Khoảng giá (VNĐ)</label>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <input
-                        type="number" 
-                        min="0"
-                        className="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                        placeholder="Từ"
-                        value={priceRange[0]}
-                        onChange={(e) => setPriceRange([parseInt(e.target.value) || 0, priceRange[1]])}
-                      />
-                    </div>
-                    <div>
-                      <input
-                        type="number"
-                        min="0"
-                        className="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                        placeholder="Đến"
-                        value={priceRange[1]}
-                        onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value) || 10000000])}
-                      />
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="md:col-span-3">
-                  <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
-                    <h4 className="font-medium text-gray-900 mb-2 flex items-center">
-                      <AcademicCapIcon className="h-5 w-5 mr-2 text-indigo-600" />
-                      Tổng quan khối lớp
-                    </h4>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                      {gradeLevels.filter(g => g.id !== 'all').map(grade => (
-                        <button
-                          key={grade.id}
-                          onClick={() => {
-                            setSelectedGradeLevel(grade.id);
-                            setShowFilters(false);
-                          }}
-                          className={`flex items-center p-2 rounded-md text-sm ${
-                            selectedGradeLevel === grade.id
-                              ? `${grade.color} text-white`
-                              : 'bg-white hover:bg-gray-100 text-gray-800'
-                          }`}
-                        >
-                          <div className={`w-3 h-3 rounded-full ${grade.color} mr-2 flex-shrink-0`}></div>
-                          <div>
-                            <div className="font-medium">{grade.name}</div>
-                            <div className="text-xs opacity-80">{grade.description}</div>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="md:col-span-3 flex justify-between mt-4">
-                  <button 
-                    onClick={resetFilters}
-                    className="text-gray-600 text-sm font-medium hover:text-indigo-600 flex items-center"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                    Đặt lại bộ lọc
-                  </button>
-                  <button 
-                    onClick={() => {
-                      handleSearch();
-                      setShowFilters(false);
-                    }}
-                    className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700"
-                  >
-                    Áp dụng bộ lọc
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Các con số thống kê */}
-          <div className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-            <div className="bg-white bg-opacity-10 rounded-lg p-4">
-              <div className="text-2xl md:text-3xl font-bold text-white">{enrolledCourses.length}</div>
-              <div className="text-indigo-100 text-sm">Khóa học đã đăng ký</div>
-            </div>
-            <div className="bg-white bg-opacity-10 rounded-lg p-4">
-              <div className="text-2xl md:text-3xl font-bold text-white">{courses.length}</div>
-              <div className="text-indigo-100 text-sm">Tổng số khóa học</div>
-            </div>
-            <div className="bg-white bg-opacity-10 rounded-lg p-4">
-              <div className="text-2xl md:text-3xl font-bold text-white">
-                {filteredCourses.length}
-              </div>
-              <div className="text-indigo-100 text-sm">
-                Khóa học hiển thị
-              </div>
-            </div>
-            <div className="bg-white bg-opacity-10 rounded-lg p-4">
-              <div className="text-2xl md:text-3xl font-bold text-white">4.8</div>
-              <div className="text-indigo-100 text-sm">Đánh giá trung bình</div>
             </div>
           </div>
         </div>
       </div>
 
       {/* Danh mục */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Tabs danh mục */}
-        <div className="mb-8 overflow-x-auto no-scrollbar">
-          <div className="flex space-x-2 md:space-x-4 min-w-max">
-            {categories.map((category) => (
+      <div className="bg-gray-50 rounded-t-3xl pt-6 pb-12 px-4 min-h-screen">
+        {/* Lọc theo khối lớp */}
+        <div className="mb-6">
+          <h3 className="text-base font-semibold text-gray-900 mb-3">
+            Lọc theo khối lớp
+          </h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+            {gradeLevels.map((grade) => (
               <button
-                key={category.id}
-                onClick={() => setSelectedCategory(category.id)}
-                className={`flex items-center px-4 py-2.5 rounded-full text-sm font-medium transition-all duration-200 ${
-                  selectedCategory === category.id
-                  ? 'bg-indigo-600 text-white shadow-md'
+                key={grade.id}
+                onClick={() => setSelectedGradeLevel(grade.id)}
+                className={`p-2 rounded-xl text-sm font-medium transition-all duration-200 flex flex-col items-center justify-center ${
+                  selectedGradeLevel === grade.id
+                  ? `${grade.color} text-white shadow-md`
                   : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
                 }`}
               >
-                <category.icon className={`h-5 w-5 ${selectedCategory === category.id ? 'text-white' : 'text-indigo-600'} mr-2`} />
-                {category.name}
-              </button>
-            ))}
-          </div>
-        </div>
-        
-        {/* Hiển thị lọc khối lớp */}
-        <div className="mb-8">
-          <div className="flex flex-col space-y-2">
-            <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
-              <AcademicCapIcon className="h-5 w-5 mr-2 text-indigo-600" />
-              Lọc theo khối lớp
-            </h3>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
-              {gradeLevels.map((grade) => (
-                <button
-                  key={grade.id}
-                  onClick={() => setSelectedGradeLevel(grade.id)}
-                  className={`p-3 rounded-lg text-sm font-medium transition-all duration-200 flex flex-col items-center justify-center h-full ${
-                    selectedGradeLevel === grade.id
-                    ? `${grade.color} text-white shadow-md`
-                    : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
-                  }`}
-                >
-                  <grade.icon className={`h-6 w-6 ${selectedGradeLevel === grade.id ? 'text-white' : 'text-indigo-600'} mb-1`} />
-                  <span>{grade.name}</span>
-                  {grade.id !== 'all' && (
-                    <span className="text-xs mt-1 opacity-80 text-center">
-                      {selectedGradeLevel === grade.id ? 'Đang chọn' : grade.description?.split(' ')[0] || ''}
-                    </span>
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Chế độ xem */}
-        <div className="mb-8 flex justify-between items-center">
-          <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-            <AcademicCapIcon className="h-5 w-5 mr-2 text-indigo-600" />
-            {searchTerm 
-              ? `Kết quả tìm kiếm "${searchTerm}"` 
-              : enrolledOnly 
-                ? 'Khóa học đã đăng ký' 
-                : selectedGradeLevel !== 'all'
-                  ? `${gradeLevels.find(g => g.id === selectedGradeLevel)?.name || 'Khóa học'}`
-                  : 'Tất cả khóa học'
-            }
-          </h3>
-          <div className="flex space-x-2">
-            <button
-              onClick={() => setViewMode('grid')}
-              className={`p-2 rounded-lg ${viewMode === 'grid' ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-600'}`}
-              title="Xem dạng lưới"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-              </svg>
-            </button>
-            <button
-              onClick={() => setViewMode('categories')}
-              className={`p-2 rounded-lg ${viewMode === 'categories' ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-600'}`}
-              title="Xem theo danh mục"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        {/* Tiêu đề danh sách khóa học */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 px-2 md:px-0">
-          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 flex items-center mb-3 md:mb-0">
-            <AcademicCapIcon className="h-7 w-7 mr-2 text-indigo-600" />
-            {searchTerm 
-              ? `Kết quả tìm kiếm "${searchTerm}"` 
-              : enrolledOnly 
-                ? 'Khóa học đã đăng ký' 
-                : 'Tất cả khóa học'
-            }
-          </h2>
-          <div className="flex items-center gap-2">
-            <div className="bg-gray-100 rounded-lg p-1 flex items-center">
-              <button
-                onClick={() => setEnrolledOnly(true)}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                  enrolledOnly 
-                    ? 'bg-indigo-600 text-white shadow-md' 
-                    : 'text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                Đã đăng ký
-              </button>
-              <button
-                onClick={() => setEnrolledOnly(false)}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                  !enrolledOnly 
-                    ? 'bg-indigo-600 text-white shadow-md' 
-                    : 'text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                Tất cả
-              </button>
-            </div>
-            <button
-              onClick={handleRetry}
-              className="flex items-center px-3 py-2 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition-colors"
-              title="Làm mới dữ liệu"
-              disabled={loading}
-            >
-              <svg 
-                xmlns="http://www.w3.org/2000/svg" 
-                className={`h-5 w-5 mr-1 ${loading && cacheStatus === 'cleared' ? 'animate-spin' : ''}`} 
-                fill="none" 
-                viewBox="0 0 24 24" 
-                stroke="currentColor"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              {loading && cacheStatus === 'cleared' ? 'Đang tải...' : 'Làm mới'}
-            </button>
-            <div className="flex items-center bg-gray-100 rounded-lg px-4 py-2 overflow-x-auto whitespace-nowrap">
-              <span className="text-sm font-medium text-gray-800 mr-2">Sắp xếp:</span>
-              <select 
-                className="bg-transparent text-sm text-gray-700 focus:outline-none border-none"
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-              >
-                {sortOptions.map(option => (
-                  <option key={option.id} value={option.id}>{option.label}</option>
-                ))}
-              </select>
-              <div className="ml-4 pl-4 border-l border-gray-300">
-                <span className="text-sm font-medium text-gray-800">{filteredCourses.length} khóa học</span>
-                {selectedCategory !== 'all' && (
-                  <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800">
-                    {categories.find(c => c.id === selectedCategory)?.name}
-                    <button 
-                      onClick={() => setSelectedCategory('all')} 
-                      className="ml-1 text-indigo-600 hover:text-indigo-800"
-                    >
-                      <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
+                <span>{grade.name}</span>
+                {grade.id !== 'all' && grade.description && (
+                  <span className="text-xs mt-0.5 opacity-80">
+                    {selectedGradeLevel === grade.id ? 'Đang chọn' : grade.description}
                   </span>
                 )}
-              </div>
-            </div>
+              </button>
+            ))}
           </div>
         </div>
 
@@ -1009,7 +665,7 @@ export default function CoursesPage() {
                 <div className="mt-3 flex gap-2">
                   <button
                     onClick={handleRetry}
-                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                    className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="-ml-0.5 mr-1.5 h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -1018,7 +674,7 @@ export default function CoursesPage() {
                   </button>
                   <a
                     href="/login"
-                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="-ml-0.5 mr-1.5 h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
@@ -1032,203 +688,90 @@ export default function CoursesPage() {
         )}
 
         {loading ? (
-        <div className="text-center py-20">
-          <div className="inline-block animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-indigo-600 mb-5"></div>
-          <p className="text-gray-500 text-lg font-medium">Đang tải dữ liệu khóa học...</p>
-          {cacheStatus === 'hit' && (
-            <p className="text-xs text-green-600 mt-2">Đang tải từ bộ nhớ đệm...</p>
-          )}
+        <div className="text-center py-12">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-indigo-600 mb-3"></div>
+          <p className="text-gray-500 text-base font-medium">Đang tải dữ liệu khóa học...</p>
         </div>
         ) : (
         <div className="overflow-visible">
             {filteredCourses.length > 0 ? (
-              viewMode === 'grid' ? (
-                // Chế độ xem lưới
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredCourses.map((course, index) => {
-                    const rating = getRandomRating();
-                    const level = getRandomLevel();
-                    const students = getRandomStudentCount();
-                    const lessons = getRandomLessonCount();
-                    const gradeLevel = getCourseGradeLevel(course);
-                    const gradeLevelInfo = gradeLevels.find(g => g.id === gradeLevel);
-                    
-                    // Kiểm tra xem khóa học đã đăng ký chưa
-                    const isEnrolled = enrolledCourses.some(enrollment => 
-                      enrollment.courseId === course._id || enrollment.courseId === course.courseId
-                    );
-                    
-                    return (
-                      <div 
-                        key={course._id} 
-                        className={`bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col h-full group cursor-pointer ${
-                          gradeLevel === '2k7' ? 'ring-2 ring-yellow-300 ring-opacity-70' :
-                          gradeLevel === '2k8' ? 'ring-2 ring-green-300 ring-opacity-70' : ''
-                        }`}
-                        onClick={() => router.push(`/khoa-hoc/${course.kimvanId || course._id}`)}
-                      >
-                        <div className={`h-40 bg-gradient-to-r ${
-                          gradeLevel === '2k7' ? 'from-yellow-500 to-yellow-600' :
-                          gradeLevel === '2k8' ? 'from-green-500 to-green-600' :
-                          'from-indigo-600 to-purple-700'
-                        } relative overflow-hidden`}>
-                          {/* Background pattern */}
-                          <div className="absolute inset-0 bg-grid-white/10 bg-[size:20px_20px] opacity-20"></div>
-                          
-                          {/* Grade level ribbon */}
-                          {gradeLevel !== 'other' && (
-                            <div className={`absolute -right-8 top-4 ${gradeLevelInfo?.color || 'bg-gray-500'} text-white py-1 px-10 text-xs font-medium shadow-md transform rotate-45 z-10`}>
-                              {gradeLevelInfo?.name || 'Khối lớp'}
-                            </div>
-                          )}
-                          
-                          {/* Course level badge */}
-                          <div className="absolute top-3 left-3 px-3 py-1 bg-black bg-opacity-30 backdrop-blur-sm text-white text-xs rounded-full font-medium">
-                            {level}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredCourses.map((course, index) => {
+                  const rating = getRandomRating();
+                  const level = getRandomLevel();
+                  const students = getRandomStudentCount();
+                  const lessons = getRandomLessonCount();
+                  const gradeLevel = getCourseGradeLevel(course);
+                  const gradeLevelInfo = gradeLevels.find(g => g.id === gradeLevel);
+                  
+                  // Kiểm tra xem khóa học đã đăng ký chưa
+                  const isEnrolled = enrolledCourses.some(enrollment => 
+                    enrollment.courseId === course._id || enrollment.courseId === course.courseId
+                  );
+                  
+                  return (
+                    <div 
+                      key={course._id} 
+                      className="bg-white border border-gray-100 rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-all duration-300 flex flex-col h-full cursor-pointer"
+                      onClick={() => router.push(`/khoa-hoc/${course.kimvanId || course._id}`)}
+                    >
+                      {/* Card header với gradient phù hợp với khối lớp */}
+                      <div className={`h-24 relative overflow-hidden ${gradeLevelInfo?.color || 'bg-indigo-600'}`}>
+                        {/* Course icon */}
+                        <div className="absolute inset-y-0 left-0 flex items-center justify-center px-4">
+                          <div className="h-12 w-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                            <AcademicCapIcon className="h-6 w-6 text-white" />
                           </div>
-                          
-                          {/* Enrolled badge */}
-                          {isEnrolled && (
-                            <div className="absolute bottom-3 left-3 px-3 py-1 bg-green-500 bg-opacity-90 backdrop-blur-sm text-white text-xs rounded-full font-medium flex items-center">
-                              <CheckCircleIcon className="h-3 w-3 mr-1" />
-                              Đã đăng ký
-                            </div>
-                          )}
-                          
-                          {/* Course icon */}
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <div className={`h-20 w-20 ${gradeLevelInfo?.color || 'bg-white'} bg-opacity-20 rounded-full flex items-center justify-center`}>
-                              <AcademicCapIcon className="h-10 w-10 text-white" />
-                            </div>
-                          </div>
-                          
-                          {/* Gradient overlay at bottom */}
-                          <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-indigo-900 to-transparent opacity-70"></div>
                         </div>
                         
-                        <div className="p-5 flex-grow">
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center space-x-1">
+                        {/* Course info */}
+                        <div className="ml-20 pr-4 h-full flex flex-col justify-center">
+                          <h3 className="text-white font-semibold text-base line-clamp-1">{course.name}</h3>
+                          <div className="flex items-center mt-1">
+                            <div className="flex items-center">
                               {renderStars(rating)}
-                              <span className="text-xs text-gray-500 ml-1">({rating.toFixed(1)})</span>
+                              <span className="text-xs text-white ml-1">({rating.toFixed(1)})</span>
                             </div>
-                            <span className={`text-xs font-medium ${
-                              gradeLevel === '2k7' ? 'text-yellow-600 bg-yellow-50' :
-                              gradeLevel === '2k8' ? 'text-green-600 bg-green-50' :
-                              'text-indigo-600 bg-indigo-50'
-                            } px-2 py-1 rounded-full`}>
-                              {gradeLevel !== 'other' ? gradeLevelInfo?.name : (course.category || 'Khóa học')}
-                            </span>
                           </div>
-                          
-                          <h3 className={`text-lg font-semibold ${
-                            gradeLevel === '2k7' ? 'text-yellow-800' :
-                            gradeLevel === '2k8' ? 'text-green-800' :
-                            'text-gray-900'
-                          } mb-2 group-hover:text-indigo-600 transition-colors line-clamp-2`}>
-                            {course.name}
-                          </h3>
-                          
-                          <p className="text-sm text-gray-500 mb-4 line-clamp-2">
-                            {course.description || 'Khóa học chất lượng cao được thiết kế bởi các chuyên gia hàng đầu.'}
-                          </p>
-                          
-                          <div className="grid grid-cols-2 gap-3 mb-3">
-                            <div className="flex items-center text-xs text-gray-500">
-                              <UserCircleIcon className="h-3.5 w-3.5 mr-1.5 text-gray-400" />
-                              <span>{students.toLocaleString()} học viên</span>
-                            </div>
-                            <div className="flex items-center text-xs text-gray-500">
-                              <DocumentTextIcon className="h-3.5 w-3.5 mr-1.5 text-gray-400" />
-                              <span>{lessons} bài học</span>
-                            </div>
-                            <div className="flex items-center text-xs text-gray-500">
-                              <ClockIcon className="h-3.5 w-3.5 mr-1.5 text-gray-400" />
-                              <span>{Math.round(lessons * 0.4)} giờ học</span>
-                            </div>
-                            <div className="flex items-center text-xs text-gray-500">
-                              <FireIcon className="h-3.5 w-3.5 mr-1.5 text-orange-400" />
-                              <span>Mới cập nhật</span>
-                            </div>
+                        </div>
+                        
+                        {/* Grade level badge */}
+                        {gradeLevel !== 'other' && (
+                          <div className="absolute top-2 right-2 px-2 py-0.5 bg-white bg-opacity-30 backdrop-blur-sm text-white text-xs rounded-full font-medium">
+                            {gradeLevelInfo?.name}
+                          </div>
+                        )}
+                        
+                        {/* Enrolled badge */}
+                        {isEnrolled && (
+                          <div className="absolute bottom-2 right-2 px-2 py-0.5 bg-green-500 bg-opacity-90 backdrop-blur-sm text-white text-xs rounded-full font-medium flex items-center">
+                            <CheckCircleIcon className="h-3 w-3 mr-1" />
+                            Đã đăng ký
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Card content */}
+                      <div className="p-3 flex-grow">
+                        <p className="text-sm text-gray-500 mb-3 line-clamp-2">
+                          {course.description || 'Khóa học chất lượng cao được thiết kế bởi các chuyên gia hàng đầu.'}
+                        </p>
+                        
+                        <div className="grid grid-cols-2 gap-2 text-xs text-gray-500">
+                          <div className="flex items-center">
+                            <UserCircleIcon className="h-3.5 w-3.5 mr-1.5 text-gray-400" />
+                            <span>{students.toLocaleString()} học viên</span>
+                          </div>
+                          <div className="flex items-center">
+                            <DocumentTextIcon className="h-3.5 w-3.5 mr-1.5 text-gray-400" />
+                            <span>{lessons} bài học</span>
                           </div>
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                // Chế độ xem theo danh mục
-                <div className="space-y-12">
-                  {Object.entries(groupCoursesByGradeLevel(filteredCourses))
-                    .filter(([key, courses]) => courses.length > 0)
-                    .map(([gradeLevel, courses]) => {
-                      const gradeLevelInfo = gradeLevels.find(g => g.id === gradeLevel);
-                      if (!gradeLevelInfo || courses.length === 0) return null;
-                      
-                      return (
-                        <div key={gradeLevel} className="space-y-4">
-                          <div className={`flex items-center p-4 ${gradeLevelInfo.color} text-white rounded-lg shadow-md`}>
-                            <gradeLevelInfo.icon className="h-6 w-6 mr-2" />
-                            <h2 className="text-xl font-bold">{gradeLevelInfo.name}</h2>
-                            <span className="ml-2 bg-white bg-opacity-20 px-2 py-1 rounded-full text-sm">
-                              {courses.length} khóa học
-                            </span>
-                            <p className="ml-4 text-sm opacity-90">{gradeLevelInfo.description}</p>
-                          </div>
-                          
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {courses.slice(0, 6).map((course) => {
-                              const rating = getRandomRating();
-                              const isEnrolled = enrolledCourses.some(enrollment => 
-                                enrollment.courseId === course._id || enrollment.courseId === course.courseId
-                              );
-                              
-                              return (
-                                <div 
-                                  key={course._id}
-                                  className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden hover:shadow-md transition-all duration-200 flex cursor-pointer"
-                                  onClick={() => router.push(`/khoa-hoc/${course.kimvanId || course._id}`)}
-                                >
-                                  <div className={`w-2 ${gradeLevelInfo.color}`}></div>
-                                  <div className="p-4 flex-grow">
-                                    <h3 className="font-semibold text-gray-900 mb-1 line-clamp-1">{course.name}</h3>
-                                    <div className="flex items-center mb-2">
-                                      <div className="flex items-center">
-                                        {renderStars(rating)}
-                                      </div>
-                                      <span className="text-xs text-gray-500 ml-1">({rating.toFixed(1)})</span>
-                                    </div>
-                                    <p className="text-xs text-gray-500 mb-2 line-clamp-2">
-                                      {course.description || 'Khóa học chất lượng cao được thiết kế bởi các chuyên gia hàng đầu.'}
-                                    </p>
-                                    {isEnrolled && (
-                                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-                                        <CheckCircleIcon className="h-3 w-3 mr-1" />
-                                        Đã đăng ký
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                          
-                          {courses.length > 6 && (
-                            <div className="text-center">
-                              <button 
-                                onClick={() => setSelectedGradeLevel(gradeLevel)}
-                                className="inline-flex items-center px-4 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-md hover:bg-indigo-100"
-                              >
-                                Xem tất cả {courses.length} khóa học {gradeLevelInfo.name}
-                                <ArrowRightIcon className="ml-1.5 h-4 w-4" />
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                </div>
-              )
+                    </div>
+                  );
+                })}
+              </div>
             ) : (
             <div className="text-center py-16 bg-gray-50 rounded-xl border border-gray-200 shadow-sm">
               <MagnifyingGlassIcon className="mx-auto h-16 w-16 text-gray-300 mb-4" />
