@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { PlusIcon, PencilIcon, TrashIcon, CloudArrowDownIcon, ExclamationCircleIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
-import { AdjustmentsHorizontalIcon, CheckCircleIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { AdjustmentsHorizontalIcon, CheckCircleIcon, XMarkIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
 
 export default function CoursesPage() {
@@ -29,6 +29,7 @@ export default function CoursesPage() {
   const [processingPDFs, setProcessingPDFs] = useState(false);
   const [analyzingCourses, setAnalyzingCourses] = useState({});
   const [processingPDFCourses, setProcessingPDFCourses] = useState({});
+  const [syncingMinicourses, setSyncingMinicourses] = useState(false);
   
   // Hàm tiện ích để đồng bộ dữ liệu với bảng minicourse
   const syncToMiniCourse = async (courseData) => {
@@ -62,6 +63,57 @@ export default function CoursesPage() {
     } catch (miniErr) {
       console.error('❌ Lỗi khi đồng bộ minicourse:', miniErr);
       return false;
+    }
+  };
+  
+  // Hàm xử lý đồng bộ hóa minicourses
+  const handleSyncMinicourses = async () => {
+    try {
+      setSyncingMinicourses(true);
+      setError(null);
+      
+      console.log("🔄 Bắt đầu quá trình xóa và làm mới toàn bộ minicourses...");
+      
+      // Gọi API đồng bộ minicourses
+      const response = await fetch('/api/db-initialize-minicourse');
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Không thể đồng bộ minicourses');
+      }
+      
+      const data = await response.json();
+      
+      // Hiển thị kết quả đồng bộ
+      setProcessResult({
+        success: true,
+        message: data.message || 'Đồng bộ minicourses thành công',
+        summary: {
+          total: data.stats?.processed || 0,
+          success: data.stats?.created || 0,
+          deleted: data.stats?.deleted || 0,
+          errors: data.stats?.errors || 0
+        }
+      });
+      
+      console.log("✅ Đã hoàn thành quá trình đồng bộ minicourses!");
+      
+      // Tải lại danh sách khóa học
+      await fetchCourses();
+    } catch (err) {
+      console.error("❌ Lỗi khi đồng bộ minicourses:", err);
+      setError(err.message || 'Đã xảy ra lỗi khi đồng bộ minicourses');
+      setProcessResult({
+        success: false,
+        message: `Lỗi: ${err.message}`,
+        summary: {
+          total: 0,
+          success: 0,
+          errors: 1
+        }
+      });
+    } finally {
+      setSyncingMinicourses(false);
     }
   };
   
@@ -1093,6 +1145,15 @@ export default function CoursesPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-semibold text-gray-900">Quản lý khóa học</h1>
         <div className="flex space-x-4">
+          
+          <button
+            onClick={handleSyncMinicourses}
+            disabled={syncingMinicourses}
+            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
+          >
+            <ArrowPathIcon className={`-ml-1 mr-2 h-5 w-5 ${syncingMinicourses ? 'animate-spin' : ''}`} aria-hidden="true" />
+            {syncingMinicourses ? 'Đang đồng bộ...' : 'Đồng bộ minicourses'}
+          </button>
           
           <button
             onClick={handleProcessAllCourses}
