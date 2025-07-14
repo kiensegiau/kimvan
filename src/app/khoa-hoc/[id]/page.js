@@ -1452,7 +1452,7 @@ export default function CourseDetailPage() {
                           </div>
                       </div>
                       
-                      <div className="relative overflow-x-auto">
+                      <div className="relative overflow-x-auto shadow-md sm:rounded-lg">
                         <table className="min-w-full divide-y divide-gray-200">
                           <thead>
                             <tr className="bg-gradient-to-r from-indigo-600 to-indigo-700">
@@ -1461,11 +1461,11 @@ export default function CourseDetailPage() {
                                   key={headerIndex}
                                   className={`
                                     px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider
-                                    ${headerIndex === 0 ? 'bg-indigo-700 min-w-[100px]' : 'min-w-[150px]'}
+                                    ${headerIndex === 0 ? 'bg-indigo-700' : ''}
                                   `}
                                 >
                                   <div className="flex items-center space-x-1">
-                                    <span className="break-words">
+                                    <span>
                                       {getCellValue(headerCell, usingSheetsData, headerIndex)}
                                     </span>
                                   </div>
@@ -1492,7 +1492,7 @@ export default function CourseDetailPage() {
                                     <td
                                       key={colIndex}
                                       className={`
-                                        px-6 py-4 whitespace-nowrap text-sm
+                                        px-6 py-4 text-sm
                                         ${colIndex === 0 ? 'bg-white font-medium text-indigo-600' : 'text-gray-900'}
                                       `}
                                     >
@@ -1507,12 +1507,12 @@ export default function CourseDetailPage() {
                                           onClick={() => handleLinkClick(originalUrl, cellValue)}
                                           className="text-blue-600 hover:text-blue-800 hover:underline flex items-center space-x-1"
                                         >
-                                          <span className="break-words">
+                                          <span>
                                             {cellValue}
                                           </span>
                                         </button>
                                       ) : cellValue ? ( // Chỉ hiển thị span nếu có giá trị
-                                        <span className="break-words">
+                                        <span>
                                           {cellValue}
                                         </span>
                                       ) : null}
@@ -1578,149 +1578,37 @@ export default function CourseDetailPage() {
           word-wrap: break-word;
         }
         table {
-          table-layout: auto;
           width: 100%;
           border-collapse: collapse;
         }
         th, td {
-          width: auto;
-          max-width: 300px;
-          overflow: visible;
-          white-space: normal;
-          word-wrap: break-word;
-          word-break: break-word;
+          padding: 0.75rem 1rem;
+          text-align: left;
         }
         th:first-child, td:first-child {
-          width: auto;
-          min-width: 90px;
-          overflow: hidden;
-          text-overflow: ellipsis;
+          font-weight: 500;
         }
-        .content-title {
-          width: auto;
-          white-space: normal;
-          word-break: break-word;
-        }
-        .content-cell {
-          white-space: normal !important;
-          word-break: break-word;
-          overflow: visible !important;
-          text-overflow: clip !important;
-          transition: all 0.3s ease;
-        }
-        .short-content {
-          width: fit-content !important;
-          min-width: 100px !important;
-          max-width: 150px !important;
-        }
-        .medium-content {
-          width: fit-content !important;
-          min-width: 150px !important;
-          max-width: 250px !important;
-        }
-        .long-content {
-          width: auto !important;
-          min-width: 200px !important;
-          max-width: 350px !important;
-        }
-        th:nth-child(3), td:nth-child(3) {
-          min-width: 100px;
-        }
-        th:nth-child(4), td:nth-child(4), th:nth-child(5), td:nth-child(5) {
-          min-width: 120px;
-        }
-        /* Chế độ xem điện thoại */
-        @media (max-width: 640px) {
-          th, td {
-            min-width: 80px !important;
-          }
-          th:first-child, td:first-child {
-            min-width: 85px !important;
-          }
-          .content-cell {
-            min-width: 100px !important;
-            max-width: 200px !important;
-          }
-          .short-content {
-            max-width: 120px !important;
-          }
-          .medium-content, .long-content {
-            max-width: 200px !important;
-          }
-        }
-        .line-clamp-3 {
-          -webkit-line-clamp: 3;
-          -webkit-box-orient: vertical;
-        }
-        .no-truncate {
-          white-space: normal !important;
-          overflow: visible !important;
-          text-overflow: clip !important;
-          display: block !important;
-        }
-        .hyphens-auto {
-          -webkit-hyphens: auto;
-          -moz-hyphens: auto;
-          hyphens: auto;
-        }
-        .whitespace-normal {
-          white-space: normal;
-        }
-        .backdrop-blur-sm {
-          backdrop-filter: blur(4px);
-          -webkit-backdrop-filter: blur(4px);
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; transform: scale(0.95); }
-          to { opacity: 1; transform: scale(1); }
-        }
-        .animate-fadeIn {
-          animation: fadeIn 0.3s ease-out forwards;
-        }
-        .table-container {
-          position: relative;
+        .overflow-x-auto {
           overflow-x: auto;
-          overflow-y: visible;
-          margin: 0 -1rem;
+          scrollbar-width: thin;
         }
-
-        table {
-          border-collapse: separate;
-          border-spacing: 0;
-          width: 100%;
+        .overflow-x-auto::-webkit-scrollbar {
+          height: 8px;
         }
-
-        th, td {
-          border-right: 1px solid #e5e7eb;
-          border-bottom: 1px solid #e5e7eb;
+        .overflow-x-auto::-webkit-scrollbar-track {
+          background: transparent;
         }
-
-        th:first-child {
-          position: sticky;
-          top: 0;
-          z-index: 20;
+        .overflow-x-auto::-webkit-scrollbar-thumb {
+          background-color: rgba(156, 163, 175, 0.5);
+          border-radius: 20px;
         }
-
-        th {
-          position: sticky;
-          top: 0;
-          z-index: 20;
-          background-color: #4f46e5; /* Màu nền giống với gradient của header */
-        }
-
-        thead {
-          position: sticky;
-          top: 0;
-          z-index: 20;
-        }
-        
-        tr:hover td:first-child {
+        tr:hover {
           background-color: #f9fafb;
         }
-
-        .break-words {
-          word-break: break-word;
-          white-space: normal;
+        @media (max-width: 640px) {
+          th, td {
+            padding: 0.5rem;
+          }
         }
       `}</style>
     </div>
