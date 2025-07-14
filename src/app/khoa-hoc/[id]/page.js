@@ -1452,8 +1452,8 @@ export default function CourseDetailPage() {
                           </div>
                       </div>
                       
-                      <div className="relative overflow-x-auto shadow-md sm:rounded-lg">
-                        <table className="min-w-full divide-y divide-gray-200">
+                      <div className="relative overflow-x-auto shadow-md sm:rounded-lg border border-gray-200">
+                        <table className="min-w-full divide-y divide-gray-200 table-with-vertical-borders">
                           <thead>
                             <tr className="bg-gradient-to-r from-indigo-600 to-indigo-700">
                               {header.map((headerCell, headerIndex) => (
@@ -1581,12 +1581,21 @@ export default function CourseDetailPage() {
           width: 100%;
           border-collapse: collapse;
         }
-        th, td {
+        /* Thêm thanh cột dọc */
+        .table-with-vertical-borders th,
+        .table-with-vertical-borders td {
           padding: 0.75rem 1rem;
           text-align: left;
+          border-right: 1px solid #e5e7eb;
+        }
+        .table-with-vertical-borders th:last-child,
+        .table-with-vertical-borders td:last-child {
+          border-right: none;
         }
         th:first-child, td:first-child {
           font-weight: 500;
+          background-color: #f9fafb;
+          border-right: 2px solid #e5e7eb;
         }
         .overflow-x-auto {
           overflow-x: auto;
@@ -1603,7 +1612,10 @@ export default function CourseDetailPage() {
           border-radius: 20px;
         }
         tr:hover {
-          background-color: #f9fafb;
+          background-color: #f3f4f6;
+        }
+        tr {
+          border-bottom: 1px solid #e5e7eb;
         }
         @media (max-width: 640px) {
           th, td {
