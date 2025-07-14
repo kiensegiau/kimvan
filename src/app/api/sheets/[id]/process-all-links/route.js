@@ -210,6 +210,7 @@ export async function POST(request, { params }) {
     // Tìm tất cả các ô chứa link Google Drive
     const cellsToProcess = [];
     const skippedCells = [];
+    const nonDriveUrls = []; // Mảng để theo dõi các URL không phải Google Drive
     
     for (let rowIndex = 1; rowIndex < values.length; rowIndex++) {
       const row = values[rowIndex] || [];
@@ -260,26 +261,13 @@ export async function POST(request, { params }) {
             cell,
             url
           });
-        } else if (cell && typeof cell === 'string') {
-          // Try to extract Drive ID directly from text for cases that might be missed
-          const driveIdRegex = /([a-zA-Z0-9_-]{25,})/;
-          const idMatch = cell.match(driveIdRegex);
-          
-          if (idMatch && idMatch[1]) {
-            const potentialDriveId = idMatch[1];
-            console.log(`Tìm thấy ID tiềm năng trong cell [${rowIndex + 1}:${colIndex + 1}]: ${potentialDriveId}`);
-            
-            // Construct a Drive URL and check if it's valid
-            const constructedUrl = `https://drive.google.com/file/d/${potentialDriveId}/view`;
-            
-            cellsToProcess.push({
-              rowIndex,
-              colIndex,
-              cell,
-              url: constructedUrl,
-              note: 'Extracted from potential Drive ID in text'
-            });
-          }
+        } else if (url) {
+          console.log(`⚠️ Loại bỏ URL không phải Google Drive: [${rowIndex + 1}:${colIndex + 1}]: ${url}`);
+          nonDriveUrls.push({
+            rowIndex: rowIndex + 1,
+            colIndex: colIndex + 1,
+            url: url
+          });
         }
       }
     }
@@ -359,7 +347,7 @@ export async function POST(request, { params }) {
     const urlGroupsArray = Object.values(urlGroups);
     
     // Xử lý theo batch, mỗi batch 5 link
-    const BATCH_SIZE = 1;
+    const BATCH_SIZE = 10;
     
     // Thay đổi hàm processUrlGroup thành async
     async function processUrlGroup(urlGroup, index) {
@@ -1424,6 +1412,7 @@ export async function POST(request, { params }) {
     console.log(`Số link duy nhất: ${Object.keys(urlGroups).length}`);
     console.log(`Đã xử lý thành công: ${processedCells.length}`);
     console.log(`Thất bại: ${errors.length}`);
+    console.log(`Loại bỏ URL không phải Drive: ${nonDriveUrls.length}`);
     
     return NextResponse.json({
       success: true,
@@ -1431,6 +1420,8 @@ export async function POST(request, { params }) {
       uniqueLinks: Object.keys(urlGroups).length,
       processed: processedCells.length,
       failed: errors.length,
+      nonDriveUrlsSkipped: nonDriveUrls.length,
+      nonDriveUrls: nonDriveUrls,
       processedCells,
       errors,
       timestamp: new Date().toISOString()

@@ -228,15 +228,49 @@ export function extractDriveFileId(url) {
 export function isDriveUrl(url) {
   if (!url) return false;
   
-  // Check for common Google Drive patterns
-  const drivePatterns = [
-    'drive.google.com',
-    'docs.google.com',
-    'googleusercontent.com'
-  ];
-  
-  return drivePatterns.some(pattern => url.includes(pattern)) || 
-         extractDriveFileId(url) !== null;
+  try {
+    // Làm sạch URL Google redirect nếu có
+    if (url.includes('google.com/url?q=')) {
+      const match = url.match(/[?&]q=([^&]+)/);
+      if (match && match[1]) {
+        try {
+          const decodedUrl = decodeURIComponent(match[1]);
+          return isDriveUrl(decodedUrl); // Gọi đệ quy với URL đã giải mã
+        } catch (e) {
+          console.error('Lỗi giải mã URL:', e);
+          return false;
+        }
+      }
+      return false; // URL redirect Google không có tham số q hợp lệ
+    }
+    
+    // Danh sách các mẫu URL Google Drive hợp lệ
+    const strictDrivePatterns = [
+      /drive\.google\.com\/file\/d\//i,         // drive.google.com/file/d/ID/...
+      /drive\.google\.com\/open\?id=/i,         // drive.google.com/open?id=ID
+      /drive\.google\.com\/drive\/folders\//i,  // drive.google.com/drive/folders/ID
+      /drive\.google\.com\/drive\/u\/\d+\/folders\//i, // drive.google.com/drive/u/0/folders/ID
+      /docs\.google\.com\/document\/d\//i,      // docs.google.com/document/d/ID/...
+      /docs\.google\.com\/spreadsheets\/d\//i,  // docs.google.com/spreadsheets/d/ID/...
+      /docs\.google\.com\/presentation\/d\//i,  // docs.google.com/presentation/d/ID/...
+      /drive\.google\.com\/uc\?id=/i,           // drive.google.com/uc?id=ID
+      /docs\.google\.com\/forms\/d\//i,         // docs.google.com/forms/d/ID/...
+      /lh\d+\.googleusercontent\.com\//i        // lh3.googleusercontent.com/...
+    ];
+    
+    // Kiểm tra URL với các mẫu nghiêm ngặt
+    for (const pattern of strictDrivePatterns) {
+      if (pattern.test(url)) {
+        return true;
+      }
+    }
+    
+    // Không còn sử dụng extractDriveFileId để tránh false positive
+    return false;
+  } catch (error) {
+    console.error('Lỗi khi kiểm tra Drive URL:', error.message);
+    return false;
+  }
 }
 
 /**
