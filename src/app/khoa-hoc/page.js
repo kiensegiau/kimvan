@@ -31,6 +31,8 @@ export default function CoursesPage() {
   const [sortBy, setSortBy] = useState('newest');
   const [priceRange, setPriceRange] = useState([0, 10000000]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedGradeLevel, setSelectedGradeLevel] = useState('all'); // Thêm state cho lọc theo khối lớp
+  const [viewMode, setViewMode] = useState('grid'); // Thêm chế độ xem: grid hoặc categories
   
   // Xử lý logic tìm kiếm khi nhấn nút
   const handleSearch = () => {
@@ -52,6 +54,7 @@ export default function CoursesPage() {
     setPriceRange([0, 10000000]);
     setSearchQuery('');
     setSearchTerm('');
+    setSelectedGradeLevel('all'); // Reset lọc theo khối lớp
   };
 
   // Hàm lưu dữ liệu vào localStorage với quản lý cache
@@ -306,6 +309,21 @@ export default function CoursesPage() {
   // Các danh mục Level
   const courseLevels = ['Cơ bản', 'Trung cấp', 'Nâng cao', 'Chuyên sâu'];
   
+  // Thêm danh mục khối lớp
+  const gradeLevels = [
+    { id: 'all', name: 'Tất cả khối lớp', color: 'bg-gray-600', icon: AcademicCapIcon },
+    { id: '2k7', name: 'Khối 2K7', color: 'bg-yellow-500', icon: AcademicCapIcon, 
+      description: 'Khóa học dành cho học sinh lớp 10 (sinh năm 2007)' },
+    { id: '2k8', name: 'Khối 2K8', color: 'bg-green-500', icon: AcademicCapIcon,
+      description: 'Khóa học dành cho học sinh lớp 9 (sinh năm 2008)' },
+    { id: '2k9', name: 'Khối 2K9', color: 'bg-blue-500', icon: AcademicCapIcon,
+      description: 'Khóa học dành cho học sinh lớp 8 (sinh năm 2009)' },
+    { id: '2k10', name: 'Khối 2K10', color: 'bg-purple-500', icon: AcademicCapIcon,
+      description: 'Khóa học dành cho học sinh lớp 7 (sinh năm 2010)' },
+    { id: 'other', name: 'Khối khác', color: 'bg-gray-500', icon: AcademicCapIcon,
+      description: 'Các khóa học không dành riêng cho khối lớp cụ thể' }
+  ];
+  
   // Các lựa chọn sắp xếp
   const sortOptions = [
     { id: 'newest', label: 'Mới nhất' },
@@ -314,6 +332,58 @@ export default function CoursesPage() {
     { id: 'price_asc', label: 'Giá thấp đến cao' },
     { id: 'price_desc', label: 'Giá cao đến thấp' }
   ];
+
+  // Nhóm khóa học theo khối lớp
+  const groupCoursesByGradeLevel = (courses) => {
+    const grouped = {
+      '2k7': [],
+      '2k8': [],
+      '2k9': [],
+      '2k10': [],
+      'other': []
+    };
+    
+    courses.forEach(course => {
+      const courseName = course.name?.toLowerCase() || '';
+      
+      if (courseName.includes('2k7') || courseName.includes('2007') || courseName.includes('lớp 10')) {
+        grouped['2k7'].push(course);
+      } else if (courseName.includes('2k8') || courseName.includes('2008') || courseName.includes('lớp 9')) {
+        grouped['2k8'].push(course);
+      } else if (courseName.includes('2k9') || courseName.includes('2009') || courseName.includes('lớp 8')) {
+        grouped['2k9'].push(course);
+      } else if (courseName.includes('2k10') || courseName.includes('2010') || courseName.includes('lớp 7')) {
+        grouped['2k10'].push(course);
+      } else {
+        grouped['other'].push(course);
+      }
+    });
+    
+    return grouped;
+  };
+  
+  // Hàm xác định khối lớp của khóa học
+  const getCourseGradeLevel = (course) => {
+    const courseName = course.name?.toLowerCase() || '';
+    
+    if (courseName.includes('2k7') || courseName.includes('2007') || courseName.includes('lớp 10')) {
+      return '2k7';
+    } else if (courseName.includes('2k8') || courseName.includes('2008') || courseName.includes('lớp 9')) {
+      return '2k8';
+    } else if (courseName.includes('2k9') || courseName.includes('2009') || courseName.includes('lớp 8')) {
+      return '2k9';
+    } else if (courseName.includes('2k10') || courseName.includes('2010') || courseName.includes('lớp 7')) {
+      return '2k10';
+    } else {
+      return 'other';
+    }
+  };
+  
+  // Lấy màu cho khối lớp
+  const getGradeLevelColor = (gradeId) => {
+    const grade = gradeLevels.find(g => g.id === gradeId);
+    return grade ? grade.color : 'bg-gray-500';
+  };
 
   // Hàm lọc và sắp xếp khóa học
   const getFilteredCourses = () => {
@@ -354,6 +424,31 @@ export default function CoursesPage() {
         // Giả sử cấp độ được lưu trong thuộc tính level của khóa học
         // Nếu không có, chúng ta sẽ không lọc theo cấp độ
         return course.level === selectedLevel;
+      });
+    }
+    
+    // Lọc theo khối lớp
+    if (selectedGradeLevel !== 'all') {
+      result = result.filter(course => {
+        const courseName = course.name?.toLowerCase() || '';
+        // Lọc các khóa học có chứa khối lớp trong tên
+        if (selectedGradeLevel === '2k7') {
+          return courseName.includes('2k7') || courseName.includes('2007') || courseName.includes('lớp 10');
+        } else if (selectedGradeLevel === '2k8') {
+          return courseName.includes('2k8') || courseName.includes('2008') || courseName.includes('lớp 9');
+        } else if (selectedGradeLevel === '2k9') {
+          return courseName.includes('2k9') || courseName.includes('2009') || courseName.includes('lớp 8');
+        } else if (selectedGradeLevel === '2k10') {
+          return courseName.includes('2k10') || courseName.includes('2010') || courseName.includes('lớp 7');
+        } else if (selectedGradeLevel === 'other') {
+          return !courseName.includes('2k7') && !courseName.includes('2k8') && 
+                 !courseName.includes('2k9') && !courseName.includes('2k10') &&
+                 !courseName.includes('2007') && !courseName.includes('2008') &&
+                 !courseName.includes('2009') && !courseName.includes('2010') &&
+                 !courseName.includes('lớp 7') && !courseName.includes('lớp 8') &&
+                 !courseName.includes('lớp 9') && !courseName.includes('lớp 10');
+        }
+        return true;
       });
     }
     
@@ -588,6 +683,27 @@ export default function CoursesPage() {
                   </select>
                 </div>
                 <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                    <AcademicCapIcon className="h-4 w-4 mr-1 text-indigo-600" />
+                    Khối lớp
+                  </label>
+                  <select 
+                    className="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                    value={selectedGradeLevel}
+                    onChange={(e) => setSelectedGradeLevel(e.target.value)}
+                  >
+                    {gradeLevels.map(grade => (
+                      <option 
+                        key={grade.id} 
+                        value={grade.id}
+                        className={grade.id !== 'all' ? 'font-medium' : ''}
+                      >
+                        {grade.name} {grade.description ? `- ${grade.description}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Sắp xếp theo</label>
                   <select 
                     className="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
@@ -622,6 +738,37 @@ export default function CoursesPage() {
                         value={priceRange[1]}
                         onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value) || 10000000])}
                       />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="md:col-span-3">
+                  <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                    <h4 className="font-medium text-gray-900 mb-2 flex items-center">
+                      <AcademicCapIcon className="h-5 w-5 mr-2 text-indigo-600" />
+                      Tổng quan khối lớp
+                    </h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                      {gradeLevels.filter(g => g.id !== 'all').map(grade => (
+                        <button
+                          key={grade.id}
+                          onClick={() => {
+                            setSelectedGradeLevel(grade.id);
+                            setShowFilters(false);
+                          }}
+                          className={`flex items-center p-2 rounded-md text-sm ${
+                            selectedGradeLevel === grade.id
+                              ? `${grade.color} text-white`
+                              : 'bg-white hover:bg-gray-100 text-gray-800'
+                          }`}
+                        >
+                          <div className={`w-3 h-3 rounded-full ${grade.color} mr-2 flex-shrink-0`}></div>
+                          <div>
+                            <div className="font-medium">{grade.name}</div>
+                            <div className="text-xs opacity-80">{grade.description}</div>
+                          </div>
+                        </button>
+                      ))}
                     </div>
                   </div>
                 </div>
@@ -695,6 +842,72 @@ export default function CoursesPage() {
                 {category.name}
               </button>
             ))}
+          </div>
+        </div>
+        
+        {/* Hiển thị lọc khối lớp */}
+        <div className="mb-8">
+          <div className="flex flex-col space-y-2">
+            <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
+              <AcademicCapIcon className="h-5 w-5 mr-2 text-indigo-600" />
+              Lọc theo khối lớp
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
+              {gradeLevels.map((grade) => (
+                <button
+                  key={grade.id}
+                  onClick={() => setSelectedGradeLevel(grade.id)}
+                  className={`p-3 rounded-lg text-sm font-medium transition-all duration-200 flex flex-col items-center justify-center h-full ${
+                    selectedGradeLevel === grade.id
+                    ? `${grade.color} text-white shadow-md`
+                    : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
+                  }`}
+                >
+                  <grade.icon className={`h-6 w-6 ${selectedGradeLevel === grade.id ? 'text-white' : 'text-indigo-600'} mb-1`} />
+                  <span>{grade.name}</span>
+                  {grade.id !== 'all' && (
+                    <span className="text-xs mt-1 opacity-80 text-center">
+                      {selectedGradeLevel === grade.id ? 'Đang chọn' : grade.description?.split(' ')[0] || ''}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Chế độ xem */}
+        <div className="mb-8 flex justify-between items-center">
+          <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+            <AcademicCapIcon className="h-5 w-5 mr-2 text-indigo-600" />
+            {searchTerm 
+              ? `Kết quả tìm kiếm "${searchTerm}"` 
+              : enrolledOnly 
+                ? 'Khóa học đã đăng ký' 
+                : selectedGradeLevel !== 'all'
+                  ? `${gradeLevels.find(g => g.id === selectedGradeLevel)?.name || 'Khóa học'}`
+                  : 'Tất cả khóa học'
+            }
+          </h3>
+          <div className="flex space-x-2">
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`p-2 rounded-lg ${viewMode === 'grid' ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-600'}`}
+              title="Xem dạng lưới"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+              </svg>
+            </button>
+            <button
+              onClick={() => setViewMode('categories')}
+              className={`p-2 rounded-lg ${viewMode === 'categories' ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-600'}`}
+              title="Xem theo danh mục"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
+              </svg>
+            </button>
           </div>
         </div>
 
@@ -829,95 +1042,194 @@ export default function CoursesPage() {
         ) : (
         <div className="overflow-visible">
             {filteredCourses.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredCourses.map((course, index) => {
-                const rating = getRandomRating();
-                const level = getRandomLevel();
-                const students = getRandomStudentCount();
-                const lessons = getRandomLessonCount();
-                
-                // Kiểm tra xem khóa học đã đăng ký chưa
-                const isEnrolled = enrolledCourses.some(enrollment => 
-                  enrollment.courseId === course._id || enrollment.courseId === course.courseId
-                );
-                
-                return (
-                  <div 
-                    key={course._id} 
-                    className="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col h-full group cursor-pointer"
-                    onClick={() => router.push(`/khoa-hoc/${course.kimvanId || course._id}`)}
-                  >
-                    <div className="h-40 bg-gradient-to-r from-indigo-600 to-purple-700 relative overflow-hidden">
-                      {/* Background pattern */}
-                      <div className="absolute inset-0 bg-grid-white/10 bg-[size:20px_20px] opacity-20"></div>
-                      
-                      {/* Course level badge */}
-                      <div className="absolute top-3 right-3 px-3 py-1 bg-black bg-opacity-30 backdrop-blur-sm text-white text-xs rounded-full font-medium">
-                        {level}
-                      </div>
-                      
-                      {/* Course icon */}
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="h-20 w-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                          <AcademicCapIcon className="h-10 w-10 text-white" />
-                        </div>
-                      </div>
-                      
-                      {/* Enrolled badge */}
-                      {isEnrolled && (
-                        <div className="absolute top-3 left-3 px-3 py-1 bg-green-500 bg-opacity-90 backdrop-blur-sm text-white text-xs rounded-full font-medium flex items-center">
-                          <CheckCircleIcon className="h-3 w-3 mr-1" />
-                          Đã đăng ký
-                        </div>
-                      )}
-                      
-                      {/* Gradient overlay at bottom */}
-                      <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-indigo-900 to-transparent opacity-70"></div>
-                    </div>
+              viewMode === 'grid' ? (
+                // Chế độ xem lưới
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filteredCourses.map((course, index) => {
+                    const rating = getRandomRating();
+                    const level = getRandomLevel();
+                    const students = getRandomStudentCount();
+                    const lessons = getRandomLessonCount();
+                    const gradeLevel = getCourseGradeLevel(course);
+                    const gradeLevelInfo = gradeLevels.find(g => g.id === gradeLevel);
                     
-                    <div className="p-5 flex-grow">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center space-x-1">
-                          {renderStars(rating)}
-                          <span className="text-xs text-gray-500 ml-1">({rating.toFixed(1)})</span>
+                    // Kiểm tra xem khóa học đã đăng ký chưa
+                    const isEnrolled = enrolledCourses.some(enrollment => 
+                      enrollment.courseId === course._id || enrollment.courseId === course.courseId
+                    );
+                    
+                    return (
+                      <div 
+                        key={course._id} 
+                        className={`bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col h-full group cursor-pointer ${
+                          gradeLevel === '2k7' ? 'ring-2 ring-yellow-300 ring-opacity-70' :
+                          gradeLevel === '2k8' ? 'ring-2 ring-green-300 ring-opacity-70' : ''
+                        }`}
+                        onClick={() => router.push(`/khoa-hoc/${course.kimvanId || course._id}`)}
+                      >
+                        <div className={`h-40 bg-gradient-to-r ${
+                          gradeLevel === '2k7' ? 'from-yellow-500 to-yellow-600' :
+                          gradeLevel === '2k8' ? 'from-green-500 to-green-600' :
+                          'from-indigo-600 to-purple-700'
+                        } relative overflow-hidden`}>
+                          {/* Background pattern */}
+                          <div className="absolute inset-0 bg-grid-white/10 bg-[size:20px_20px] opacity-20"></div>
+                          
+                          {/* Grade level ribbon */}
+                          {gradeLevel !== 'other' && (
+                            <div className={`absolute -right-8 top-4 ${gradeLevelInfo?.color || 'bg-gray-500'} text-white py-1 px-10 text-xs font-medium shadow-md transform rotate-45 z-10`}>
+                              {gradeLevelInfo?.name || 'Khối lớp'}
+                            </div>
+                          )}
+                          
+                          {/* Course level badge */}
+                          <div className="absolute top-3 left-3 px-3 py-1 bg-black bg-opacity-30 backdrop-blur-sm text-white text-xs rounded-full font-medium">
+                            {level}
+                          </div>
+                          
+                          {/* Enrolled badge */}
+                          {isEnrolled && (
+                            <div className="absolute bottom-3 left-3 px-3 py-1 bg-green-500 bg-opacity-90 backdrop-blur-sm text-white text-xs rounded-full font-medium flex items-center">
+                              <CheckCircleIcon className="h-3 w-3 mr-1" />
+                              Đã đăng ký
+                            </div>
+                          )}
+                          
+                          {/* Course icon */}
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className={`h-20 w-20 ${gradeLevelInfo?.color || 'bg-white'} bg-opacity-20 rounded-full flex items-center justify-center`}>
+                              <AcademicCapIcon className="h-10 w-10 text-white" />
+                            </div>
+                          </div>
+                          
+                          {/* Gradient overlay at bottom */}
+                          <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-indigo-900 to-transparent opacity-70"></div>
                         </div>
-                        <span className="text-xs font-medium text-indigo-600 bg-indigo-50 px-2 py-1 rounded-full">
-                          {course.category || 'Khóa học'}
-                        </span>
+                        
+                        <div className="p-5 flex-grow">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center space-x-1">
+                              {renderStars(rating)}
+                              <span className="text-xs text-gray-500 ml-1">({rating.toFixed(1)})</span>
+                            </div>
+                            <span className={`text-xs font-medium ${
+                              gradeLevel === '2k7' ? 'text-yellow-600 bg-yellow-50' :
+                              gradeLevel === '2k8' ? 'text-green-600 bg-green-50' :
+                              'text-indigo-600 bg-indigo-50'
+                            } px-2 py-1 rounded-full`}>
+                              {gradeLevel !== 'other' ? gradeLevelInfo?.name : (course.category || 'Khóa học')}
+                            </span>
+                          </div>
+                          
+                          <h3 className={`text-lg font-semibold ${
+                            gradeLevel === '2k7' ? 'text-yellow-800' :
+                            gradeLevel === '2k8' ? 'text-green-800' :
+                            'text-gray-900'
+                          } mb-2 group-hover:text-indigo-600 transition-colors line-clamp-2`}>
+                            {course.name}
+                          </h3>
+                          
+                          <p className="text-sm text-gray-500 mb-4 line-clamp-2">
+                            {course.description || 'Khóa học chất lượng cao được thiết kế bởi các chuyên gia hàng đầu.'}
+                          </p>
+                          
+                          <div className="grid grid-cols-2 gap-3 mb-3">
+                            <div className="flex items-center text-xs text-gray-500">
+                              <UserCircleIcon className="h-3.5 w-3.5 mr-1.5 text-gray-400" />
+                              <span>{students.toLocaleString()} học viên</span>
+                            </div>
+                            <div className="flex items-center text-xs text-gray-500">
+                              <DocumentTextIcon className="h-3.5 w-3.5 mr-1.5 text-gray-400" />
+                              <span>{lessons} bài học</span>
+                            </div>
+                            <div className="flex items-center text-xs text-gray-500">
+                              <ClockIcon className="h-3.5 w-3.5 mr-1.5 text-gray-400" />
+                              <span>{Math.round(lessons * 0.4)} giờ học</span>
+                            </div>
+                            <div className="flex items-center text-xs text-gray-500">
+                              <FireIcon className="h-3.5 w-3.5 mr-1.5 text-orange-400" />
+                              <span>Mới cập nhật</span>
+                            </div>
+                          </div>
+                        </div>
                       </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                // Chế độ xem theo danh mục
+                <div className="space-y-12">
+                  {Object.entries(groupCoursesByGradeLevel(filteredCourses))
+                    .filter(([key, courses]) => courses.length > 0)
+                    .map(([gradeLevel, courses]) => {
+                      const gradeLevelInfo = gradeLevels.find(g => g.id === gradeLevel);
+                      if (!gradeLevelInfo || courses.length === 0) return null;
                       
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-indigo-600 transition-colors line-clamp-2">
-                        {course.name}
-                      </h3>
-                      
-                      <p className="text-sm text-gray-500 mb-4 line-clamp-2">
-                        {course.description || 'Khóa học chất lượng cao được thiết kế bởi các chuyên gia hàng đầu.'}
-                      </p>
-                      
-                      <div className="grid grid-cols-2 gap-3 mb-3">
-                        <div className="flex items-center text-xs text-gray-500">
-                          <UserCircleIcon className="h-3.5 w-3.5 mr-1.5 text-gray-400" />
-                          <span>{students.toLocaleString()} học viên</span>
+                      return (
+                        <div key={gradeLevel} className="space-y-4">
+                          <div className={`flex items-center p-4 ${gradeLevelInfo.color} text-white rounded-lg shadow-md`}>
+                            <gradeLevelInfo.icon className="h-6 w-6 mr-2" />
+                            <h2 className="text-xl font-bold">{gradeLevelInfo.name}</h2>
+                            <span className="ml-2 bg-white bg-opacity-20 px-2 py-1 rounded-full text-sm">
+                              {courses.length} khóa học
+                            </span>
+                            <p className="ml-4 text-sm opacity-90">{gradeLevelInfo.description}</p>
+                          </div>
+                          
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {courses.slice(0, 6).map((course) => {
+                              const rating = getRandomRating();
+                              const isEnrolled = enrolledCourses.some(enrollment => 
+                                enrollment.courseId === course._id || enrollment.courseId === course.courseId
+                              );
+                              
+                              return (
+                                <div 
+                                  key={course._id}
+                                  className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden hover:shadow-md transition-all duration-200 flex cursor-pointer"
+                                  onClick={() => router.push(`/khoa-hoc/${course.kimvanId || course._id}`)}
+                                >
+                                  <div className={`w-2 ${gradeLevelInfo.color}`}></div>
+                                  <div className="p-4 flex-grow">
+                                    <h3 className="font-semibold text-gray-900 mb-1 line-clamp-1">{course.name}</h3>
+                                    <div className="flex items-center mb-2">
+                                      <div className="flex items-center">
+                                        {renderStars(rating)}
+                                      </div>
+                                      <span className="text-xs text-gray-500 ml-1">({rating.toFixed(1)})</span>
+                                    </div>
+                                    <p className="text-xs text-gray-500 mb-2 line-clamp-2">
+                                      {course.description || 'Khóa học chất lượng cao được thiết kế bởi các chuyên gia hàng đầu.'}
+                                    </p>
+                                    {isEnrolled && (
+                                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                        <CheckCircleIcon className="h-3 w-3 mr-1" />
+                                        Đã đăng ký
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                          
+                          {courses.length > 6 && (
+                            <div className="text-center">
+                              <button 
+                                onClick={() => setSelectedGradeLevel(gradeLevel)}
+                                className="inline-flex items-center px-4 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-md hover:bg-indigo-100"
+                              >
+                                Xem tất cả {courses.length} khóa học {gradeLevelInfo.name}
+                                <ArrowRightIcon className="ml-1.5 h-4 w-4" />
+                              </button>
+                            </div>
+                          )}
                         </div>
-                        <div className="flex items-center text-xs text-gray-500">
-                          <DocumentTextIcon className="h-3.5 w-3.5 mr-1.5 text-gray-400" />
-                          <span>{lessons} bài học</span>
-                        </div>
-                        <div className="flex items-center text-xs text-gray-500">
-                          <ClockIcon className="h-3.5 w-3.5 mr-1.5 text-gray-400" />
-                          <span>{Math.round(lessons * 0.4)} giờ học</span>
-                        </div>
-                        <div className="flex items-center text-xs text-gray-500">
-                          <FireIcon className="h-3.5 w-3.5 mr-1.5 text-orange-400" />
-                          <span>Mới cập nhật</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
+                      );
+                    })}
+                </div>
+              )
+            ) : (
             <div className="text-center py-16 bg-gray-50 rounded-xl border border-gray-200 shadow-sm">
               <MagnifyingGlassIcon className="mx-auto h-16 w-16 text-gray-300 mb-4" />
               <h3 className="text-xl font-medium text-gray-900 mb-2">
