@@ -187,8 +187,27 @@ async function checkAuth(request) {
 // Hàm tạo proxy URL từ URL gốc bằng base64
 function createProxyUrl(originalUrl) {
   try {
+    // Làm sạch URL Google redirect nếu có
+    let cleanedUrl = originalUrl;
+    
+    // Xử lý Google redirect URLs đến YouTube/các trang khác
+    if (cleanedUrl.startsWith('https://www.google.com/url?q=')) {
+      const match = cleanedUrl.match(/[?&]q=([^&]+)/);
+      if (match && match[1]) {
+        const extractedUrl = decodeURIComponent(match[1]);
+        try {
+          // Kiểm tra URL trích xuất có hợp lệ không
+          new URL(extractedUrl);
+          cleanedUrl = extractedUrl;
+        } catch (e) {
+          console.error('Không thể trích xuất URL hợp lệ từ Google redirect:', e);
+          // Giữ nguyên URL gốc nếu có lỗi
+        }
+      }
+    }
+    
     // Mã hóa URL sử dụng base64 URL-safe
-    const base64Url = Buffer.from(originalUrl).toString('base64')
+    const base64Url = Buffer.from(cleanedUrl).toString('base64')
       .replace(/\+/g, '-')  // Thay thế + thành -
       .replace(/\//g, '_')  // Thay thế / thành _
       .replace(/=+$/, '');  // Loại bỏ padding '='

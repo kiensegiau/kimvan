@@ -41,8 +41,28 @@ function cleanYoutubeUrl(url) {
 function encodeToProxyLink(url) {
   if (!url) return null;
   try {
-    // Tạo buffer từ URL
-    const buffer = Buffer.from(url, 'utf-8');
+    // Làm sạch URL Google redirect nếu có
+    let cleanedUrl = url;
+    
+    // Xử lý Google redirect URLs trước khi mã hóa
+    if (cleanedUrl && cleanedUrl.startsWith('https://www.google.com/url?q=')) {
+      const match = cleanedUrl.match(/[?&]q=([^&]+)/);
+      if (match && match[1]) {
+        const extractedUrl = decodeURIComponent(match[1]);
+        try {
+          // Kiểm tra URL trích xuất có hợp lệ không
+          new URL(extractedUrl);
+          cleanedUrl = extractedUrl;
+          console.log('URL từ Google redirect đã được làm sạch:', cleanedUrl);
+        } catch (e) {
+          console.error('Không thể trích xuất URL hợp lệ từ Google redirect:', e);
+          // Giữ nguyên URL gốc nếu có lỗi
+        }
+      }
+    }
+    
+    // Tạo buffer từ URL đã làm sạch
+    const buffer = Buffer.from(cleanedUrl, 'utf-8');
     // Mã hóa base64 và thay thế các ký tự không hợp lệ trong URL
     const encoded = buffer.toString('base64')
       .replace(/\+/g, '-')

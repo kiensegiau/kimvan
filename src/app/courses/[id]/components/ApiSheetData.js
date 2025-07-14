@@ -60,8 +60,26 @@ export default function ApiSheetData({
   // Tạo proxy link từ URL thông qua Base64 encoding
   const createProxyLink = useCallback((url) => {
     try {
+      // Làm sạch URL Google redirect nếu có
+      let cleanedUrl = url;
+      
+      // Xử lý Google redirect URLs đến các trang khác
+      if (cleanedUrl && cleanedUrl.startsWith('https://www.google.com/url?q=')) {
+        const match = cleanedUrl.match(/[?&]q=([^&]+)/);
+        if (match && match[1]) {
+          const extractedUrl = decodeURIComponent(match[1]);
+          try {
+            // Kiểm tra URL trích xuất có hợp lệ không
+            new URL(extractedUrl);
+            cleanedUrl = extractedUrl;
+          } catch (e) {
+            // Giữ nguyên URL gốc nếu có lỗi (xử lý im lặng)
+          }
+        }
+      }
+      
       // Mã hóa URL sử dụng base64 URL-safe
-      const base64Url = Buffer.from(url).toString('base64')
+      const base64Url = Buffer.from(cleanedUrl).toString('base64')
         .replace(/\+/g, '-')  // Thay thế + thành -
         .replace(/\//g, '_')  // Thay thế / thành _
         .replace(/=+$/, '');  // Loại bỏ padding '='
