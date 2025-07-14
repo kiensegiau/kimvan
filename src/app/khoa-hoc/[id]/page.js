@@ -40,6 +40,8 @@ export default function CourseDetailPage() {
   const [viewMode, setViewMode] = useState('table');
   const [cacheStatus, setCacheStatus] = useState('');
   const [permissionChecked, setPermissionChecked] = useState(false);
+  const [showScrollGuide, setShowScrollGuide] = useState(true);
+  const [hidingScrollGuide, setHidingScrollGuide] = useState(false);
   
   // Hàm giải mã dữ liệu với xử lý lỗi tốt hơn
   const decryptData = (encryptedData) => {
@@ -1072,6 +1074,15 @@ export default function CourseDetailPage() {
     });
   };
 
+  // Hàm xử lý đóng hướng dẫn cuộn với hiệu ứng
+  const handleCloseScrollGuide = () => {
+    setHidingScrollGuide(true);
+    setTimeout(() => {
+      setShowScrollGuide(false);
+      setHidingScrollGuide(false);
+    }, 800); // Tăng thời gian để hiệu ứng mượt mà hơn
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white p-6">
@@ -1432,99 +1443,112 @@ export default function CourseDetailPage() {
                     </div>
                   )}
 
-                  <div className="overflow-x-auto">
-                    <div key={activeSheet} className="mb-0">
-                      <div className="px-4 sm:px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-indigo-50 to-indigo-100 flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-2">
-                        <div className="font-medium text-gray-800 flex items-center">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                          </svg>
-                            <span className="font-bold text-indigo-800">{getSheetTitle(activeSheet, sheets)}</span>
+                  {/* Hướng dẫn cuộn ngang cho mobile */}
+                  {showScrollGuide && (
+                    <div className={`scroll-guide md:hidden ${hidingScrollGuide ? 'hiding' : ''}`}>
+                      <div className="scroll-guide-inner">
+                        <div className="hand-icon">
+                          <span></span>
+                          <span></span>
+                          <span></span>
+                          <span></span>
                         </div>
-                          <div className="text-sm bg-indigo-600 text-white px-3 py-1 rounded-full font-medium shadow-sm ml-7 sm:ml-0">
-                            {(() => {
-                              const { rows, hasRows } = getSheetRows(sheets[activeSheet], activeSheet, usingSheetsData);
-                              const rowCount = usingSheetsData ? 
-                                (rows.length - 1) || 0 : 
-                                (hasRows ? (rows.length - 1) || 0 : 0);
-                              return `Tổng số: ${rowCount} buổi`;
-                            })()}
+                        <div className="scroll-icon-container">
+                          <div className="scroll-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-6 h-6">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                            </svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-6 h-6">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+                            </svg>
                           </div>
-                      </div>
-                      
-                      <div className="relative overflow-x-auto shadow-md sm:rounded-lg border border-gray-200">
-                        <table className="min-w-full divide-y divide-gray-200 table-with-vertical-borders">
-                          <thead>
-                            <tr className="bg-gradient-to-r from-indigo-600 to-indigo-700">
-                              {header.map((headerCell, headerIndex) => (
-                                <th
-                                  key={headerIndex}
-                                  className={`
-                                    px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider
-                                    ${headerIndex === 0 ? 'bg-indigo-700' : ''}
-                                  `}
-                                >
-                                  <div className="flex items-center space-x-1">
-                                    <span>
-                                      {getCellValue(headerCell, usingSheetsData, headerIndex)}
-                                    </span>
-                                  </div>
-                                </th>
-                              ))}
-                            </tr>
-                          </thead>
-                          <tbody className="bg-white divide-y divide-gray-200">
-                            {rows.map((row, rowIndex) => (
-                              <tr key={rowIndex} className="hover:bg-gray-50">
-                                {header.map((_, colIndex) => {
-                                  const cell = row[colIndex];
-                                  const cellValue = getCellValue(cell, usingSheetsData, colIndex);
-                                  
-                                  const originalUrl = getCellLink(
-                                    cell, 
-                                    row,
-                                    rowIndex,
-                                    colIndex,
-                                    usingSheetsData
-                                  );
-
-                                  return (
-                                    <td
-                                      key={colIndex}
-                                      className={`
-                                        px-6 py-4 text-sm
-                                        ${colIndex === 0 ? 'bg-white font-medium text-indigo-600' : 'text-gray-900'}
-                                      `}
-                                    >
-                                      {colIndex === 0 ? (
-                                        // Cột đầu tiên - thường là ngày/buổi học
-                                        <div className="text-center">
-                                          {formatDate(cellValue)}
-                                        </div>
-                                      ) : originalUrl ? (
-                                        // Các ô có link
-                                        <button
-                                          onClick={() => handleLinkClick(originalUrl, cellValue)}
-                                          className="text-blue-600 hover:text-blue-800 hover:underline flex items-center space-x-1"
-                                        >
-                                          <span>
-                                            {cellValue}
-                                          </span>
-                                        </button>
-                                      ) : cellValue ? ( // Chỉ hiển thị span nếu có giá trị
-                                        <span>
-                                          {cellValue}
-                                        </span>
-                                      ) : null}
-                                    </td>
-                                  );
-                                })}
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                        </div>
+                        <div className="scroll-text">Vuốt ngang để xem toàn bộ bảng</div>
+                        <button 
+                          className="scroll-close" 
+                          onClick={handleCloseScrollGuide}
+                          aria-label="Đóng hướng dẫn"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-4 h-4">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
                       </div>
                     </div>
+                  )}
+
+                  <div className="relative overflow-x-auto shadow-md sm:rounded-lg border border-gray-200" 
+                       onScroll={() => handleCloseScrollGuide()}>
+                    <table className="min-w-full divide-y divide-gray-200 table-with-vertical-borders">
+                      <thead>
+                        <tr className="bg-gradient-to-r from-indigo-600 to-indigo-700">
+                          {header.map((headerCell, headerIndex) => (
+                            <th
+                              key={headerIndex}
+                              className={`
+                                px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider
+                                ${headerIndex === 0 ? 'bg-indigo-700' : ''}
+                              `}
+                            >
+                              <div className="flex items-center space-x-1">
+                                <span>
+                                  {getCellValue(headerCell, usingSheetsData, headerIndex)}
+                                </span>
+                              </div>
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {rows.map((row, rowIndex) => (
+                          <tr key={rowIndex} className="hover:bg-gray-50">
+                            {header.map((_, colIndex) => {
+                              const cell = row[colIndex];
+                              const cellValue = getCellValue(cell, usingSheetsData, colIndex);
+                              
+                              const originalUrl = getCellLink(
+                                cell, 
+                                row,
+                                rowIndex,
+                                colIndex,
+                                usingSheetsData
+                              );
+
+                              return (
+                                <td
+                                  key={colIndex}
+                                  className={`
+                                    px-6 py-4 text-sm
+                                    ${colIndex === 0 ? 'bg-white font-medium text-indigo-600' : 'text-gray-900'}
+                                  `}
+                                >
+                                  {colIndex === 0 ? (
+                                    // Cột đầu tiên - thường là ngày/buổi học
+                                    <div className="text-center">
+                                      {formatDate(cellValue)}
+                                    </div>
+                                  ) : originalUrl ? (
+                                    // Các ô có link
+                                    <button
+                                      onClick={() => handleLinkClick(originalUrl, cellValue)}
+                                      className="text-blue-600 hover:text-blue-800 hover:underline flex items-center space-x-1"
+                                    >
+                                      <span>
+                                        {cellValue}
+                                      </span>
+                                    </button>
+                                  ) : cellValue ? ( // Chỉ hiển thị span nếu có giá trị
+                                    <span>
+                                      {cellValue}
+                                    </span>
+                                  ) : null}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               );
@@ -1620,6 +1644,200 @@ export default function CourseDetailPage() {
         @media (max-width: 640px) {
           th, td {
             padding: 0.5rem;
+          }
+        }
+        
+        /* Hướng dẫn cuộn ngang */
+        .scroll-guide {
+          position: relative;
+          padding: 1rem;
+          background: linear-gradient(90deg, rgba(79, 70, 229, 0.15) 0%, rgba(99, 102, 241, 0.25) 100%);
+          border-bottom: 2px solid rgba(79, 70, 229, 0.3);
+          animation: fadeIn 0.5s ease-out, pulse 2s infinite;
+          box-shadow: 0 4px 12px rgba(79, 70, 229, 0.15);
+          transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), 
+                     max-height 0.8s cubic-bezier(0.4, 0, 0.2, 1), 
+                     padding 0.8s cubic-bezier(0.4, 0, 0.2, 1),
+                     margin 0.8s cubic-bezier(0.4, 0, 0.2, 1),
+                     transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+          max-height: 120px;
+          overflow: hidden;
+          opacity: 1;
+          transform: translateY(0) scale(1);
+          will-change: transform, opacity, max-height;
+        }
+        
+        /* Hiệu ứng biến mất từ từ */
+        .scroll-guide.hiding {
+          opacity: 0;
+          max-height: 0;
+          padding-top: 0;
+          padding-bottom: 0;
+          margin-top: 0;
+          margin-bottom: 0;
+          transform: translateY(-15px) scale(0.97);
+          pointer-events: none;
+          border-bottom-width: 0;
+        }
+        
+        .scroll-guide-inner {
+          transition: opacity 0.4s ease;
+          opacity: 1;
+        }
+        
+        .scroll-guide.hiding .scroll-guide-inner {
+          opacity: 0;
+        }
+        
+        .scroll-icon-container {
+          position: relative;
+          overflow: hidden;
+          width: 60px;
+          height: 40px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        
+        .scroll-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          color: #4f46e5;
+          font-weight: bold;
+          animation: swipeAcross 2s infinite;
+          transform-origin: center;
+        }
+        
+        /* Hiệu ứng bàn tay vuốt */
+        .hand-icon {
+          position: relative;
+          width: 24px;
+          height: 24px;
+        }
+        
+        .hand-icon span {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 24px;
+          height: 24px;
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%234f46e5' viewBox='0 0 24 24'%3E%3Cpath d='M9.5 11c.3 0 .5-.2.5-.5V6.5c0-.3-.2-.5-.5-.5s-.5.2-.5.5V10.5c0 .3.2.5.5.5zm5-2c.3 0 .5-.2.5-.5V6.5c0-.3-.2-.5-.5-.5s-.5.2-.5.5V8.5c0 .3.2.5.5.5zm-2 0c.3 0 .5-.2.5-.5V4.5c0-.3-.2-.5-.5-.5s-.5.2-.5.5V8.5c0 .3.2.5.5.5zm-6 0c.3 0 .5-.2.5-.5V8c0-.3-.2-.5-.5-.5s-.5.2-.5.5v.5c0 .3.2.5.5.5zm13 1c0-2.2-1.8-4-4-4h-3V5c0-2.8-2.2-5-5-5S2.5 2.2 2.5 5v10.5c0 4.1 3.4 7.5 7.5 7.5h.5c2 0 3.9-.8 5.3-2.2l3.1-3.1c.2-.2.1-.6-.2-.6h-1.6c-1.1 0-1.7-.6-1.7-1.7v-4.1l2.7-1.3c.2-.1.4-.4.4-.6 0-.6-.4-1-1-1z'/%3E%3C/svg%3E");
+          background-size: contain;
+          animation: handFade 2s infinite;
+          opacity: 0;
+        }
+        
+        .hand-icon span:nth-child(1) {
+          animation-delay: 0s;
+        }
+        
+        .hand-icon span:nth-child(2) {
+          animation-delay: 0.5s;
+          transform: translateX(8px);
+        }
+        
+        .hand-icon span:nth-child(3) {
+          animation-delay: 1s;
+          transform: translateX(16px);
+        }
+        
+        .hand-icon span:nth-child(4) {
+          animation-delay: 1.5s;
+          transform: translateX(24px);
+        }
+        
+        .scroll-text {
+          font-size: 0.95rem;
+          font-weight: 600;
+          color: #4338ca;
+          text-shadow: 0 0 5px rgba(255, 255, 255, 0.7);
+          letter-spacing: 0.01em;
+          animation: glow 2s infinite;
+        }
+        
+        .scroll-close {
+          position: absolute;
+          right: 0.75rem;
+          top: 50%;
+          transform: translateY(-50%);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 2rem;
+          height: 2rem;
+          border-radius: 9999px;
+          background-color: rgba(79, 70, 229, 0.15);
+          color: #4f46e5;
+          border: 1px solid rgba(79, 70, 229, 0.3);
+          cursor: pointer;
+          transition: all 0.2s;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .scroll-close:hover {
+          background-color: rgba(79, 70, 229, 0.25);
+          transform: translateY(-50%) scale(1.05);
+        }
+        
+        @keyframes pulse {
+          0% {
+            box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.4);
+          }
+          70% {
+            box-shadow: 0 0 0 8px rgba(79, 70, 229, 0);
+          }
+          100% {
+            box-shadow: 0 0 0 0 rgba(79, 70, 229, 0);
+          }
+        }
+        
+        @keyframes swipeAcross {
+          0%, 100% {
+            transform: translateX(-10px);
+          }
+          50% {
+            transform: translateX(10px);
+          }
+        }
+        
+        @keyframes handFade {
+          0% {
+            opacity: 0;
+            transform: translateX(0px) scale(0.9);
+          }
+          20% {
+            opacity: 1;
+            transform: translateX(8px) scale(1);
+          }
+          80% {
+            opacity: 1;
+            transform: translateX(24px) scale(1);
+          }
+          100% {
+            opacity: 0;
+            transform: translateX(32px) scale(0.9);
+          }
+        }
+        
+        @keyframes glow {
+          0%, 100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.8;
+          }
+        }
+        
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
           }
         }
       `}</style>
