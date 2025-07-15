@@ -271,6 +271,20 @@ export async function updateGoogleSheetCell(sheetId, sheetName, rowIndex, cellIn
       console.warn('⚠️ URL mới không được cung cấp, sử dụng URL gốc thay thế');
       newUrl = originalUrl || '#';
     }
+    
+    // Kiểm tra nếu URL mới giống URL cũ, không cập nhật sheet
+    if (newUrl === originalUrl) {
+      console.warn('⚠️ URL mới giống URL cũ, không cần cập nhật sheet');
+      return {
+        success: false,
+        error: 'URL mới giống URL cũ, không cập nhật sheet',
+        skipped: true,
+        sheetId,
+        rowIndex,
+        cellIndex,
+        displayText
+      };
+    }
 
     // Thiết lập Google Sheets API
     let auth;
@@ -470,4 +484,4 @@ export async function updateGoogleSheetCell(sheetId, sheetName, rowIndex, cellIn
       error: `Lỗi khi cập nhật Google Sheet cell: ${error.message}`
     };
   }
-} 
+}

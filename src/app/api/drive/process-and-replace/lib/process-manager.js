@@ -175,18 +175,26 @@ export async function processNextInQueue() {
       console.log(`✅ Đã xử lý và tải lên thành công file: ${result.processedPath || result.webViewLink || 'Không có link'}`);
       task.resolve(result);
     } else {
-      console.log(`⚠️ Cảnh báo khi xử lý bằng Chrome: ${chromeResult.error || 'Không rõ lỗi'}`);
+      console.log(`⚠️ Lỗi khi xử lý bằng Chrome: ${chromeResult.error || 'Không rõ lỗi'}`);
       console.log(`🔍 Chi tiết lỗi Chrome: `, chromeResult);
       
-      // Tiếp tục xử lý mà không ném lỗi, trả về kết quả với thông tin lỗi
+      // Trả về kết quả thất bại để không cập nhật sheet khi không có link mới
       task.resolve({
-        success: true,
+        success: false, // Đánh dấu thất bại để không cập nhật sheet
         skipWatermark: true,
-        message: `Cảnh báo: ${chromeResult.error || 'Không rõ lỗi'}`,
+        message: `Lỗi: ${chromeResult.error || 'Không thể xử lý bằng Chrome'}`,
         filePath: chromeResult.filePath || null,
         originalFile: {
           id: task.fileId,
           link: task.driveLink
+        },
+        // Thêm processedFile để tương thích với client-side code, nhưng đảm bảo success là false
+        processedFile: {
+          id: task.fileId,
+          name: task.fileName,
+          link: task.driveLink, // Vẫn giữ link gốc nhưng sẽ không cập nhật sheet do success=false
+          webViewLink: task.driveLink,
+          webContentLink: null
         }
       });
     }
@@ -345,6 +353,26 @@ export async function processAndUploadFile(params) {
       idForFileName // Thêm ID của file gốc để thêm vào tên file
     );
     
+    if (!uploadResult.success) {
+      console.error(`Lỗi khi upload file ${processResult.originalFileName || path.basename(processedFilePath)}:`, uploadResult.error);
+      throw new Error(`Không thể upload file: ${uploadResult.error}`);
+    }
+    
+    // Kiểm tra nếu file đã tồn tại và sử dụng link hiện có
+    if (uploadResult.isExisting) {
+      console.log(`✅ Phát hiện file đã tồn tại trên Drive, sử dụng link hiện có`);
+      console.log(`🔗 Link file hiện có: ${uploadResult.webViewLink}`);
+    } else {
+      console.log(`✅ Đã upload file mới thành công: ${uploadResult.fileName}`);
+    }
+    
+    // Dọn dẹp thư mục tạm
+    try {
+      fs.rmdirSync(tempDir, { recursive: true });
+    } catch (cleanupError) {
+      console.error(`Lỗi khi dọn dẹp thư mục tạm: ${cleanupError.message}`);
+    }
+    
     // Xử lý cập nhật sheet nếu cần
     let sheetUpdateResult = null;
     if (updateSheet) {
@@ -368,6 +396,11 @@ export async function processAndUploadFile(params) {
           console.log(`🔗 URL mới: ${newUrl}`);
           console.log(`📄 Text hiển thị: ${cellText}`);
           
+          // Thêm thông tin nếu file đã tồn tại
+          if (uploadResult.isExisting) {
+            console.log(`ℹ️ Sử dụng link file đã tồn tại để cập nhật sheet`);
+          }
+          
           sheetUpdateResult = await updateSheetCell(
             courseId,
             sheetIndex,
@@ -379,7 +412,8 @@ export async function processAndUploadFile(params) {
             request,
             {
               skipProcessing: processResult && processResult.skipWatermark,
-              originalLink: originalUrl
+              originalLink: originalUrl,
+              isExisting: uploadResult.isExisting // Thêm thông tin file đã tồn tại
             }
           );
           
@@ -399,6 +433,11 @@ export async function processAndUploadFile(params) {
           console.log(`🔗 URL mới: ${newUrl}`);
           console.log(`📄 Text hiển thị: ${cellDisplayText}`);
           
+          // Thêm thông tin nếu file đã tồn tại
+          if (uploadResult.isExisting) {
+            console.log(`ℹ️ Sử dụng link file đã tồn tại để cập nhật Google Sheet`);
+          }
+          
           sheetUpdateResult = await updateGoogleSheetCell(
             sheetId,
             googleSheetName,
@@ -410,7 +449,8 @@ export async function processAndUploadFile(params) {
             request,
             {
               skipProcessing: processResult && processResult.skipWatermark,
-              originalLink: originalUrl
+              originalLink: originalUrl,
+              isExisting: uploadResult.isExisting // Thêm thông tin file đã tồn tại
             }
           );
           
@@ -444,55 +484,30 @@ export async function processAndUploadFile(params) {
       }
     }
     
-    // Tạo kết quả phản hồi
-    const result = {
+    // Trả về kết quả xử lý
+    return {
       success: true,
-      isFolder: false,
-      originalFile: {
-        id: fileId,
-        link: driveLink
-      },
-      targetFolder: {
-        id: targetFolderId,
-        name: folderName
-      },
+      processedPath: uploadResult.webViewLink, // Trả về link mới
+      message: processResult.skipWatermark 
+        ? `Đã bỏ qua mọi xử lý, chỉ sao chép file gốc`
+        : (uploadResult.isExisting 
+            ? `File đã tồn tại trên Drive, sử dụng link hiện có` 
+            : 'File đã được xử lý và upload thành công'),
+      skipProcessing: processResult.skipProcessing || false,
+      isExisting: uploadResult.isExisting || false,
+      processingMode: sourceType || 'normal',
+      sheetUpdateResult: sheetUpdateResult,
+      // Thêm processedFile để tương thích với client-side code
       processedFile: {
         id: uploadResult.fileId,
         name: uploadResult.fileName,
-        link: uploadResult.webViewLink || processResult.webViewLink
-      },
-      processingTime: Math.round((Date.now() - startTime) / 1000),
-      sheetUpdate: updateSheet ? {
-        success: sheetUpdateResult?.success || false,
-        message: sheetUpdateResult?.message || sheetUpdateResult?.error || 'Không có thông tin cập nhật',
-        details: sheetUpdateResult?.updatedCell || null
-      } : null
+        link: uploadResult.webViewLink,
+        webViewLink: uploadResult.webViewLink,
+        webContentLink: uploadResult.webContentLink
+      }
     };
-    
-    // Thêm thông tin về nguồn xử lý
-    if (sourceType) {
-      if (sourceType === "404_chrome") {
-        result.retrievedViaChrome = true;
-        result.watermarkProcessed = true;
-      } else if (sourceType === "403_chrome") {
-        result.blockdownProcessed = true;
-        result.watermarkProcessed = true;
-      }
-    }
-    
-    return result;
   } catch (error) {
-    console.error(`❌ Lỗi trong quá trình xử lý và upload file: ${error.message}`);
-    
-    // Dọn dẹp thư mục tạm nếu có lỗi
-    if (tempDir) {
-      try {
-        fs.rmSync(tempDir, { recursive: true, force: true });
-      } catch (cleanupError) {
-        console.error('Lỗi khi dọn dẹp thư mục tạm:', cleanupError);
-      }
-    }
-    
+    console.error(`❌ Lỗi khi xử lý và upload file: ${error.message}`);
     throw error;
   }
 }
@@ -650,6 +665,12 @@ export async function processSingleFile(file, options) {
     
     // Sử dụng processAndUploadFile để xử lý tiếp file
     const result = await processAndUploadFile(processingOptions);
+    
+    // Thêm log nếu file đã tồn tại
+    if (result.isExisting) {
+      console.log(`✅ Phát hiện file đã tồn tại trên Drive với tên: ${file.name}`);
+      console.log(`🔗 Sử dụng link file hiện có: ${result.processedFile?.link || 'Không có link'}`);
+    }
     
     return {
       success: true,
@@ -998,12 +1019,20 @@ export async function processFolder(folderId, options, parentFolderInfo = null, 
           const fileResult = await processSingleFile(file, fileOptions);
           
           if (fileResult.success && !fileResult.skipped) {
-            console.log(`${indent}✅ File đã xử lý thành công: ${file.name}`);
+            // Kiểm tra nếu file đã tồn tại
+            if (fileResult.isExisting) {
+              console.log(`${indent}✅ Phát hiện file đã tồn tại trên Drive: ${file.name}`);
+              console.log(`${indent}🔗 Sử dụng link hiện có thay vì tạo mới`);
+            } else {
+              console.log(`${indent}✅ File đã xử lý thành công: ${file.name}`);
+            }
+            
             results.processedFiles.push({
               id: file.id,
               name: file.name,
               type: mimeTypeResult.isPdf ? 'pdf' : 'video',
-              result: fileResult
+              result: fileResult,
+              isExisting: fileResult.isExisting || false
             });
           } else if (fileResult.skipped) {
             console.log(`${indent}⚠️ File đã bị bỏ qua: ${file.name}`);

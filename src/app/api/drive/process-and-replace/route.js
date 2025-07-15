@@ -225,7 +225,28 @@ export async function POST(request) {
       if (chromeResult) {
         return NextResponse.json({
           ...chromeResult,
-          processingMode: `chrome_${errorType}`
+          processingMode: `chrome_${errorType}`,
+          success: chromeResult.success, // Không mặc định là true khi success là false
+          processedPath: chromeResult.success ? chromeResult.processedPath : null, // Chỉ trả về path khi success
+          message: chromeResult.success 
+            ? (chromeResult.message || 'Đã xử lý thành công bằng Chrome')
+            : (chromeResult.message || 'Không thể xử lý bằng Chrome'),
+          skipProcessing: chromeResult.skipProcessing || false,
+          isExisting: chromeResult.isExisting || false,
+          // Đảm bảo có processedFile và chỉ trả về link mới khi success
+          processedFile: chromeResult.success ? (chromeResult.processedFile || {
+            id: chromeResult.fileId || finalFileId,
+            name: chromeResult.fileName || originalFileName || displayText || `file_${finalFileId}`,
+            link: chromeResult.processedPath,
+            webViewLink: chromeResult.processedPath,
+            webContentLink: null
+          }) : {
+            id: finalFileId,
+            name: originalFileName || displayText || `file_${finalFileId}`,
+            link: null, // Không trả về link khi không thành công
+            webViewLink: null,
+            webContentLink: null
+          }
         });
       }
       
@@ -417,12 +438,12 @@ export async function POST(request) {
           originalFileId: finalFileId, // Thêm ID file gốc để tránh trùng lặp tên file
           errorType: '403',
           updateSheet: canUpdateSheet, // Sử dụng canUpdateSheet thay vì updateSheet
-          courseId,
-          sheetIndex,
-          rowIndex,
-          cellIndex,
-          sheetId,
-          googleSheetName,
+            courseId,
+            sheetIndex,
+            rowIndex,
+            cellIndex,
+            sheetId,
+            googleSheetName,
           displayText: originalFileName || displayText,
           request,
           tempDir
@@ -432,14 +453,38 @@ export async function POST(request) {
           return NextResponse.json({
             ...chromeResult,
             processingMode: 'chrome_after_error',
-            originalError: fileResult.error
+            originalError: fileResult.error,
+            success: chromeResult.success, // Không mặc định là true khi success là false
+            processedPath: chromeResult.success ? chromeResult.processedPath : null, // Chỉ trả về path khi success
+            message: chromeResult.success 
+              ? (chromeResult.message || 'Đã xử lý thành công bằng Chrome')
+              : (chromeResult.message || 'Không thể xử lý bằng Chrome'),
+            skipProcessing: chromeResult.skipProcessing || false,
+            isExisting: chromeResult.isExisting || false,
+            // Đảm bảo có processedFile và chỉ trả về link mới khi success
+            processedFile: chromeResult.success ? (chromeResult.processedFile || {
+              id: chromeResult.fileId || finalFileId,
+              name: chromeResult.fileName || originalFileName || displayText || `file_${finalFileId}`,
+              link: chromeResult.processedPath,
+              webViewLink: chromeResult.processedPath,
+              webContentLink: null
+            }) : {
+              id: finalFileId,
+              name: originalFileName || displayText || `file_${finalFileId}`,
+              link: null, // Không trả về link khi không thành công
+              webViewLink: null,
+              webContentLink: null
+            }
           });
         }
       
-        return NextResponse.json({
+      return NextResponse.json({
+          success: false,
           status: 'queued',
           message: 'File đã được thêm vào hàng đợi xử lý Chrome sau khi gặp lỗi API',
-          originalError: fileResult.error
+          originalError: fileResult.error,
+          fileId: finalFileId,
+          fileName: originalFileName || displayText || `file_${finalFileId}`
         });
       }
       
@@ -473,14 +518,38 @@ export async function POST(request) {
           return NextResponse.json({
             ...chromeResult,
             processingMode: 'chrome_after_error',
-            originalError: fileResult.error
+            originalError: fileResult.error,
+            success: chromeResult.success, // Không mặc định là true khi success là false
+            processedPath: chromeResult.success ? chromeResult.processedPath : null, // Chỉ trả về path khi success
+            message: chromeResult.success 
+              ? (chromeResult.message || 'Đã xử lý thành công bằng Chrome')
+              : (chromeResult.message || 'Không thể xử lý bằng Chrome'),
+            skipProcessing: chromeResult.skipProcessing || false,
+            isExisting: chromeResult.isExisting || false,
+            // Đảm bảo có processedFile và chỉ trả về link mới khi success
+            processedFile: chromeResult.success ? (chromeResult.processedFile || {
+              id: chromeResult.fileId || finalFileId,
+              name: chromeResult.fileName || originalFileName || displayText || `file_${finalFileId}`,
+              link: chromeResult.processedPath,
+              webViewLink: chromeResult.processedPath,
+              webContentLink: null
+            }) : {
+              id: finalFileId,
+              name: originalFileName || displayText || `file_${finalFileId}`,
+              link: null, // Không trả về link khi không thành công
+              webViewLink: null,
+              webContentLink: null
+            }
           });
         }
         
         return NextResponse.json({
+          success: false,
           status: 'queued',
           message: 'File đã được thêm vào hàng đợi xử lý Chrome sau khi gặp lỗi 403',
-          originalError: fileResult.error
+          originalError: fileResult.error,
+          fileId: finalFileId,
+          fileName: originalFileName || displayText || `file_${finalFileId}`
         });
       }
       
@@ -502,89 +571,117 @@ export async function POST(request) {
         console.log(`🔍 Chi tiết lỗi: ${error.message}`);
         
         try {
-          // Thêm vào hàng đợi xử lý Chrome
-          const chromeResult = await addToProcessingQueue({
-            fileId: finalFileId,
+        // Thêm vào hàng đợi xử lý Chrome
+        const chromeResult = await addToProcessingQueue({
+          fileId: finalFileId,
             fileName: originalFileName || displayText || `file_${finalFileId}`,
-            driveLink,
-            targetFolderId: finalTargetFolderId,
-            targetFolderName: finalFolderName,
+          driveLink,
+          targetFolderId: finalTargetFolderId,
+          targetFolderName: finalFolderName,
             folderName: finalFolderName,
             originalFileId: finalFileId,
-            errorType: '403',
-            updateSheet,
-            courseId,
-            sheetIndex,
-            rowIndex,
-            cellIndex,
-            sheetId,
-            googleSheetName,
+          errorType: '403',
+          updateSheet,
+          courseId,
+          sheetIndex,
+          rowIndex,
+          cellIndex,
+          sheetId,
+          googleSheetName,
             displayText: originalFileName || displayText,
-            request,
-            tempDir
-          });
-          
-          if (chromeResult) {
+          request,
+          tempDir
+        });
+        
+        if (chromeResult) {
             console.log('✅ Đã nhận kết quả từ xử lý Chrome ở catch ngoài cùng');
-            return NextResponse.json(chromeResult);
-          }
-          
+          return NextResponse.json({
+            success: chromeResult.success, // Sử dụng giá trị success từ chromeResult
+            processedPath: chromeResult.success ? chromeResult.processedPath : null, // Chỉ trả về path khi success
+            message: chromeResult.success 
+              ? (chromeResult.message || 'Đã xử lý thành công bằng Chrome')
+              : (chromeResult.message || 'Không thể xử lý bằng Chrome'),
+            skipProcessing: chromeResult.skipProcessing || false,
+            isExisting: chromeResult.isExisting || false,
+            processingMode: 'chrome_after_error',
+            originalError: error.message,
+            sheetUpdateResult: chromeResult.sheetUpdateResult,
+            // Đảm bảo có processedFile và chỉ trả về link mới khi success
+            processedFile: chromeResult.success ? (chromeResult.processedFile || {
+              id: chromeResult.fileId || finalFileId,
+              name: chromeResult.fileName || originalFileName || displayText || `file_${finalFileId}`,
+              link: chromeResult.processedPath,
+              webViewLink: chromeResult.processedPath,
+              webContentLink: null
+            }) : {
+              id: finalFileId,
+              name: originalFileName || displayText || `file_${finalFileId}`,
+              link: null, // Không trả về link khi không thành công
+              webViewLink: null,
+              webContentLink: null
+            }
+          });
+        }
+        
           console.log('⏳ File đã được đưa vào hàng đợi xử lý Chrome từ catch ngoài cùng');
-          return NextResponse.json({ 
-            status: 'queued',
-            message: 'File đã được thêm vào hàng đợi xử lý Chrome từ catch ngoài cùng'
+        return NextResponse.json({ 
+          success: false,
+          status: 'queued',
+          message: 'File đã được thêm vào hàng đợi xử lý Chrome từ catch ngoài cùng',
+          fileId: finalFileId,
+          fileName: originalFileName || displayText || `file_${finalFileId}`
           });
         } catch (chromeError) {
           console.error(`❌ Lỗi khi thêm vào hàng đợi Chrome: ${chromeError.message}`);
           // Tiếp tục xử lý lỗi bên dưới nếu không thể sử dụng Chrome
         }
       }
-      
-      // Gửi thông báo lỗi
-      await sendUpdate({
-        type: 'error',
-        error: error.message
-      });
-      
-      // Đóng stream
-      await writer.close();
-      
-      return new Response(
-        JSON.stringify({ error: `Lỗi xử lý file: ${error.message}` }), 
-        { 
-          status: 500,
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        }
-      );
-    } finally {
-      // Dọn dẹp thư mục tạm
-      if (fs.existsSync(tempDir)) {
-        try {
-          fs.rmSync(tempDir, { recursive: true, force: true });
-          console.log(`🧹 Đã xóa thư mục tạm: ${tempDir}`);
-        } catch (cleanupError) {
-          console.error(`⚠️ Lỗi dọn dẹp thư mục tạm: ${cleanupError.message}`);
+    
+    // Gửi thông báo lỗi
+    await sendUpdate({
+      type: 'error',
+      error: error.message
+    });
+    
+    // Đóng stream
+    await writer.close();
+    
+    return new Response(
+      JSON.stringify({ error: `Lỗi xử lý file: ${error.message}` }), 
+      { 
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json',
         }
       }
-      
-      // Đảm bảo stream được đóng
+    );
+  } finally {
+    // Dọn dẹp thư mục tạm
+    if (fs.existsSync(tempDir)) {
       try {
-        await writer.close();
-      } catch (e) {
-        console.error('Lỗi đóng stream:', e);
+        fs.rmSync(tempDir, { recursive: true, force: true });
+        console.log(`🧹 Đã xóa thư mục tạm: ${tempDir}`);
+      } catch (cleanupError) {
+        console.error(`⚠️ Lỗi dọn dẹp thư mục tạm: ${cleanupError.message}`);
       }
     }
     
-    // Trả về stream response
-    return new Response(customStream.readable, {
-      headers: {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
-      },
-    });
+    // Đảm bảo stream được đóng
+    try {
+      await writer.close();
+    } catch (e) {
+      console.error('Lỗi đóng stream:', e);
+    }
+  }
+  
+  // Trả về stream response
+  return new Response(customStream.readable, {
+    headers: {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+    },
+  });
   } catch (error) {
     console.error(`❌ Lỗi không xử lý được: ${error.message}`);
     return NextResponse.json({ error: `Lỗi không xử lý được: ${error.message}` }, { status: 500 });

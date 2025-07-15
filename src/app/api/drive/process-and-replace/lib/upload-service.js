@@ -223,39 +223,20 @@ export async function uploadToGoogleDrive(filePath, fileName, mimeType, folderId
       if (duplicatesResponse.data.files && duplicatesResponse.data.files.length > 0) {
         // Lưu thông tin file đã tồn tại
         existingFile = duplicatesResponse.data.files[0];
-        console.log(`File "${sanitizedFileName}" đã tồn tại trong folder đích (ID: ${existingFile.id})`);
+        console.log(`✅ File "${sanitizedFileName}" đã tồn tại trong folder đích (ID: ${existingFile.id})`);
+        console.log(`🔄 Sử dụng file đã tồn tại thay vì tạo mới hoặc cập nhật nội dung`);
         
-        // Cập nhật nội dung file đã tồn tại
-        console.log(`Cập nhật nội dung cho file đã tồn tại (ID: ${existingFile.id})...`);
-        
-        // Tạo media cho file
-        const media = {
-          mimeType: mimeType,
-          body: fs.createReadStream(filePath)
-        };
-        
-        // Cập nhật nội dung file
-        const updateResponse = await drive.files.update({
-          fileId: existingFile.id,
-          media: media,
-          fields: 'id, name, webViewLink, webContentLink'
-        });
-        
-        console.log(`Đã cập nhật nội dung file thành công: ${updateResponse.data.name} (ID: ${updateResponse.data.id})`);
-        
-        // Trả về thông tin file đã cập nhật
+        // Trả về thông tin file đã tồn tại ngay lập tức
         return {
           success: true,
-          fileId: updateResponse.data.id,
-          fileName: updateResponse.data.name,
-          webViewLink: updateResponse.data.webViewLink,
-          webContentLink: updateResponse.data.webContentLink,
-          duplicatesDeleted: 0,
-          fileAlreadyExists: true,
-          updated: true
+          fileId: existingFile.id,
+          fileName: existingFile.name,
+          webViewLink: existingFile.webViewLink,
+          webContentLink: existingFile.webContentLink,
+          isExisting: true // Đánh dấu đây là file đã tồn tại
         };
       } else {
-        console.log(`Không tìm thấy file trùng tên trong folder đích.`);
+        console.log(`File "${sanitizedFileName}" chưa tồn tại trong folder đích, sẽ tạo mới...`);
       }
     } catch (duplicatesError) {
       console.error(`Lỗi khi tìm kiếm file trùng tên:`, duplicatesError.message);
