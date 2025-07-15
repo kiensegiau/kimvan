@@ -138,7 +138,7 @@ export async function processNextInQueue() {
       outputPath,
       {
         skipWatermarkRemoval: true,
-        debugMode: true,
+        debugMode: false,
         tempDir: tempDir
       }, 
       true, // isBlocked
