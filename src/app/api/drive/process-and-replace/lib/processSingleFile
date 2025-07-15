@@ -1,1 +1,3 @@
- 
+// Đảm bảo truyền folderName vào các hàm upload
+// File này có thể là file tham chiếu hoặc chứa một hàm đặc biệt
+// Thêm originalFileId vào tên file để tránh trùng lặp 

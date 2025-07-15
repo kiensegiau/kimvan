@@ -87,6 +87,7 @@ export default function AdminLayout({ children }) {
     { name: 'Dashboard', href: '/admin', icon: HomeIcon },
     { name: 'Khóa học', href: '/admin/courses', icon: BookOpenIcon },
     { name: 'Sheets', href: '/admin/sheets', icon: TableCellsIcon },
+    { name: 'YouTube', href: '/admin/youtube-setup', icon: VideoCameraIcon },
     { name: 'Người dùng', href: '/admin/users', icon: UsersIcon },
     { name: 'Google Group', href: '/admin/users/google-group', icon: UserPlusIcon },
     { name: 'API Keys', href: '/admin/watermark-api-keys', icon: KeyIcon },

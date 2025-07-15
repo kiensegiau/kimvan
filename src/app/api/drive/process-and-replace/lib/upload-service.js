@@ -10,9 +10,10 @@ import { createOAuth2Client } from '@/utils/drive-utils';
  * @param {string} mimeType - MIME type của file
  * @param {string} folderId - ID của folder đích (tùy chọn)
  * @param {string} courseName - Tên khóa học (tùy chọn)
+ * @param {string} originalFileId - ID của file gốc (để thêm vào tên file)
  * @returns {Promise<Object>} - Kết quả tải lên
  */
-export async function uploadToGoogleDrive(filePath, fileName, mimeType, folderId = null, courseName = null) {
+export async function uploadToGoogleDrive(filePath, fileName, mimeType, folderId = null, courseName = null, originalFileId = null) {
   console.log(`Đang tải lên file đã xử lý: ${filePath}`);
   
   try {
@@ -65,6 +66,18 @@ export async function uploadToGoogleDrive(filePath, fileName, mimeType, folderId
       console.log(`Đã xóa đuôi file trùng lặp: "${duplicateExtension}" -> "${singleExtension}"`);
     }
     
+    // Thêm ID file gốc vào tên file để tránh trùng lặp
+    if (originalFileId) {
+      const fileExt = path.extname(sanitizedFileName);
+      const fileNameWithoutExt = path.basename(sanitizedFileName, fileExt);
+      // Kiểm tra nếu tên file đã có ID này rồi thì không thêm nữa
+      if (!fileNameWithoutExt.includes(`_${originalFileId}`)) {
+        const shortId = originalFileId.substring(0, 8); // Lấy 8 ký tự đầu của ID
+        sanitizedFileName = `${fileNameWithoutExt}_${shortId}${fileExt}`;
+        console.log(`Đã thêm ID file gốc vào tên file: "${sanitizedFileName}"`);
+      }
+    }
+    
     console.log(`Tên file sau khi làm sạch: "${sanitizedFileName}"`);
     
     // Tạo OAuth2 client với khả năng tự động refresh token
@@ -103,14 +116,16 @@ export async function uploadToGoogleDrive(filePath, fileName, mimeType, folderId
     let targetFolderId = rootFolderId;
     let folderName = 'Mặc định';
     
-    // Luôn tạo folder con dựa trên courseName nếu có
-    if (courseName) {
-      console.log(`Tìm hoặc tạo thư mục con dựa trên tên: ${courseName} trong folder gốc: ${rootFolderId}`);
+    // YÊU CẦU MỚI: LUÔN tạo folder con dựa trên courseName nếu có
+    // Nếu courseName không được cung cấp, sử dụng 'Unknown' để tránh upload trực tiếp vào folder gốc
+    const folderNameToCreate = courseName || 'Unknown';
+    if (folderNameToCreate) {
+      console.log(`Tìm hoặc tạo thư mục con dựa trên tên: ${folderNameToCreate} trong folder gốc: ${rootFolderId}`);
       
       try {
-        // Tìm folder có tên là courseName trong folder gốc
+        // Tìm folder có tên là folderNameToCreate trong folder gốc
         const folderResponse = await drive.files.list({
-          q: `name='${courseName}' and mimeType='application/vnd.google-apps.folder' and '${rootFolderId}' in parents and trashed=false`,
+          q: `name='${folderNameToCreate}' and mimeType='application/vnd.google-apps.folder' and '${rootFolderId}' in parents and trashed=false`,
           fields: 'files(id, name)',
           spaces: 'drive'
         });
@@ -120,13 +135,13 @@ export async function uploadToGoogleDrive(filePath, fileName, mimeType, folderId
         // Nếu folder đã tồn tại, sử dụng nó
         if (folderResponse.data.files && folderResponse.data.files.length > 0) {
           courseFolder = folderResponse.data.files[0];
-          console.log(`Đã tìm thấy thư mục con "${courseName}" với ID: ${courseFolder.id}`);
+          console.log(`Đã tìm thấy thư mục con "${folderNameToCreate}" với ID: ${courseFolder.id}`);
         } else {
           // Nếu folder chưa tồn tại, tạo mới
-          console.log(`Thư mục con "${courseName}" chưa tồn tại trong folder gốc, tiến hành tạo mới...`);
+          console.log(`Thư mục con "${folderNameToCreate}" chưa tồn tại trong folder gốc, tiến hành tạo mới...`);
           
           const folderMetadata = {
-            name: courseName,
+            name: folderNameToCreate,
             mimeType: 'application/vnd.google-apps.folder',
             parents: [rootFolderId] // Đặt trong thư mục gốc đã xác định
           };
@@ -137,20 +152,54 @@ export async function uploadToGoogleDrive(filePath, fileName, mimeType, folderId
           });
           
           courseFolder = folder.data;
-          console.log(`Đã tạo thư mục con "${courseName}" với ID: ${courseFolder.id} trong folder gốc: ${rootFolderId}`);
+          console.log(`Đã tạo thư mục con "${folderNameToCreate}" với ID: ${courseFolder.id} trong folder gốc: ${rootFolderId}`);
         }
         
         // Sử dụng courseFolder làm thư mục đích cuối cùng
         targetFolderId = courseFolder.id;
-        folderName = courseName;
+        folderName = folderNameToCreate;
         console.log(`Sẽ tải file lên thư mục con: ${folderName} (ID: ${targetFolderId})`);
       } catch (folderError) {
-        console.error(`Lỗi khi tìm hoặc tạo thư mục con "${courseName}":`, folderError.message);
+        console.error(`Lỗi khi tìm hoặc tạo thư mục con "${folderNameToCreate}":`, folderError.message);
         console.log(`Sử dụng thư mục gốc ${rootFolderId} thay thế.`);
         targetFolderId = rootFolderId;
       }
     } else {
-      console.log(`Không có tên sheet/khóa học, sẽ tải file trực tiếp vào folder gốc: ${rootFolderId}`);
+      console.log(`Không có tên sheet/khóa học, sẽ tạo folder mặc định 'Unknown'`);
+      // Tạo folder 'Unknown' thay vì upload trực tiếp vào folder gốc
+      try {
+        const unknownFolderResponse = await drive.files.list({
+          q: `name='Unknown' and mimeType='application/vnd.google-apps.folder' and '${rootFolderId}' in parents and trashed=false`,
+          fields: 'files(id, name)',
+          spaces: 'drive'
+        });
+        
+        let unknownFolder = null;
+        
+        if (unknownFolderResponse.data.files && unknownFolderResponse.data.files.length > 0) {
+          unknownFolder = unknownFolderResponse.data.files[0];
+          console.log(`Đã tìm thấy thư mục 'Unknown' với ID: ${unknownFolder.id}`);
+        } else {
+          const folderMetadata = {
+            name: 'Unknown',
+            mimeType: 'application/vnd.google-apps.folder',
+            parents: [rootFolderId]
+          };
+          
+          const folder = await drive.files.create({
+            resource: folderMetadata,
+            fields: 'id, name, webViewLink'
+          });
+          
+          unknownFolder = folder.data;
+          console.log(`Đã tạo thư mục 'Unknown' với ID: ${unknownFolder.id}`);
+        }
+        
+        targetFolderId = unknownFolder.id;
+        folderName = 'Unknown';
+      } catch (error) {
+        console.error(`Lỗi khi tạo thư mục 'Unknown':`, error.message);
+      }
     }
     
     // Kiểm tra xem file đã tồn tại trong folder chưa

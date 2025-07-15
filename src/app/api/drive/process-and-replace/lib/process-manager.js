@@ -33,12 +33,40 @@ export function addToProcessingQueue(params) {
       reject
     };
     
+    // Đảm bảo originalFileId luôn có giá trị để dùng cho việc đặt tên file
+    if (!task.originalFileId && task.fileId) {
+      task.originalFileId = task.fileId;
+    }
+    
     console.log(`\n📋 Thêm file vào hàng đợi xử lý Chrome:`);
     console.log(`🔍 File ID: ${params.fileId}`);
     console.log(`📄 Tên file: ${params.fileName || 'Không có tên'}`);
+    console.log(`🗂️ Folder đích: ${params.folderName || params.targetFolderName || 'Không xác định'}`);
+    console.log(`🔄 Loại lỗi: ${params.errorType || 'Không xác định'}`);
+    console.log(`🔄 Original File ID: ${params.originalFileId || 'Không xác định'}`);
+    console.log(`⏳ Thời gian thêm vào hàng đợi: ${new Date().toLocaleString()}`);
+    console.log(`📊 Số lượng file trong hàng đợi: ${processingQueue.length}`);
+    
+    // Thêm log chi tiết nếu là lỗi 403 hoặc cannotDownloadFile
+    if (params.errorType === "403" || params.originalError?.includes('cannotDownloadFile')) {
+      console.log(`🚫 Phát hiện lỗi 403/cannotDownloadFile - Sẽ sử dụng Chrome để tải file`);
+      console.log(`🔍 Chi tiết lỗi gốc: ${params.originalError || 'Không có thông tin lỗi gốc'}`);
+    }
     
     processingQueue.push(task);
-    processNextInQueue(); // Thử xử lý ngay nếu không có file nào đang xử lý
+    
+    // Thử xử lý ngay nếu không có file nào đang xử lý
+    console.log(`🔄 Đang kiểm tra hàng đợi để xử lý ngay (isProcessing=${isProcessing})...`);
+    processNextInQueue();
+    
+    // Trả về thông báo đã thêm vào hàng đợi
+    return {
+      status: 'queued',
+      message: 'File đã được thêm vào hàng đợi xử lý Chrome',
+      queuePosition: processingQueue.length,
+      fileId: params.fileId,
+      fileName: params.fileName
+    };
   });
 }
 
@@ -46,7 +74,14 @@ export function addToProcessingQueue(params) {
  * Xử lý file tiếp theo trong hàng đợi
  */
 export async function processNextInQueue() {
-  if (isProcessing || processingQueue.length === 0) return;
+  if (isProcessing || processingQueue.length === 0) {
+    if (isProcessing) {
+      console.log(`⏳ Đang có file đang được xử lý, chờ đợi...`);
+    } else if (processingQueue.length === 0) {
+      console.log(`✅ Không có file nào trong hàng đợi cần xử lý`);
+    }
+    return;
+  }
   
   isProcessing = true;
   const task = processingQueue.shift();
@@ -54,15 +89,29 @@ export async function processNextInQueue() {
   try {
     console.log(`\n=== ĐANG XỬ LÝ FILE TRONG HÀNG ĐỢI ===`);
     console.log(`⏳ Còn ${processingQueue.length} file đang chờ...`);
+    console.log(`📄 File ID: ${task.fileId}`);
+    console.log(`📝 Tên file: ${task.fileName || 'Không có tên'}`);
+    console.log(`🔄 Loại lỗi: ${task.errorType || 'Không xác định'}`);
+    console.log(`🗂️ Folder đích: ${task.folderName || task.targetFolderName || 'Không xác định'}`);
+    console.log(`🔄 Original File ID: ${task.originalFileId || 'Không xác định'}`);
+    console.log(`⏱️ Thời gian bắt đầu xử lý: ${new Date().toLocaleString()}`);
+    
+    // Thêm log chi tiết nếu là lỗi 403 hoặc cannotDownloadFile
+    if (task.errorType === "403" || task.originalError?.includes('cannotDownloadFile')) {
+      console.log(`🚫 Bắt đầu xử lý file bị chặn (403/cannotDownloadFile) bằng Chrome`);
+      console.log(`🔍 Chi tiết lỗi gốc: ${task.originalError || 'Không có thông tin lỗi gốc'}`);
+    }
     
     // Đảm bảo có fileId
     if (!task.fileId) {
       if (task.driveLink) {
         try {
-          task.fileId = extractDriveFileId(task.driveLink);
-          if (!task.fileId) throw new Error('Không thể trích xuất fileId từ driveLink');
+          const extracted = extractDriveFileId(task.driveLink);
+          if (!extracted || !extracted.fileId) throw new Error('Không thể trích xuất fileId từ driveLink');
+          task.fileId = extracted.fileId;
+          console.log(`✅ Đã trích xuất fileId từ driveLink: ${task.fileId}`);
         } catch (error) {
-          throw new Error('Không thể trích xuất fileId từ driveLink');
+          throw new Error(`Không thể trích xuất fileId từ driveLink: ${error.message}`);
         }
       } else {
         throw new Error('Không có fileId hoặc driveLink để xử lý');
@@ -73,12 +122,17 @@ export async function processNextInQueue() {
     const tempDir = task.tempDir || path.join(os.tmpdir(), uuidv4());
     if (!fs.existsSync(tempDir)) {
       fs.mkdirSync(tempDir, { recursive: true });
+      console.log(`✅ Đã tạo thư mục tạm: ${tempDir}`);
     }
     
     // Tạo đường dẫn đầu ra
     const outputPath = path.join(tempDir, `TÀI LIỆU${task.fileId}_processed.pdf`);
+    console.log(`📂 Đường dẫn đầu ra: ${outputPath}`);
     
     // Sử dụng Chrome để xử lý file
+    console.log(`🌐 Bắt đầu sử dụng Chrome để tải file bị chặn: ${task.fileId}`);
+    console.log(`⏳ Quá trình này có thể mất vài phút, vui lòng đợi...`);
+    
     const chromeResult = await processPDF(
       null, // inputPath
       outputPath,
@@ -98,7 +152,8 @@ export async function processNextInQueue() {
       const result = await processAndUploadFile({
         filePath: chromeResult.filePath,
         mimeType: 'application/pdf',
-        fileId: task.fileId,
+        fileId: task.fileId, // ID của file gốc
+        originalFileId: task.originalFileId || task.fileId, // Sử dụng originalFileId nếu có
         driveLink: task.driveLink,
         targetFolderId: task.targetFolderId,
         folderName: task.folderName || task.targetFolderName, // Sử dụng folderName hoặc targetFolderName
@@ -117,14 +172,17 @@ export async function processNextInQueue() {
         sourceType: task.errorType === "403" ? "403_chrome" : "404_chrome"
       });
       
+      console.log(`✅ Đã xử lý và tải lên thành công file: ${result.processedPath || result.webViewLink || 'Không có link'}`);
       task.resolve(result);
     } else {
-      console.log(`⚠️ Cảnh báo: ${chromeResult.error}`);
+      console.log(`⚠️ Cảnh báo khi xử lý bằng Chrome: ${chromeResult.error || 'Không rõ lỗi'}`);
+      console.log(`🔍 Chi tiết lỗi Chrome: `, chromeResult);
+      
       // Tiếp tục xử lý mà không ném lỗi, trả về kết quả với thông tin lỗi
       task.resolve({
         success: true,
         skipWatermark: true,
-        message: `Cảnh báo: ${chromeResult.error}`,
+        message: `Cảnh báo: ${chromeResult.error || 'Không rõ lỗi'}`,
         filePath: chromeResult.filePath || null,
         originalFile: {
           id: task.fileId,
@@ -134,9 +192,11 @@ export async function processNextInQueue() {
     }
   } catch (error) {
     console.error(`❌ Lỗi khi xử lý file trong hàng đợi: ${error.message}`);
+    console.error(`🔍 Chi tiết lỗi:`, error);
     task.reject(error);
   } finally {
     isProcessing = false;
+    console.log(`🔄 Hoàn thành xử lý file trong hàng đợi, tiếp tục kiểm tra hàng đợi...`);
     processNextInQueue();
   }
 }
@@ -151,6 +211,7 @@ export async function processAndUploadFile(params) {
     filePath,
     mimeType,
     fileId,
+    originalFileId, // ID của file gốc để thêm vào tên file
     driveLink,
     targetFolderId,
     folderName,
@@ -266,13 +327,22 @@ export async function processAndUploadFile(params) {
       }
     }
     
+    // Đảm bảo có folderName để luôn upload vào folder con
+    const finalFolderName = folderName || 'Unknown';
+    console.log(`🗂️ Đảm bảo upload vào folder con: ${finalFolderName}`);
+    
+    // Sử dụng originalFileId nếu có, nếu không thì sử dụng fileId
+    const idForFileName = originalFileId || fileId;
+    console.log(`🏷️ Sử dụng ID cho tên file: ${idForFileName}`);
+    
     // Upload file đã xử lý
     const uploadResult = await uploadToGoogleDrive(
       processedFilePath,
       processResult.originalFileName || path.basename(processedFilePath), // Sử dụng tên file gốc nếu có
       mimeType || "application/pdf",
       targetFolderId,
-      folderName
+      finalFolderName, // Luôn sử dụng folderName
+      idForFileName // Thêm ID của file gốc để thêm vào tên file
     );
     
     // Xử lý cập nhật sheet nếu cần
@@ -477,7 +547,8 @@ export async function processSingleFile(file, options) {
     sheetId,
     googleSheetName,
     displayText,
-    request
+    request,
+    folderName
   } = options;
   
   try {
@@ -499,116 +570,98 @@ export async function processSingleFile(file, options) {
         fileExtension = '.jpg';
       } else if (file.mimeType.includes('image/png')) {
         fileExtension = '.png';
-      } else if (file.mimeType.includes('video/mp4')) {
+      } else if (file.mimeType.includes('video')) {
+        // Xác định loại video từ mimeType
+        if (file.mimeType.includes('mp4')) {
+          fileExtension = '.mp4';
+        } else if (file.mimeType.includes('webm')) {
+          fileExtension = '.webm';
+        } else if (file.mimeType.includes('avi')) {
+          fileExtension = '.avi';
+        } else {
+          fileExtension = '.mp4'; // Default cho video
+        }
+      }
+    } else {
+      // Nếu không có mimeType, thử đoán từ tên file
+      const fileName = file.name || displayText || '';
+      if (fileName.toLowerCase().endsWith('.pdf')) {
+        fileExtension = '.pdf';
+      } else if (fileName.toLowerCase().endsWith('.jpg') || fileName.toLowerCase().endsWith('.jpeg')) {
+        fileExtension = '.jpg';
+      } else if (fileName.toLowerCase().endsWith('.png')) {
+        fileExtension = '.png';
+      } else if (fileName.toLowerCase().endsWith('.mp4')) {
         fileExtension = '.mp4';
-      } else if (file.mimeType.includes('audio/mpeg')) {
-        fileExtension = '.mp3';
+      } else if (fileName.toLowerCase().endsWith('.webm')) {
+        fileExtension = '.webm';
+      } else if (fileName.toLowerCase().endsWith('.avi')) {
+        fileExtension = '.avi';
       }
     }
     
-    // Nếu có tên file, sử dụng extension từ tên file
-    if (file.name) {
-      const nameExt = path.extname(file.name).toLowerCase();
-      if (nameExt) {
-        fileExtension = nameExt;
-      }
-    }
-    
-    // Đặt tên file tạm thời
-    const safeFileId = file.id.replace(/[^a-zA-Z0-9]/g, '_');
-    const tempFileName = `${safeFileId}_temp${fileExtension}`;
+    // Tạo tên file tạm
+    const tempFileName = `${uuidv4()}${fileExtension}`;
     const tempFilePath = path.join(tempDir, tempFileName);
     
-    // Trước tiên thử tải file từ Drive API
+    // Tải file về máy chủ
+    console.log(`📥 Đang tải file: ${file.name || 'Không có tên'} (${file.id})`);
+    
     try {
-      console.log(`📥 Tải file từ Drive API...`);
-      console.log(`📁 Đường dẫn file tạm: ${tempFilePath}`);
+      await downloadFromGoogleDrive(file.id, tempFilePath);
+    } catch (downloadError) {
+      console.error(`❌ Lỗi tải file: ${downloadError.message}`);
       
-      // Tải file từ Google Drive
-      const downloadResult = await downloadFromGoogleDrive(file.id, tempFilePath);
-      console.log(`✅ Tải file thành công qua API`);
-      
-      // Kiểm tra xem file có tồn tại không
-      if (!fs.existsSync(tempFilePath)) {
-        console.error(`❌ File không tìm thấy sau khi tải xuống: ${tempFilePath}`);
-        throw new Error(`File không tìm thấy sau khi tải xuống: ${tempFilePath}`);
+      // Kiểm tra nếu đây là lỗi 403 (Access Denied)
+      if (downloadError.message.includes('403') || 
+          downloadError.message.includes('Access denied') ||
+          downloadError.message.includes('Permission') ||
+          downloadError.message.includes('access')) {
+        throw new Error(`cannotDownloadFile: ${downloadError.message}`);
       }
       
-      // Kiểm tra kích thước file
-      try {
-        const fileStats = fs.statSync(tempFilePath);
-        const fileSizeMB = fileStats.size / (1024 * 1024);
-        console.log(`File tải xuống có kích thước: ${fileSizeMB.toFixed(2)} MB`);
-        
-        // Nếu file rỗng hoặc quá nhỏ, báo lỗi
-        if (fileStats.size === 0) {
-          console.error(`❌ File tải xuống có kích thước 0 byte`);
-          throw new Error(`File tải xuống có kích thước 0 byte: ${tempFilePath}`);
-        }
-      } catch (statsError) {
-        console.error(`❌ Không thể đọc thông tin file: ${statsError.message}`);
-        throw new Error(`Không thể đọc thông tin file sau khi tải xuống: ${statsError.message}`);
-      }
-      
-      // Xử lý file đã tải xuống
-      // Không sử dụng path.basename từ tên file để đặt làm folderName
-      // vì điều này tạo ra thư mục mới thay vì sử dụng thư mục đích
-      return await processAndUploadFile({
-        filePath: tempFilePath,
-        mimeType: file.mimeType || downloadResult.mimeType || 'application/pdf',
-        fileId: file.id,
-        driveLink: `https://drive.google.com/file/d/${file.id}/view`,
-        targetFolderId, // Đây là ID thư mục đích
-        folderName: options.folderName || options.sheetFolderName || displayText, // Sử dụng tên sheet làm folder cha
-        apiKey,
-        updateSheet,
-        courseId,
-        sheetIndex,
-        rowIndex,
-        cellIndex,
-        sheetId,
-        googleSheetName,
-        displayText: file.name,
-        request,
-        startTime: Date.now(),
-        tempDir,
-        sourceType: 'api'
-      });
-
-    } catch (apiError) {
-      // Nếu có lỗi 403/404 hoặc không thể tải, chuyển sang Chrome
-      if (apiError.message.includes('HTTP 403') || apiError.message.includes('cannotDownloadFile') || 
-          apiError.message.includes('HTTP 404')) {
-        
-        console.log(`⚠️ Lỗi khi tải qua API: ${apiError.message}`);
-        console.log(`🌐 Chuyển sang sử dụng Chrome để tải và xử lý file...`);
-        
-        const errorType = apiError.message.includes('HTTP 403') ? '403' : '404';
-        
-        // Thêm vào hàng đợi xử lý Chrome
-        return await addToProcessingQueue({
-          fileId: file.id,
-          fileName: file.name,
-          targetFolderId,
-          targetFolderName: null, // Không sử dụng dirname từ tên file vì sẽ tạo thư mục mới
-          errorType,
-          updateSheet,
-          courseId,
-          sheetIndex,
-          rowIndex,
-          cellIndex,
-          sheetId,
-          googleSheetName,
-          displayText: file.name,
-          request
-        });
-      }
-      
-      throw apiError;
+      throw downloadError;
     }
+    
+    // Xử lý và upload file
+    console.log(`🔄 File đã tải về: ${tempFilePath}, đang xử lý và upload...`);
+    
+    const processingOptions = {
+      filePath: tempFilePath,
+      mimeType: file.mimeType,
+      fileId: file.id, // Truyền ID của file gốc
+      originalFileId: options.originalFileId || file.id, // Sử dụng originalFileId từ options nếu có, không thì dùng file.id
+      driveLink: `https://drive.google.com/file/d/${file.id}/view`,
+      targetFolderId,
+      folderName,
+      apiKey,
+      updateSheet,
+      courseId,
+      sheetIndex, 
+      rowIndex,
+      cellIndex,
+      sheetId,
+      googleSheetName,
+      displayText: displayText || file.name,
+      request,
+      startTime: Date.now(),
+      tempDir
+    };
+    
+    // Sử dụng processAndUploadFile để xử lý tiếp file
+    const result = await processAndUploadFile(processingOptions);
+    
+    return {
+      success: true,
+      ...result
+    };
   } catch (error) {
-    console.error(`❌ Lỗi xử lý file ${file.name}:`, error);
-    throw error;
+    console.error(`❌ Lỗi xử lý file: ${error.message}`);
+    
+    return {
+      success: false,
+      error: error.message
+    };
   }
 }
 
@@ -875,9 +928,18 @@ export async function processFolder(folderId, options, parentFolderInfo = null, 
     for (const subFolder of subFolders) {
       try {
         console.log(`${indent}📂 Xử lý thư mục con: ${subFolder.name} (${subFolder.id})`);
+        
+        // Đảm bảo tham số sheetFolderName được truyền khi gọi đệ quy
+        const subFolderOptions = {
+          ...options,
+          sheetFolderName: options.sheetFolderName || options.folderName // Bảo toàn tên folder gốc
+        };
+        
+        console.log(`${indent}📂 Truyền tham số cho thư mục con: sheetFolderName=${subFolderOptions.sheetFolderName}, folderName=${options.folderName}`);
+        
         const subFolderResult = await processFolder(
           subFolder.id,
-          options,
+          subFolderOptions,
           {
             id: newFolder.data.id,
             name: newFolder.data.name
@@ -925,8 +987,13 @@ export async function processFolder(folderId, options, parentFolderInfo = null, 
         if (mimeTypeResult.success && (mimeTypeResult.isPdf || file.mimeType.includes('video'))) {
           const fileOptions = {
             ...options,
-            targetFolderId: newFolder.data.id
+            targetFolderId: newFolder.data.id,
+            folderName: options.sheetFolderName || options.folderName || newFolder.data.name,
+            originalFileId: file.id // Thêm ID file gốc để đảm bảo tên file không trùng lặp
           };
+          
+          console.log(`${indent}📝 Tham số folderName: ${fileOptions.folderName}, sheetFolderName: ${options.sheetFolderName}`);
+          console.log(`${indent}📝 Sử dụng originalFileId: ${fileOptions.originalFileId}`);
           
           const fileResult = await processSingleFile(file, fileOptions);
           

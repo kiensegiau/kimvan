@@ -218,12 +218,18 @@ export async function processPDF(inputPath, outputPath, config = DEFAULT_CONFIG,
     
     // Xử lý dựa trên loại PDF
     if (isBlocked && fileId) {
-      // Xử lý PDF bị chặn từ Google Drive
-      console.log(`🔒 Phát hiện PDF bị chặn từ Google Drive, sử dụng phương pháp đặc biệt...`);
+      // Khai báo fileName trước khi sử dụng
       const fileName = inputPath ? path.basename(inputPath) : `TÀI LIỆU${fileId}.pdf`;
       
+      // Xử lý PDF bị chặn từ Google Drive
+      console.log(`🔒 Phát hiện PDF bị chặn từ Google Drive, sử dụng phương pháp đặc biệt...`);
+      console.log(`🔍 File ID: ${fileId}`);
+      console.log(`📄 Tên file: ${fileName || 'Không có tên'}`);
+      console.log(`📂 Đường dẫn đầu ra: ${outputPath}`);
+      console.log(`🔄 Bắt đầu xử lý PDF: PDF bị chặn từ Google Drive`);
+      
       try {
-        console.log(`Bắt đầu tải PDF bị chặn...`);
+        console.log(`🔄 Bắt đầu tải PDF bị chặn thông qua Chrome...`);
         
         // Thiết lập timeout cho toàn bộ quá trình
         const timeoutPromise = new Promise((_, reject) => {
@@ -238,6 +244,8 @@ export async function processPDF(inputPath, outputPath, config = DEFAULT_CONFIG,
         
         // Kiểm tra kết quả
         if (result) {
+          console.log(`✅ Kết quả xử lý Chrome: success=${result.success}, isVideo=${result?.isVideo || false}`);
+          
           // Nếu là video, trả về ngay
           if (!result.success && result.isVideo) {
             console.log(`🎥 Xác nhận file video`);
@@ -248,6 +256,8 @@ export async function processPDF(inputPath, outputPath, config = DEFAULT_CONFIG,
           if (result.success || result.chromeStartFailed) {
             return result;
           }
+        } else {
+          console.log(`⚠️ Không nhận được kết quả xử lý từ Chrome`);
         }
         
         // Các trường hợp lỗi khác
@@ -562,6 +572,11 @@ setInterval(() => {
  */
 export async function downloadBlockedPDF(fileId, fileName, tempDir, watermarkConfig = {}) {
   console.log(`🚀 [CHROME] Bắt đầu xử lý file bị chặn: fileId=${fileId}, fileName=${fileName}`);
+  console.log(`🔍 Thời gian bắt đầu: ${new Date().toLocaleString()}`);
+  console.log(`📂 Thư mục tạm: ${tempDir}`);
+  
+  // Đặt thời gian bắt đầu để tính thời gian xử lý
+  const startTime = Date.now();
   
   // Kiểm tra MIME type của file trước khi xử lý
   try {
@@ -571,11 +586,14 @@ export async function downloadBlockedPDF(fileId, fileName, tempDir, watermarkCon
     const oAuth2Client = await createOAuth2Client();
     const drive = googleAPI.drive({ version: 'v3', auth: oAuth2Client });
 
+    console.log(`🔍 Kiểm tra thông tin file: ${fileId}`);
     const file = await drive.files.get({
       fileId: fileId,
       fields: 'id,name,mimeType',
       supportsAllDrives: true
     });
+
+    console.log(`✅ Đã lấy thông tin file: ${file.data.name}, mimeType: ${file.data.mimeType}`);
 
     // Kiểm tra nếu file là video
     if (file.data.mimeType.includes('video')) {
@@ -649,8 +667,8 @@ export async function downloadBlockedPDF(fileId, fileName, tempDir, watermarkCon
   
   const outputPath = path.join(tempDir, `${path.basename(fileName, '.pdf')}_clean.pdf`);
   
-  // Ghi lại thời gian bắt đầu
-  const startTime = Date.now();
+  // Ghi lại thời gian bắt đầu - đã khai báo ở trên, không cần khai báo lại
+  // const startTime = Date.now();
   
   // Kiểm tra xem có bỏ qua xử lý watermark không
   const skipProcessing = watermarkConfig && (

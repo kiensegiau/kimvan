@@ -188,10 +188,9 @@ export async function processFile(filePath, mimeType, apiKey, originalFileId) {
           // originalFileName sẽ được thiết lập ở processAndUploadFile
         };
         
-        /* 
         // Nếu là lỗi khác liên quan đến việc tải file (không phải lỗi xử lý watermark),
         // mới chuyển sang Chrome
-        if (result.shouldRetry !== false && 
+        if (result && result.shouldRetry !== false && 
             (result.error && (result.error.includes('download') || 
                             result.error.includes('tải') || 
                             result.error.includes('access') || 
@@ -282,7 +281,7 @@ export async function processFile(filePath, mimeType, apiKey, originalFileId) {
           }
         } else {
           // Lỗi xử lý watermark không cần thiết phải mở Chrome
-          console.log(`⚠️ Sử dụng phương pháp đơn giản do lỗi xử lý watermark: ${result.error}`);
+          console.log(`⚠️ Sử dụng phương pháp đơn giản do lỗi xử lý watermark: ${result?.error}`);
           
           // Xóa watermark dạng text ở header và footer và thêm logo
           await removeHeaderFooterWatermark(filePath, processedPath);
@@ -292,11 +291,10 @@ export async function processFile(filePath, mimeType, apiKey, originalFileId) {
           return {
             success: true,
             processedPath: processedPath,
-            message: `Đã xử lý bằng phương pháp đơn giản: ${result.error}`,
+            message: `Đã xử lý bằng phương pháp đơn giản: ${result?.error}`,
             skipWatermark: true
           };
         }
-        */
       } catch (watermarkError) {
         console.error(`❌ Lỗi khi xử lý watermark: ${watermarkError.message}`);
         
@@ -696,8 +694,22 @@ export async function processSingleFile(file, options = {}) {
     
     // Tải file từ Google Drive
     console.log(`📥 Tải file từ Google Drive: ${file.id}`);
-    await downloadFromGoogleDrive(file.id, downloadPath);
-    console.log(`✅ Đã tải file thành công: ${downloadPath}`);
+    try {
+      await downloadFromGoogleDrive(file.id, downloadPath);
+      console.log(`✅ Đã tải file thành công: ${downloadPath}`);
+    } catch (downloadError) {
+      console.error(`❌ Lỗi tải file: ${downloadError.message}`);
+      
+      // Kiểm tra nếu là lỗi 403 hoặc cannotDownloadFile để ném ra ngoài
+      if (downloadError.message.includes('403') || downloadError.message.includes('cannotDownloadFile')) {
+        console.log('⚠️ Phát hiện lỗi 403 trong processSingleFile - Chuyển sang Chrome');
+        // Đảm bảo lỗi có từ khóa cannotDownloadFile để route.js có thể nhận diện
+        throw new Error(`cannotDownloadFile: ${downloadError.message}`);
+      }
+      
+      // Các lỗi khác
+      throw downloadError;
+    }
     
     // Xác định loại file để xử lý
     const mimeTypeLower = (file.mimeType || '').toLowerCase();
@@ -799,6 +811,21 @@ export async function processSingleFile(file, options = {}) {
     }
   } catch (error) {
     console.error(`Lỗi khi xử lý file ${file.name || file.id}:`, error);
+    
+    // Kiểm tra xem có phải lỗi tải file hay lỗi cannotDownloadFile không
+    if (error.message.includes('403') || 
+        error.message.includes('cannotDownloadFile') || 
+        error.message.includes('download failed') ||
+        error.message.includes('không thể tải')) {
+      console.log(`⚠️ Phát hiện lỗi tải file trong processSingleFile: ${error.message}`);
+      // Đảm bảo lỗi có từ khóa cannotDownloadFile để route.js dễ phát hiện
+      return {
+        success: false,
+        error: `cannotDownloadFile: ${error.message}`,
+        useChrome: true // Thêm flag để cho biết cần chuyển sang Chrome
+      };
+    }
+    
     return {
       success: false,
       error: error.message,

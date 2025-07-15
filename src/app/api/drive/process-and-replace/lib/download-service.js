@@ -162,7 +162,13 @@ export async function downloadFromGoogleDrive(fileId, outputPath) {
           error.message?.includes('403') || 
           error.message?.includes('cannotDownloadFile')) {
         console.log('⚠️ Phát hiện lỗi 403 - File bị chặn download');
-        throw new Error(`HTTP 403: File bị chặn download - ${errorMessage}`);
+        console.log('🔍 Chi tiết lỗi 403:', {
+          status: error.response?.status,
+          message: error.message,
+          fileId: fileId
+        });
+        console.log('🌐 Cần chuyển sang Chrome để tải file này');
+        throw new Error(`cannotDownloadFile: HTTP 403: File bị chặn download - ${errorMessage}`);
       }
       
       // Nếu đã thử hết số lần, ném lỗi
